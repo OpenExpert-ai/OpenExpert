@@ -185,41 +185,47 @@ export async function ensureStandaloneApp(
 
   const repo = opts.repo ?? "OpenExpert/OpenExpert";
   const log = opts.log ?? (() => {});
-  const base = `https://github.com/${repo}/releases/download/v${version}`;
   const tarball = `openexpert-server-${version}.tar.gz`;
-  const url = `${base}/${tarball}`;
-  const shaUrl = `${base}/${tarball}.sha256`;
+  // Different tools tag releases differently; try the common shapes.
+  const tags = [`v${version}`, `@openexpert/opencore@${version}`, version];
 
-  log(`downloading ${url}`);
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-
-    // Verify checksum when the .sha256 asset is available.
+  for (const tag of tags) {
+    const base = `https://github.com/${repo}/releases/download/${tag}`;
+    const url = `${base}/${tarball}`;
+    log(`downloading ${url}`);
     try {
-      const shaRes = await fetch(shaUrl, { signal: AbortSignal.timeout(15_000) });
-      if (shaRes.ok) {
-        const expected = (await shaRes.text()).trim().split(/\s+/)[0];
-        const actual = createHash("sha256").update(buf).digest("hex");
-        if (expected && expected !== actual) {
-          log("checksum mismatch, aborting");
-          return null;
-        }
-      }
-    } catch {
-      // No checksum asset: continue (release is fetched over HTTPS).
-    }
+      const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+      if (!res.ok) continue;
+      const buf = Buffer.from(await res.arrayBuffer());
 
-    mkdirSync(dir, { recursive: true });
-    const tmp = join(dir, tarball);
-    writeFileSync(tmp, buf);
-    const r = spawnSync("tar", ["-xzf", tmp, "-C", dir], { stdio: "ignore" });
-    if (r.status !== 0) return null;
-    return existsSync(entry) ? dir : null;
-  } catch {
-    return null;
+      // Verify checksum when the .sha256 asset is available.
+      try {
+        const shaRes = await fetch(`${base}/${tarball}.sha256`, {
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (shaRes.ok) {
+          const expected = (await shaRes.text()).trim().split(/\s+/)[0];
+          const actual = createHash("sha256").update(buf).digest("hex");
+          if (expected && expected !== actual) {
+            log("checksum mismatch, aborting");
+            return null;
+          }
+        }
+      } catch {
+        // No checksum asset: continue (release is fetched over HTTPS).
+      }
+
+      mkdirSync(dir, { recursive: true });
+      const tmp = join(dir, tarball);
+      writeFileSync(tmp, buf);
+      const r = spawnSync("tar", ["-xzf", tmp, "-C", dir], { stdio: "ignore" });
+      if (r.status !== 0) return null;
+      return existsSync(entry) ? dir : null;
+    } catch {
+      // try the next tag
+    }
   }
+  return null;
 }
 
 export function run(

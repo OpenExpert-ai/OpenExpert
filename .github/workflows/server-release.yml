@@ -1,0 +1,55 @@
+name: Server release asset
+
+# Builds the standalone node-server bundle and attaches it (plus its
+# checksum) to the GitHub release, so `npx @openexpert/opencore serve` can
+# download and run the local edition without a source checkout.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: Build and attach server bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          OPENEXPERT_MODE: local
+          GOOGLE_API_KEY: dummy-for-build
+        run: |
+          npm run build --workspace @openexpert/opencore
+          npm run build
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./packages/opencore/package.json').version")"
+          npm prune --omit=dev --ignore-scripts
+          rm -rf pkg
+          mkdir -p pkg
+          cp -r .output pkg/.output
+          cp package.json pkg/package.json
+          cp -r node_modules pkg/node_modules
+          tar -czf "openexpert-server-${VERSION}.tar.gz" -C pkg .
+          sha256sum "openexpert-server-${VERSION}.tar.gz" > "openexpert-server-${VERSION}.tar.gz.sha256"
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            openexpert-server-*.tar.gz
+            openexpert-server-*.tar.gz.sha256
