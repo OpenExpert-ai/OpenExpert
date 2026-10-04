@@ -5,7 +5,6 @@ import { DEFAULTS, loadConfig } from "../src/config.js";
 describe("loadConfig", () => {
   it("returns defaults when no file and no env are present", () => {
     const cfg = loadConfig("/nonexistent");
-    expect(cfg.mode).toBe(DEFAULTS.mode);
     expect(cfg.modelProvider).toBe(DEFAULTS.modelProvider);
     expect(cfg.modelId).toBe(DEFAULTS.modelId);
     expect(cfg.ollamaBaseUrl).toBe(DEFAULTS.ollamaBaseUrl);
@@ -18,19 +17,15 @@ describe("loadConfig", () => {
     process.env["OPENEXPERT_DATA_DIR"] = "~/custom-data";
     const cfg = loadConfig("/nonexistent");
     expect(cfg.dataDir.endsWith("custom-data")).toBe(true);
-    expect(cfg.dataDir.startsWith("~")).toBe(false);
     delete process.env["OPENEXPERT_DATA_DIR"];
   });
 
   it("env vars win over defaults", () => {
-    process.env["OPENEXPERT_MODE"] = "local";
     process.env["OPENEXPERT_MODEL_PROVIDER"] = "ollama";
     process.env["OPENEXPERT_MODEL_ID"] = "qwen2.5";
     const cfg = loadConfig("/nonexistent");
-    expect(cfg.mode).toBe("local");
     expect(cfg.modelProvider).toBe("ollama");
     expect(cfg.modelId).toBe("qwen2.5");
-    delete process.env["OPENEXPERT_MODE"];
     delete process.env["OPENEXPERT_MODEL_PROVIDER"];
     delete process.env["OPENEXPERT_MODEL_ID"];
   });

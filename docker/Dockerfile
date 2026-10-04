@@ -27,19 +27,18 @@ COPY packages/create-openexpert ./packages/create-openexpert
 RUN npm ci --ignore-scripts
 
 # Copy the rest of the source.
-COPY tsconfig.json vite.config.ts drizzle.config.ts ./
+COPY tsconfig.json vite.config.ts ./
 COPY src ./src
 COPY public ./public
 COPY drizzle ./drizzle
 COPY scripts ./scripts
 COPY .changeset ./.changeset
 
-ENV OPENEXPERT_MODE=local
 ENV NODE_ENV=production
 
 # Build the OpenCore package, then the application.
 RUN npm run build --workspace @openexpert/opencore \
- && OPENEXPERT_MODE=local npm run build
+ && npm run build
 
 # Prune devDependencies for the runtime stage.
 RUN npm prune --omit=dev --ignore-scripts
@@ -49,7 +48,6 @@ FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production \
-    OPENEXPERT_MODE=local \
     OPENEXPERT_DATA_DIR=/data \
     PORT=3000
 

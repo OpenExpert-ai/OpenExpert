@@ -16,10 +16,9 @@ Requirements: **Node.js 20+** and **npm 10+** (see `.nvmrc`).
 git clone https://github.com/OpenExpert-ai/OpenExpert.git
 cd OpenExpert
 npm ci
-cp .env.example .env        # fill in the variables; not required for the local edition
+cp .env.example .env        # optional; Ollama needs no keys
 cp openexpert.json.example openexpert.json
-npm run dev                 # http://localhost:3000 (cloud mode)
-OPENEXPERT_MODE=local npm run dev   # OpenCore local edition
+npm run dev                 # http://localhost:3000
 npm run opencore:doctor     # configuration check
 ```
 

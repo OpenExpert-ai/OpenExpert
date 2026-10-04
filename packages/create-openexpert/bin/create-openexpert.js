@@ -25,7 +25,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      OPENEXPERT_MODE: local
       OPENEXPERT_MODEL_PROVIDER: ollama
       OPENEXPERT_MODEL_ID: llama3.1
       OPENEXPERT_DATA_DIR: /data

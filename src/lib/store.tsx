@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { getDriveStatus, getWorkspace } from "./data.functions";
 
 export type Workspace = Awaited<ReturnType<typeof getWorkspace>>;
-export type Access = "none" | "read" | "exec";
-export type Role = "ADMIN" | "INTERMEDIO" | "LECTOR";
 
 type UI = { activeExpert: string; setActiveExpert: (id: string) => void };
 const UICtx = createContext<UI | null>(null);
@@ -40,7 +38,7 @@ export function useWorkspace() {
   return useQuery({ queryKey: workspaceKey, queryFn: () => fn(), refetchInterval: 15000 });
 }
 export function useMe(ws: Workspace | undefined) {
-  return ws?.users.find((u) => u.id === ws.meId);
+  return ws?.me;
 }
 
 /** Whether the signed-in user has linked their own Google Drive. */

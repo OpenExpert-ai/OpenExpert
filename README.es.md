@@ -1,23 +1,22 @@
 # OpenExpert
 
-Panel de operaciones con inteligencia artificial: Expertos con
-aislamiento de datos, integraciones, chat con herramientas, procesos
-con aprobación humana y registro auditable. El proyecto es **open source
-bajo licencia MIT**.
+Panel de operaciones con inteligencia artificial que funciona **enteramente en
+tu equipo**: Expertos con aislamiento de datos, integraciones, chat con
+herramientas, procesos con aprobación humana y registro auditable. **Sin nube,
+sin cuentas y sin servidor de base de datos**: solo SQLite y tu propio modelo.
 
-OpenCore, la edición local descargable, se describe en
-[`docs/es/11-opencore.md`](./docs/es/11-opencore.md).
+El proyecto es **open source bajo licencia MIT**.
 
 > The English version of this document is [`README.md`](./README.md).
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Node](https://img.shields.io/badge/node-%E2%89%A520-339933)](https://nodejs.org)
+
 ## Arranque rápido
 
-Elige el camino que te encaje. Guía completa:
-[docs/es/00-inicio-rapido.md](./docs/es/00-inicio-rapido.md).
+Guía completa: [docs/es/00-inicio-rapido.md](./docs/es/00-inicio-rapido.md).
 
-### Edición local (OpenCore) — sin nube
-
-Docker (sin Node):
+### Docker (sin Node)
 
 ```sh
 docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local
@@ -26,7 +25,7 @@ docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
 
-Con Node:
+### Con Node
 
 ```sh
 npx @openexpert/opencore          # asistente, luego arranca
@@ -39,92 +38,83 @@ O crea un proyecto:
 npm create openexpert mi-app && cd mi-app && docker compose up -d
 ```
 
-### Desde el código (cloud o local)
+### Desde el código
 
 ```sh
+git clone https://github.com/OpenExpert-ai/OpenExpert.git
+cd OpenExpert
 npm ci
-cp .env.example .env    # cloud: completar las variables
-npm run dev             # http://localhost:3000 (cloud)
-npm run dev:local       # edición local, sin Supabase
+npm run dev                       # http://localhost:3000
 ```
 
-El servidor de desarrollo está fijado al **puerto 3000** porque las URI
-de redirección OAuth dependen de él.
+El servidor de desarrollo está fijado al **puerto 3000** porque la URI de
+redirección OAuth de Google Drive depende de él.
+
+## Cómo funciona
+
+- **Datos** en un único fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db`
+  (por defecto `~/.openexpert/`). Nada sale de tu equipo.
+- **IA** como configuración: [Ollama](https://ollama.com) (por defecto, sin
+  claves), Google Gemini (clave gratuita) o cualquier endpoint
+  OpenAI-compatible. Ver [docs/es/13-proveedores-ia.md](./docs/es/13-proveedores-ia.md).
+- **Google Drive** es una integración opcional con tu propia cuenta; los tokens
+  se guardan en local con permisos `0600`.
+- **Gobierno**: cada cambio reversible se registra con snapshot y puede
+  revertirse desde la pantalla de actividad. La IA solo _propone_ acciones y
+  requieren aprobación humana.
 
 ## Documentación
 
-Toda la documentación vive en **[`docs/`](./docs/README.md)**. El índice
-indica el destinatario de cada documento y el idioma.
+Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y español).
 
-| Documento                                               | Contenido                                        |
-| ------------------------------------------------------- | ------------------------------------------------ |
-| [Producto (es)](./docs/es/01-producto.md)               | Descripción, problema, funcionalidad y alcance   |
-| [Product (en)](./docs/en/01-product.md)                 | Description, problem, features and scope         |
-| [Arquitectura (es)](./docs/es/02-arquitectura.md)       | Capas, flujo de datos y decisiones de diseño     |
-| [Architecture (en)](./docs/en/02-architecture.md)       | Layers, data flow, design decisions              |
-| [Modelo de datos (es)](./docs/es/03-modelo-de-datos.md) | Tablas, relaciones, RLS, triggers y migraciones  |
-| [Data model (en)](./docs/en/03-data-model.md)           | Tables, relationships, RLS, triggers, migrations |
-| [Seguridad (es)](./docs/es/04-seguridad-y-acceso.md)    | Roles, permisos, aislamiento y auditoría         |
-| [Security (en)](./docs/en/04-security.md)               | Roles, permissions, isolation, audit             |
-| [IA (es)](./docs/es/05-inteligencia-artificial.md)      | Herramientas del asistente y sus límites         |
-| [AI (en)](./docs/en/05-ai.md)                           | Assistant tools and limits                       |
-| [Integraciones (es)](./docs/es/06-integraciones.md)     | Estado de cada conector y su incorporación       |
-| [Integrations (en)](./docs/en/06-integrations.md)       | Status of each connector and onboarding          |
-| [Desarrollo (es)](./docs/es/07-desarrollo.md)           | Entorno local, scripts y convenciones            |
-| [Development (en)](./docs/en/07-development.md)         | Local environment, scripts, conventions          |
-| [Despliegue (es)](./docs/es/08-despliegue.md)           | Publicación en producción y configuración        |
-| [Deployment (en)](./docs/en/08-deployment.md)           | Production deploy and domain configuration       |
-| [Operación (es)](./docs/es/09-operacion-y-soporte.md)   | Costes, tareas periódicas y diagnóstico          |
-| [Operation (en)](./docs/en/09-operation.md)             | Curency, recurring tasks, diagnosis              |
-| [Glosario (es)](./docs/es/10-glosario.md)               | Definiciones del vocabulario técnico             |
-| [Glossary (en)](./docs/en/10-glossary.md)               | Technical vocabulary                             |
-| [OpenCore (es)](./docs/es/11-opencore.md)               | Motor MIT: modo local y alcance                  |
-| [OpenCore (en)](./docs/en/11-opencore.md)               | MIT engine: local mode and scope                 |
-| [Licencia (es)](./docs/es/12-licencia.md)               | Qué es abierto y qué se monetiza                 |
-| [Licensing model (en)](./docs/en/12-licensing.md)       | What is open, what is monetised                  |
-| [Hoja de ruta (es)](./docs/es/roadmap.md)               | Estado de implementación y planificación         |
-| [Roadmap (en)](./docs/en/roadmap.md)                    | Implementation status and planning               |
-
-## Stack
-
-TanStack Start (React 19, SSR) · Tailwind CSS 4 + shadcn/ui ·
-Supabase (PostgreSQL + RLS) con Drizzle como ejecutor de migraciones ·
-Supabase Auth (Google OAuth) · Vercel AI SDK → Gemini, Ollama o la
-pasarela OpenExpert · API de Google Drive por usuario · Vercel.
+| Documento                                           | Contenido                             |
+| --------------------------------------------------- | ------------------------------------- |
+| [Inicio rápido](./docs/es/00-inicio-rapido.md)      | De cero a chatear en 5 minutos        |
+| [Producto](./docs/es/01-producto.md)                | Qué hace la plataforma                |
+| [Arquitectura](./docs/es/02-arquitectura.md)        | Capas y flujo de datos                |
+| [Modelo de datos](./docs/es/03-modelo-de-datos.md)  | Tablas SQLite                         |
+| [Seguridad](./docs/es/04-seguridad-y-acceso.md)     | Acceso y protecciones                 |
+| [IA](./docs/es/05-inteligencia-artificial.md)       | Herramientas y límites                |
+| [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                 |
+| [Integraciones](./docs/es/06-integraciones.md)      | Google Drive y cómo añadir conectores |
+| [Desarrollo](./docs/es/07-desarrollo.md)            | Entorno, scripts, convenciones        |
+| [Operación](./docs/es/09-operacion-y-soporte.md)    | Tareas periódicas y diagnóstico       |
+| [Modelo de licencia](./docs/es/12-licencia.md)      | MIT, obligaciones, monetización       |
+| [Hoja de ruta](./docs/es/roadmap.md)                | Estado y planificación                |
 
 ## Requisitos
 
 - Node.js 20 o superior
-- npm 10 o superior (gestor de paquetes oficial del proyecto)
+- npm 10 o superior (gestor de paquetes oficial)
 
 ## Estructura
 
 ```
-vite.config.ts               Configuración de build
+vite.config.ts                Configuración de build (Nitro node-server)
 src/
-  routes/          Rutas de TanStack Router
+  routes/           Rutas de TanStack Router
   lib/
-    data.functions.ts       Server functions (puerta única de escritura)
-    ee.server.ts            Autorización, auditoría y consultas de negocio
-    ai/chat.server.ts       Chat con herramientas y control anti-inyección
-    drive.server.ts         Cliente de Google Drive API (por usuario)
-    drive-tokens.server.ts  OAuth de Drive y renovación de tokens
-    opencore/               Adaptadores del modo local (paquete @openexpert/opencore)
-  integrations/supabase/    Cliente web, cliente administrativo y sesión
-packages/opencore/          Núcleo local MIT (publicado en npm)
-docker/                      Dockerfile y docker-compose de la edición local
-drizzle/migrations/         Migraciones SQL del esquema
-docs/{en,es}/                Documentación bilingüe
+    db.server.ts             SQLite (sql.js) + esquema + semilla
+    data.functions.ts        Server functions (puerta única de escritura)
+    ee.server.ts             Auditoría, reversión y consultas de negocio
+    ai/chat.server.ts        Chat con herramientas y control anti-inyección
+    drive.server.ts          Cliente de Google Drive API
+    drive-tokens.server.ts   OAuth de Drive y ciclo de vida de tokens
+    opencore/                Proveedor de modelo + custodia local de credenciales
+drizzle/schema.ts             Esquema SQLite tipado
+drizzle/init.sql              DDL SQLite (aplicado al arrancar)
+packages/opencore/            Motor MIT (modelo, config, herramientas, CLI)
+docker/                       Dockerfile y docker-compose
+docs/{en,es}/                 Documentación bilingüe
 ```
 
 ## Notas
 
-- El acceso está restringido a cuentas autorizadas mediante invitación.
-  La primera cuenta registrada adquiere el rol `ADMIN`.
-- `.env` está excluido del control de versiones; `.env.example`
-  documenta cada variable.
-- El repositorio entero se distribuye bajo la **Licencia MIT**.
-  Ver [`LICENSE`](./LICENSE) y [`NOTICE`](./NOTICE).
-- `SECURITY.md` describe el canal privado para reportar
+- Propietario único: no hay login ni gestión multiusuario.
+- `.env` está excluido del control de versiones; `.env.example` documenta cada
+  variable.
+- El repositorio entero se distribuye bajo la **Licencia MIT**. Ver
+  [`LICENSE`](./LICENSE) y [`NOTICE`](./NOTICE).
+- [`SECURITY.md`](./SECURITY.md) describe el canal privado para reportar
   vulnerabilidades.
-- `CONTRIBUTING.md` explica cómo contribuir.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) explica cómo contribuir.

@@ -9,7 +9,7 @@ import {
   detectOllama,
   ensureStandaloneApp,
   findRepoRoot,
-  listGatewayModels,
+  httpGetJson,
   packageVersion,
   readConfig,
   readSecrets,
@@ -27,63 +27,42 @@ export function cmdVersion(): number {
 
 function configuredProvider(): Provider {
   const raw = process.env["OPENEXPERT_MODEL_PROVIDER"] || readConfig().modelProvider;
-  if (raw === "ollama" || raw === "openai-compatible" || raw === "openexpert") return raw;
+  if (raw === "ollama" || raw === "openai-compatible") return raw;
   return "google";
 }
 
 export function cmdDoctor(cwd = process.cwd()): number {
-  const mode = process.env["OPENEXPERT_MODE"] || readConfig(cwd).mode || "cloud";
   const provider = configuredProvider();
   const dataDir = resolvedDataDir(cwd);
   const secrets = readSecrets(cwd);
 
   console.log("OpenCore doctor");
-  console.log(`  mode:     ${mode}`);
   console.log(`  provider: ${provider}`);
   console.log(`  data dir: ${dataDir}`);
 
   const problems: string[] = [];
 
-  if (mode === "local") {
-    if (provider === "google" && !process.env["GOOGLE_API_KEY"] && !secrets.GOOGLE_API_KEY) {
-      problems.push("Falta GOOGLE_API_KEY. Ejecuta `opencore init` o usa Ollama.");
+  if (provider === "google" && !process.env["GOOGLE_API_KEY"] && !secrets.GOOGLE_API_KEY) {
+    problems.push("Falta GOOGLE_API_KEY. Ejecuta `opencore init` o usa Ollama.");
+  }
+  if (provider === "openai-compatible") {
+    if (!process.env["OPENEXPERT_MODEL_KEY"] && !secrets.OPENEXPERT_MODEL_KEY) {
+      problems.push("Falta OPENEXPERT_MODEL_KEY.");
     }
-    if (provider === "openai-compatible") {
-      if (!process.env["OPENEXPERT_MODEL_KEY"] && !secrets.OPENEXPERT_MODEL_KEY) {
-        problems.push("Falta OPENEXPERT_MODEL_KEY.");
-      }
-      if (!process.env["OPENEXPERT_BASE_URL"] && !secrets.OPENEXPERT_BASE_URL) {
-        problems.push("Falta OPENEXPERT_BASE_URL.");
-      }
+    if (!process.env["OPENEXPERT_BASE_URL"] && !secrets.OPENEXPERT_BASE_URL) {
+      problems.push("Falta OPENEXPERT_BASE_URL.");
     }
-    if (provider === "openexpert") {
-      if (!process.env["OPENEXPERT_GATEWAY_URL"] && !secrets.OPENEXPERT_GATEWAY_URL) {
-        problems.push("Falta OPENEXPERT_GATEWAY_URL.");
-      }
-      if (!process.env["OPENEXPERT_API_KEY"] && !secrets.OPENEXPERT_API_KEY) {
-        problems.push("Falta OPENEXPERT_API_KEY.");
-      }
-    }
-    if (provider === "ollama") {
-      console.log(`  ollama:   ${process.env["OLLAMA_BASE_URL"] || DEFAULT_OLLAMA_URL}`);
-    }
-    if (!process.env["GOOGLE_CLIENT_ID"] && !secrets.GOOGLE_CLIENT_ID) {
-      console.log("  note:     sin Google OAuth el chat funciona; Drive queda desconectado.");
-    }
-    try {
-      mkdirSync(dataDir, { recursive: true });
-    } catch {
-      problems.push(`No se puede escribir en ${dataDir}.`);
-    }
-  } else {
-    for (const k of [
-      "SUPABASE_URL",
-      "SUPABASE_PUBLISHABLE_KEY",
-      "SUPABASE_SERVICE_ROLE_KEY",
-      "GOOGLE_API_KEY",
-    ]) {
-      if (!process.env[k]) problems.push(`Falta ${k} (ver .env.example).`);
-    }
+  }
+  if (provider === "ollama") {
+    console.log(`  ollama:   ${process.env["OLLAMA_BASE_URL"] || DEFAULT_OLLAMA_URL}`);
+  }
+  if (!process.env["GOOGLE_CLIENT_ID"] && !secrets.GOOGLE_CLIENT_ID) {
+    console.log("  note:     sin Google OAuth el chat funciona; Drive queda desconectado.");
+  }
+  try {
+    mkdirSync(dataDir, { recursive: true });
+  } catch {
+    problems.push(`No se puede escribir en ${dataDir}.`);
   }
 
   if (!problems.length) {
@@ -103,7 +82,6 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
     const ollama = await detectOllama();
     writeConfig(
       {
-        mode: "local",
         modelProvider: "ollama",
         modelId: ollama.models[0] ?? "llama3.1",
         ollamaBaseUrl: DEFAULT_OLLAMA_URL,
@@ -111,7 +89,7 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
       },
       cwd,
     );
-    console.log("✓ openexpert.json creado (modo local, Ollama).");
+    console.log("✓ openexpert.json creado (Ollama).");
   } else {
     console.log("• openexpert.json ya existe.");
   }
@@ -124,9 +102,9 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
   }
 
   console.log("✓ directorio de datos listo:", dataDir);
-  const code = cmdDoctor(cwd);
+  cmdDoctor(cwd);
   console.log("\nSiguiente paso: `opencore serve` (o `opencore init` para elegir modelo).");
-  return code === 1 ? 0 : 0;
+  return 0;
 }
 
 export async function cmdModels(cwd = process.cwd()): Promise<number> {
@@ -148,37 +126,36 @@ export async function cmdModels(cwd = process.cwd()): Promise<number> {
     return 0;
   }
 
-  if (provider === "openexpert") {
-    const base = process.env["OPENEXPERT_GATEWAY_URL"] || secrets.OPENEXPERT_GATEWAY_URL;
-    const key = process.env["OPENEXPERT_API_KEY"] || secrets.OPENEXPERT_API_KEY;
+  if (provider === "openai-compatible") {
+    const base = process.env["OPENEXPERT_BASE_URL"] || secrets.OPENEXPERT_BASE_URL;
+    const key = process.env["OPENEXPERT_MODEL_KEY"] || secrets.OPENEXPERT_MODEL_KEY;
     if (!base || !key) {
-      console.log("Configura OPENEXPERT_GATEWAY_URL y OPENEXPERT_API_KEY (opencore init).");
+      console.log("Configura OPENEXPERT_BASE_URL y OPENEXPERT_MODEL_KEY (opencore init).");
       return 1;
     }
-    const models = await listGatewayModels(base, key);
-    if (!models) {
-      console.log("No se pudo listar modelos de la pasarela.");
+    const data = await httpGetJson<{ data?: { id: string }[] }>(
+      `${base.replace(/\/+$/, "")}/models`,
+      { headers: { Authorization: `Bearer ${key}` } },
+    );
+    if (!data) {
+      console.log("No se pudo listar modelos del endpoint.");
       return 1;
     }
-    console.log("Modelos de la pasarela:");
-    for (const m of models) console.log(`  ${m === cfg.modelId ? "*" : " "} ${m}`);
+    console.log("Modelos disponibles:");
+    for (const m of data.data ?? []) console.log(`  ${m.id === cfg.modelId ? "*" : " "} ${m.id}`);
     return 0;
   }
 
-  console.log(`Proveedor ${provider}: consulta el catálogo de tu proveedor.`);
+  console.log("Proveedor google: usa `gemini-2.5-flash` o consulta Google AI Studio.");
   return 0;
 }
 
 export async function cmdServe(cwd = process.cwd()): Promise<number> {
-  const env = {
-    ...process.env,
-    ...secretsAsEnv(cwd),
-    OPENEXPERT_MODE: "local",
-  } as NodeJS.ProcessEnv;
+  const env = { ...process.env, ...secretsAsEnv(cwd) } as NodeJS.ProcessEnv;
 
   const repo = findRepoRoot(cwd);
   if (repo) {
-    console.log("Arrancando OpenExpert en modo local (desde el código fuente)…");
+    console.log("Arrancando OpenExpert (desde el código fuente)…");
     return run("npm", ["run", "dev"], { cwd: repo, env });
   }
 
@@ -188,12 +165,12 @@ export async function cmdServe(cwd = process.cwd()): Promise<number> {
     console.error(
       "No hay un servidor preconstruido disponible y no se pudo descargar.\n" +
         "Opciones:\n" +
-        "  • Usa Docker:  docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert\n" +
-        "  • O clona el repositorio y ejecuta `npm ci && npm run dev:local`.",
+        "  • Usa Docker:  docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local\n" +
+        "  • O clona el repositorio y ejecuta `npm ci && npm run dev`.",
     );
     return 1;
   }
-  console.log("Arrancando OpenCore (servidor preconstruido) en http://localhost:3000 …");
+  console.log("Arrancando OpenCore en http://localhost:3000 …");
   return run(process.execPath, [join(app, ".output", "server", "index.mjs")], {
     cwd: app,
     env: { ...env, PORT: process.env["PORT"] || "3000" },
@@ -204,9 +181,7 @@ export function cmdUpdate(): number {
   const dir = appCacheDir(packageVersion());
   if (existsSync(dir)) {
     rmSync(dir, { recursive: true, force: true });
-    console.log(
-      `✓ caché del servidor eliminada (${dir}). Se volverá a descargar en el próximo arranque.`,
-    );
+    console.log(`✓ caché del servidor eliminada (${dir}).`);
   } else {
     console.log("No hay servidor descargado que actualizar.");
   }

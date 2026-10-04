@@ -13,9 +13,9 @@ ship with their respective packages.
 | TanStack Start / React Router | MIT | TanStack |
 | Vercel AI SDK (`ai`) | MIT | vercel/ai |
 | `@ai-sdk/google`, `@ai-sdk/openai` | MIT | vercel/ai |
-| `@supabase/supabase-js` | MIT | supabase/supabase-js |
 | Zod | MIT | colinhacks/zod |
-| Drizzle ORM / drizzle-kit | Apache-2.0 | drizzle-team/drizzle-orm |
+| Drizzle ORM | Apache-2.0 | drizzle-team/drizzle-orm |
+| `sql.js` | MIT | sql-js/sql.js |
 | Nitro | MIT | unjs/nitro |
 | `unpdf` | MIT | conspiring-engineer/unpdf |
 | `lucide-react` (icons) | ISC | lucide-icons/lucide |

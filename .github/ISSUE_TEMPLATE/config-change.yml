@@ -9,10 +9,9 @@ body:
       label: Area
       options:
         - Environment variables
-        - Google OAuth (login / Drive)
-        - Supabase project
-        - OpenExpert gateway
-        - Vercel deployment
+        - Model provider (Ollama / Gemini / BYOK)
+        - Google Drive OAuth
+        - SQLite database
         - Docker
         - Other
     validations:

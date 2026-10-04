@@ -22,12 +22,11 @@ export const Route = createFileRoute("/auth/google/callback")({
         const code = url.searchParams.get("code");
         if (!code) return back("no_code", false);
 
-        const userId = await verifyState(url.searchParams.get("state") ?? "");
-        if (!userId) return back("bad_state", false);
+        if (!verifyState(url.searchParams.get("state") ?? "")) return back("bad_state", false);
 
         try {
           const tokens = await exchangeCode(code, origin);
-          await saveTokens(userId, tokens);
+          await saveTokens(tokens);
           return back("ok", true);
         } catch (e) {
           console.error("google drive oauth failed", e);

@@ -25,10 +25,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
-import { isLocalClient } from "@/lib/opencore/mode-env";
 import { btnPrimary } from "@/components/AppShell";
 import { ExpertForm } from "./experts";
 import { useQueryClient } from "@tanstack/react-query";
@@ -130,15 +128,7 @@ function ChatWindow({
   const endRef = useRef<HTMLDivElement>(null);
 
   const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: "/api/chat",
-        body: { expertId, conversationId },
-        headers: async (): Promise<Record<string, string>> => {
-          const { data } = await supabase.auth.getSession();
-          return data.session ? { Authorization: `Bearer ${data.session.access_token}` } : {};
-        },
-      }),
+    () => new DefaultChatTransport({ api: "/api/chat", body: { expertId, conversationId } }),
     [expertId, conversationId],
   );
 
@@ -296,18 +286,16 @@ function ChatWindow({
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
                 {expert?.description}
               </p>
-              {isLocalClient() && (
-                <div className="mx-auto mt-8 max-w-md rounded-md border border-border bg-card p-4 text-left">
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-primary">
-                    Primeros pasos
-                  </div>
-                  <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    <li>1. Elige tu modelo con `opencore init` (Ollama, Gemini o pasarela).</li>
-                    <li>2. Conecta Google Drive, si quieres, en Integraciones → Fuentes.</li>
-                    <li>3. Escribe tu primera pregunta abajo.</li>
-                  </ol>
+              <div className="mx-auto mt-8 max-w-md rounded-md border border-border bg-card p-4 text-left">
+                <div className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                  Primeros pasos
                 </div>
-              )}
+                <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  <li>1. Elige tu modelo con `opencore init` (Ollama o Gemini).</li>
+                  <li>2. Conecta Google Drive, si quieres, en Integraciones → Fuentes.</li>
+                  <li>3. Escribe tu primera pregunta abajo.</li>
+                </ol>
+              </div>
               <div className="mt-10 grid gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -433,9 +421,7 @@ function ChatWindow({
             )}
           </form>
           <div className="mt-2 text-center font-mono text-[10px] text-muted-foreground">
-            {me?.name} · {me?.role} · acceso{" "}
-            {me?.role === "ADMIN" ? "exec" : (me?.access[expertId] ?? "none")} · las acciones
-            sensibles requieren confirmación humana
+            {me?.name} · local · las acciones sensibles requieren confirmación humana
           </div>
         </div>
       </div>

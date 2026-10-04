@@ -11,12 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedExpertRouteImport } from './routes/_authenticated/expert'
 import { Route as AuthenticatedExpertsRouteImport } from './routes/_authenticated/experts'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
-import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedIntegrationsIndexRouteImport } from './routes/_authenticated/integrations.index'
 import { Route as AuthenticatedIntegrationsProcessesRouteImport } from './routes/_authenticated/integrations.processes'
@@ -30,11 +28,6 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
@@ -58,11 +51,6 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -87,19 +75,17 @@ const AuthenticatedIntegrationsSourcesRoute =
     getParentRoute: () => AuthenticatedIntegrationsRoute,
   } as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
-  id: '/google/callback',
-  path: '/google/callback',
-  getParentRoute: () => AuthRoute,
+  id: '/auth/google/callback',
+  path: '/auth/google/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
   '/expert': typeof AuthenticatedExpertRoute
   '/experts': typeof AuthenticatedExpertsRoute
   '/integrations': typeof AuthenticatedIntegrationsRouteWithChildren
-  '/users': typeof AuthenticatedUsersRoute
   '/api/chat': typeof ApiChatRoute
   '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
@@ -108,11 +94,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
   '/activity': typeof AuthenticatedActivityRoute
   '/expert': typeof AuthenticatedExpertRoute
   '/experts': typeof AuthenticatedExpertsRoute
-  '/users': typeof AuthenticatedUsersRoute
   '/api/chat': typeof ApiChatRoute
   '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
@@ -123,12 +107,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/expert': typeof AuthenticatedExpertRoute
   '/_authenticated/experts': typeof AuthenticatedExpertsRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRouteWithChildren
-  '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/_authenticated/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
@@ -139,12 +121,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/activity'
     | '/expert'
     | '/experts'
     | '/integrations'
-    | '/users'
     | '/api/chat'
     | '/integrations/processes'
     | '/integrations/sources'
@@ -153,11 +133,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/activity'
     | '/expert'
     | '/experts'
-    | '/users'
     | '/api/chat'
     | '/integrations/processes'
     | '/integrations/sources'
@@ -167,12 +145,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/auth'
     | '/_authenticated/activity'
     | '/_authenticated/expert'
     | '/_authenticated/experts'
     | '/_authenticated/integrations'
-    | '/_authenticated/users'
     | '/api/chat'
     | '/_authenticated/integrations/processes'
     | '/_authenticated/integrations/sources'
@@ -183,8 +159,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -201,13 +177,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/activity': {
@@ -236,13 +205,6 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations'
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/users': {
-      id: '/_authenticated/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/chat': {
@@ -275,10 +237,10 @@ declare module '@tanstack/react-router' {
     }
     '/auth/google/callback': {
       id: '/auth/google/callback'
-      path: '/google/callback'
+      path: '/auth/google/callback'
       fullPath: '/auth/google/callback'
       preLoaderRoute: typeof AuthGoogleCallbackRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -308,7 +270,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExpertRoute: typeof AuthenticatedExpertRoute
   AuthenticatedExpertsRoute: typeof AuthenticatedExpertsRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRouteWithChildren
-  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -316,27 +277,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExpertRoute: AuthenticatedExpertRoute,
   AuthenticatedExpertsRoute: AuthenticatedExpertsRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRouteWithChildren,
-  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface AuthRouteChildren {
-  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

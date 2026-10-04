@@ -50,10 +50,6 @@ jobs:
 
       - name: Build application
         run: npm run build
-        env:
-          # Build only — no production secrets needed.
-          OPENEXPERT_MODE: local
-          GOOGLE_API_KEY: dummy-for-build
 
       - name: Upload app build
         if: success()

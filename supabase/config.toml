@@ -1,6 +1,0 @@
-# Supabase CLI project configuration.
-#
-# The project reference is environment-specific and must NOT be committed.
-# Set it locally or link the project with `supabase link` before running the
-# local stack. See docs/en/07-development.md.
-project_id = "your-project-ref"

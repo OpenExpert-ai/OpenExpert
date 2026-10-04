@@ -27,9 +27,6 @@ jobs:
       - run: npm ci
 
       - name: Build
-        env:
-          OPENEXPERT_MODE: local
-          GOOGLE_API_KEY: dummy-for-build
         run: |
           npm run build --workspace @openexpert/opencore
           npm run build

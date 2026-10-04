@@ -13,7 +13,7 @@ export type DriveTokenRow = {
 };
 
 export interface TokenStore {
-  readonly kind: "supabase" | "file";
+  readonly kind: "file";
   load(userId: string): Promise<DriveTokenRow | null>;
   save(userId: string, row: DriveTokenRow): Promise<void>;
   remove(userId: string): Promise<void>;

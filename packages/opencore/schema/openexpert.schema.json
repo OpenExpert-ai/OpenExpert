@@ -1,19 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/OpenExpert-ai/OpenExpert/main/packages/opencore/schema/openexpert.schema.json",
-  "title": "OpenExpert local configuration",
-  "description": "Schema for the openexpert.json file consumed by the OpenExpert local edition. Environment variables OPENEXPERT_* always take precedence over the file.",
+  "title": "OpenExpert configuration",
+  "description": "Schema for the openexpert.json file consumed by OpenExpert. Environment variables OPENEXPERT_* always take precedence over the file.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "mode": {
-      "type": "string",
-      "enum": ["local", "cloud"],
-      "description": "Edition to start. `local` runs on your machine; `cloud` uses Supabase + Vercel."
-    },
     "modelProvider": {
       "type": "string",
-      "enum": ["google", "ollama", "openai-compatible", "openexpert"],
+      "enum": ["google", "ollama", "openai-compatible"],
       "description": "Which model provider the chat should use."
     },
     "modelId": {
@@ -24,12 +19,12 @@
     "ollamaBaseUrl": {
       "type": "string",
       "format": "uri",
-      "description": "Base URL of the Ollama server (OpenAI-compatible endpoint)."
+      "description": "Base URL of the Ollama server."
     },
     "dataDir": {
       "type": "string",
       "minLength": 1,
-      "description": "Directory where local mode stores data files. `~/` expands to the user's home directory."
+      "description": "Directory where the SQLite database and credentials live. `~/` expands to the user's home directory."
     }
   }
 }

@@ -4,14 +4,11 @@ import {
   MessagesSquare,
   Network,
   Plug,
-  Users,
   ScrollText,
   Building2,
   Layers,
-  LogOut,
   Loader2,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
 import { useMe, useUI, useWorkspace } from "@/lib/store";
 
@@ -19,7 +16,6 @@ const nav = [
   { to: "/expert", label: "Expert", icon: MessagesSquare },
   { to: "/experts", label: "Experts", icon: Network },
   { to: "/integrations", label: "Procesos e Integraciones", icon: Plug },
-  { to: "/users", label: "Miembros y Roles", icon: Users },
   { to: "/activity", label: "Registro de Actividad", icon: ScrollText },
 ] as const;
 
@@ -27,7 +23,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: ws, isLoading, error } = useWorkspace();
   const { activeExpert, setActiveExpert } = useUI();
   const me = useMe(ws);
-  const isAdmin = me?.role === "ADMIN";
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -64,16 +59,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm">{me?.name}</div>
-              <div className="font-mono text-[10px] text-muted-foreground">{me?.role}</div>
+              <div className="font-mono text-[10px] text-muted-foreground">Local</div>
             </div>
-            <button
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
-              onClick={() => supabase.auth.signOut()}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
           </div>
         </div>
       </aside>
@@ -105,19 +92,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                 onChange={(e) => setActiveExpert(e.target.value)}
                 className="bg-transparent outline-none"
               >
-                {ws?.experts
-                  .filter((e) => isAdmin || (me?.access[e.id] ?? "none") !== "none")
-                  .map((e) => (
-                    <option key={e.id} value={e.id} className="bg-card">
-                      Experto · {e.name}
-                    </option>
-                  ))}
+                {ws?.experts.map((e) => (
+                  <option key={e.id} value={e.id} className="bg-card">
+                    Experto · {e.name}
+                  </option>
+                ))}
               </select>
             </label>
-            <span className="ml-auto font-mono text-[11px] text-muted-foreground">{me?.email}</span>
-            <span className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
+            <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-              ONLINE
+              LOCAL
             </span>
           </header>
           <nav className="flex gap-1 overflow-x-auto border-b border-border px-3 py-2 md:hidden">
@@ -131,12 +115,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {n.label}
               </Link>
             ))}
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="whitespace-nowrap px-2 text-xs text-muted-foreground"
-            >
-              Salir
-            </button>
           </nav>
           <main className="flex-1">{children}</main>
         </div>

@@ -21,8 +21,6 @@ dist-ssr
 .env.*
 !.env.example
 
-# Vercel build output
-.vercel
 
 # Wrangler / Cloudflare
 .wrangler/

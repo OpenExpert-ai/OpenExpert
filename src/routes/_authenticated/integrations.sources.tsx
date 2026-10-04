@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { useAct, useDriveStatus, useMe, useWorkspace, fmtTime } from "@/lib/store";
+import { useAct, useDriveStatus, useWorkspace, fmtTime } from "@/lib/store";
 import { disconnectDrive, startDriveAuth, syncIntegration } from "@/lib/data.functions";
 
 export const Route = createFileRoute("/_authenticated/integrations/sources")({
@@ -23,7 +23,6 @@ export const Route = createFileRoute("/_authenticated/integrations/sources")({
 
 function SourcesPage() {
   const { data: ws } = useWorkspace();
-  const me = useMe(ws);
   const drive = useDriveStatus();
   const nav = useNavigate();
   const search = useSearch({ strict: false }) as { gdrive?: string };
@@ -42,7 +41,7 @@ function SourcesPage() {
     }
   }, [search.gdrive]);
 
-  if (!ws || !me) return null;
+  if (!ws) return null;
 
   const connect = async () => {
     setConnecting(true);
@@ -82,7 +81,11 @@ function SourcesPage() {
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${i.connected ? "bg-success" : "bg-muted-foreground/40"}`}
                           />
-                          {i.connected ? `sync ${fmtTime(i.last_sync)}` : "desconectado"}
+                          {i.connected && i.last_sync
+                            ? `sync ${fmtTime(i.last_sync)}`
+                            : i.connected
+                              ? "conectado"
+                              : "desconectado"}
                         </div>
                       </div>
                       {!isDrive ? (
@@ -107,7 +110,7 @@ function SourcesPage() {
                           )}
                           {mine && !i.connected && (
                             <button
-                              disabled={me.role === "LECTOR" || sync.isPending}
+                              disabled={sync.isPending}
                               onClick={() => sync.mutate({ data: { id: "gdrive" } })}
                               className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
                             >
@@ -116,7 +119,7 @@ function SourcesPage() {
                           )}
                           {i.connected && (
                             <button
-                              disabled={me.role === "LECTOR" || sync.isPending}
+                              disabled={sync.isPending}
                               onClick={() => sync.mutate({ data: { id: "gdrive" } })}
                               className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
                             >
@@ -125,8 +128,7 @@ function SourcesPage() {
                           )}
                           {mine && (
                             <button
-                              disabled={me.role !== "ADMIN" || disconnect.isPending}
-                              title={me.role !== "ADMIN" ? "Solo ADMIN" : ""}
+                              disabled={disconnect.isPending}
                               onClick={() => disconnect.mutate()}
                               className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-destructive/50 hover:text-destructive disabled:opacity-40"
                             >

@@ -7,6 +7,20 @@ to read every changeset.
 
 ## Unreleased
 
+### Local-first rewrite (breaking)
+
+- Removed **Supabase** (database and authentication) and **Vercel** entirely.
+  The application is now single-owner and local-only: no login, no cloud.
+- Persistence moved to **SQLite** (`sql.js` + Drizzle ORM) in a single file at
+  `OPENEXPERT_DATA_DIR/openexpert.db`; schema in `drizzle/schema.ts` + `init.sql`.
+- Removed multi-user features: `profiles`, `user_roles`, `expert_access`,
+  `invitations`, the users screen and the login routes.
+- Model providers are `ollama`, `google` and `openai-compatible`; the
+  `openexpert` gateway provider is gone. New AI providers guide (EN/ES).
+- Nitro preset is always `node-server`; run locally or with Docker.
+- `@openexpert/opencore` simplified to match (no mode/gateway/auth modules).
+- Documentation and `AGENTS.md` rewritten for the local edition.
+
 Initial open-source release of OpenExpert under the MIT license.
 
 ### Added

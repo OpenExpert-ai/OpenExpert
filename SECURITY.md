@@ -34,20 +34,19 @@ when one is published alongside this file.
 
 ## Secret hygiene
 
-- `.env`, `openexpert.json`, `~/.openexpert/`, and `credentials.json` are
-  listed in `.gitignore` and must never be committed.
-- `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_SECRET`, `OPENEXPERT_API_KEY`,
-  `OPENEXPERT_MODEL_KEY`, and refresh tokens are server-side only and are
-  never sent to the browser bundle.
-- The OAuth `state` parameter is HMAC-signed and verified in constant time.
-- All write operations go through server functions with explicit permission
-  checks; RLS grants members read-only access as a defence in depth.
+- `.env`, `openexpert.json`, `~/.openexpert/`, `credentials.json` and
+  `secrets.json` are git-ignored and must never be committed.
+- `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY`, `GOOGLE_CLIENT_SECRET` and the
+  Google refresh tokens are server-side only and are never sent to the
+  browser bundle.
+- The Google Drive OAuth `state` is HMAC-signed and verified in constant time.
+- All writes go through server functions; the database is a local SQLite file
+  that never leaves your machine.
 - The chat blocks prompt-injection attempts with a regex pre-filter and
   records the event in the activity log.
 
-## Operational secrets (not in the public repo)
+## Operational secrets
 
-Production endpoints (Supabase project reference, custom domains, gateway
-URLs, billing identifiers) are tracked in an **operations** document that
-lives outside this repository. They are not required to build, run, or
-contribute to the project.
+There are no production endpoints or cloud credentials. Everything runs
+locally; the only secrets are your model key and your Google Drive tokens,
+which stay on your machine.

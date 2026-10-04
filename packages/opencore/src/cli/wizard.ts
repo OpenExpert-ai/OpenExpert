@@ -3,7 +3,6 @@
 
 import * as p from "@clack/prompts";
 import {
-  DEFAULT_GATEWAY_URL,
   DEFAULT_OLLAMA_URL,
   detectOllama,
   readConfig,
@@ -27,11 +26,6 @@ function bail(): never {
   process.exit(1);
 }
 
-function cancelled(v: unknown): boolean {
-  if (p.isCancel(v)) bail();
-  return false;
-}
-
 export async function runWizard(
   opts: { cwd?: string; assumeYes?: boolean } = {},
 ): Promise<WizardResult> {
@@ -40,18 +34,15 @@ export async function runWizard(
   const nonInteractive = opts.assumeYes || !process.stdin.isTTY;
 
   if (nonInteractive) {
-    // Sensible defaults without prompting.
     const ollama = await detectOllama();
-    const provider: Provider = ollama.up ? "ollama" : "ollama";
     const config: FileConfig = {
-      mode: "local",
-      modelProvider: provider,
+      modelProvider: "ollama",
       modelId: ollama.models[0] ?? "llama3.1",
       ollamaBaseUrl: DEFAULT_OLLAMA_URL,
       dataDir: "~/.openexpert",
     };
     writeConfig(config, cwd);
-    return { config, secrets: {}, provider, modelId: config.modelId!, started: false };
+    return { config, secrets: {}, provider: "ollama", modelId: config.modelId!, started: false };
   }
 
   p.intro("OpenCore — configuración");
@@ -77,23 +68,14 @@ export async function runWizard(
             },
           ]
         : []),
-      {
-        value: "openexpert" as const,
-        label: "Pasarela OpenExpert",
-        hint: "con tu token de cuenta",
-      },
-      { value: "google" as const, label: "Google Gemini (BYOK)", hint: "con tu clave" },
-      {
-        value: "openai-compatible" as const,
-        label: "Otro endpoint compatible",
-        hint: "BYOK",
-      },
+      { value: "google" as const, label: "Google Gemini (clave gratuita)", hint: "AI Studio" },
+      { value: "openai-compatible" as const, label: "Otro endpoint compatible", hint: "BYOK" },
       ...(!ollama.up
         ? [{ value: "install-ollama" as const, label: "Instalar Ollama", hint: "te muestro cómo" }]
         : []),
     ],
   });
-  cancelled(choice);
+  if (p.isCancel(choice)) bail();
 
   if (choice === "install-ollama") {
     p.note(
@@ -107,7 +89,7 @@ export async function runWizard(
     process.exit(0);
   }
 
-  const config: FileConfig = { mode: "local", dataDir: "~/.openexpert" };
+  const config: FileConfig = { dataDir: "~/.openexpert" };
   const secrets: Secrets = {};
   let modelId = "llama3.1";
 
@@ -117,42 +99,27 @@ export async function runWizard(
       message: "Modelo de Ollama",
       options: models.map((m) => ({ value: m, label: m })),
     });
-    cancelled(picked);
+    if (p.isCancel(picked)) bail();
     modelId = String(picked);
     config.modelProvider = "ollama";
     config.modelId = modelId;
     config.ollamaBaseUrl = DEFAULT_OLLAMA_URL;
-  } else if (choice === "openexpert") {
-    const baseURL = await p.text({
-      message: "URL de la pasarela",
-      initialValue: DEFAULT_GATEWAY_URL,
-    });
-    cancelled(baseURL);
-    const apiKey = await p.password({ message: "Token de cuenta" });
-    cancelled(apiKey);
-    const id = await p.text({ message: "Modelo", initialValue: "openexpert-default" });
-    cancelled(id);
-    modelId = String(id) || "openexpert-default";
-    config.modelProvider = "openexpert";
-    config.modelId = modelId;
-    secrets.OPENEXPERT_GATEWAY_URL = String(baseURL);
-    secrets.OPENEXPERT_API_KEY = String(apiKey);
   } else if (choice === "google") {
-    const apiKey = await p.password({ message: "GOOGLE_API_KEY" });
-    cancelled(apiKey);
+    const apiKey = await p.password({ message: "GOOGLE_API_KEY (AI Studio)" });
+    if (p.isCancel(apiKey)) bail();
     const id = await p.text({ message: "Modelo", initialValue: "gemini-2.5-flash" });
-    cancelled(id);
+    if (p.isCancel(id)) bail();
     modelId = String(id) || "gemini-2.5-flash";
     config.modelProvider = "google";
     config.modelId = modelId;
     secrets.GOOGLE_API_KEY = String(apiKey);
   } else if (choice === "openai-compatible") {
     const baseURL = await p.text({ message: "Base URL (…/v1)", initialValue: "" });
-    cancelled(baseURL);
+    if (p.isCancel(baseURL)) bail();
     const apiKey = await p.password({ message: "API key" });
-    cancelled(apiKey);
+    if (p.isCancel(apiKey)) bail();
     const id = await p.text({ message: "Modelo", initialValue: "gpt-4o-mini" });
-    cancelled(id);
+    if (p.isCancel(id)) bail();
     modelId = String(id) || "gpt-4o-mini";
     config.modelProvider = "openai-compatible";
     config.modelId = modelId;
@@ -160,8 +127,7 @@ export async function runWizard(
     secrets.OPENEXPERT_MODEL_KEY = String(apiKey);
   }
 
-  const merged: FileConfig = { ...existing, ...config };
-  writeConfig(merged, cwd);
+  writeConfig({ ...existing, ...config }, cwd);
   if (Object.keys(secrets).length) writeSecrets({ ...secrets }, cwd);
 
   p.outro(
@@ -169,10 +135,10 @@ export async function runWizard(
   );
 
   const go = await p.confirm({ message: "¿Arrancar ahora?", initialValue: true });
-  cancelled(go);
+  if (p.isCancel(go)) bail();
 
   return {
-    config: merged,
+    config: { ...existing, ...config },
     secrets,
     provider: config.modelProvider as Provider,
     modelId,

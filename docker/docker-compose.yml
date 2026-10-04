@@ -9,7 +9,6 @@
 #
 # To use a different provider, set environment variables, e.g.:
 #   OPENEXPERT_MODEL_PROVIDER=google GOOGLE_API_KEY=... docker compose up
-#   OPENEXPERT_MODEL_PROVIDER=openexpert OPENEXPERT_GATEWAY_URL=... OPENEXPERT_API_KEY=... docker compose up
 
 name: openexpert
 

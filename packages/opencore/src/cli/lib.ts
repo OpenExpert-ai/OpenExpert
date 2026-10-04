@@ -9,10 +9,9 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export type Provider = "google" | "ollama" | "openai-compatible" | "openexpert";
+export type Provider = "google" | "ollama" | "openai-compatible";
 
 export type FileConfig = {
-  mode?: "local" | "cloud";
   modelProvider?: Provider;
   modelId?: string;
   ollamaBaseUrl?: string;
@@ -25,12 +24,9 @@ export type Secrets = {
   GOOGLE_CLIENT_SECRET?: string;
   OPENEXPERT_MODEL_KEY?: string;
   OPENEXPERT_BASE_URL?: string;
-  OPENEXPERT_GATEWAY_URL?: string;
-  OPENEXPERT_API_KEY?: string;
 };
 
 export const DEFAULT_OLLAMA_URL = "http://localhost:11434";
-export const DEFAULT_GATEWAY_URL = "https://gateway.openexpert.example/v1";
 export const DEFAULT_DATA_DIR = "~/.openexpert";
 
 export function expandHome(p: string): string {
@@ -133,7 +129,7 @@ export async function httpGetJson<T>(
 ): Promise<T | null> {
   try {
     const res = await fetch(url, {
-      headers: opts.headers,
+      ...(opts.headers ? { headers: opts.headers } : {}),
       signal: AbortSignal.timeout(opts.timeoutMs ?? 2500),
     });
     if (!res.ok) return null;
@@ -152,18 +148,6 @@ export async function detectOllama(
   });
   if (!data) return { up: false, models: [] };
   return { up: true, models: (data.models ?? []).map((m) => m.name) };
-}
-
-export async function listGatewayModels(baseURL: string, apiKey: string): Promise<string[] | null> {
-  const data = await httpGetJson<{ data?: { id: string }[] }>(
-    `${baseURL.replace(/\/+$/, "")}/models`,
-    {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      timeoutMs: 3000,
-    },
-  );
-  if (!data) return null;
-  return (data.data ?? []).map((m) => m.id);
 }
 
 export function appCacheDir(version: string): string {

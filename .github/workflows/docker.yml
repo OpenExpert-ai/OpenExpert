@@ -49,7 +49,6 @@ jobs:
       - name: Smoke test
         run: |
           docker run --rm -d --name openexpert-smoke -p 3000:3000 \
-            -e OPENEXPERT_MODE=local \
             -e OPENEXPERT_MODEL_PROVIDER=ollama \
             openexpert:ci-${{ github.sha }}
           sleep 10

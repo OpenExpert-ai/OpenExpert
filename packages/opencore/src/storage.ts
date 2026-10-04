@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — where data lives.
-// Cloud uses Supabase (Postgres + RLS). Local uses files in your data
-// directory (~/.openexpert/*.json by default). Same interface, two drawers.
+// OpenCore — storage interface. OpenExpert is local-first: implementations
+// are backed by the local data directory (SQLite / files).
 
 export type TableName =
   | "experts"
@@ -19,7 +18,7 @@ export type TableName =
 export type Row = Record<string, unknown>;
 
 export interface Storage {
-  readonly kind: "supabase" | "file";
+  readonly kind: "file";
   list(table: TableName): Promise<Row[]>;
   insert(table: TableName, rows: Row | Row[]): Promise<void>;
 }

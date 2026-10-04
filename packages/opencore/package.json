@@ -12,10 +12,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./mode": {
-      "types": "./dist/mode.d.ts",
-      "default": "./dist/mode.js"
-    },
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
@@ -24,10 +20,6 @@
       "types": "./dist/model-provider.d.ts",
       "default": "./dist/model-provider.js"
     },
-    "./gateway": {
-      "types": "./dist/gateway.d.ts",
-      "default": "./dist/gateway.js"
-    },
     "./storage": {
       "types": "./dist/storage.d.ts",
       "default": "./dist/storage.js"
@@ -35,10 +27,6 @@
     "./secrets": {
       "types": "./dist/secrets.d.ts",
       "default": "./dist/secrets.js"
-    },
-    "./auth": {
-      "types": "./dist/auth.d.ts",
-      "default": "./dist/auth.js"
     },
     "./tools": {
       "types": "./dist/tools.d.ts",

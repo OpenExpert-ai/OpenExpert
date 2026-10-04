@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
-// Server-only. Talks to the real Google Drive API with the caller's own OAuth
-// token, so every user only ever sees the files their Google account can see.
+// Server-only. Talks to the real Google Drive API with the owner's OAuth token.
+
 import { getAccessToken } from "./drive-tokens.server";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 
-type UserId = string;
-
-async function call(userId: UserId, path: string, query: Record<string, string> = {}) {
-  const token = await getAccessToken(userId);
+async function call(path: string, query: Record<string, string> = {}) {
+  const token = await getAccessToken();
   const qs = new URLSearchParams(query).toString();
   const res = await fetch(`${DRIVE}${path}${qs ? `?${qs}` : ""}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -32,11 +30,7 @@ export type DriveFile = {
 };
 const FIELDS = "files(id,name,mimeType,modifiedTime,size,webViewLink),nextPageToken";
 
-export async function listFiles(
-  userId: UserId,
-  search: string | null,
-  limit = 25,
-): Promise<DriveFile[]> {
+export async function listFiles(search: string | null, limit = 25): Promise<DriveFile[]> {
   const term = (search ?? "").replace(/['\\]/g, "");
   const q = [
     "trashed = false",
@@ -44,7 +38,7 @@ export async function listFiles(
   ]
     .filter(Boolean)
     .join(" and ");
-  const r = await call(userId, "/files", {
+  const r = await call("/files", {
     q,
     fields: FIELDS,
     pageSize: String(limit),
@@ -62,11 +56,11 @@ const KIND: Record<string, string> = {
 };
 
 /** Counts files by type (up to 5 pages) for the sources screen. */
-export async function stats(userId: UserId) {
+export async function stats() {
   const counts: Record<string, number> = {};
   let token = "";
   for (let i = 0; i < 5; i++) {
-    const r = await call(userId, "/files", {
+    const r = await call("/files", {
       q: "trashed = false",
       fields: "files(mimeType),nextPageToken",
       pageSize: "1000",
@@ -91,22 +85,20 @@ const EXPORT: Record<string, string> = {
   "application/vnd.google-apps.presentation": "text/plain",
 };
 
-export async function readFile(userId: UserId, id: string) {
+export async function readFile(id: string) {
   const meta = (await (
-    await call(userId, `/files/${encodeURIComponent(id)}`, {
+    await call(`/files/${encodeURIComponent(id)}`, {
       fields: "id,name,mimeType,modifiedTime,webViewLink",
     })
   ).json()) as DriveFile;
   const exp = EXPORT[meta.mimeType];
   let text: string;
   if (exp)
-    text = await (
-      await call(userId, `/files/${encodeURIComponent(id)}/export`, { mimeType: exp })
-    ).text();
+    text = await (await call(`/files/${encodeURIComponent(id)}/export`, { mimeType: exp })).text();
   else if (meta.mimeType.startsWith("text/") || meta.mimeType === "application/json")
-    text = await (await call(userId, `/files/${encodeURIComponent(id)}`, { alt: "media" })).text();
+    text = await (await call(`/files/${encodeURIComponent(id)}`, { alt: "media" })).text();
   else if (meta.mimeType === "application/pdf") {
-    const token = await getAccessToken(userId);
+    const token = await getAccessToken();
     const buf = new Uint8Array(
       await (
         await fetch(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
@@ -136,14 +128,13 @@ const TARGET: Record<DriveKind, { src: string; dst: string }> = {
 };
 
 async function upload(
-  userId: UserId,
   method: "POST" | "PATCH",
   path: string,
   meta: Record<string, unknown>,
   content: string,
   srcMime: string,
 ) {
-  const token = await getAccessToken(userId);
+  const token = await getAccessToken();
   const boundary = "ee" + crypto.randomUUID().replace(/-/g, "");
   const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: ${srcMime}; charset=UTF-8\r\n\r\n${content}\r\n--${boundary}--`;
   const url = `${UPLOAD}${path}?uploadType=multipart&fields=id,name,mimeType,modifiedTime,webViewLink`;
@@ -168,7 +159,6 @@ async function upload(
 }
 
 export async function createFile(
-  userId: UserId,
   name: string,
   content: string,
   kind: DriveKind,
@@ -176,7 +166,6 @@ export async function createFile(
 ) {
   const t = TARGET[kind];
   return upload(
-    userId,
     "POST",
     "",
     { name, mimeType: t.dst, ...(folderId ? { parents: [folderId] } : {}) },
@@ -185,14 +174,9 @@ export async function createFile(
   );
 }
 
-export async function updateFile(
-  userId: UserId,
-  id: string,
-  content: string,
-  newName?: string | null,
-) {
+export async function updateFile(id: string, content: string, newName?: string | null) {
   const meta = (await (
-    await call(userId, `/files/${encodeURIComponent(id)}`, { fields: "mimeType" })
+    await call(`/files/${encodeURIComponent(id)}`, { fields: "mimeType" })
   ).json()) as { mimeType: string };
   const src =
     meta.mimeType === "application/vnd.google-apps.spreadsheet"
@@ -203,7 +187,6 @@ export async function updateFile(
           ? meta.mimeType
           : "text/plain";
   return upload(
-    userId,
     "PATCH",
     `/${encodeURIComponent(id)}`,
     newName ? { name: newName } : {},

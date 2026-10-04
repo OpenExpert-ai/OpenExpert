@@ -26,7 +26,6 @@ const EXCLUDE_TOP = new Set([
   ".output",
   ".tanstack",
   ".nitro",
-  ".vercel",
   "public",
   ".obsidian",
   "docs",

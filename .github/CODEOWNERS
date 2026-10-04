@@ -19,13 +19,12 @@
 # AI and security-sensitive code
 /src/lib/ai/               @OpenExpert-ai/maintainers
 /src/lib/ee.server.ts      @OpenExpert-ai/maintainers
+/src/lib/db.server.ts      @OpenExpert-ai/maintainers
 /src/lib/drive-tokens.server.ts @OpenExpert-ai/maintainers
 /src/lib/data.functions.ts @OpenExpert-ai/maintainers
-/src/integrations/supabase/auth-middleware.ts @OpenExpert-ai/maintainers
 
 # Database schema
-/drizzle/migrations/       @OpenExpert-ai/maintainers
-/supabase/                 @OpenExpert-ai/maintainers
+/drizzle/                  @OpenExpert-ai/maintainers
 
 # CI and release tooling
 /.github/                  @OpenExpert-ai/maintainers

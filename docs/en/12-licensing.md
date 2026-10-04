@@ -1,68 +1,39 @@
 # 12 · Licensing model
 
-> **Audience:** both. What is open, what is monetised, and what
-> obligations contributors and users take on.
+> **Audience:** both.
 
 ---
 
 ## 1. License
 
-The entire OpenExpert repository is distributed under the **MIT
-License**. The full text is in [`LICENSE`](../../LICENSE) at the root of
-the repository.
+The entire repository is distributed under the **MIT License**
+([`LICENSE`](../../LICENSE)). This includes the application, the `opencore`
+package, the Docker configuration and the documentation.
 
-This includes:
+## 2. No hosted cloud
 
-- The cloud application code (`src/`, `drizzle/migrations/`,
-  `supabase/`, the application configuration).
-- The OpenCore MIT package (`packages/opencore/`).
-- The Docker image build configuration (`docker/`).
-- The documentation (`docs/`, `README.md`).
+OpenExpert is local-only. There is no hosted edition, no Supabase project and no
+Vercel deployment. You run it on your own machine.
 
-## 2. What is monetised
+## 3. Monetisation
 
-The MIT license grants everyone the freedom to use, copy, modify and
-distribute the software. OpenExpert does not monetise the code; it
-monetises **services** that run on top of it:
+Because the code is fully open and runs locally, monetisation is not based on the
+software itself. If a paid offering exists in the future it would be a service
+around the project (support, packaged builds), never a gate on the code.
 
-1. **Hosted cloud edition.** A managed deployment with multi-user
-   roles, invitations, centralised audit and managed backups. Users
-   pay for hosting and operational guarantees, not for the code.
-2. **OpenExpert model gateway.** A managed AI gateway (the
-   `openexpert` provider). Users get a curated experience, quota and
-   support; the client itself is MIT and can also point at any
-   OpenAI-compatible endpoint.
+## 4. Obligations
 
-This pattern — open-source client plus monetised service — is shared
-with projects such as OpenCode + Go/Zen.
+MIT is permissive: keep the copyright notice and the permission notice in copies
+of the software. Third-party components keep their own licenses (see
+[`NOTICE`](../../NOTICE)). Do not use the OpenExpert trademark to imply
+endorsement.
 
-## 3. Obligations
+## 5. Contributing
 
-MIT is permissive. The only requirement is to preserve the copyright
-notice and the permission notice in copies of the software. There is
-no copyleft: you may modify the code and ship a closed derivative.
+By contributing you accept the Developer Certificate of Origin 1.1
+([`CONTRIBUTING.md`](../../CONTRIBUTING.md)) and your contribution is released
+under MIT.
 
-Practical obligations:
+## 6. Security reports
 
-- Keep the `LICENSE` file and copyright notices in any distribution.
-- Third-party components (React, Tailwind, Radix, AI SDK, …) keep their
-  own licenses. See [`NOTICE`](../../NOTICE).
-- Do **not** use the OpenExpert trademark to mislead about its
-  endorsement by the project.
-
-## 4. Contributing
-
-By submitting a contribution you accept the Developer Certificate of
-Origin 1.1 (see [`CONTRIBUTING.md`](../../CONTRIBUTING.md)) and your
-contribution is released under the MIT license.
-
-## 5. Security reports
-
-Vulnerabilities must be reported privately. See
-[`SECURITY.md`](../../SECURITY.md).
-
-## 6. Trademarks
-
-"OpenExpert" and "OpenCore" are project names. The MIT license does not
-grant rights to use them as product names or to imply endorsement.
-Contact the maintainers if you want to use them.
+Report vulnerabilities privately — see [`SECURITY.md`](../../SECURITY.md).

@@ -1,8 +1,7 @@
 {
   "$schema": "./packages/opencore/schema/openexpert.schema.json",
-  "mode": "local",
-  "modelProvider": "google",
-  "modelId": "gemini-2.5-flash",
+  "modelProvider": "ollama",
+  "modelId": "llama3.1",
   "ollamaBaseUrl": "http://localhost:11434",
   "dataDir": "~/.openexpert"
 }
