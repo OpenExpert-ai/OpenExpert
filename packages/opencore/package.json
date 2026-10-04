@@ -1,0 +1,106 @@
+{
+  "name": "@openexpert/opencore",
+  "version": "0.1.0",
+  "description": "OpenCore — open-source engine of OpenExpert (MIT). Mode, config, model provider selector (Google / Ollama / OpenAI-compatible / OpenExpert gateway), storage and secrets interfaces, tool catalog, and CLI.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./mode": {
+      "types": "./dist/mode.d.ts",
+      "default": "./dist/mode.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./model-provider": {
+      "types": "./dist/model-provider.d.ts",
+      "default": "./dist/model-provider.js"
+    },
+    "./gateway": {
+      "types": "./dist/gateway.d.ts",
+      "default": "./dist/gateway.js"
+    },
+    "./storage": {
+      "types": "./dist/storage.d.ts",
+      "default": "./dist/storage.js"
+    },
+    "./secrets": {
+      "types": "./dist/secrets.d.ts",
+      "default": "./dist/secrets.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "default": "./dist/tools.js"
+    },
+    "./schema": "./schema/openexpert.schema.json"
+  },
+  "bin": {
+    "opencore": "./bin/opencore.js",
+    "openexpert": "./bin/opencore.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "schema",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "openexpert",
+    "opencore",
+    "ai",
+    "agents",
+    "mit",
+    "oss",
+    "model-gateway"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenExpert/OpenExpert.git",
+    "directory": "packages/opencore"
+  },
+  "bugs": {
+    "url": "https://github.com/OpenExpert/OpenExpert/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "prepack": "tsup",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "test:watch": "vitest",
+    "doctor": "node ./bin/opencore.js doctor",
+    "serve": "node ./bin/opencore.js serve",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.5",
+    "ai": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.5"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790876779699,
+      "tag": "0000_expertengine_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790877010993,
+      "tag": "0001_reset_demo_fn",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790885700180,
+      "tag": "0002_restrict_signup_single_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790886838796,
+      "tag": "0003_chat_conversations",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790889729758,
+      "tag": "0004_add_experts_compatibility",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790889830763,
+      "tag": "0005_expert_context_insert_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790891185333,
+      "tag": "0006_allow_invited_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790917000000,
+      "tag": "0007_google_drive_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790917100000,
+      "tag": "0008_normalise_auth_user_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791000000000,
+      "tag": "0009_drop_reset_demo",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791100000000,
+      "tag": "0010_drop_legacy_mirrors",
+      "breakpoints": true
+    }
+  ]
+}

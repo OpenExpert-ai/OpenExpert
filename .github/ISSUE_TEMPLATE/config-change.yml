@@ -1,0 +1,31 @@
+name: Configuration / deployment help
+description: Help with environment variables, OAuth clients, the gateway, or deployment.
+title: "[help] "
+labels: ["question", "needs-triage"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Environment variables
+        - Google OAuth (login / Drive)
+        - Supabase project
+        - OpenExpert gateway
+        - Vercel deployment
+        - Docker
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What you have tried
+    validations:
+      required: false

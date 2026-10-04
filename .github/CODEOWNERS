@@ -1,0 +1,31 @@
+# CODEOWNERS — every change touching these paths must be reviewed by
+# the listed owners. Owners are notified for review on PRs that touch
+# the matching files.
+
+# Default owners for the whole repository.
+# Requires a GitHub team named `maintainers` in the OpenExpert organization,
+# or replace with individual handles (e.g. @username).
+/                          @OpenExpert/maintainers
+
+# Core package and license governance
+/packages/opencore/        @OpenExpert/maintainers
+/LICENSE                   @OpenExpert/maintainers
+/NOTICE                    @OpenExpert/maintainers
+/SECURITY.md               @OpenExpert/maintainers
+/CONTRIBUTING.md           @OpenExpert/maintainers
+/CODE_OF_CONDUCT.md        @OpenExpert/maintainers
+/GOVERNANCE.md             @OpenExpert/maintainers
+
+# AI and security-sensitive code
+/src/lib/ai/               @OpenExpert/maintainers
+/src/lib/ee.server.ts      @OpenExpert/maintainers
+/src/lib/drive-tokens.server.ts @OpenExpert/maintainers
+/src/lib/data.functions.ts @OpenExpert/maintainers
+/src/integrations/supabase/auth-middleware.ts @OpenExpert/maintainers
+
+# Database schema
+/drizzle/migrations/       @OpenExpert/maintainers
+/supabase/                 @OpenExpert/maintainers
+
+# CI and release tooling
+/.github/                  @OpenExpert/maintainers

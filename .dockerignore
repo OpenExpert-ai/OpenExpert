@@ -1,0 +1,22 @@
+# Docker build context exclusions (the build context is the repository root).
+node_modules
+.output
+.tanstack
+.nitro
+.vercel
+.vinxi
+dist
+.git
+.github
+.env
+.env.*
+!.env.example
+.openexpert
+credentials.json
+db
+*.zip
+.DS_Store
+.obsidian
+.idea
+.vscode
+docs

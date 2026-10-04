@@ -1,0 +1,25 @@
+# Line endings and linguist hints
+*                 text=auto eol=lf
+*.md              text eol=lf
+*.json            text eol=lf
+*.yml             text eol=lf
+*.yaml            text eol=lf
+*.ts              text eol=lf
+*.tsx             text eol=lf
+*.js              text eol=lf
+*.cjs             text eol=lf
+*.mjs             text eol=lf
+*.sql             text eol=lf
+
+# Binary / generated
+*.png             binary
+*.jpg             binary
+*.gif             binary
+*.ico             binary
+*.svg             text
+
+# Generated files (hide from diff stats and code review)
+drizzle/migrations/meta/_journal.json linguist-generated=true
+src/routeTree.gen.ts                linguist-generated=true
+
+# Git LFS — none configured today

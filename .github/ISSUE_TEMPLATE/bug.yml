@@ -1,0 +1,60 @@
+name: Bug report
+description: Report incorrect behaviour in the application, the OpenCore package, or the documentation.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Edition
+      description: Where did you observe the bug?
+      options:
+        - Cloud (hosted)
+        - OpenCore (local)
+        - Documentation
+        - Other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of the bug, including what you expected.
+      placeholder: |
+        I expected … but instead …
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Steps, URLs, or a minimal example. Do not include secrets.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Output of `git rev-parse --short HEAD` or the released tag.
+      placeholder: "v0.x.y or abc1234"
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, mode (cloud/local), provider.
+      placeholder: |
+        - OS: macOS 14
+        - Node: 20.18.0
+        - Mode: cloud
+        - Provider: google / ollama / openai-compatible / openexpert
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Strip any secrets, tokens, or production endpoints.
+    validations:
+      required: false

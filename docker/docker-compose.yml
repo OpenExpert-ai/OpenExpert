@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: MIT
+# Run the OpenExpert local edition with Docker Compose.
+#
+# Usage:
+#   cp openexpert.json.example openexpert.json
+#   docker compose -f docker/docker-compose.yml up
+#
+# The data directory is persisted in the named volume `openexpert-data`.
+# Override the model provider with environment variables, e.g.:
+#   OPENEXPERT_MODEL_PROVIDER=ollama
+#   OPENEXPERT_GATEWAY_URL=https://gateway.example/v1
+#   OPENEXPERT_API_KEY=...
+
+name: openexpert
+
+services:
+  openexpert:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ghcr.io/openexpert/openexpert:local
+    container_name: openexpert
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      OPENEXPERT_MODE: local
+      OPENEXPERT_MODEL_PROVIDER: ${OPENEXPERT_MODEL_PROVIDER:-ollama}
+      OPENEXPERT_MODEL_ID: ${OPENEXPERT_MODEL_ID:-llama3.1}
+      OPENEXPERT_DATA_DIR: /data
+      OPENEXPERT_GATEWAY_URL: ${OPENEXPERT_GATEWAY_URL:-}
+      OPENEXPERT_API_KEY: ${OPENEXPERT_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    volumes:
+      - openexpert-data:/data
+      # Mount an openexpert.json (created at the repo root) to override defaults.
+      - ../openexpert.json:/app/openexpert.json:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/auth"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  openexpert-data:

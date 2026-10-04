@@ -1,0 +1,2 @@
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS conversation_id text NOT NULL DEFAULT 'default';
+CREATE INDEX IF NOT EXISTS chat_messages_conv_idx ON public.chat_messages(user_id, sub_brain, conversation_id, created_at);

@@ -1,0 +1,25 @@
+# Third-party notices
+
+OpenExpert is MIT-licensed and includes third-party open-source components.
+Their licenses and copyrights are summarised below. The full licence texts
+ship with their respective packages.
+
+| Component | License | Upstream |
+| --- | --- | --- |
+| React | MIT | facebook/react |
+| Tailwind CSS | MIT | tailwindlabs/tailwindcss |
+| Radix UI primitives | MIT | radix-ui/primitives |
+| shadcn/ui components | MIT | shadcn-ui/ui (the components in `src/components/ui/` are vendored) |
+| TanStack Start / React Router | MIT | TanStack |
+| Vercel AI SDK (`ai`) | MIT | vercel/ai |
+| `@ai-sdk/google`, `@ai-sdk/openai` | MIT | vercel/ai |
+| `@supabase/supabase-js` | MIT | supabase/supabase-js |
+| Zod | MIT | colinhacks/zod |
+| Drizzle ORM / drizzle-kit | Apache-2.0 | drizzle-team/drizzle-orm |
+| Nitro | MIT | unjs/nitro |
+| `unpdf` | MIT | conspiring-engineer/unpdf |
+| `lucide-react` (icons) | ISC | lucide-icons/lucide |
+
+This NOTICE is provided for attribution only. The MIT License under which
+OpenExpert is distributed does not grant any rights to the trademarks of
+the upstream projects.
