@@ -49,6 +49,11 @@ does not expire after 7 days. See
 The whole state is `OPENEXPERT_DATA_DIR`. Copy that directory to back up; the
 SQLite file is `openexpert.db`.
 
+The settings panel (**Configuration → Datos y copias**) can download a single
+JSON backup (database plus `openexpert.json`, `secrets.json` and
+`credentials.json`), restore it, clear the chat history and compact the
+database. Importing a backup replaces the current data.
+
 ## 5. Updates
 
 - Code: `git pull` / reinstall the package and rebuild.

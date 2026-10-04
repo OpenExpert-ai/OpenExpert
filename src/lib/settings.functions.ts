@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import * as ee from "./ee.server";
+import * as backup from "./backup.server";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 import {
@@ -211,6 +212,75 @@ export const resetConfig = createServerFn({ method: "POST" }).handler(async () =
     expert_id: "general",
     status: "ok",
     summary: "openexpert.json restaurado a valores por defecto",
+    sources: ["Configuración"],
+  });
+  return { ok: true };
+});
+
+/* ---------------------------------- data --------------------------------- */
+
+export const getDataStats = createServerFn({ method: "GET" }).handler(async () =>
+  backup.dataStats(),
+);
+
+export const importBackup = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ content: z.string().min(2).max(200_000_000) }).parse(d))
+  .handler(async ({ data }) => {
+    let applied: string[];
+    try {
+      applied = backup.restoreBackup(data.content).applied;
+    } catch (e) {
+      throw new Error(e instanceof Error ? e.message : "Copia no válida", { cause: e });
+    }
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Configuración",
+      expert_id: "general",
+      status: "ok",
+      summary: `Copia restaurada (${applied.join(", ")})`,
+      sources: ["Copia de seguridad"],
+    });
+    return { applied };
+  });
+
+export const clearChatHistory = createServerFn({ method: "POST" }).handler(async () => {
+  const n = await backup.clearChatHistory();
+  await ee.logActivity({
+    actor: "human",
+    actor_name: OWNER_NAME,
+    type: "Configuración",
+    expert_id: "general",
+    status: "ok",
+    summary: `Historial de chat borrado (${n} mensajes)`,
+    sources: ["Configuración"],
+  });
+  return { removed: n };
+});
+
+export const vacuumDb = createServerFn({ method: "POST" }).handler(async () => {
+  await backup.vacuumDb();
+  await ee.logActivity({
+    actor: "human",
+    actor_name: OWNER_NAME,
+    type: "Configuración",
+    expert_id: "general",
+    status: "ok",
+    summary: "Base de datos compactada (VACUUM)",
+    sources: ["Configuración"],
+  });
+  return { ok: true };
+});
+
+export const resetData = createServerFn({ method: "POST" }).handler(async () => {
+  await backup.resetData();
+  await ee.logActivity({
+    actor: "human",
+    actor_name: OWNER_NAME,
+    type: "Configuración",
+    expert_id: "general",
+    status: "ok",
+    summary: "Datos restaurados a estado inicial (re-sembrado)",
     sources: ["Configuración"],
   });
   return { ok: true };

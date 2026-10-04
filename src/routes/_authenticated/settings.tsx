@@ -26,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
           [
             ["/settings/ai", "Modelo e IA"],
             ["/settings/chat", "Chat y agentes"],
+            ["/settings/data", "Datos y copias"],
             ["/settings/appearance", "Apariencia"],
             ["/settings/advanced", "Avanzado"],
             ["/settings/about", "Acerca de"],

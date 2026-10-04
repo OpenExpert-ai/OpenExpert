@@ -69,6 +69,11 @@ export function getDb(): Promise<Handle> {
   return handle;
 }
 
+/** Forget the in-memory database so the next read reloads it from disk. */
+export function resetDbHandle(): void {
+  handle = null;
+}
+
 /** Persist the in-memory database to disk. Call after any write. */
 export async function persist(): Promise<void> {
   const { raw, file } = await getDb();

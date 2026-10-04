@@ -49,6 +49,11 @@ no caduque a los 7 días. Ver
 Todo el estado es `OPENEXPERT_DATA_DIR`. Copia ese directorio para respaldar; el
 fichero SQLite es `openexpert.db`.
 
+El panel de ajustes (**Configuración → Datos y copias**) puede descargar una
+copia en un único JSON (base de datos más `openexpert.json`, `secrets.json` y
+`credentials.json`), restaurarla, borrar el historial de chat y compactar la
+base de datos. Importar una copia reemplaza los datos actuales.
+
 ## 5. Actualizaciones
 
 - Código: `git pull` / reinstala el paquete y reconstruye.
