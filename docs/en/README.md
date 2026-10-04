@@ -8,6 +8,7 @@ first, then mirror the change to `../es/`.
 
 | N.º | Document                                 | Audience               | Content                                          |
 | --- | ---------------------------------------- | ---------------------- | ------------------------------------------------ |
+| 00  | [Quickstart](./00-quickstart.md)         | All                    | From zero to chatting in 5 minutes               |
 | 01  | [Product](./01-product.md)               | Business               | What the platform does, problem, features, scope |
 | 02  | [Architecture](./02-architecture.md)     | Engineering            | Layers, components, request and chat flow        |
 | 03  | [Data model](./03-data-model.md)         | Engineering + Business | Stored information and meaning of each table     |

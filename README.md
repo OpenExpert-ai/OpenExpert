@@ -20,35 +20,44 @@ OpenCore, the downloadable local edition, is described in
 
 ## Quick start
 
+Pick the path that fits you. Full guide:
+[docs/en/00-quickstart.md](./docs/en/00-quickstart.md).
+
+### Local edition (OpenCore) — no cloud
+
+Docker (no Node needed):
+
+```sh
+docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local
+# or bring Ollama along:
+docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
+```
+
+With Node:
+
+```sh
+npx @openexpert/opencore          # interactive setup, then starts
+npx @openexpert/opencore serve    # start directly
+```
+
+Scaffold a project:
+
+```sh
+npm create openexpert my-app && cd my-app && docker compose up -d
+```
+
+### From source (cloud or local)
+
 ```sh
 npm ci
-cp .env.example .env            # fill in the variables
-npm run dev                     # http://localhost:3000
+cp .env.example .env            # cloud: fill in the variables
+npm run dev                     # http://localhost:3000 (cloud)
+npm run dev:local               # local edition, no Supabase
 ```
 
 The dev server is pinned to **port 3000** because the OAuth redirect
 URIs depend on it.
-
-Local edition (no Supabase):
-
-```sh
-cp openexpert.json.example openexpert.json
-OPENEXPERT_MODE=local npm run dev
-```
-
-Or use the published OpenCore CLI:
-
-```sh
-npx @openexpert/opencore serve
-```
-
-Docker:
-
-```sh
-docker run --rm -p 3000:3000 \
-  -v openexpert-data:/data \
-  ghcr.io/openexpert/openexpert:latest
-```
 
 ## Documentation
 

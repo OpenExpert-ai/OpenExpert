@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: MIT
-# Run the OpenExpert local edition with Docker Compose.
+# OpenExpert local edition — zero-config.
 #
-# Usage:
-#   cp openexpert.json.example openexpert.json
 #   docker compose -f docker/docker-compose.yml up
+#   # then open http://localhost:3000
 #
-# The data directory is persisted in the named volume `openexpert-data`.
-# Override the model provider with environment variables, e.g.:
-#   OPENEXPERT_MODEL_PROVIDER=ollama
-#   OPENEXPERT_GATEWAY_URL=https://gateway.example/v1
-#   OPENEXPERT_API_KEY=...
+# It starts the app and an Ollama server. Pull a model once:
+#   docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
+#
+# To use a different provider, set environment variables, e.g.:
+#   OPENEXPERT_MODEL_PROVIDER=google GOOGLE_API_KEY=... docker compose up
+#   OPENEXPERT_MODEL_PROVIDER=openexpert OPENEXPERT_GATEWAY_URL=... OPENEXPERT_API_KEY=... docker compose up
 
 name: openexpert
 
@@ -28,6 +28,8 @@ services:
       OPENEXPERT_MODEL_PROVIDER: ${OPENEXPERT_MODEL_PROVIDER:-ollama}
       OPENEXPERT_MODEL_ID: ${OPENEXPERT_MODEL_ID:-llama3.1}
       OPENEXPERT_DATA_DIR: /data
+      # Ollama's OpenAI-compatible endpoint (note the /v1 suffix).
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434/v1}
       OPENEXPERT_GATEWAY_URL: ${OPENEXPERT_GATEWAY_URL:-}
       OPENEXPERT_API_KEY: ${OPENEXPERT_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
@@ -35,13 +37,23 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - openexpert-data:/data
-      # Mount an openexpert.json (created at the repo root) to override defaults.
-      - ../openexpert.json:/app/openexpert.json:ro
+    depends_on:
+      - ollama
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/auth"]
       interval: 30s
       timeout: 5s
       retries: 3
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: openexpert-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+
 volumes:
   openexpert-data:
+  ollama-data:

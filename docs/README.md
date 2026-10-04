@@ -9,6 +9,7 @@ OpenExpert is documented in two languages. Pick yours:
 
 | N.º | English                                     | Español                                                       | Audience               |
 | --- | ------------------------------------------- | ------------------------------------------------------------- | ---------------------- |
+| 00  | [Quickstart](./en/00-quickstart.md)         | [Inicio rápido](./es/00-inicio-rapido.md)                     | All                    |
 | 01  | [Product](./en/01-product.md)               | [Producto](./es/01-producto.md)                               | Business               |
 | 02  | [Architecture](./en/02-architecture.md)     | [Arquitectura](./es/02-arquitectura.md)                       | Engineering            |
 | 03  | [Data model](./en/03-data-model.md)         | [Modelo de datos](./es/03-modelo-de-datos.md)                 | Engineering + Business |

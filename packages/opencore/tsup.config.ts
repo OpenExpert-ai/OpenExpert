@@ -15,6 +15,7 @@ export default defineConfig({
     secrets: "src/secrets.ts",
     auth: "src/auth.ts",
     tools: "src/tools.ts",
+    cli: "src/cli.ts",
   },
   format: ["esm"],
   dts: true,

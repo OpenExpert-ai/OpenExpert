@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { isLocalMode, LOCAL_OWNER_ID } from "@/lib/opencore/mode";
 
 export type Access = "none" | "read" | "exec";
 export type Role = "ADMIN" | "INTERMEDIO" | "LECTOR";
@@ -28,6 +29,15 @@ export const uid = (p = "evt") => `${p}_${crypto.randomUUID().replace(/-/g, "").
 export const ALLOWED_EMAIL = process.env["ALLOWED_EMAIL"] || "owner@example.com";
 
 export async function getCtx(userId: string) {
+  // Local edition: the single owner is ADMIN of everything.
+  if (isLocalMode() || userId === LOCAL_OWNER_ID) {
+    return {
+      userId: LOCAL_OWNER_ID,
+      role: "ADMIN" as Role,
+      name: "Propietario local",
+      access: {} as Record<string, Access>,
+    };
+  }
   const db = supabaseAdmin;
   const [{ data: role }, { data: prof }, { data: acc }] = await Promise.all([
     db.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),

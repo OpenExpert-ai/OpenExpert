@@ -3,54 +3,63 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isLocalMode } from "@/lib/opencore/mode";
 
+const local = () => import("@/lib/opencore/local-workspace.server");
 const authed = () => createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]);
 const ACCESS = z.enum(["none", "read", "exec"]);
 const ROLE = z.enum(["ADMIN", "INTERMEDIO", "LECTOR"]);
 
+async function cloudWorkspace(userId: string) {
+  const ee: typeof import("./ee.server") = await import("./ee.server");
+  await ee.getCtx(userId);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const db = supabaseAdmin;
+  const [expertsQ, prof, roles, acc, integ, procs, act, inv, invoices, campaigns] =
+    await Promise.all([
+      db.from("experts").select("*").order("created_at"),
+      db.from("profiles").select("*").order("created_at"),
+      db.from("user_roles").select("*"),
+      db.from("expert_access").select("*"),
+      db.from("integrations").select("*").order("name"),
+      db.from("processes").select("*").order("id"),
+      db.from("activity").select("*").order("ts", { ascending: false }).limit(300),
+      db.from("invitations").select("*").order("created_at", { ascending: false }),
+      db.from("invoices").select("id, client, amount, status, reminders"),
+      db.from("campaigns").select("id, name, status"),
+    ]);
+  const users = (prof.data ?? []).map((p) => ({
+    ...p,
+    role: (roles.data?.find((r) => r.user_id === p.id)?.role ?? "LECTOR") as z.infer<typeof ROLE>,
+    access: Object.fromEntries(
+      (acc.data ?? []).filter((a) => a.user_id === p.id).map((a) => [a.expert_id, a.access]),
+    ) as Record<string, z.infer<typeof ACCESS>>,
+  }));
+  return {
+    meId: userId,
+    experts: expertsQ.data ?? [],
+    users,
+    integrations: integ.data ?? [],
+    processes: procs.data ?? [],
+    activity: (act.data ?? []).map((a) => ({
+      ...a,
+      hasSnapshot: !!(a.snapshot as { entries?: unknown[] } | null)?.entries?.length,
+      pending: (a.snapshot as { pending?: unknown } | null)?.pending ?? null,
+      snapshot: undefined,
+    })),
+    invitations: inv.data ?? [],
+    invoices: invoices.data ?? [],
+    campaigns: campaigns.data ?? [],
+  };
+}
+
+export type WorkspaceData = Awaited<ReturnType<typeof cloudWorkspace>>;
+
 export const getWorkspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const ee: typeof import("./ee.server") = await import("./ee.server");
-    await ee.getCtx(context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin;
-    const [expertsQ, prof, roles, acc, integ, procs, act, inv, invoices, campaigns] =
-      await Promise.all([
-        db.from("experts").select("*").order("created_at"),
-        db.from("profiles").select("*").order("created_at"),
-        db.from("user_roles").select("*"),
-        db.from("expert_access").select("*"),
-        db.from("integrations").select("*").order("name"),
-        db.from("processes").select("*").order("id"),
-        db.from("activity").select("*").order("ts", { ascending: false }).limit(300),
-        db.from("invitations").select("*").order("created_at", { ascending: false }),
-        db.from("invoices").select("id, client, amount, status, reminders"),
-        db.from("campaigns").select("id, name, status"),
-      ]);
-    const users = (prof.data ?? []).map((p) => ({
-      ...p,
-      role: (roles.data?.find((r) => r.user_id === p.id)?.role ?? "LECTOR") as z.infer<typeof ROLE>,
-      access: Object.fromEntries(
-        (acc.data ?? []).filter((a) => a.user_id === p.id).map((a) => [a.expert_id, a.access]),
-      ) as Record<string, z.infer<typeof ACCESS>>,
-    }));
-    return {
-      meId: context.userId,
-      experts: expertsQ.data ?? [],
-      users,
-      integrations: integ.data ?? [],
-      processes: procs.data ?? [],
-      activity: (act.data ?? []).map((a) => ({
-        ...a,
-        hasSnapshot: !!(a.snapshot as { entries?: unknown[] } | null)?.entries?.length,
-        pending: (a.snapshot as { pending?: unknown } | null)?.pending ?? null,
-        snapshot: undefined,
-      })),
-      invitations: inv.data ?? [],
-      invoices: invoices.data ?? [],
-      campaigns: campaigns.data ?? [],
-    };
+    if (isLocalMode()) return (await local()).localWorkspace() as unknown as WorkspaceData;
+    return cloudWorkspace(context.userId);
   });
 
 export const createExpert = authed()
@@ -65,6 +74,14 @@ export const createExpert = authed()
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (isLocalMode())
+      return {
+        id: (await local()).localCreateExpert({
+          name: data.name,
+          description: data.description,
+          sources: data.sources,
+        }),
+      };
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -108,6 +125,7 @@ export const createExpert = authed()
 export const setRole = authed()
   .inputValidator((d) => z.object({ userId: z.string().uuid(), role: ROLE }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return;
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -151,6 +169,7 @@ export const setAccess = authed()
     z.object({ userId: z.string().uuid(), expertId: z.string(), access: ACCESS }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return;
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -206,6 +225,7 @@ export const inviteUser = authed()
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return;
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -233,6 +253,7 @@ export const inviteUser = authed()
 export const toggleIntegration = authed()
   .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return;
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -272,6 +293,7 @@ export const toggleIntegration = authed()
 export const syncIntegration = authed()
   .inputValidator((d) => z.object({ id: z.literal("gdrive") }).parse(d))
   .handler(async ({ context }) => {
+    if (isLocalMode()) return;
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -298,6 +320,10 @@ export const syncIntegration = authed()
 export const toggleProcess = authed()
   .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) {
+      (await local()).localToggleProcess(data.id);
+      return;
+    }
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -320,6 +346,7 @@ export const toggleProcess = authed()
 export const runProcess = authed()
   .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return { pending: false };
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const c = await ee.getCtx(context.userId);
     const p = (await ee.fetchRows("processes", "id", [data.id]))[0];
@@ -354,6 +381,7 @@ export const runProcess = authed()
 export const decideAction = authed()
   .inputValidator((d) => z.object({ eventId: z.string(), approve: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return { status: data.approve ? "ok" : "failed" };
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -407,6 +435,7 @@ export const decideAction = authed()
 export const revertEvent = authed()
   .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return;
     const ee: typeof import("./ee.server") = await import("./ee.server");
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const c = await ee.getCtx(context.userId);
@@ -434,6 +463,10 @@ export const clearChat = authed()
     z.object({ expertId: z.string(), conversationId: z.string().max(64) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) {
+      (await local()).localClearChat(data.expertId, data.conversationId);
+      return;
+    }
     await context.supabase
       .from("chat_messages")
       .delete()
@@ -448,6 +481,7 @@ export const getChat = createServerFn({ method: "GET" })
     z.object({ expertId: z.string(), conversationId: z.string().max(64) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return (await local()).localChat(data.expertId, data.conversationId);
     const { data: rows, error } = await context.supabase
       .from("chat_messages")
       .select("message")
@@ -465,6 +499,7 @@ export const listConversations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ expertId: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
+    if (isLocalMode()) return (await local()).localConversations(data.expertId);
     const { data: rows, error } = await context.supabase
       .from("chat_messages")
       .select("conversation_id, created_at, message")
@@ -533,6 +568,11 @@ export const startDriveAuth = createServerFn({ method: "POST" })
   });
 
 export const disconnectDrive = authed().handler(async ({ context }) => {
+  if (isLocalMode()) {
+    const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
+    await tokens.disconnectDrive(context.userId);
+    return;
+  }
   const ee: typeof import("./ee.server") = await import("./ee.server");
   const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");

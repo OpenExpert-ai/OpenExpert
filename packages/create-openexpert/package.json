@@ -1,0 +1,35 @@
+{
+  "name": "create-openexpert",
+  "version": "0.1.0",
+  "description": "Scaffold a local OpenExpert (OpenCore) project. Run: npm create openexpert",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-openexpert": "./bin/create-openexpert.js"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "openexpert",
+    "opencore",
+    "scaffold",
+    "create"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenExpert/OpenExpert.git",
+    "directory": "packages/create-openexpert"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

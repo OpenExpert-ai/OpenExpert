@@ -30,6 +30,18 @@ Initial open-source release of OpenExpert under the MIT license.
 - **Governance documents:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
   `GOVERNANCE.md`, and a private reporting channel in `SECURITY.md`.
 
+- **One-command local usage.** The `opencore` CLI is now an interactive
+  setup wizard (`npx @openexpert/opencore`) with `doctor`, `fix`,
+  `models`, `serve`, and `update`. `serve` boots the local edition from a
+  source checkout or from a downloaded server build.
+- **Local mode works end-to-end.** The UI no longer requires Supabase in
+  `OPENEXPERT_MODE=local`: it seeds example Experts, processes and
+  integrations, and shows a first-run checklist.
+- **`create-openexpert`** (`npm create openexpert`) scaffolds a local
+  project.
+- **Zero-config Docker Compose** (app + Ollama) and a 5-minute quickstart
+  in `docs/en/00-quickstart.md` and `docs/es/00-inicio-rapido.md`.
+
 ### Changed
 
 - `package.json` declares `workspaces`, `engines`, and `packageManager`.

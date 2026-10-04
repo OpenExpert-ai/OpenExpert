@@ -4,19 +4,22 @@ Estado de los elementos implementados y pendientes. El detalle de cada punto se 
 
 ## Implementado
 
-| Elemento                                                            | Documento                                                                                            |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Infraestructura propia, sin intermediarios en el proceso de build   | [Arquitectura §7](./02-arquitectura.md#7-elementos-excluidos-por-diseño)                             |
-| Inicio de sesión con Google, restringido a cuentas autorizadas      | [Seguridad y acceso §1](./04-seguridad-y-acceso.md#1-quién-puede-entrar)                             |
-| Chat con razonamiento visible, herramientas y aislamiento           | [IA §2](./05-inteligencia-artificial.md#2-catálogo-de-herramientas)                                  |
-| Tarjetas de confirmación, incluida la doble firma                   | [IA §2.3](./05-inteligencia-artificial.md#23-herramientas-de-propuesta-no-ejecutan)                  |
-| Integración con Google Drive: búsqueda, lectura, creación y edición | [Integraciones §2](./06-integraciones.md#2-google-drive-funcionamiento)                              |
-| Gobierno: roles, permisos por Experto, registro y reversión         | [Seguridad y acceso §2, §3 y §8](./04-seguridad-y-acceso.md#2-modelo-de-roles)                       |
-| Detección y registro de intentos de evasión                         | [Seguridad y acceso §5.1](./04-seguridad-y-acceso.md#51-filtro-previo-antes-de-que-el-modelo-exista) |
-| Retirada de los datos de ejemplo de negocio                         | —                                                                                                    |
-| Retirada de la función `reset_demo` y del control «Reiniciar demo»  | [Modelo de datos §7](./03-modelo-de-datos.md#7-migraciones)                                          |
-| Eliminación del modelo de datos anterior                            | [Modelo de datos §4](./03-modelo-de-datos.md#4-tablas-eliminadas-modelo-anterior)                    |
-| Edición local OpenCore (MIT): modo local, BYOK y Ollama             | [OpenCore](./11-opencore.md)                                                                         |
+| Elemento                                                                 | Documento                                                                                            |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Infraestructura propia, sin intermediarios en el proceso de build        | [Arquitectura §7](./02-arquitectura.md#7-elementos-excluidos-por-diseño)                             |
+| Inicio de sesión con Google, restringido a cuentas autorizadas           | [Seguridad y acceso §1](./04-seguridad-y-acceso.md#1-quién-puede-entrar)                             |
+| Chat con razonamiento visible, herramientas y aislamiento                | [IA §2](./05-inteligencia-artificial.md#2-catálogo-de-herramientas)                                  |
+| Tarjetas de confirmación, incluida la doble firma                        | [IA §2.3](./05-inteligencia-artificial.md#23-herramientas-de-propuesta-no-ejecutan)                  |
+| Integración con Google Drive: búsqueda, lectura, creación y edición      | [Integraciones §2](./06-integraciones.md#2-google-drive-funcionamiento)                              |
+| Gobierno: roles, permisos por Experto, registro y reversión              | [Seguridad y acceso §2, §3 y §8](./04-seguridad-y-acceso.md#2-modelo-de-roles)                       |
+| Detección y registro de intentos de evasión                              | [Seguridad y acceso §5.1](./04-seguridad-y-acceso.md#51-filtro-previo-antes-de-que-el-modelo-exista) |
+| Retirada de los datos de ejemplo de negocio                              | —                                                                                                    |
+| Retirada de la función `reset_demo` y del control «Reiniciar demo»       | [Modelo de datos §7](./03-modelo-de-datos.md#7-migraciones)                                          |
+| Eliminación del modelo de datos anterior                                 | [Modelo de datos §4](./03-modelo-de-datos.md#4-tablas-eliminadas-modelo-anterior)                    |
+| Edición local OpenCore (MIT): modo local, BYOK y Ollama                  | [OpenCore](./11-opencore.md)                                                                         |
+| CLI interactiva: asistente, `doctor`, `fix`, `models`, `serve`, `update` | [Inicio rápido](./00-inicio-rapido.md)                                                               |
+| Edición local usable de extremo a extremo (UI, semilla, bienvenida)      | [OpenCore](./11-opencore.md)                                                                         |
+| Docker Compose sin configuración (app + Ollama) y `create-openexpert`    | [Inicio rápido](./00-inicio-rapido.md)                                                               |
 
 ## Pendiente
 

@@ -45,6 +45,10 @@ export default defineConfig(async ({ command, mode }) => {
       JSON.stringify(value),
     ]),
   );
+  // Expose the runtime mode to the browser so the UI can skip auth in local mode.
+  define["import.meta.env.VITE_OPENEXPERT_MODE"] = JSON.stringify(
+    process.env["OPENEXPERT_MODE"] ?? "cloud",
+  );
 
   return {
     define,

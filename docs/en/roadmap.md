@@ -5,24 +5,27 @@ with the detail.
 
 ## Implemented
 
-| Element                                                            | Document                                                                |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| Own infrastructure, no intermediaries in the build process         | [Architecture §7](./02-architecture.md#7-excluded-by-design)            |
-| Google sign-in, restricted to authorised accounts                  | [Security §1](./04-security.md#1-who-can-sign-in)                       |
-| Chat with tools, per-Expert isolation, visible reasoning           | [AI §2](./05-ai.md#2-tool-catalog)                                      |
-| Confirmation cards, including dual sign.                           | [AI §2.3](./05-ai.md#23-proposal-tools-do-not-execute)                  |
-| Google Drive integration: search, read, create and edit            | [Integrations §2](./06-integrations.md#2-google-drive-how-it-works)     |
-| Governance: roles, per-Expert permissions, activity log, revert    | [Security §2, §3, §8](./04-security.md)                                 |
-| Detection and logging of evasion attempts                          | [Security §5](./04-security.md#5-guarantees-against-assistant-misuse)   |
-| Removal of business demo data                                      | —                                                                       |
-| Removal of `reset_demo` and "Reset demo" control                   | [Data model §7](./03-data-model.md#7-migrations)                        |
-| Removal of the previous data model                                 | [Data model §4](./03-data-model.md#4-removed-tables-previous-model)     |
-| OpenCore local edition (MIT): local mode, BYOK, Ollama and gateway | [OpenCore](./11-opencore.md)                                            |
-| MIT license for the entire repository                              | [Licensing model](./12-licensing.md)                                    |
-| Bilingual documentation (English / Spanish)                        | [Documentation](../README.md)                                           |
-| CI, secret scanning, dependency updates                            | [Contributing](../../CONTRIBUTING.md)                                   |
-| Releases via Changesets and npm Trusted Publishing                 | [Releasing](../../.github/workflows/release.yml)                        |
-| Docker image for the local edition                                 | [Deployment §7](./08-deployment.md#7-local-mode-opencore-no-deployment) |
+| Element                                                               | Document                                                                |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Own infrastructure, no intermediaries in the build process            | [Architecture §7](./02-architecture.md#7-excluded-by-design)            |
+| Google sign-in, restricted to authorised accounts                     | [Security §1](./04-security.md#1-who-can-sign-in)                       |
+| Chat with tools, per-Expert isolation, visible reasoning              | [AI §2](./05-ai.md#2-tool-catalog)                                      |
+| Confirmation cards, including dual sign.                              | [AI §2.3](./05-ai.md#23-proposal-tools-do-not-execute)                  |
+| Google Drive integration: search, read, create and edit               | [Integrations §2](./06-integrations.md#2-google-drive-how-it-works)     |
+| Governance: roles, per-Expert permissions, activity log, revert       | [Security §2, §3, §8](./04-security.md)                                 |
+| Detection and logging of evasion attempts                             | [Security §5](./04-security.md#5-guarantees-against-assistant-misuse)   |
+| Removal of business demo data                                         | —                                                                       |
+| Removal of `reset_demo` and "Reset demo" control                      | [Data model §7](./03-data-model.md#7-migrations)                        |
+| Removal of the previous data model                                    | [Data model §4](./03-data-model.md#4-removed-tables-previous-model)     |
+| OpenCore local edition (MIT): local mode, BYOK, Ollama and gateway    | [OpenCore](./11-opencore.md)                                            |
+| Interactive CLI: wizard, `doctor`, `fix`, `models`, `serve`, `update` | [Quickstart](./00-quickstart.md)                                        |
+| Local edition usable end-to-end (UI, seed data, first-run checklist)  | [OpenCore](./11-opencore.md)                                            |
+| Zero-config Docker Compose (app + Ollama) and `create-openexpert`     | [Quickstart](./00-quickstart.md)                                        |
+| MIT license for the entire repository                                 | [Licensing model](./12-licensing.md)                                    |
+| Bilingual documentation (English / Spanish)                           | [Documentation](../README.md)                                           |
+| CI, secret scanning, dependency updates                               | [Contributing](../../CONTRIBUTING.md)                                   |
+| Releases via Changesets and npm Trusted Publishing                    | [Releasing](../../.github/workflows/release.yml)                        |
+| Docker image for the local edition                                    | [Deployment §7](./08-deployment.md#7-local-mode-opencore-no-deployment) |
 
 ## Pending
 

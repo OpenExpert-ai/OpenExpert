@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { isLocalClient } from "@/lib/opencore/mode-env";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -28,6 +29,10 @@ function AuthPage() {
   const nav = useNavigate();
 
   useEffect(() => {
+    if (isLocalClient()) {
+      nav({ to: "/expert" });
+      return;
+    }
     const check = async (email: string | undefined) => {
       if (!email) return;
       nav({ to: "/expert" });
@@ -40,6 +45,10 @@ function AuthPage() {
   }, [nav]);
 
   const google = async () => {
+    if (isLocalClient()) {
+      toast.message("Modo local: no requiere inicio de sesión");
+      return;
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth` },

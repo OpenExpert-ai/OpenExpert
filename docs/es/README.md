@@ -6,6 +6,7 @@ Documentación de referencia del proyecto, dirigida al **equipo de ingeniería**
 
 | N.º | Documento                                                  | Destinatario         | Contenido                                                         |
 | --- | ---------------------------------------------------------- | -------------------- | ----------------------------------------------------------------- |
+| 00  | [Inicio rápido](./00-inicio-rapido.md)                     | Todos                | De cero a usar en 5 minutos                                       |
 | 01  | [Producto](./01-producto.md)                               | Negocio              | Descripción de la plataforma y funcionalidad actual               |
 | 02  | [Arquitectura](./02-arquitectura.md)                       | Ingeniería           | Capas, componentes y flujo de peticiones y de chat                |
 | 03  | [Modelo de datos](./03-modelo-de-datos.md)                 | Ingeniería + Negocio | Información almacenada y significado de cada tabla                |

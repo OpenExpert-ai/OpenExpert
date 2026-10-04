@@ -85,6 +85,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "prepare": "tsup",
     "prepack": "tsup",
     "test": "vitest run",
     "test:run": "vitest run",
@@ -95,6 +96,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.5",
+    "@clack/prompts": "^0.9.1",
     "ai": "^7.0.0"
   },
   "devDependencies": {

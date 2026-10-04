@@ -12,27 +12,44 @@ OpenCore, la edición local descargable, se describe en
 
 ## Arranque rápido
 
+Elige el camino que te encaje. Guía completa:
+[docs/es/00-inicio-rapido.md](./docs/es/00-inicio-rapido.md).
+
+### Edición local (OpenCore) — sin nube
+
+Docker (sin Node):
+
+```sh
+docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local
+# o con Ollama incluido:
+docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
+```
+
+Con Node:
+
+```sh
+npx @openexpert/opencore          # asistente, luego arranca
+npx @openexpert/opencore serve    # arrancar directamente
+```
+
+O crea un proyecto:
+
+```sh
+npm create openexpert mi-app && cd mi-app && docker compose up -d
+```
+
+### Desde el código (cloud o local)
+
 ```sh
 npm ci
-cp .env.example .env    # completar las variables
-npm run dev             # http://localhost:3000
+cp .env.example .env    # cloud: completar las variables
+npm run dev             # http://localhost:3000 (cloud)
+npm run dev:local       # edición local, sin Supabase
 ```
 
 El servidor de desarrollo está fijado al **puerto 3000** porque las URI
 de redirección OAuth dependen de él.
-
-Edición local (sin Supabase):
-
-```sh
-cp openexpert.json.example openexpert.json
-OPENEXPERT_MODE=local npm run dev
-```
-
-O bien con el CLI de OpenCore publicado:
-
-```sh
-npx @openexpert/opencore serve
-```
 
 ## Documentación
 
