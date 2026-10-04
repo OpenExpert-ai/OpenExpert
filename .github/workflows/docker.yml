@@ -38,9 +38,11 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: false
+          # Load into the local daemon so the smoke test can run it.
+          load: true
+          provenance: false
+          sbom: false
           tags: openexpert:ci-${{ github.sha }}
-          provenance: true
-          sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
