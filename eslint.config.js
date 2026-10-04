@@ -20,7 +20,13 @@ export default tseslint.config(
       "react-refresh": reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Classic react-hooks rules only. eslint-plugin-react-hooks v7's
+      // `recommended` also enables the React Compiler rules (purity,
+      // set-state-in-effect, immutability, …). Adopting those across the
+      // shadcn/ui components is a separate refactor, so we opt in to just the
+      // two rules the project relied on before the v7 upgrade.
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       "no-restricted-imports": [
         "error",
         {

@@ -8,8 +8,8 @@
 
 | Tool    | Version     |
 | ------- | ----------- |
-| Node.js | 20 or later |
-| npm     | 10 or later |
+| Node.js | 24 or later |
+| npm     | 11 or later |
 
 ## 2. Bootstrapping
 

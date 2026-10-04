@@ -87,8 +87,8 @@ Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y españ
 
 ## Requisitos
 
-- Node.js 20 o superior
-- npm 10 o superior (gestor de paquetes oficial)
+- Node.js 24 o superior
+- npm 11 o superior (gestor de paquetes oficial)
 
 ## Estructura
 

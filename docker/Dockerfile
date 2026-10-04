@@ -3,7 +3,7 @@
 # Stage 1: install dependencies and build the app and the OpenCore package.
 # Stage 2: minimal runtime image running Nitro's node-server preset.
 
-ARG NODE_VERSION=20
+ARG NODE_VERSION=24
 
 # --- builder -------------------------------------------------------------
 FROM node:${NODE_VERSION}-bookworm-slim AS builder

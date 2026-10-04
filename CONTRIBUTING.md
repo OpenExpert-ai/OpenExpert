@@ -10,7 +10,7 @@ By participating you agree to abide by the [Code of Conduct](./CODE_OF_CONDUCT.m
 
 ## Development setup
 
-Requirements: **Node.js 20+** and **npm 10+** (see `.nvmrc`).
+Requirements: **Node.js 24+** and **npm 11+** (see `.nvmrc`).
 
 ```sh
 git clone https://github.com/OpenExpert-ai/OpenExpert.git

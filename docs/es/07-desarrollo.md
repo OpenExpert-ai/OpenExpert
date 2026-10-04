@@ -8,8 +8,8 @@
 
 | Herramienta | Versión       |
 | ----------- | ------------- |
-| Node.js     | 20 o superior |
-| npm         | 10 o superior |
+| Node.js     | 24 o superior |
+| npm         | 11 o superior |
 
 ## 2. Puesta en marcha
 

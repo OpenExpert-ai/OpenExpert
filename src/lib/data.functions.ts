@@ -92,7 +92,7 @@ export type WorkspaceData = Awaited<ReturnType<typeof getWorkspace>>;
 /* ------------------------------ Experts ------------------------------ */
 
 export const createExpert = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         name: z.string().trim().min(1).max(60),
@@ -137,7 +137,7 @@ export const createExpert = createServerFn({ method: "POST" })
 /* ----------------------------- Processes ----------------------------- */
 
 export const toggleProcess = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string() }).parse(d))
+  .validator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     const p = orm.select().from(schema.processes).where(eq(schema.processes.id, data.id)).all()[0];
@@ -165,7 +165,7 @@ export const toggleProcess = createServerFn({ method: "POST" })
   });
 
 export const runProcess = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string() }).parse(d))
+  .validator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     const p = orm.select().from(schema.processes).where(eq(schema.processes.id, data.id)).all()[0];
@@ -199,7 +199,7 @@ export const runProcess = createServerFn({ method: "POST" })
 /* --------------------------- Approvals ------------------------------ */
 
 export const decideAction = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ eventId: z.string(), approve: z.boolean() }).parse(d))
+  .validator((d) => z.object({ eventId: z.string(), approve: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     const ev = orm
@@ -234,7 +234,7 @@ export const decideAction = createServerFn({ method: "POST" })
   });
 
 export const revertEvent = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string() }).parse(d))
+  .validator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     const ev = orm.select().from(schema.activity).where(eq(schema.activity.id, data.id)).all()[0];
@@ -262,9 +262,7 @@ export const revertEvent = createServerFn({ method: "POST" })
 /* ------------------------------- Chat ------------------------------- */
 
 export const clearChat = createServerFn({ method: "POST" })
-  .inputValidator((d) =>
-    z.object({ expertId: z.string(), conversationId: z.string().max(64) }).parse(d),
-  )
+  .validator((d) => z.object({ expertId: z.string(), conversationId: z.string().max(64) }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     orm
@@ -280,9 +278,7 @@ export const clearChat = createServerFn({ method: "POST" })
   });
 
 export const getChat = createServerFn({ method: "GET" })
-  .inputValidator((d) =>
-    z.object({ expertId: z.string(), conversationId: z.string().max(64) }).parse(d),
-  )
+  .validator((d) => z.object({ expertId: z.string(), conversationId: z.string().max(64) }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     const rows = orm
@@ -302,7 +298,7 @@ export const getChat = createServerFn({ method: "GET" })
 const RETENTION_MS = 30 * 24 * 3600 * 1000;
 
 export const listConversations = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ expertId: z.string() }).parse(d))
+  .validator((d) => z.object({ expertId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { orm } = await getDb();
     const rows = orm
@@ -383,7 +379,7 @@ export const disconnectDrive = createServerFn({ method: "POST" }).handler(async 
 });
 
 export const syncIntegration = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.literal("gdrive") }).parse(d))
+  .validator((d) => z.object({ id: z.literal("gdrive") }).parse(d))
   .handler(async () => {
     const drive = await import("./drive.server");
     const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
