@@ -18,6 +18,7 @@ RUN apt-get update \
 
 COPY package.json package-lock.json* ./
 COPY packages/opencore/package.json ./packages/opencore/package.json
+COPY packages/create-openexpert/package.json ./packages/create-openexpert/package.json
 
 # Install the full dependency tree. --ignore-scripts avoids running
 # postinstall scripts in the deps tree that may rely on a network.
@@ -52,11 +53,12 @@ ENV NODE_ENV=production \
     PORT=3000
 
 # Tini for clean signal propagation and a non-root user for safety.
+# The official node image already owns uid/gid 1000 (`node`), so use 1001.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends tini ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd --gid 1000 openexpert \
- && useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash openexpert
+ && groupadd --gid 1001 openexpert \
+ && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash openexpert
 
 # Copy the built application and the runtime node_modules.
 COPY --from=builder --chown=openexpert:openexpert /app/.output /app/.output
