@@ -72,11 +72,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenExpert/OpenExpert.git",
+    "url": "https://github.com/OpenExpert-ai/OpenExpert.git",
     "directory": "packages/opencore"
   },
   "bugs": {
-    "url": "https://github.com/OpenExpert/OpenExpert/issues"
+    "url": "https://github.com/OpenExpert-ai/OpenExpert/issues"
   },
   "publishConfig": {
     "access": "public",

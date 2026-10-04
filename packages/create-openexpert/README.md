@@ -13,4 +13,4 @@ docker compose exec ollama ollama pull llama3.1
 Generates `openexpert.json`, a `docker-compose.yml` (app + Ollama), a
 `.gitignore`, and a short `README.md`.
 
-Licensed under MIT. See the main repository: <https://github.com/OpenExpert/OpenExpert>.
+Licensed under MIT. See the main repository: <https://github.com/OpenExpert-ai/OpenExpert>.

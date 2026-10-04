@@ -14,8 +14,8 @@ OpenCore, the downloadable local edition, is described in
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933)](https://nodejs.org)
 [![npm workspaces](https://img.shields.io/badge/npm-workspaces-CB3837)](https://docs.npmjs.com/cli/v10/using-npm/workspaces)
-[![CodeQL](https://github.com/OpenExpert/OpenExpert/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
-[![Scorecard](https://img.shields.io/openssf-scorecard/github/OpenExpert/OpenExpert)](https://scorecard.dev/viewer/?uri=github.com/OpenExpert/OpenExpert)
+[![CodeQL](https://github.com/OpenExpert-ai/OpenExpert/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
+[![Scorecard](https://img.shields.io/openssf-scorecard/github/OpenExpert-ai/OpenExpert)](https://scorecard.dev/viewer/?uri=github.com/OpenExpert-ai/OpenExpert)
 [![Changesets](https://img.shields.io/badge/changesets-ready-orange)](https://github.com/changesets/changesets)
 
 ## Quick start

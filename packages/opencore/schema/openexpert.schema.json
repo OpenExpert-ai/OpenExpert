@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/OpenExpert/OpenExpert/main/packages/opencore/schema/openexpert.schema.json",
+  "$id": "https://raw.githubusercontent.com/OpenExpert-ai/OpenExpert/main/packages/opencore/schema/openexpert.schema.json",
   "title": "OpenExpert local configuration",
   "description": "Schema for the openexpert.json file consumed by the OpenExpert local edition. Environment variables OPENEXPERT_* always take precedence over the file.",
   "type": "object",

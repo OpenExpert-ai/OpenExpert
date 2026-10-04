@@ -22,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenExpert/OpenExpert.git",
+    "url": "https://github.com/OpenExpert-ai/OpenExpert.git",
     "directory": "packages/create-openexpert"
   },
   "dependencies": {

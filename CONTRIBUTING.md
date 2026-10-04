@@ -13,7 +13,7 @@ By participating you agree to abide by the [Code of Conduct](./CODE_OF_CONDUCT.m
 Requirements: **Node.js 20+** and **npm 10+** (see `.nvmrc`).
 
 ```sh
-git clone https://github.com/OpenExpert/OpenExpert.git
+git clone https://github.com/OpenExpert-ai/OpenExpert.git
 cd OpenExpert
 npm ci
 cp .env.example .env        # fill in the variables; not required for the local edition

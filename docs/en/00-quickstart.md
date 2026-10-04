@@ -58,7 +58,7 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ## Option C — From source
 
 ```sh
-git clone https://github.com/OpenExpert/OpenExpert.git
+git clone https://github.com/OpenExpert-ai/OpenExpert.git
 cd OpenExpert
 npm ci
 cp openexpert.json.example openexpert.json

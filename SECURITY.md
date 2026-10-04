@@ -19,7 +19,7 @@ between Experts, and operational hygiene rather than by keeping code private.
 Please **do not** file a public issue for suspected vulnerabilities.
 
 - **GitHub Security Advisories:** open a private advisory at
-  `https://github.com/OpenExpert/OpenExpert/security/advisories/new`.
+  `https://github.com/OpenExpert-ai/OpenExpert/security/advisories/new`.
 - **Email:** `carlosemerito13@gmail.com`.
 
 Include: reproduction steps, affected version/commit, impact, and any

@@ -183,7 +183,7 @@ export async function ensureStandaloneApp(
   const entry = join(dir, ".output", "server", "index.mjs");
   if (existsSync(entry)) return dir;
 
-  const repo = opts.repo ?? "OpenExpert/OpenExpert";
+  const repo = opts.repo ?? "OpenExpert-ai/OpenExpert";
   const log = opts.log ?? (() => {});
   const tarball = `openexpert-server-${version}.tar.gz`;
   // Different tools tag releases differently; try the common shapes.

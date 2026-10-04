@@ -3,29 +3,29 @@
 # the matching files.
 
 # Default owners for the whole repository.
-# Requires a GitHub team named `maintainers` in the OpenExpert organization,
-# or replace with individual handles (e.g. @username).
-/                          @OpenExpert/maintainers
+# Requires a GitHub team named `maintainers` in the OpenExpert-ai
+# organization, or replace with individual handles (e.g. @username).
+/                          @OpenExpert-ai/maintainers
 
 # Core package and license governance
-/packages/opencore/        @OpenExpert/maintainers
-/LICENSE                   @OpenExpert/maintainers
-/NOTICE                    @OpenExpert/maintainers
-/SECURITY.md               @OpenExpert/maintainers
-/CONTRIBUTING.md           @OpenExpert/maintainers
-/CODE_OF_CONDUCT.md        @OpenExpert/maintainers
-/GOVERNANCE.md             @OpenExpert/maintainers
+/packages/opencore/        @OpenExpert-ai/maintainers
+/LICENSE                   @OpenExpert-ai/maintainers
+/NOTICE                    @OpenExpert-ai/maintainers
+/SECURITY.md               @OpenExpert-ai/maintainers
+/CONTRIBUTING.md           @OpenExpert-ai/maintainers
+/CODE_OF_CONDUCT.md        @OpenExpert-ai/maintainers
+/GOVERNANCE.md             @OpenExpert-ai/maintainers
 
 # AI and security-sensitive code
-/src/lib/ai/               @OpenExpert/maintainers
-/src/lib/ee.server.ts      @OpenExpert/maintainers
-/src/lib/drive-tokens.server.ts @OpenExpert/maintainers
-/src/lib/data.functions.ts @OpenExpert/maintainers
-/src/integrations/supabase/auth-middleware.ts @OpenExpert/maintainers
+/src/lib/ai/               @OpenExpert-ai/maintainers
+/src/lib/ee.server.ts      @OpenExpert-ai/maintainers
+/src/lib/drive-tokens.server.ts @OpenExpert-ai/maintainers
+/src/lib/data.functions.ts @OpenExpert-ai/maintainers
+/src/integrations/supabase/auth-middleware.ts @OpenExpert-ai/maintainers
 
 # Database schema
-/drizzle/migrations/       @OpenExpert/maintainers
-/supabase/                 @OpenExpert/maintainers
+/drizzle/migrations/       @OpenExpert-ai/maintainers
+/supabase/                 @OpenExpert-ai/maintainers
 
 # CI and release tooling
-/.github/                  @OpenExpert/maintainers
+/.github/                  @OpenExpert-ai/maintainers
