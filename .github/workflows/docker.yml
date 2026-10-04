@@ -52,5 +52,5 @@ jobs:
             -e OPENEXPERT_MODEL_PROVIDER=ollama \
             openexpert:ci-${{ github.sha }}
           sleep 10
-          curl -fsS http://localhost:3000/auth >/dev/null || true
+          curl -fsS http://localhost:3000/ >/dev/null || true
           docker stop openexpert-smoke || true
