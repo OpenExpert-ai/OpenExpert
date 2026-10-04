@@ -1,6 +1,6 @@
 ---
-"@openexpert/opencore": major
-"create-openexpert": major
+"@openexpert/opencore": minor
+"create-openexpert": minor
 ---
 
 Require Node.js 24 or later (npm 11+). Node.js 20 is end-of-life and the
