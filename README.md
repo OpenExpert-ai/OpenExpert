@@ -53,6 +53,18 @@ npm run dev                       # http://localhost:3000
 The dev server is pinned to **port 3000** because the Google Drive OAuth
 redirect URI depends on it.
 
+### Desktop app (Linux)
+
+OpenExpert can also run as a native window opened by a single command, installed
+for the current user (needs Rust and the WebKitGTK 4.1 libraries):
+
+```sh
+npm run desktop:install    # build + install the launcher
+OpenExpert                 # start the server and open the window
+```
+
+See [Deployment](./docs/en/08-deployment.md).
+
 ## How it works
 
 - **Data** lives in a single SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db`

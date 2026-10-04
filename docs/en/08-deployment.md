@@ -12,6 +12,7 @@
 | Production build | `npm run build` then `node .output/server/index.mjs`                                      |
 | Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
 | CLI              | `npx @openexpert/opencore serve`                                                          |
+| Desktop (Linux)  | `npm run desktop:install` then `OpenExpert`                                               |
 
 The app listens on port 3000. The Nitro preset is `node-server`.
 
@@ -52,6 +53,35 @@ SQLite file is `openexpert.db`.
 
 - Code: `git pull` / reinstall the package and rebuild.
 - Downloaded server: `npx @openexpert/opencore update`.
+
+## 6. Desktop application (Linux)
+
+OpenExpert can run as a native window (Tauri + WebKitGTK) opened by a single
+`OpenExpert` command, installed for the current user (no `sudo`).
+
+The window is only a shell: the `openexpert desktop` command starts the local
+server (reusing it if it is already running), waits for it to answer, opens the
+window, and stops the server again when the window closes.
+
+Prerequisites to compile the window: Node.js, a Rust toolchain and the
+WebKitGTK 4.1 development libraries (`webkit2gtk-4.1`, `libsoup-3.0`, `gtk3`).
+
+```sh
+npm run desktop:install     # builds the app + window, installs the launcher
+OpenExpert                  # starts the server and opens the native window
+```
+
+What it installs:
+
+| Path                                                       | Purpose                    |
+| ---------------------------------------------------------- | -------------------------- |
+| `~/.local/bin/openexpert-desktop`                          | native window binary       |
+| `~/.local/bin/OpenExpert`                                  | launcher (server + window) |
+| `~/.local/share/applications/openexpert.desktop`           | application-menu entry     |
+| `~/.local/share/icons/hicolor/512x512/apps/openexpert.png` | icon                       |
+
+`npm run desktop:uninstall` removes them. If the window renders blank on
+Wayland, launch it with `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
 ## References
 

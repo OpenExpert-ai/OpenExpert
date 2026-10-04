@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OpenExpert
+GenericName=AI operations dashboard
+Comment=Local-first operations dashboard with AI
+Exec=OpenExpert
+Icon=openexpert
+Terminal=false
+Categories=Office;Utility;
+StartupNotify=true
+StartupWMClass=openexpert-desktop

@@ -12,6 +12,7 @@
 | Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                   |
 | Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
 | CLI                 | `npx @openexpert/opencore serve`                                                          |
+| Escritorio (Linux)  | `npm run desktop:install` y luego `OpenExpert`                                            |
 
 La aplicación escucha en el puerto 3000. El preset de Nitro es `node-server`.
 
@@ -52,6 +53,37 @@ fichero SQLite es `openexpert.db`.
 
 - Código: `git pull` / reinstala el paquete y reconstruye.
 - Servidor descargado: `npx @openexpert/opencore update`.
+
+## 6. Aplicación de escritorio (Linux)
+
+OpenExpert puede ejecutarse como una ventana nativa (Tauri + WebKitGTK) que se
+abre con un único comando `OpenExpert`, instalado para el usuario actual (sin
+`sudo`).
+
+La ventana es solo una cáscara: el comando `openexpert desktop` arranca el
+servidor local (lo reutiliza si ya está activo), espera a que responda, abre la
+ventana y detiene el servidor cuando la ventana se cierra.
+
+Requisitos para compilar la ventana: Node.js, un toolchain de Rust y las
+librerías de desarrollo de WebKitGTK 4.1 (`webkit2gtk-4.1`, `libsoup-3.0`,
+`gtk3`).
+
+```sh
+npm run desktop:install     # compila la app + la ventana e instala el lanzador
+OpenExpert                  # arranca el servidor y abre la ventana nativa
+```
+
+Qué instala:
+
+| Ruta                                                       | Uso                         |
+| ---------------------------------------------------------- | --------------------------- |
+| `~/.local/bin/openexpert-desktop`                          | binario de la ventana       |
+| `~/.local/bin/OpenExpert`                                  | lanzador (servidor+ventana) |
+| `~/.local/share/applications/openexpert.desktop`           | entrada del menú de apps    |
+| `~/.local/share/icons/hicolor/512x512/apps/openexpert.png` | icono                       |
+
+`npm run desktop:uninstall` los elimina. Si la ventana sale en blanco en
+Wayland, lánzala con `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
 ## Referencias
 

@@ -50,6 +50,19 @@ npm run dev                       # http://localhost:3000
 El servidor de desarrollo está fijado al **puerto 3000** porque la URI de
 redirección OAuth de Google Drive depende de él.
 
+### Aplicación de escritorio (Linux)
+
+OpenExpert también puede ejecutarse como una ventana nativa abierta con un único
+comando, instalada para el usuario actual (requiere Rust y las librerías de
+WebKitGTK 4.1):
+
+```sh
+npm run desktop:install    # compila e instala el lanzador
+OpenExpert                 # arranca el servidor y abre la ventana
+```
+
+Ver [Despliegue](./docs/es/08-despliegue.md).
+
 ## Cómo funciona
 
 - **Datos** en un único fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db`

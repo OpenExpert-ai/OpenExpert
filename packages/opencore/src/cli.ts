@@ -2,6 +2,7 @@
 // OpenCore CLI entry point. Dispatches subcommands. See `run`.
 
 import { cmdDoctor, cmdFix, cmdModels, cmdServe, cmdUpdate, cmdVersion } from "./cli/commands.js";
+import { cmdDesktop } from "./cli/desktop.js";
 import { runWizard } from "./cli/wizard.js";
 
 function help(): void {
@@ -11,6 +12,7 @@ Uso:
   opencore            asistente de configuración y arranque
   opencore init       igual que sin argumentos
   opencore serve      arranca la edición local en http://localhost:3000
+  opencore desktop    arranca el servidor y abre la ventana de escritorio
   opencore doctor     revisa tu configuración
   opencore fix        auto-configura lo que falte
   opencore models     lista los modelos del proveedor actual
@@ -44,6 +46,11 @@ export async function run(argv: string[]): Promise<void> {
     case "serve":
     case "dev":
       return process.exit(await cmdServe());
+    case "desktop":
+    case "app": {
+      const code = await cmdDesktop();
+      return process.exit(code);
+    }
     case "update":
       return process.exit(cmdUpdate());
     case "version":

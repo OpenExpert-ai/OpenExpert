@@ -9,6 +9,7 @@
 - Model is configuration, not code: `src/lib/opencore/model-provider.server.ts` (`google | ollama | openai-compatible`; `OPENEXPERT_MODEL_PROVIDER/ID`, `GOOGLE_API_KEY`, `OLLAMA_BASE_URL`, `OPENEXPERT_BASE_URL`+`OPENEXPERT_MODEL_KEY`). The selection logic lives in `@openexpert/opencore`.
 - Google Drive is optional per-install OAuth. Tokens live in `~/.openexpert/credentials.json` (0600); the OAuth `state` is HMAC-signed. Callback route: `src/routes/auth.google.callback.ts`. All `drive.server.ts` functions use the single owner's token.
 - Deployment is `node .output/server/index.mjs` (Nitro `node-server`) or Docker. There is no Vercel preset.
+- **Desktop shell (Linux).** `src-tauri/` is a Tauri 2 app whose only job is to render the local server in a native WebKitGTK window; all logic stays in the web app. It is launched by the `openexpert desktop` CLI command (`packages/opencore/src/cli/desktop.ts`), which starts/reuses the Node server and stops it when the window closes. `scripts/install-desktop.mjs` installs a per-user `OpenExpert` launcher, `.desktop` entry and icon; `scripts/uninstall-desktop.mjs` removes them.
 - npm is the package manager; there is no bun lockfile.
 - `packages/opencore/` is the shared MIT engine: `model-provider`, `config`, `storage`/`secrets` interfaces, tool catalog and the `opencore` CLI (`src/cli/`). The app imports `@openexpert/opencore/model-provider`.
 - Never commit `.env`, `openexpert.json`, `~/.openexpert/`, `credentials.json` or `secrets.json`.
