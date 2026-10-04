@@ -58,7 +58,7 @@ WebKitGTK 4.1):
 
 ```sh
 npm run desktop:install    # compila e instala el lanzador
-OpenExpert                 # arranca el servidor y abre la ventana
+openexpert                 # arranca el servidor y abre la ventana
 ```
 
 Ver [Despliegue](./docs/es/08-despliegue.md).

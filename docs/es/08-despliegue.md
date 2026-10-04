@@ -12,7 +12,7 @@
 | Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                   |
 | Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
 | CLI                 | `npx @openexpert/opencore serve`                                                          |
-| Escritorio (Linux)  | `npm run desktop:install` y luego `OpenExpert`                                            |
+| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                            |
 
 La aplicación escucha en el puerto 3000. El preset de Nitro es `node-server`.
 
@@ -62,7 +62,7 @@ base de datos. Importar una copia reemplaza los datos actuales.
 ## 6. Aplicación de escritorio (Linux)
 
 OpenExpert puede ejecutarse como una ventana nativa (Tauri + WebKitGTK) que se
-abre con un único comando `OpenExpert`, instalado para el usuario actual (sin
+abre con un único comando `openexpert`, instalado para el usuario actual (sin
 `sudo`).
 
 La ventana es solo una cáscara: el comando `openexpert desktop` arranca el
@@ -75,7 +75,7 @@ librerías de desarrollo de WebKitGTK 4.1 (`webkit2gtk-4.1`, `libsoup-3.0`,
 
 ```sh
 npm run desktop:install     # compila la app + la ventana e instala el lanzador
-OpenExpert                  # arranca el servidor y abre la ventana nativa
+openexpert                  # arranca el servidor y abre la ventana nativa
 ```
 
 Qué instala:
@@ -83,7 +83,7 @@ Qué instala:
 | Ruta                                                       | Uso                         |
 | ---------------------------------------------------------- | --------------------------- |
 | `~/.local/bin/openexpert-desktop`                          | binario de la ventana       |
-| `~/.local/bin/OpenExpert`                                  | lanzador (servidor+ventana) |
+| `~/.local/bin/openexpert`                                  | lanzador (servidor+ventana) |
 | `~/.local/share/applications/openexpert.desktop`           | entrada del menú de apps    |
 | `~/.local/share/icons/hicolor/512x512/apps/openexpert.png` | icono                       |
 

@@ -2,12 +2,21 @@
 // `opencore desktop` — start the local server (unless it is already running)
 // and open the native OpenExpert window (the Tauri shell). This command owns
 // the server lifecycle so it can stop the server when the window closes.
+//
+// The repository is located from the CLI installation itself (not the current
+// directory), so `OpenExpert` works from anywhere.
 
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { ensureStandaloneApp, findRepoRoot, packageVersion, secretsAsEnv } from "./lib.js";
+import {
+  ensureStandaloneApp,
+  findRepoRoot,
+  packageRoot,
+  packageVersion,
+  secretsAsEnv,
+} from "./lib.js";
 
 function port(): string {
   return process.env["PORT"] || "3000";
@@ -35,19 +44,64 @@ async function waitForServer(timeoutMs = 120_000): Promise<boolean> {
   return false;
 }
 
+/**
+ * Find the source checkout, in order of confidence:
+ *   1. OPENEXPERT_DESKTOP_REPO (baked by the installer),
+ *   2. relative to the CLI installation (packages/opencore → repo root),
+ *   3. walking up from the current directory.
+ */
+function resolveRepo(cwd: string): string | null {
+  const fromEnv = process.env["OPENEXPERT_DESKTOP_REPO"];
+  if (fromEnv) {
+    const r = findRepoRoot(fromEnv);
+    if (r) return r;
+  }
+  return findRepoRoot(packageRoot()) ?? findRepoRoot(cwd);
+}
+
+/** Newest modification time (ms) under a directory, or 0 if unreadable. */
+function newestMtime(dir: string): number {
+  let newest = 0;
+  try {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) newest = Math.max(newest, newestMtime(full));
+      else if (entry.isFile()) newest = Math.max(newest, statSync(full).mtimeMs);
+    }
+  } catch {
+    // ignore unreadable paths
+  }
+  return newest;
+}
+
+/** True when the production build exists and is not older than src/. */
+function buildIsFresh(repo: string): boolean {
+  const built = join(repo, ".output", "server", "index.mjs");
+  if (!existsSync(built)) return false;
+  try {
+    return statSync(built).mtimeMs >= newestMtime(join(repo, "src"));
+  } catch {
+    return true;
+  }
+}
+
 /** Start the local server, reusing the source checkout when available. */
 async function spawnServer(cwd: string, env: NodeJS.ProcessEnv): Promise<ChildProcess | null> {
-  const repo = findRepoRoot(cwd);
+  const repo = resolveRepo(cwd);
   if (repo) {
     const built = join(repo, ".output", "server", "index.mjs");
-    if (existsSync(built)) {
+    if (existsSync(built) && buildIsFresh(repo)) {
       return spawn(process.execPath, [built], {
         cwd: repo,
-        env: { ...env, PORT: port() },
+        env: { ...env, NODE_ENV: "production", PORT: port() },
         stdio: "inherit",
       });
     }
-    console.log("Arrancando el servidor en modo desarrollo (no hay build)…");
+    console.log(
+      existsSync(built)
+        ? "La build está desactualizada; arrancando en modo desarrollo…"
+        : "Arrancando el servidor en modo desarrollo (no hay build)…",
+    );
     return spawn("npm", ["run", "dev"], { cwd: repo, env, stdio: "inherit" });
   }
 
@@ -55,7 +109,7 @@ async function spawnServer(cwd: string, env: NodeJS.ProcessEnv): Promise<ChildPr
   if (!app) return null;
   return spawn(process.execPath, [join(app, ".output", "server", "index.mjs")], {
     cwd: app,
-    env: { ...env, PORT: port() },
+    env: { ...env, NODE_ENV: "production", PORT: port() },
     stdio: "inherit",
   });
 }
@@ -65,7 +119,7 @@ function findDesktopBinary(cwd: string): string | null {
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
 
   const candidates = [join(homedir(), ".local", "bin", "openexpert-desktop")];
-  const repo = findRepoRoot(cwd);
+  const repo = resolveRepo(cwd);
   if (repo) {
     candidates.push(
       join(repo, "src-tauri", "target", "release", "openexpert-desktop"),
@@ -96,7 +150,11 @@ export async function cmdDesktop(cwd = process.cwd()): Promise<number> {
     console.log("Arrancando el servidor local…");
     server = await spawnServer(cwd, env);
     if (!server) {
-      console.error("No se pudo arrancar el servidor ni obtener una build descargada.");
+      console.error(
+        "No se pudo arrancar el servidor.\n" +
+          "Si usas el código fuente, entra en el repositorio y ejecuta:\n" +
+          "  npm ci && npm run build && npm run desktop:install",
+      );
       return 1;
     }
     startedServer = true;

@@ -60,7 +60,7 @@ for the current user (needs Rust and the WebKitGTK 4.1 libraries):
 
 ```sh
 npm run desktop:install    # build + install the launcher
-OpenExpert                 # start the server and open the window
+openexpert                 # start the server and open the window
 ```
 
 See [Deployment](./docs/en/08-deployment.md).

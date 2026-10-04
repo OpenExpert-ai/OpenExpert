@@ -11,6 +11,7 @@ import { join } from "node:path";
 const home = homedir();
 const files = [
   join(home, ".local", "bin", "openexpert-desktop"),
+  join(home, ".local", "bin", "openexpert"),
   join(home, ".local", "bin", "OpenExpert"),
   join(home, ".local", "share", "applications", "openexpert.desktop"),
   join(home, ".local", "share", "icons", "hicolor", "512x512", "apps", "openexpert.png"),
