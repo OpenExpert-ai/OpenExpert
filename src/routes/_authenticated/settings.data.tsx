@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, Download, Loader2, Trash2, Upload } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { useT } from "@/lib/i18n";
 import {
   clearChatHistory,
   getDataStats,
@@ -53,6 +54,7 @@ function DataSettings() {
   const doVacuum = useServerFn(vacuumDb);
   const doReset = useServerFn(resetData);
   const qc = useQueryClient();
+  const { t } = useT();
   const { data } = useQuery({ queryKey: ["data-stats"], queryFn: () => get() });
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -68,10 +70,10 @@ function DataSettings() {
     try {
       const content = await file.text();
       const r = await doImport({ data: { content } });
-      toast.success(`Copia restaurada (${r.applied.join(", ")})`);
+      toast.success(`${t("Copia restaurada")} (${r.applied.join(", ")})`);
       await refresh();
     } catch (e) {
-      toast.error((e as Error).message || "Copia no válida");
+      toast.error((e as Error).message || t("Copia no válida"));
     } finally {
       setBusy(null);
       if (fileRef.current) fileRef.current.value = "";
@@ -79,11 +81,11 @@ function DataSettings() {
   };
 
   const onClearChat = async () => {
-    if (!window.confirm("¿Borrar todo el historial de conversaciones?")) return;
+    if (!window.confirm(t("¿Borrar todo el historial de conversaciones?"))) return;
     setBusy("chat");
     try {
       const r = await doClearChat();
-      toast.success(`Historial borrado (${r.removed} mensajes)`);
+      toast.success(t("Historial borrado ({n} mensajes)", { n: r.removed }));
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
@@ -96,7 +98,7 @@ function DataSettings() {
     setBusy("vacuum");
     try {
       await doVacuum();
-      toast.success("Base de datos compactada");
+      toast.success(t("Base de datos compactada"));
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
@@ -110,7 +112,7 @@ function DataSettings() {
     setBusy("reset");
     try {
       await doReset();
-      toast.success("Datos restaurados al estado inicial");
+      toast.success(t("Datos restaurados al estado inicial"));
       setResetWord("");
       await refresh();
     } catch (e) {
@@ -122,16 +124,16 @@ function DataSettings() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Card title="Estado" desc="Resumen de los datos que guarda tu instalación.">
+      <Card title={t("Estado")} desc={t("Resumen de los datos que guarda tu instalación.")}>
         {data ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              ["Base de datos", bytes(data.dbSize)],
-              ["Expertos", String(data.experts)],
-              ["Procesos", String(data.processes)],
-              ["Integraciones", String(data.integrations)],
-              ["Eventos", String(data.activity)],
-              ["Mensajes", String(data.chatMessages)],
+              [t("Base de datos"), bytes(data.dbSize)],
+              [t("Experts"), String(data.experts)],
+              [t("Procesos"), String(data.processes)],
+              [t("Integraciones"), String(data.integrations)],
+              [t("Eventos"), String(data.activity)],
+              [t("Mensajes"), String(data.chatMessages)],
             ].map(([label, value]) => (
               <div key={label} className="rounded-md border border-border p-3">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -143,18 +145,18 @@ function DataSettings() {
           </div>
         ) : (
           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Cargando…")}
           </div>
         )}
       </Card>
 
       <Card
-        title="Copia de seguridad"
-        desc="Incluye la base de datos, la configuración y las credenciales locales."
+        title={t("Copia de seguridad")}
+        desc={t("Incluye la base de datos, la configuración y las credenciales locales.")}
       >
         <div className="flex flex-wrap gap-3">
           <a href="/api/backup" download className={`${btnPrimary} flex items-center gap-1.5`}>
-            <Download className="h-4 w-4" /> Descargar copia
+            <Download className="h-4 w-4" /> {t("Descargar copia")}
           </a>
           <label className={`${btnGhost} flex cursor-pointer items-center gap-1.5`}>
             {busy === "import" ? (
@@ -162,7 +164,7 @@ function DataSettings() {
             ) : (
               <Upload className="h-4 w-4" />
             )}
-            Importar copia
+            {t("Importar copia")}
             <input
               ref={fileRef}
               type="file"
@@ -176,12 +178,11 @@ function DataSettings() {
           </label>
         </div>
         <p className="text-xs text-muted-foreground">
-          Importar <strong>reemplaza</strong> los datos actuales. Se recomienda descargar una copia
-          antes.
+          {t("Importar reemplaza los datos actuales. Se recomienda descargar una copia antes.")}
         </p>
       </Card>
 
-      <Card title="Mantenimiento" desc="Operaciones rápidas sobre la base de datos.">
+      <Card title={t("Mantenimiento")} desc={t("Operaciones rápidas sobre la base de datos.")}>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={onVacuum}
@@ -193,7 +194,7 @@ function DataSettings() {
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            Compactar (VACUUM)
+            {t("Compactar (VACUUM)")}
           </button>
           <button
             onClick={onClearChat}
@@ -205,20 +206,24 @@ function DataSettings() {
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            Borrar historial de chat
+            {t("Borrar historial de chat")}
           </button>
         </div>
       </Card>
 
       <Card
         danger
-        title="Zona de peligro"
-        desc="Restaura la base de datos a su estado inicial con los datos de ejemplo. La configuración y las credenciales no se tocan."
+        title={t("Zona de peligro")}
+        desc={t(
+          "Restaura la base de datos a su estado inicial con los datos de ejemplo. La configuración y las credenciales no se tocan.",
+        )}
       >
         <div className="flex items-start gap-2 text-sm text-muted-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <span>
-            Escribe <code>BORRAR</code> para confirmar. Esta acción no se puede deshacer.
+            {t("Escribe {word} para confirmar. Esta acción no se puede deshacer.", {
+              word: "BORRAR",
+            })}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -233,7 +238,7 @@ function DataSettings() {
             disabled={busy !== null || resetWord !== "BORRAR"}
             className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
           >
-            {busy === "reset" ? "Restaurando…" : "Restaurar datos iniciales"}
+            {busy === "reset" ? t("Restaurando…") : t("Restaurar datos iniciales")}
           </button>
         </div>
       </Card>

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute } from "@tanstack/react-router";
 import { useTheme, type Density, type Theme } from "@/lib/theme";
+import { useT, type Locale } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/settings/appearance")({
   component: AppearanceSettings,
@@ -61,50 +62,70 @@ function Option<T extends string>({
 
 function AppearanceSettings() {
   const { theme, density, setTheme, setDensity } = useTheme();
+  const { t, locale, setLocale } = useT();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Card title="Tema" desc="Se aplica al instante y se guarda en tu equipo.">
+      <Card title={t("Tema")} desc={t("Se aplica al instante y se guarda en tu equipo.")}>
         <div className="grid gap-3 sm:grid-cols-3">
           <Option<Theme>
             value="dark"
             current={theme}
             onSelect={setTheme}
-            title="Oscuro"
-            desc="Interfaz oscura"
+            title={t("Oscuro")}
+            desc={t("Interfaz oscura")}
           />
           <Option<Theme>
             value="light"
             current={theme}
             onSelect={setTheme}
-            title="Claro"
-            desc="Interfaz clara"
+            title={t("Claro")}
+            desc={t("Interfaz clara")}
           />
           <Option<Theme>
             value="system"
             current={theme}
             onSelect={setTheme}
-            title="Sistema"
-            desc="Según tu sistema operativo"
+            title={t("Sistema")}
+            desc={t("Según tu sistema operativo")}
           />
         </div>
       </Card>
 
-      <Card title="Densidad" desc="Controla el tamaño base del texto.">
+      <Card title={t("Densidad")} desc={t("Controla el tamaño base del texto.")}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Option<Density>
             value="comfortable"
             current={density}
             onSelect={setDensity}
-            title="Cómoda"
-            desc="Texto a 15 px"
+            title={t("Cómoda")}
+            desc={t("Texto a 15 px")}
           />
           <Option<Density>
             value="compact"
             current={density}
             onSelect={setDensity}
-            title="Compacta"
-            desc="Texto a 14 px"
+            title={t("Compacta")}
+            desc={t("Texto a 14 px")}
+          />
+        </div>
+      </Card>
+
+      <Card title={t("Idioma")} desc={t("Idioma de la interfaz.")}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Option<Locale>
+            value="es"
+            current={locale}
+            onSelect={setLocale}
+            title={t("Español")}
+            desc="Español"
+          />
+          <Option<Locale>
+            value="en"
+            current={locale}
+            onSelect={setLocale}
+            title={t("Inglés")}
+            desc="English"
           />
         </div>
       </Card>

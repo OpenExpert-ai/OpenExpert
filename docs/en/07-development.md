@@ -57,6 +57,10 @@ startup and mirrors panel changes at runtime, so a change takes effect without
 restarting. UI preferences (theme, density, language) live in the `settings`
 table of the SQLite database.
 
+The interface language (Spanish/English) is one of those preferences; the
+settings layer on the client is `src/lib/i18n.tsx` with the English dictionary
+in `src/locales/en.ts` (Spanish is the source language).
+
 ## 4. Scripts
 
 | Script                            | Function                               |

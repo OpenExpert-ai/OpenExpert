@@ -6,11 +6,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { useT } from "@/lib/i18n";
 import { getAdvanced, resetConfig, saveRawConfig } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/advanced")({
   component: AdvancedSettings,
 });
+
+function bytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const SOURCE_LABEL: Record<string, string> = {
   env: "entorno",
@@ -18,12 +25,6 @@ const SOURCE_LABEL: Record<string, string> = {
   secrets: "secrets.json",
   default: "por defecto",
 };
-
-function bytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function Card({
   title,
@@ -48,6 +49,7 @@ function AdvancedSettings() {
   const save = useServerFn(saveRawConfig);
   const reset = useServerFn(resetConfig);
   const qc = useQueryClient();
+  const { t } = useT();
   const { data } = useQuery({ queryKey: ["advanced"], queryFn: () => get() });
 
   const [content, setContent] = useState("");
@@ -63,7 +65,7 @@ function AdvancedSettings() {
   if (!data) {
     return (
       <div className="flex items-center gap-2 p-6 font-mono text-xs text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("Cargando…")}
       </div>
     );
   }
@@ -72,22 +74,22 @@ function AdvancedSettings() {
     setBusy("save");
     try {
       await save({ data: { content } });
-      toast.success("openexpert.json guardado");
+      toast.success(t("openexpert.json guardado"));
       loaded.current = false;
       await qc.invalidateQueries();
     } catch (e) {
-      toast.error((e as Error).message || "JSON inválido");
+      toast.error((e as Error).message || t("JSON inválido"));
     } finally {
       setBusy(null);
     }
   };
 
   const onReset = async () => {
-    if (!window.confirm("¿Eliminar openexpert.json y volver a los valores por defecto?")) return;
+    if (!window.confirm(t("¿Eliminar openexpert.json y volver a los valores por defecto?"))) return;
     setBusy("reset");
     try {
       await reset();
-      toast.success("Configuración restaurada");
+      toast.success(t("Configuración restaurada"));
       loaded.current = false;
       await qc.invalidateQueries();
     } catch (e) {
@@ -101,30 +103,30 @@ function AdvancedSettings() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Card title="Diagnóstico" desc="Estado de tu instalación local.">
+      <Card title={t("Diagnóstico")} desc={t("Estado de tu instalación local.")}>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-md border border-border p-3 text-sm">
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Modelo
+              {t("Modelo")}
             </div>
             {d.provider}:{d.modelId}
           </div>
           <div className="rounded-md border border-border p-3 text-sm">
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Google Drive
+              {t("Google Drive")}
             </div>
-            {d.googleConfigured ? "Credenciales configuradas" : "Sin credenciales OAuth"}
+            {d.googleConfigured ? t("Credenciales configuradas") : t("Sin credenciales OAuth")}
           </div>
           <div className="rounded-md border border-border p-3 text-sm">
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Carpeta de datos
+              {t("Carpeta de datos")}
             </div>
             <code className="break-all text-xs">{d.dataDir}</code>{" "}
-            {d.dataDirWritable ? "· escribible" : "· NO escribible"}
+            {d.dataDirWritable ? `· ${t("escribible")}` : `· ${t("NO escribible")}`}
           </div>
           <div className="rounded-md border border-border p-3 text-sm">
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Base de datos
+              {t("Base de datos")}
             </div>
             <code className="break-all text-xs">{d.dbPath}</code> · {bytes(d.dbSize)}
           </div>
@@ -132,16 +134,16 @@ function AdvancedSettings() {
       </Card>
 
       <Card
-        title="Variables de entorno"
-        desc="Solo lectura. Las variables reales tienen prioridad."
+        title={t("Variables de entorno")}
+        desc={t("Solo lectura. Las variables reales tienen prioridad.")}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                <th className="py-2 pr-4">Variable</th>
-                <th className="py-2 pr-4">Origen</th>
-                <th className="py-2">Valor</th>
+                <th className="py-2 pr-4">{t("Variable")}</th>
+                <th className="py-2 pr-4">{t("Origen")}</th>
+                <th className="py-2">{t("Valor")}</th>
               </tr>
             </thead>
             <tbody>
@@ -149,7 +151,7 @@ function AdvancedSettings() {
                 <tr key={v.name} className="border-b border-border/50">
                   <td className="py-2 pr-4 font-mono text-xs">{v.name}</td>
                   <td className="py-2 pr-4 text-xs text-muted-foreground">
-                    {v.set ? (SOURCE_LABEL[v.source] ?? v.source) : "—"}
+                    {v.set ? t(SOURCE_LABEL[v.source] ?? v.source) : "—"}
                   </td>
                   <td className="py-2 font-mono text-xs">
                     {v.secret ? (v.set ? "••••••" : "—") : (v.value ?? "—")}
@@ -161,7 +163,10 @@ function AdvancedSettings() {
         </div>
       </Card>
 
-      <Card title="openexpert.json" desc="Edición directa del fichero. Se valida antes de guardar.">
+      <Card
+        title="openexpert.json"
+        desc={t("Edición directa del fichero. Se valida antes de guardar.")}
+      >
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -180,7 +185,7 @@ function AdvancedSettings() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Guardar
+            {t("Guardar")}
           </button>
           <button
             onClick={onReset}
@@ -192,7 +197,7 @@ function AdvancedSettings() {
             ) : (
               <RotateCcw className="h-4 w-4" />
             )}
-            Restaurar por defecto
+            {t("Restaurar por defecto")}
           </button>
         </div>
       </Card>

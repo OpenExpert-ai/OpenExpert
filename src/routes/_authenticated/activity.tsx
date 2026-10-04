@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Bot, User, Undo2, Check, X } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { useAct, useMe, useWorkspace, fmtTime } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { decideAction, revertEvent } from "@/lib/data.functions";
 
 export const Route = createFileRoute("/_authenticated/activity")({
@@ -32,7 +33,8 @@ const statusCls: Record<string, string> = {
 function ActivityPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
-  const revert = useAct(revertEvent, "Estado restaurado desde snapshot");
+  const { t } = useT();
+  const revert = useAct(revertEvent, t("Estado restaurado desde snapshot"));
   const decide = useAct(decideAction);
   const [actor, setActor] = useState("all");
   const [type, setType] = useState("all");
@@ -54,20 +56,22 @@ function ActivityPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Auditoría"
-        title="Registro de Actividad"
-        desc="Cada consulta, acción y cambio de configuración queda trazado. Los ADMIN pueden revertir acciones con snapshot; las acciones pendientes se aprueban aquí o en el chat."
+        eyebrow={t("Auditoría")}
+        title={t("Registro de Actividad")}
+        desc={t(
+          "Cada consulta, acción y cambio de configuración queda trazado. Los ADMIN pueden revertir acciones con snapshot; las acciones pendientes se aprueban aquí o en el chat.",
+        )}
       />
       <div className="flex flex-wrap gap-2 border-b border-border px-6 py-3">
         <select className={sel} value={actor} onChange={(e) => setActor(e.target.value)}>
-          <option value="all">Todos los actores</option>
-          <option value="human">Humano</option>
-          <option value="agent">Agente</option>
+          <option value="all">{t("Todos los actores")}</option>
+          <option value="human">{t("Humano")}</option>
+          <option value="agent">{t("Agente")}</option>
         </select>
         <select className={sel} value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="all">Todos los tipos</option>
-          {types.map((t) => (
-            <option key={t}>{t}</option>
+          <option value="all">{t("Todos los tipos")}</option>
+          {types.map((tp) => (
+            <option key={tp}>{tp}</option>
           ))}
         </select>
         <select
@@ -75,7 +79,7 @@ function ActivityPage() {
           value={expertFilter}
           onChange={(e) => setExpertFilter(e.target.value)}
         >
-          <option value="all">Todos los Experts</option>
+          <option value="all">{t("Todos los Experts")}</option>
           {ws.experts.map((e) => (
             <option key={e.id} value={e.id}>
               {e.name}
@@ -83,13 +87,13 @@ function ActivityPage() {
           ))}
         </select>
         <select className={sel} value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="all">Todos los estados</option>
+          <option value="all">{t("Todos los estados")}</option>
           {["ok", "pending", "reverted", "denied", "failed"].map((s) => (
             <option key={s}>{s}</option>
           ))}
         </select>
         <span className="ml-auto self-center font-mono text-[10px] text-muted-foreground">
-          {rows.length} / {ws.activity.length} eventos
+          {t("{a} / {b} eventos", { a: rows.length, b: ws.activity.length })}
         </span>
       </div>
       <div className="divide-y divide-border">
@@ -118,7 +122,11 @@ function ActivityPage() {
                 <span>{a.id}</span>
                 <span>{fmtTime(a.ts)}</span>
                 <span>{(a.duration_ms / 1000).toFixed(2)}s</span>
-                {a.sources.length > 0 && <span>fuentes: {a.sources.join(", ")}</span>}
+                {a.sources.length > 0 && (
+                  <span>
+                    {t("fuentes:")} {a.sources.join(", ")}
+                  </span>
+                )}
                 {a.hasSnapshot && <span className="text-primary/80">snapshot ✓</span>}
               </div>
             </div>
@@ -129,14 +137,14 @@ function ActivityPage() {
                   onClick={() => decide.mutate({ data: { eventId: a.id, approve: true } })}
                   className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-30"
                 >
-                  <Check className="h-3 w-3" /> Aprobar
+                  <Check className="h-3 w-3" /> {t("Aprobar")}
                 </button>
                 <button
                   disabled={!a.expert_id || !canDecide(a.expert_id) || decide.isPending}
                   onClick={() => decide.mutate({ data: { eventId: a.id, approve: false } })}
                   className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground disabled:opacity-30"
                 >
-                  <X className="h-3 w-3" /> Rechazar
+                  <X className="h-3 w-3" /> {t("Rechazar")}
                 </button>
               </div>
             )}
@@ -144,19 +152,20 @@ function ActivityPage() {
               <button
                 disabled={me.role !== "ADMIN" || revert.isPending}
                 onClick={() => {
-                  if (confirm(`¿Revertir ${a.id}?`)) revert.mutate({ data: { id: a.id } });
+                  if (confirm(t("¿Revertir {id}?", { id: a.id })))
+                    revert.mutate({ data: { id: a.id } });
                 }}
-                title={me.role !== "ADMIN" ? "Solo ADMIN" : ""}
+                title={me.role !== "ADMIN" ? t("Solo ADMIN") : ""}
                 className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary disabled:opacity-30"
               >
-                <Undo2 className="h-3 w-3" /> Revertir
+                <Undo2 className="h-3 w-3" /> {t("Revertir")}
               </button>
             )}
           </div>
         ))}
         {rows.length === 0 && (
           <div className="px-6 py-16 text-center text-sm text-muted-foreground">
-            Sin eventos para estos filtros.
+            {t("Sin eventos para estos filtros.")}
           </div>
         )}
       </div>

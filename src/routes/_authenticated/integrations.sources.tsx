@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAct, useDriveStatus, useWorkspace, fmtTime } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { disconnectDrive, startDriveAuth, syncIntegration } from "@/lib/data.functions";
 
 export const Route = createFileRoute("/_authenticated/integrations/sources")({
@@ -26,17 +27,18 @@ function SourcesPage() {
   const drive = useDriveStatus();
   const nav = useNavigate();
   const search = useSearch({ strict: false }) as { gdrive?: string };
-  const sync = useAct(syncIntegration, "Google Drive sincronizado");
-  const disconnect = useAct(disconnectDrive, "Google Drive desconectado");
+  const { t } = useT();
+  const sync = useAct(syncIntegration, t("Google Drive sincronizado"));
+  const disconnect = useAct(disconnectDrive, t("Google Drive desconectado"));
   const [open, setOpen] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     if (search.gdrive === "ok") {
-      toast.success("Google Drive conectado");
+      toast.success(t("Google Drive conectado"));
       nav({ search: {} as never });
     } else if (search.gdrive) {
-      toast.error("No se pudo conectar Google Drive");
+      toast.error(t("No se pudo conectar Google Drive"));
       nav({ search: {} as never });
     }
   }, [search.gdrive]);
@@ -84,13 +86,13 @@ function SourcesPage() {
                           {i.connected && i.last_sync
                             ? `sync ${fmtTime(i.last_sync)}`
                             : i.connected
-                              ? "conectado"
-                              : "desconectado"}
+                              ? t("conectado")
+                              : t("desconectado")}
                         </div>
                       </div>
                       {!isDrive ? (
                         <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Pendiente
+                          {t("Pendiente")}
                         </span>
                       ) : (
                         <>
@@ -105,7 +107,7 @@ function SourcesPage() {
                               onClick={connect}
                               className="rounded-md border border-primary px-3 py-1.5 text-xs text-primary hover:bg-primary/10 disabled:opacity-40"
                             >
-                              {connecting ? "Abriendo Google…" : "Conectar mi cuenta"}
+                              {connecting ? t("Abriendo Google…") : t("Conectar mi cuenta")}
                             </button>
                           )}
                           {mine && !i.connected && (
@@ -114,7 +116,7 @@ function SourcesPage() {
                               onClick={() => sync.mutate({ data: { id: "gdrive" } })}
                               className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
                             >
-                              {sync.isPending ? "Sincronizando…" : "Activar"}
+                              {sync.isPending ? t("Sincronizando…") : t("Activar")}
                             </button>
                           )}
                           {i.connected && (
@@ -123,7 +125,7 @@ function SourcesPage() {
                               onClick={() => sync.mutate({ data: { id: "gdrive" } })}
                               className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
                             >
-                              {sync.isPending ? "Sincronizando…" : "Sincronizar"}
+                              {sync.isPending ? t("Sincronizando…") : t("Sincronizar")}
                             </button>
                           )}
                           {mine && (
@@ -132,7 +134,7 @@ function SourcesPage() {
                               onClick={() => disconnect.mutate()}
                               className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-destructive/50 hover:text-destructive disabled:opacity-40"
                             >
-                              Desconectar
+                              {t("Desconectar")}
                             </button>
                           )}
                         </>
@@ -141,8 +143,8 @@ function SourcesPage() {
                     {isDrive && (
                       <div className="px-4 pb-3 font-mono text-[10px] text-muted-foreground">
                         {mine
-                          ? "Tu cuenta de Google está conectada"
-                          : "Conecta tu cuenta de Google para buscar, leer y crear archivos"}
+                          ? t("Tu cuenta de Google está conectada")
+                          : t("Conecta tu cuenta de Google para buscar, leer y crear archivos")}
                       </div>
                     )}
                     <button
@@ -152,7 +154,7 @@ function SourcesPage() {
                       <ChevronDown
                         className={`h-3 w-3 transition ${open === i.id ? "rotate-180" : ""}`}
                       />{" "}
-                      Entidades sincronizadas
+                      {t("Entidades sincronizadas")}
                     </button>
                     {open === i.id && (
                       <div className="space-y-1 px-4 pb-4">

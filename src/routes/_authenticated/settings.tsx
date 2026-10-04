@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -14,12 +15,19 @@ export const Route = createFileRoute("/_authenticated/settings")({
       { property: "og:description", content: "Ajustes locales de OpenExpert." },
     ],
   }),
-  component: () => (
+  component: SettingsLayout,
+});
+
+function SettingsLayout() {
+  const { t } = useT();
+  return (
     <div>
       <PageHeader
-        eyebrow="Ajustes"
-        title="Configuración"
-        desc="Modelo de IA, apariencia y datos de tu instalación local. Todo se guarda en tu equipo."
+        eyebrow={t("Ajustes")}
+        title={t("Configuración")}
+        desc={t(
+          "Modelo de IA, apariencia y datos de tu instalación local. Todo se guarda en tu equipo.",
+        )}
       />
       <div className="flex gap-1 overflow-x-auto border-b border-border px-6">
         {(
@@ -38,11 +46,11 @@ export const Route = createFileRoute("/_authenticated/settings")({
             className="-mb-px whitespace-nowrap border-b-2 border-transparent px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
             activeProps={{ className: "!border-primary !text-foreground" }}
           >
-            {label}
+            {t(label)}
           </Link>
         ))}
       </div>
       <Outlet />
     </div>
-  ),
-});
+  );
+}

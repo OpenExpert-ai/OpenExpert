@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { btnPrimary, inputCls } from "@/components/AppShell";
+import { useT } from "@/lib/i18n";
 import { getChatSettings, updateChatSettings } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/chat")({
@@ -54,6 +55,7 @@ function ChatSettings() {
   const get = useServerFn(getChatSettings);
   const save = useServerFn(updateChatSettings);
   const qc = useQueryClient();
+  const { t } = useT();
   const { data } = useQuery({ queryKey: ["chat-settings"], queryFn: () => get() });
 
   const [maxSteps, setMaxSteps] = useState(50);
@@ -77,7 +79,7 @@ function ChatSettings() {
   if (!data) {
     return (
       <div className="flex items-center gap-2 p-6 font-mono text-xs text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("Cargando…")}
       </div>
     );
   }
@@ -97,11 +99,11 @@ function ChatSettings() {
           defaultApproval,
         },
       });
-      toast.success("Ajustes de chat guardados");
+      toast.success(t("Ajustes de chat guardados"));
       loaded.current = false;
       await qc.invalidateQueries({ queryKey: ["chat-settings"] });
     } catch (e) {
-      toast.error((e as Error).message || "No se pudo guardar");
+      toast.error((e as Error).message || t("No se pudo guardar"));
     } finally {
       setBusy(false);
     }
@@ -110,8 +112,8 @@ function ChatSettings() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <Card
-        title="Seguridad del chat"
-        desc="La puerta de inyección bloquea intentos de evasión antes de llamar al modelo."
+        title={t("Seguridad del chat")}
+        desc={t("La puerta de inyección bloquea intentos de evasión antes de llamar al modelo.")}
       >
         <label className="flex items-start gap-3">
           <input
@@ -121,16 +123,20 @@ function ChatSettings() {
             className="mt-1 h-4 w-4 accent-[var(--primary)]"
           />
           <span>
-            <span className="block text-sm font-medium">Activar guardia anti-inyección</span>
+            <span className="block text-sm font-medium">{t("Activar guardia anti-inyección")}</span>
             <span className="block text-xs text-muted-foreground">
-              Recomendado. Si se desactiva, los intentos de evasión no se bloquean ni se registran.
+              {t(
+                "Recomendado. Si se desactiva, los intentos de evasión no se bloquean ni se registran.",
+              )}
             </span>
           </span>
         </label>
 
         <Field
-          label="Patrones extra (uno por línea)"
-          hint="Expresiones regulares adicionales. Se ignoran las inválidas; se rechazan al guardar."
+          label={t("Patrones extra (uno por línea)")}
+          hint={t(
+            "Expresiones regulares adicionales. Se ignoran las inválidas; se rechazan al guardar.",
+          )}
         >
           <textarea
             value={extraPatterns}
@@ -142,9 +148,15 @@ function ChatSettings() {
         </Field>
       </Card>
 
-      <Card title="Comportamiento" desc="Límites de ejecución y conservación de conversaciones.">
+      <Card
+        title={t("Comportamiento")}
+        desc={t("Límites de ejecución y conservación de conversaciones.")}
+      >
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Máx. pasos por consulta" hint="Número máximo de pasos con herramientas.">
+          <Field
+            label={t("Máx. pasos por consulta")}
+            hint={t("Número máximo de pasos con herramientas.")}
+          >
             <input
               type="number"
               min={1}
@@ -154,7 +166,7 @@ function ChatSettings() {
               className={inputCls}
             />
           </Field>
-          <Field label="Retención (días)" hint="0 desactiva la purga automática.">
+          <Field label={t("Retención (días)")} hint={t("0 desactiva la purga automática.")}>
             <input
               type="number"
               min={0}
@@ -165,20 +177,23 @@ function ChatSettings() {
             />
           </Field>
         </div>
-        <Field label="Aprobación por defecto" hint="Política aplicada a los procesos nuevos.">
+        <Field
+          label={t("Aprobación por defecto")}
+          hint={t("Política aplicada a los procesos nuevos.")}
+        >
           <select
             value={defaultApproval}
             onChange={(e) => setDefaultApproval(e.target.value as "Ninguna" | "Requerida")}
             className={inputCls}
           >
-            <option value="Requerida">Requerida</option>
-            <option value="Ninguna">Ninguna</option>
+            <option value="Requerida">{t("Requerida")}</option>
+            <option value="Ninguna">{t("Ninguna")}</option>
           </select>
         </Field>
       </Card>
 
       <button onClick={onSave} disabled={busy} className={btnPrimary}>
-        {busy ? "Guardando…" : "Guardar cambios"}
+        {busy ? t("Guardando…") : t("Guardar cambios")}
       </button>
     </div>
   );

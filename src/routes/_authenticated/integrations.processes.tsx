@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Play, Zap, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAct, useMe, useWorkspace, fmtTime } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { runProcess, toggleProcess } from "@/lib/data.functions";
 
 export const Route = createFileRoute("/_authenticated/integrations/processes")({
@@ -32,6 +33,7 @@ const apprCls: Record<string, string> = {
 function ProcessesPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
+  const { t } = useT();
   const run = useAct(runProcess);
   const toggle = useAct(toggleProcess);
   if (!ws || !me) return null;
@@ -51,7 +53,7 @@ function ProcessesPage() {
               disabled={me.role !== "ADMIN" || toggle.isPending}
               onClick={() => toggle.mutate({ data: { id: p.id } })}
               className={`relative h-5 w-9 shrink-0 rounded-full transition disabled:opacity-50 ${p.active ? "bg-primary" : "bg-muted"}`}
-              aria-label="Activar proceso"
+              aria-label={t("Activar proceso")}
             >
               <span
                 className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${p.active ? "left-[18px]" : "left-0.5"}`}
@@ -67,11 +69,11 @@ function ProcessesPage() {
               className={`flex items-center gap-1 rounded border px-2 py-0.5 font-mono ${apprCls[p.approval] ?? ""}`}
             >
               <ShieldCheck className="h-3 w-3" />
-              Aprobación: {p.approval}
+              {t("Aprobación: {v}", { v: p.approval })}
             </span>
           </div>
           <div className="mt-4 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Arquitectura
+            {t("Arquitectura")}
           </div>
           <ol className="mt-2 flex flex-wrap items-center gap-1 text-xs">
             {p.stages.map((s, i) => (
@@ -84,7 +86,7 @@ function ProcessesPage() {
             ))}
           </ol>
           <div className="mt-4 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Límites de seguridad
+            {t("Límites de seguridad")}
           </div>
           <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
             {p.limits.map((l) => (
@@ -93,7 +95,10 @@ function ProcessesPage() {
           </ul>
           <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
             <span className="font-mono text-[10px] text-muted-foreground">
-              {p.runs} ejecuciones · última {p.last_run ? fmtTime(p.last_run) : "—"}
+              {t("{n} ejecuciones · última {t}", {
+                n: p.runs,
+                t: p.last_run ? fmtTime(p.last_run) : "—",
+              })}
             </span>
             <button
               disabled={!p.active || run.isPending}
@@ -104,15 +109,15 @@ function ProcessesPage() {
                     onSuccess: (r) =>
                       toast.success(
                         r.pending
-                          ? "Solicitud enviada: pendiente de aprobación en el Registro"
-                          : `${p.name} ejecutado`,
+                          ? t("Solicitud enviada: pendiente de aprobación en el Registro")
+                          : t("{name} ejecutado", { name: p.name }),
                       ),
                   },
                 )
               }
               className="flex items-center gap-1.5 rounded-md border border-primary/50 px-3 py-1.5 text-xs text-primary hover:bg-primary/10 disabled:opacity-30"
             >
-              <Play className="h-3 w-3" /> Ejecutar ahora
+              <Play className="h-3 w-3" /> {t("Ejecutar ahora")}
             </button>
           </div>
         </div>

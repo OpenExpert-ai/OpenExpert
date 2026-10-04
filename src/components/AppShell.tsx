@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMe, useUI, useWorkspace } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 
 const nav = [
   { to: "/expert", label: "Expert", icon: MessagesSquare },
@@ -26,13 +27,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { activeExpert, setActiveExpert } = useUI();
   const me = useMe(ws);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { t } = useT();
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
         <div className="border-b border-border px-5 py-5">
           <div className="font-display text-2xl tracking-tight">OpenExpert</div>
           <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Habla con tu empresa
+            {t("Habla con tu empresa")}
           </div>
         </div>
         <nav className="flex-1 space-y-0.5 p-3">
@@ -45,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"}`}
               >
                 <n.icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} />
-                {n.label}
+                {t(n.label)}
               </Link>
             );
           })}
@@ -61,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm">{me?.name}</div>
-              <div className="font-mono text-[10px] text-muted-foreground">Local</div>
+              <div className="font-mono text-[10px] text-muted-foreground">{t("Local")}</div>
             </div>
           </div>
         </div>
@@ -73,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Cargando espacio de trabajo…
+              {t("Cargando espacio de trabajo…")}
             </>
           )}
         </div>
@@ -114,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="whitespace-nowrap rounded px-2 py-1 text-xs text-muted-foreground"
                 activeProps={{ className: "bg-accent text-foreground" }}
               >
-                {n.label}
+                {t(n.label)}
               </Link>
             ))}
           </nav>

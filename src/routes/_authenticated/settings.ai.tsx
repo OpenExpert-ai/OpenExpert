@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Eye, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { useT } from "@/lib/i18n";
 import {
   getSettings,
   listModels,
@@ -72,6 +73,7 @@ function AiSettings() {
   const test = useServerFn(testProvider);
   const reveal = useServerFn(revealSecret);
   const qc = useQueryClient();
+  const { t } = useT();
 
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
 
@@ -103,7 +105,7 @@ function AiSettings() {
   if (!data) {
     return (
       <div className="flex items-center gap-2 p-6 font-mono text-xs text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Cargando configuración…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("Cargando configuración…")}
       </div>
     );
   }
@@ -124,11 +126,11 @@ function AiSettings() {
           ...(modelKeyDraft !== null ? { modelKey: modelKeyDraft } : {}),
         },
       });
-      toast.success("Configuración guardada");
+      toast.success(t("Configuración guardada"));
       loaded.current = false;
       await qc.invalidateQueries({ queryKey: ["settings"] });
     } catch (e) {
-      toast.error((e as Error).message || "No se pudo guardar");
+      toast.error((e as Error).message || t("No se pudo guardar"));
     } finally {
       setBusy(null);
     }
@@ -138,11 +140,11 @@ function AiSettings() {
     setBusy("list");
     try {
       const r = await list();
-      if (!r.ok) toast.error(r.error ?? "No se pudieron listar los modelos");
-      else if (!r.models.length) toast.info("El proveedor no devolvió modelos");
+      if (!r.ok) toast.error(r.error ?? t("No se pudieron listar los modelos"));
+      else if (!r.models.length) toast.info(t("El proveedor no devolvió modelos"));
       else {
         setModels(r.models);
-        toast.success(`${r.models.length} modelos disponibles`);
+        toast.success(t("{n} modelos disponibles", { n: r.models.length }));
       }
     } finally {
       setBusy(null);
@@ -153,8 +155,8 @@ function AiSettings() {
     setBusy("test");
     try {
       const r = await test();
-      if (r.ok) toast.success(`Conexión correcta · ${r.count} modelos`);
-      else toast.error(r.error ?? "No se pudo conectar");
+      if (r.ok) toast.success(t("Conexión correcta · {n} modelos", { n: r.count }));
+      else toast.error(r.error ?? t("No se pudo conectar"));
     } finally {
       setBusy(null);
     }
@@ -164,37 +166,41 @@ function AiSettings() {
     try {
       const r = await reveal({ data: { name } });
       if (r.value) toast.message(`${name}: ${r.value}`);
-      else toast.info("No hay valor definido");
+      else toast.info(t("No hay valor definido"));
     } catch (e) {
       toast.error((e as Error).message);
     }
   };
 
   const keyStatus = (s: { set: boolean; source: string }) =>
-    s.set ? `Definida (${SOURCE_LABEL[s.source] ?? s.source})` : "No definida";
+    s.set ? `${t("Definida")} (${t(SOURCE_LABEL[s.source] ?? s.source)})` : t("No definida");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <Card
-        title="Proveedor de IA"
-        desc="Elige dónde se ejecuta el modelo. Ollama es local y no necesita claves."
+        title={t("Proveedor de IA")}
+        desc={t("Elige dónde se ejecuta el modelo. Ollama es local y no necesita claves.")}
       >
-        <Field label="Proveedor">
+        <Field label={t("Proveedor")}>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as Provider)}
             className={inputCls}
           >
-            <option value="ollama">Ollama (local)</option>
-            <option value="google">Google Gemini</option>
-            <option value="openai-compatible">OpenAI-compatible (BYOK)</option>
+            <option value="ollama">{t("Ollama (local)")}</option>
+            <option value="google">{t("Google Gemini")}</option>
+            <option value="openai-compatible">{t("OpenAI-compatible (BYOK)")}</option>
           </select>
           <span className="block text-xs text-muted-foreground">
-            Origen actual: {SOURCE_LABEL[data.ai.providerSource] ?? data.ai.providerSource}
+            {t("Origen actual:")}{" "}
+            {t(SOURCE_LABEL[data.ai.providerSource] ?? data.ai.providerSource)}
           </span>
         </Field>
 
-        <Field label="Modelo" hint="Identificador del modelo tal y como lo conoce el proveedor.">
+        <Field
+          label={t("Modelo")}
+          hint={t("Identificador del modelo tal y como lo conoce el proveedor.")}
+        >
           <div className="flex gap-2">
             <input
               list="model-options"
@@ -219,13 +225,13 @@ function AiSettings() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Listar
+              {t("Listar")}
             </button>
           </div>
         </Field>
 
         {provider === "ollama" && (
-          <Field label="URL de Ollama">
+          <Field label={t("URL de Ollama")}>
             <input
               value={ollamaBaseUrl}
               onChange={(e) => setOllamaBaseUrl(e.target.value)}
@@ -237,7 +243,10 @@ function AiSettings() {
 
         {provider === "openai-compatible" && (
           <>
-            <Field label="Base URL" hint="Endpoint compatible con OpenAI (con /v1 al final).">
+            <Field
+              label={t("Base URL")}
+              hint={t("Endpoint compatible con OpenAI (con /v1 al final).")}
+            >
               <input
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
@@ -245,20 +254,20 @@ function AiSettings() {
                 placeholder="https://api.ejemplo.com/v1"
               />
             </Field>
-            <Field label="API key" hint={keyStatus(data.secrets.modelKey)}>
+            <Field label={t("API key")} hint={keyStatus(data.secrets.modelKey)}>
               <div className="flex gap-2">
                 <input
                   type="password"
                   value={modelKeyDraft ?? ""}
                   onChange={(e) => setModelKeyDraft(e.target.value)}
                   className={inputCls}
-                  placeholder="Dejar vacío para no cambiarla"
+                  placeholder={t("Dejar vacío para no cambiarla")}
                 />
                 <button
                   type="button"
                   onClick={() => onReveal("OPENEXPERT_MODEL_KEY")}
                   className={`${btnGhost} shrink-0`}
-                  title="Revelar"
+                  title={t("Revelar")}
                 >
                   <Eye className="h-4 w-4" />
                 </button>
@@ -266,9 +275,9 @@ function AiSettings() {
                   type="button"
                   onClick={() => setModelKeyDraft("")}
                   className={`${btnGhost} shrink-0`}
-                  title="Borrar"
+                  title={t("Borrar")}
                 >
-                  Borrar
+                  {t("Borrar")}
                 </button>
               </div>
             </Field>
@@ -276,20 +285,20 @@ function AiSettings() {
         )}
 
         {provider === "google" && (
-          <Field label="API key de Gemini" hint={keyStatus(data.secrets.googleApiKey)}>
+          <Field label={t("API key de Gemini")} hint={keyStatus(data.secrets.googleApiKey)}>
             <div className="flex gap-2">
               <input
                 type="password"
                 value={googleKeyDraft ?? ""}
                 onChange={(e) => setGoogleKeyDraft(e.target.value)}
                 className={inputCls}
-                placeholder="Dejar vacío para no cambiarla"
+                placeholder={t("Dejar vacío para no cambiarla")}
               />
               <button
                 type="button"
                 onClick={() => onReveal("GOOGLE_API_KEY")}
                 className={`${btnGhost} shrink-0`}
-                title="Revelar"
+                title={t("Revelar")}
               >
                 <Eye className="h-4 w-4" />
               </button>
@@ -297,16 +306,19 @@ function AiSettings() {
                 type="button"
                 onClick={() => setGoogleKeyDraft("")}
                 className={`${btnGhost} shrink-0`}
-                title="Borrar"
+                title={t("Borrar")}
               >
-                Borrar
+                {t("Borrar")}
               </button>
             </div>
           </Field>
         )}
       </Card>
 
-      <Card title="Parámetros de muestreo" desc="Controlan cómo de creativo y largo es el modelo.">
+      <Card
+        title={t("Parámetros de muestreo")}
+        desc={t("Controlan cómo de creativo y largo es el modelo.")}
+      >
         <div className="grid gap-5 sm:grid-cols-3">
           <Field label="Temperature">
             <input
@@ -319,7 +331,7 @@ function AiSettings() {
               className={inputCls}
             />
           </Field>
-          <Field label="Top P">
+          <Field label={t("Top P")}>
             <input
               type="number"
               min={0}
@@ -330,7 +342,7 @@ function AiSettings() {
               className={inputCls}
             />
           </Field>
-          <Field label="Máx. tokens">
+          <Field label={t("Máx. tokens")}>
             <input
               type="number"
               min={1}
@@ -345,7 +357,7 @@ function AiSettings() {
 
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={onSave} disabled={busy !== null} className={btnPrimary}>
-          {busy === "save" ? "Guardando…" : "Guardar cambios"}
+          {busy === "save" ? t("Guardando…") : t("Guardar cambios")}
         </button>
         <button
           onClick={onTest}
@@ -357,10 +369,10 @@ function AiSettings() {
           ) : (
             <PlugZap className="h-4 w-4" />
           )}
-          Probar conexión
+          {t("Probar conexión")}
         </button>
         <span className="text-xs text-muted-foreground">
-          Se guarda en <code>openexpert.json</code> y <code>secrets.json</code>.
+          {t("Se guarda en {a} y {b}.", { a: "openexpert.json", b: "secrets.json" })}
         </span>
       </div>
     </div>

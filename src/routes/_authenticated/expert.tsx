@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
 import { btnPrimary } from "@/components/AppShell";
 import { ExpertForm } from "./experts";
@@ -120,6 +121,7 @@ function ChatWindow({
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
   const qc = useQueryClient();
+  const { t } = useT();
   const clear = useAct(clearChat);
   const expert = ws?.experts.find((e) => e.id === expertId);
   const [input, setInput] = useState("");
@@ -139,10 +141,10 @@ function ChatWindow({
     onError: (e) =>
       toast.error(
         e.message?.includes("402")
-          ? "Sin créditos de IA disponibles."
+          ? t("Sin créditos de IA disponibles.")
           : e.message?.includes("429")
-            ? "Demasiadas peticiones, espera unos segundos."
-            : "No se pudo completar la respuesta.",
+            ? t("Demasiadas peticiones, espera unos segundos.")
+            : t("No se pudo completar la respuesta."),
       ),
     onFinish: () => {
       qc.invalidateQueries({ queryKey: workspaceKey });
@@ -164,7 +166,7 @@ function ChatWindow({
     onSelect(`c-${expertId}-${Date.now().toString(36)}`);
   };
   const removeConversation = (id: string) => {
-    if (!confirm("¿Eliminar esta conversación definitivamente?")) return;
+    if (!confirm(t("¿Eliminar esta conversación definitivamente?"))) return;
     clear.mutate(
       { data: { expertId, conversationId: id } },
       {
@@ -200,7 +202,7 @@ function ChatWindow({
       r.onend = () => setListening(false);
       r.onerror = () => {
         setListening(false);
-        toast.error("No se pudo usar el micrófono");
+        toast.error(t("No se pudo usar el micrófono"));
       };
       r.start();
     } else {
@@ -221,7 +223,7 @@ function ChatWindow({
               className="pointer-events-auto flex items-center gap-2 rounded-md border border-border bg-background/90 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur transition hover:border-primary/50 hover:text-foreground"
             >
               <History className="h-3.5 w-3.5" />
-              Historial ({conversations.length})
+              {t("Historial ({n})", { n: conversations.length })}
             </button>
           )}
           {messages.length > 0 && (
@@ -231,14 +233,14 @@ function ChatWindow({
               className="pointer-events-auto flex items-center gap-2 rounded-md border border-border bg-background/90 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur transition hover:border-primary/50 hover:text-foreground disabled:opacity-40"
             >
               <MessageSquarePlus className="h-3.5 w-3.5" />
-              Nueva conversación
+              {t("Nueva conversación")}
             </button>
           )}
         </div>
         {showHist && (
           <div className="pointer-events-auto w-80 rounded-md border border-border bg-popover p-1 shadow-lg">
             <div className="px-2 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Se guardan 30 días desde el último mensaje
+              {t("Se guardan 30 días desde el último mensaje")}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {conversations.map((c) => (
@@ -253,7 +255,7 @@ function ChatWindow({
                     }}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <div className="truncate">{c.title || "Conversación"}</div>
+                    <div className="truncate">{c.title || t("Conversación")}</div>
                     <div className="font-mono text-[10px] opacity-70">
                       {new Date(c.updatedAt).toLocaleString("es-ES", {
                         dateStyle: "short",
@@ -264,7 +266,7 @@ function ChatWindow({
                   </button>
                   <button
                     onClick={() => removeConversation(c.id)}
-                    aria-label="Eliminar conversación"
+                    aria-label={t("Eliminar conversación")}
                     className="opacity-60 hover:text-destructive group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -280,30 +282,32 @@ function ChatWindow({
           {messages.length === 0 && (
             <div className="py-16 text-center">
               <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-primary">
-                Experto · {expert?.name}
+                {t("Experto")} · {expert?.name}
               </div>
-              <h1 className="mt-4 font-display text-5xl tracking-tight">Habla con tu empresa.</h1>
+              <h1 className="mt-4 font-display text-5xl tracking-tight">
+                {t("Habla con tu empresa.")}
+              </h1>
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
                 {expert?.description}
               </p>
               <div className="mx-auto mt-8 max-w-md rounded-md border border-border bg-card p-4 text-left">
                 <div className="font-mono text-[10px] uppercase tracking-wider text-primary">
-                  Primeros pasos
+                  {t("Primeros pasos")}
                 </div>
                 <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <li>1. Elige tu modelo con `opencore init` (Ollama o Gemini).</li>
-                  <li>2. Conecta Google Drive, si quieres, en Integraciones → Fuentes.</li>
-                  <li>3. Escribe tu primera pregunta abajo.</li>
+                  <li>{t("1. Elige tu modelo con `opencore init` (Ollama o Gemini).")}</li>
+                  <li>{t("2. Conecta Google Drive, si quieres, en Integraciones → Fuentes.")}</li>
+                  <li>{t("3. Escribe tu primera pregunta abajo.")}</li>
                 </ol>
               </div>
               <div className="mt-10 grid gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => send(s)}
+                    onClick={() => send(t(s))}
                     className="rounded-md border border-border bg-card px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
                   >
-                    {s}
+                    {t(s)}
                   </button>
                 ))}
               </div>
@@ -331,14 +335,14 @@ function ChatWindow({
                 <Avatar />
                 <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                  Analizando contexto…
+                  {t("Analizando contexto…")}
                 </span>
               </div>
             )}
             {error && !busy && (
               <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                La respuesta falló. Puedes volver a intentarlo.
+                {t("La respuesta falló. Puedes volver a intentarlo.")}
               </div>
             )}
           </div>
@@ -354,16 +358,16 @@ function ChatWindow({
                 className="flex items-center gap-1 whitespace-nowrap rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3" />
-                Nueva
+                {t("Nueva")}
               </button>
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
-                  onClick={() => send(s)}
+                  onClick={() => send(t(s))}
                   disabled={busy}
                   className="whitespace-nowrap rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
                 >
-                  {s}
+                  {t(s)}
                 </button>
               ))}
             </div>
@@ -378,7 +382,7 @@ function ChatWindow({
             <button
               type="button"
               onClick={voice}
-              aria-label="Entrada por voz"
+              aria-label={t("Entrada por voz")}
               className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${listening ? "bg-destructive/20 text-destructive" : "text-muted-foreground hover:text-foreground"}`}
             >
               {listening && (
@@ -389,7 +393,7 @@ function ChatWindow({
             <textarea
               ref={taRef}
               rows={1}
-              value={listening ? "Escuchando…" : input}
+              value={listening ? t("Escuchando…") : input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -397,14 +401,16 @@ function ChatWindow({
                   send(input);
                 }
               }}
-              placeholder={`Pregunta u ordena algo a ${expert?.name ?? "OpenExpert"}…`}
+              placeholder={t("Pregunta u ordena algo a {name}…", {
+                name: expert?.name ?? "OpenExpert",
+              })}
               className="max-h-40 flex-1 resize-none bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
             />
             {busy ? (
               <button
                 type="button"
                 onClick={() => stop()}
-                aria-label="Detener"
+                aria-label={t("Detener")}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-foreground"
               >
                 <Square className="h-3.5 w-3.5" />
@@ -413,7 +419,7 @@ function ChatWindow({
               <button
                 type="submit"
                 disabled={!input.trim()}
-                aria-label="Enviar"
+                aria-label={t("Enviar")}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-30"
               >
                 <ArrowUp className="h-4 w-4" />
@@ -421,7 +427,9 @@ function ChatWindow({
             )}
           </form>
           <div className="mt-2 text-center font-mono text-[10px] text-muted-foreground">
-            {me?.name} · local · las acciones sensibles requieren confirmación humana
+            {t("{name} · local · las acciones sensibles requieren confirmación humana", {
+              name: me?.name ?? "",
+            })}
           </div>
         </div>
       </div>
@@ -500,6 +508,7 @@ function AssistantMsg({
     .trim();
   const sources = [...new Set(tools.map((t) => SOURCE[t.type.slice(5)]).filter(Boolean))];
   const [copied, setCopied] = useState(false);
+  const { t } = useT();
   return (
     <div className="group flex gap-3">
       <Avatar />
@@ -527,14 +536,14 @@ function AssistantMsg({
             <ShieldAlert className="h-5 w-5 shrink-0 text-destructive" />
             <div>
               <div className="font-mono text-[10px] uppercase tracking-wider text-destructive">
-                Solicitud denegada · política de seguridad
+                {t("Solicitud denegada · política de seguridad")}
               </div>
               <p className="mt-1 text-foreground/80">{denied.data.reason}</p>
             </div>
           </div>
         )}
         {reasoning && (
-          <Collapsible label="Razonamiento">
+          <Collapsible label={t("Razonamiento")}>
             <p className="whitespace-pre-wrap text-xs text-muted-foreground">{reasoning}</p>
           </Collapsible>
         )}
@@ -561,7 +570,7 @@ function AssistantMsg({
               className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
             >
               {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
-              {copied ? "Copiado" : "Copiar"}
+              {copied ? t("Copiado") : t("Copiar")}
             </button>
           </div>
         )}
@@ -571,23 +580,25 @@ function AssistantMsg({
 }
 
 function ExecutionTimeline({ tools }: { tools: ToolPart[] }) {
+  const { t } = useT();
   return (
     <div className="rounded-md border border-border bg-card/60 px-3 py-2">
       <div className="mb-1 flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-        <span>Ejecución</span>
+        <span>{t("Ejecución")}</span>
         <span>
-          {tools.filter((t) => t.state.startsWith("output")).length}/{tools.length} pasos
+          {tools.filter((x) => x.state.startsWith("output")).length}/{tools.length} {t("pasos")}
         </span>
       </div>
       <ol>
-        {tools.map((t, i) => {
-          const name = t.type.slice(5);
-          const done = t.state === "output-available";
+        {tools.map((tool, i) => {
+          const name = tool.type.slice(5);
+          const done = tool.state === "output-available";
           const err =
-            t.state === "output-error" || !!(t.output as { error?: string } | undefined)?.error;
+            tool.state === "output-error" ||
+            !!(tool.output as { error?: string } | undefined)?.error;
           const last = i === tools.length - 1;
           return (
-            <li key={t.toolCallId} className="relative pl-7">
+            <li key={tool.toolCallId} className="relative pl-7">
               {!last && <span className="absolute left-[9px] top-6 bottom-0 w-px bg-border" />}
               <span
                 className={`absolute left-0 top-1.5 flex h-[19px] w-[19px] items-center justify-center rounded-full border ${err ? "border-destructive/50 bg-destructive/10 text-destructive" : done ? "border-success/50 bg-success/10 text-success" : "border-primary/60 text-primary"}`}
@@ -602,16 +613,16 @@ function ExecutionTimeline({ tools }: { tools: ToolPart[] }) {
               </span>
               <div className="flex items-center gap-3 py-1.5">
                 <span className={done || err ? "text-foreground/90" : "text-foreground"}>
-                  {TOOL_LABEL[name] ?? name}
+                  {t(TOOL_LABEL[name] ?? name)}
                 </span>
                 <span
                   className={`ml-auto font-mono text-[10px] ${err ? "text-destructive" : done ? "text-success" : "text-primary"}`}
                 >
-                  {err ? "blocked" : done ? "done" : "working…"}
+                  {err ? t("blocked") : done ? t("done") : t("working…")}
                 </span>
               </div>
-              <Collapsible label="Detalles técnicos">
-                <pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded border border-border bg-sidebar p-2 font-mono text-[11px] text-muted-foreground">{`tool=${name}\ninput=${JSON.stringify(t.input)}\n${t.errorText ? `error=${t.errorText}` : `output=${JSON.stringify(t.output, null, 1)?.slice(0, 2000) ?? "…"}`}`}</pre>
+              <Collapsible label={t("Detalles técnicos")}>
+                <pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded border border-border bg-sidebar p-2 font-mono text-[11px] text-muted-foreground">{`tool=${name}\ninput=${JSON.stringify(tool.input)}\n${tool.errorText ? `error=${tool.errorText}` : `output=${JSON.stringify(tool.output, null, 1)?.slice(0, 2000) ?? "…"}`}`}</pre>
               </Collapsible>
             </li>
           );

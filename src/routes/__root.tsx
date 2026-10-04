@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
 import { UIProvider } from "../lib/store";
 import { ThemeProvider, useTheme } from "../lib/theme";
+import { I18nProvider } from "../lib/i18n";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -143,8 +144,10 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <UIProvider>
         <ThemeProvider>
-          <Outlet />
-          <ThemedToaster />
+          <I18nProvider>
+            <Outlet />
+            <ThemedToaster />
+          </I18nProvider>
         </ThemeProvider>
       </UIProvider>
     </QueryClientProvider>

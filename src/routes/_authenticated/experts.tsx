@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Database } from "lucide-react";
 import { PageHeader, Modal, inputCls, btnPrimary, btnGhost } from "@/components/AppShell";
 import { useAct, useUI, useWorkspace } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { createExpert } from "@/lib/data.functions";
 
 export const Route = createFileRoute("/_authenticated/experts")({
@@ -31,7 +32,8 @@ export function ExpertForm({
   onDone: (id: string) => void;
 }) {
   const { data: ws } = useWorkspace();
-  const create = useAct(createExpert, "Experto creado");
+  const { t } = useT();
+  const create = useAct(createExpert, t("Experto creado"));
   const [name, setName] = useState(initialName);
   const [desc, setDesc] = useState(initialDesc);
   const [srcs, setSrcs] = useState<string[]>([]);
@@ -40,21 +42,21 @@ export function ExpertForm({
     <div className="space-y-4">
       <input
         className={inputCls}
-        placeholder="Nombre (p. ej. Operaciones)"
+        placeholder={t("Nombre (p. ej. Operaciones)")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         maxLength={60}
       />
       <textarea
         className={inputCls}
-        placeholder="Descripción y alcance"
+        placeholder={t("Descripción y alcance")}
         value={desc}
         onChange={(e) => setDesc(e.target.value)}
         maxLength={400}
       />
       <div>
         <div className="mb-2 font-mono text-[10px] uppercase text-muted-foreground">
-          Integraciones conectadas
+          {t("Integraciones conectadas")}
         </div>
         <div className="flex flex-wrap gap-2">
           {ws.integrations.map((i) => (
@@ -67,7 +69,7 @@ export function ExpertForm({
               className={`rounded-full border px-3 py-1 text-xs ${srcs.includes(i.id) ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
             >
               {i.name}
-              {!i.connected && " · off"}
+              {!i.connected && ` · ${t("off")}`}
             </button>
           ))}
         </div>
@@ -82,7 +84,7 @@ export function ExpertForm({
           )
         }
       >
-        {create.isPending ? "Creando…" : "Crear Experto"}
+        {create.isPending ? t("Creando…") : t("Crear Experto")}
       </button>
     </div>
   );
@@ -91,17 +93,18 @@ export function ExpertForm({
 function ExpertsPage() {
   const { data: ws } = useWorkspace();
   const { activeExpert, setActiveExpert } = useUI();
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   if (!ws) return null;
   return (
     <div>
       <PageHeader
-        eyebrow="Aislamiento de contexto"
-        title="Experts"
-        desc="Cada Experto solo ve sus fuentes conectadas y responde dentro de su dominio."
+        eyebrow={t("Aislamiento de contexto")}
+        title={t("Experts")}
+        desc={t("Cada Experto solo ve sus fuentes conectadas y responde dentro de su dominio.")}
       >
         <button onClick={() => setOpen(true)} className={`${btnPrimary} flex items-center gap-2`}>
-          <Plus className="h-4 w-4" /> Nuevo Experto
+          <Plus className="h-4 w-4" /> {t("Nuevo Experto")}
         </button>
       </PageHeader>
       <div className="grid gap-4 p-6 lg:grid-cols-2">
@@ -120,15 +123,15 @@ function ExpertsPage() {
                 onClick={() => setActiveExpert(e.id)}
                 className="shrink-0 rounded border border-border px-2 py-1 font-mono text-[10px] uppercase text-muted-foreground hover:text-foreground"
               >
-                {activeExpert === e.id ? "Activo" : "Activar"}
+                {activeExpert === e.id ? t("Activo") : t("Activar")}
               </button>
             </div>
             <div className="mt-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              <Database className="h-3 w-3" /> Fuentes
+              <Database className="h-3 w-3" /> {t("Fuentes")}
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {e.sources.length === 0 && (
-                <span className="text-xs text-muted-foreground">Sin fuentes</span>
+                <span className="text-xs text-muted-foreground">{t("Sin fuentes")}</span>
               )}
               {e.sources.map((id) => {
                 const i = ws.integrations.find((x) => x.id === id);
@@ -138,7 +141,7 @@ function ExpertsPage() {
                     className={`rounded border px-2 py-0.5 text-xs ${i?.connected ? "border-border" : "border-destructive/40 text-destructive"}`}
                   >
                     {i?.name ?? id}
-                    {!i?.connected && " · off"}
+                    {!i?.connected && ` · ${t("off")}`}
                   </span>
                 );
               })}
@@ -146,10 +149,10 @@ function ExpertsPage() {
           </div>
         ))}
       </div>
-      <Modal open={open} onClose={() => setOpen(false)} title="Nuevo Experto">
+      <Modal open={open} onClose={() => setOpen(false)} title={t("Nuevo Experto")}>
         <ExpertForm onDone={() => setOpen(false)} />
         <button className={`${btnGhost} mt-3`} onClick={() => setOpen(false)}>
-          Cancelar
+          {t("Cancelar")}
         </button>
       </Modal>
     </div>

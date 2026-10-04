@@ -57,6 +57,10 @@ Precedencia al leer: variables de entorno reales > `openexpert.json` >
 un cambio surte efecto sin reiniciar. Las preferencias de interfaz (tema,
 densidad, idioma) viven en la tabla `settings` de la base SQLite.
 
+El idioma de la interfaz (español/inglés) es una de esas preferencias; la capa
+de i18n del cliente está en `src/lib/i18n.tsx` con el diccionario inglés en
+`src/locales/en.ts` (el español es el idioma fuente).
+
 ## 4. Scripts
 
 | Script                            | Función                                             |
