@@ -20,7 +20,7 @@ const COMPOSE = `# SPDX-License-Identifier: MIT
 name: openexpert
 services:
   openexpert:
-    image: ghcr.io/openexpert/openexpert:local
+    image: ghcr.io/openexpert-ai/openexpert:local
     restart: unless-stopped
     ports:
       - "3000:3000"

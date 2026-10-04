@@ -60,5 +60,5 @@ Copia `OPENEXPERT_DATA_DIR` (contiene `openexpert.db`, `credentials.json` y
 
 ## Referencias
 
-- [Cómo ejecutarlo](./08-despliegue.md) — cómo arrancarlo.
+- [Despliegue](./08-despliegue.md) — cómo arrancarlo.
 - [Seguridad y acceso](./04-seguridad-y-acceso.md) — auditoría y reversión.

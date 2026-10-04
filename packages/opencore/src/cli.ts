@@ -22,7 +22,7 @@ Ejemplos:
   npx @openexpert/opencore serve
 
 Docker (sin Node):
-  docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert`);
+  docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert`);
 }
 
 export async function run(argv: string[]): Promise<void> {

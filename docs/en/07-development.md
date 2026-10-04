@@ -38,7 +38,10 @@ Documented in `.env.example`. The essentials:
 | `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET` | Drive OAuth (optional)                             |
 | `PUBLIC_APP_URL`                                    | Public origin used to build the Drive redirect URI |
 
-`.env` is git-ignored.
+`.env` is git-ignored. The CLI wizard stores secrets in
+`~/.openexpert/secrets.json`, which the server loads into the environment at
+startup (existing env vars win), so `npm run dev` and `opencore serve` behave
+the same.
 
 ## 4. Scripts
 

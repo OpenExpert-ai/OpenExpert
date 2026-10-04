@@ -22,7 +22,7 @@ Full guide: [docs/en/00-quickstart.md](./docs/en/00-quickstart.md).
 ### Docker (no Node required)
 
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local
+docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local
 # or bring Ollama along:
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
@@ -79,11 +79,14 @@ Spanish).
 | [Data model](./docs/en/03-data-model.md)     | SQLite tables                          |
 | [Security](./docs/en/04-security.md)         | Access and protections                 |
 | [AI](./docs/en/05-ai.md)                     | Assistant tools and limits             |
-| [AI providers](./docs/en/13-ai-providers.md) | Ollama, Gemini and BYOK                |
 | [Integrations](./docs/en/06-integrations.md) | Google Drive and how to add connectors |
 | [Development](./docs/en/07-development.md)   | Environment, scripts, conventions      |
+| [Deployment](./docs/en/08-deployment.md)     | Running locally and with Docker        |
 | [Operation](./docs/en/09-operation.md)       | Recurring tasks and diagnosis          |
+| [Glossary](./docs/en/10-glossary.md)         | Vocabulary                             |
+| [OpenCore](./docs/en/11-opencore.md)         | The MIT engine and CLI                 |
 | [Licensing model](./docs/en/12-licensing.md) | MIT, obligations, monetisation         |
+| [AI providers](./docs/en/13-ai-providers.md) | Ollama, Gemini and BYOK                |
 | [Roadmap](./docs/en/roadmap.md)              | Status and planning                    |
 
 ## Requirements

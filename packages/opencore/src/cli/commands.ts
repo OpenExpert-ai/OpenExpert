@@ -165,7 +165,7 @@ export async function cmdServe(cwd = process.cwd()): Promise<number> {
     console.error(
       "No hay un servidor preconstruido disponible y no se pudo descargar.\n" +
         "Opciones:\n" +
-        "  • Usa Docker:  docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local\n" +
+        "  • Usa Docker:  docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local\n" +
         "  • O clona el repositorio y ejecuta `npm ci && npm run dev`.",
     );
     return 1;

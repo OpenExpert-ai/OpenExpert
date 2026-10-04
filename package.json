@@ -29,7 +29,8 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish",
-    "license:check": "node scripts/license-check.mjs"
+    "license:check": "node scripts/license-check.mjs",
+    "check:docs": "node scripts/check-docs.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

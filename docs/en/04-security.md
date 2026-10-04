@@ -7,8 +7,9 @@
 ## 1. Who can use it
 
 There is **no login**. OpenExpert runs on your machine for a single owner. The
-browser and the server are the same trusted environment; the app is bound to
-`localhost:3000`.
+browser and the server are the same trusted environment. The server listens on
+port 3000; by default it binds all interfaces, so if you expose it beyond
+`localhost` put it behind a firewall or reverse proxy.
 
 ## 2. Isolation between Experts
 
@@ -32,7 +33,7 @@ decided by the Expert's `sources` column.
 | Secret                                   | Where                                                                            |
 | ---------------------------------------- | -------------------------------------------------------------------------------- |
 | `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY` | `.env` or `~/.openexpert/secrets.json` (`0600`)                                  |
-| Google Drive tokens                      | `~/.openxpert/credentials.json` (`0600`)                                         |
+| Google Drive tokens                      | `~/.openexpert/credentials.json` (`0600`)                                        |
 | OAuth `state` signing key                | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`) |
 
 Rules:

@@ -41,6 +41,25 @@ export function dbPath(): string {
 
 export const now = () => new Date().toISOString();
 
+/**
+ * Load the secrets written by the CLI wizard (`~/.openexpert/secrets.json`)
+ * into the environment at startup, so `npm run dev` behaves like
+ * `opencore serve`. Existing env vars always win.
+ */
+function loadSecretsIntoEnv(): void {
+  try {
+    const f = join(dataDir(), "secrets.json");
+    if (!existsSync(f)) return;
+    const secrets = JSON.parse(readFileSync(f, "utf8")) as Record<string, string>;
+    for (const [key, value] of Object.entries(secrets)) {
+      if (value && !process.env[key]) process.env[key] = value;
+    }
+  } catch {
+    // A malformed secrets file must never stop the server from booting.
+  }
+}
+loadSecretsIntoEnv();
+
 async function init(): Promise<Handle> {
   const SQL = await initSqlJs({
     locateFile: (f) => require.resolve(`sql.js/dist/${f}`),

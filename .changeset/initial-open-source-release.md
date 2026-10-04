@@ -2,10 +2,12 @@
 "@openexpert/opencore": minor
 ---
 
-Initial open-source release of `@openexpert/opencore` under the MIT license.
+OpenCore — the MIT engine and CLI of the local edition.
 
-- Build step (`tsup`) emits ESM + `.d.ts`; `main`/`exports`/`types`/`files` configured.
-- CLI binary (`opencore`) supports `doctor` (configuration diagnostics) and `serve` (boots the local application).
-- New `openexpert` model provider pointing at the OpenExpert gateway (`OPENEXPERT_GATEWAY_URL` / `OPENEXPERT_API_KEY`).
-- JSON Schema for `openexpert.json` and validated precedence env > file > defaults.
-- Pre-flight seed data (no business data) so the local edition is usable on first run.
+- Model provider selector: `google` (Gemini), `ollama` (local) and
+  `openai-compatible` (BYOK).
+- `config` loader (`openexpert.json` + `OPENEXPERT_*`), storage/token
+  interfaces and the tool catalog.
+- CLI: interactive setup wizard plus `doctor`, `fix`, `models`, `serve` and
+  `update`.
+- Built with `tsup` (ESM + `.d.ts`); `main`/`exports`/`types`/`files` set.

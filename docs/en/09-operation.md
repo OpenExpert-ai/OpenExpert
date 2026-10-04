@@ -59,5 +59,5 @@ Copy `OPENEXPERT_DATA_DIR` (it contains `openexpert.db`, `credentials.json` and
 
 ## References
 
-- [Running it](./08-deployment.md) — how to start it.
+- [Deployment](./08-deployment.md) — how to start it.
 - [Security & access](./04-security.md) — audit and revert.

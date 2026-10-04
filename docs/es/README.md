@@ -15,7 +15,7 @@ este contenido lo refleja.
 | 05  | [Inteligencia artificial](./05-inteligencia-artificial.md) | Ambos                | Herramientas y límites          |
 | 06  | [Integraciones](./06-integraciones.md)                     | Ambos                | Google Drive y conectores       |
 | 07  | [Desarrollo](./07-desarrollo.md)                           | Ingeniería           | Entorno, scripts, convenciones  |
-| 08  | [Cómo ejecutarlo](./08-despliegue.md)                      | Ingeniería           | Ejecución local y Docker        |
+| 08  | [Despliegue](./08-despliegue.md)                           | Ingeniería           | Ejecución local y Docker        |
 | 09  | [Operación y soporte](./09-operacion-y-soporte.md)         | Ambos                | Tareas, diagnóstico, copias     |
 | 10  | [Glosario](./10-glosario.md)                               | Negocio              | Vocabulario                     |
 | 11  | [OpenCore](./11-opencore.md)                               | Todos                | El motor y CLI MIT              |
@@ -25,8 +25,8 @@ este contenido lo refleja.
 
 ## Convenciones
 
-- **Idioma:** el inglés es la fuente de verdad; el español vive en
-  [`../es/`](../es/) y lo refleja.
+- **Idioma:** el inglés ([`../en/`](../en/)) es la fuente de verdad; esta
+  carpeta ([`../es/`](../es/)) lo refleja.
 - **Identificadores:** los identificadores técnicos aparecen siempre en `código monoespaciado`.
 
 ## Estado

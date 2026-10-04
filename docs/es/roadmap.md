@@ -9,7 +9,7 @@ Estado de los elementos implementados y pendientes.
 | Edición local, propietario único (sin nube)                             | [Arquitectura](./02-arquitectura.md)        |
 | Persistencia SQLite con esquema Drizzle                                 | [Modelo de datos](./03-modelo-de-datos.md)  |
 | Chat con herramientas, aislamiento por Experto, razonamiento visible    | [IA](./05-inteligencia-artificial.md)       |
-| Tarjetas de confirmación, incluida la doble firma                       | [IA](./05-inteligencia-artificial.md)       |
+| Tarjetas de confirmación para acciones propuestas                       | [IA](./05-inteligencia-artificial.md)       |
 | Integración con Google Drive (opcional)                                 | [Integraciones](./06-integraciones.md)      |
 | Registro de actividad y reversión                                       | [Seguridad](./04-seguridad-y-acceso.md)     |
 | Filtro previo anti-inyección                                            | [Seguridad](./04-seguridad-y-acceso.md)     |

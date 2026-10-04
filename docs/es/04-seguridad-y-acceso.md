@@ -7,8 +7,10 @@
 ## 1. Quién puede usarlo
 
 **No hay inicio de sesión.** OpenExpert se ejecuta en tu equipo para un único
-propietario. Navegador y servidor son el mismo entorno de confianza; la
-aplicación está ligada a `localhost:3000`.
+propietario. Navegador y servidor son el mismo entorno de confianza. El servidor
+escucha en el puerto 3000; por defecto acepta conexiones en todas las
+interfaces, así que si lo expones más allá de `localhost`, ponlo tras un
+cortafuegos o un proxy inverso.
 
 ## 2. Aislamiento entre Expertos
 

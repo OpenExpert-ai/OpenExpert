@@ -17,7 +17,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: ghcr.io/openexpert/openexpert:local
+    image: ghcr.io/openexpert-ai/openexpert:local
     container_name: openexpert
     restart: unless-stopped
     ports:

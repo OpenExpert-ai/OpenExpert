@@ -11,7 +11,7 @@ cuentas y sin servidor de base de datos.
 
 ```sh
 docker run --rm -p 3000:3000 -v openexpert-data:/data \
-  ghcr.io/openexpert/openexpert:local
+  ghcr.io/openexpert-ai/openexpert:local
 ```
 
 Abre <http://localhost:3000>. Los datos persisten en el volumen

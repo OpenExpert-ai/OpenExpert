@@ -39,6 +39,9 @@ jobs:
       - name: License headers
         run: npm run license:check
 
+      - name: Documentation links
+        run: npm run check:docs
+
       - name: Typecheck
         run: npm run typecheck
 

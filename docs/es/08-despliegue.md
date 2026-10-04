@@ -1,4 +1,4 @@
-# 08 · Cómo ejecutarlo
+# 08 · Despliegue
 
 > **Audiencia:** ingeniería. No hay despliegue en la nube.
 
@@ -6,12 +6,12 @@
 
 ## 1. Formas de ejecutar OpenExpert
 
-| Forma               | Comando                                                                                |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Desarrollo          | `npm ci && npm run dev`                                                                |
-| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                |
-| Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local` |
-| CLI                 | `npx @openexpert/opencore serve`                                                       |
+| Forma               | Comando                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Desarrollo          | `npm ci && npm run dev`                                                                   |
+| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                   |
+| Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
+| CLI                 | `npx @openexpert/opencore serve`                                                          |
 
 La aplicación escucha en el puerto 3000. El preset de Nitro es `node-server`.
 

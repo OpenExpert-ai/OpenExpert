@@ -19,7 +19,7 @@ Guía completa: [docs/es/00-inicio-rapido.md](./docs/es/00-inicio-rapido.md).
 ### Docker (sin Node)
 
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local
+docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local
 # o con Ollama incluido:
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
@@ -75,11 +75,14 @@ Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y españ
 | [Modelo de datos](./docs/es/03-modelo-de-datos.md)  | Tablas SQLite                         |
 | [Seguridad](./docs/es/04-seguridad-y-acceso.md)     | Acceso y protecciones                 |
 | [IA](./docs/es/05-inteligencia-artificial.md)       | Herramientas y límites                |
-| [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                 |
 | [Integraciones](./docs/es/06-integraciones.md)      | Google Drive y cómo añadir conectores |
 | [Desarrollo](./docs/es/07-desarrollo.md)            | Entorno, scripts, convenciones        |
+| [Despliegue](./docs/es/08-despliegue.md)            | Ejecución local y Docker              |
 | [Operación](./docs/es/09-operacion-y-soporte.md)    | Tareas periódicas y diagnóstico       |
+| [Glosario](./docs/es/10-glosario.md)                | Vocabulario                           |
+| [OpenCore](./docs/es/11-opencore.md)                | El motor y CLI MIT                    |
 | [Modelo de licencia](./docs/es/12-licencia.md)      | MIT, obligaciones, monetización       |
+| [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                 |
 | [Hoja de ruta](./docs/es/roadmap.md)                | Estado y planificación                |
 
 ## Requisitos

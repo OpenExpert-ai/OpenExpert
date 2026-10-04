@@ -11,7 +11,7 @@ no database server.
 
 ```sh
 docker run --rm -p 3000:3000 -v openexpert-data:/data \
-  ghcr.io/openexpert/openexpert:local
+  ghcr.io/openexpert-ai/openexpert:local
 ```
 
 Open <http://localhost:3000>. Data persists in the `openexpert-data` volume.

@@ -16,7 +16,7 @@ change to `../es/`.
 | 05  | [AI](./05-ai.md)                         | Both                   | Assistant tools and limits             |
 | 06  | [Integrations](./06-integrations.md)     | Both                   | Google Drive and connectors            |
 | 07  | [Development](./07-development.md)       | Engineering            | Environment, scripts, conventions      |
-| 08  | [Running it](./08-deployment.md)         | Engineering            | Local run and Docker                   |
+| 08  | [Deployment](./08-deployment.md)         | Engineering            | Local run and Docker                   |
 | 09  | [Operation & support](./09-operation.md) | Both                   | Tasks, diagnosis, backups              |
 | 10  | [Glossary](./10-glossary.md)             | Business               | Vocabulary                             |
 | 11  | [OpenCore](./11-opencore.md)             | All                    | The MIT engine and CLI                 |

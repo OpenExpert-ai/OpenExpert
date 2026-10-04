@@ -1,10 +1,10 @@
 # Security
 
 OpenExpert is distributed as open-source software under the MIT license.
-The full codebase, including the cloud application code in this repository,
-is MIT-licensed; **the project does not rely on license-based secrecy for
-its security**. Sensitive material is protected by access control, isolation
-between Experts, and operational hygiene rather than by keeping code private.
+The entire codebase is MIT-licensed; **the project does not rely on
+license-based secrecy for its security**. It runs locally on your machine:
+data is a local SQLite file, model keys and Google Drive tokens stay on
+your disk, and nothing is exposed beyond the port you bind.
 
 ## Supported versions
 

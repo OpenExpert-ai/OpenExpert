@@ -38,7 +38,10 @@ Documentadas en `.env.example`. Lo esencial:
 | `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET` | OAuth de Drive (opcional)                          |
 | `PUBLIC_APP_URL`                                    | Origen público para la URI de redirección de Drive |
 
-`.env` está en `.gitignore`.
+`.env` está en `.gitignore`. El asistente del CLI guarda los secretos en
+`~/.openexpert/secrets.json`, que el servidor carga en el entorno al arrancar
+(las variables ya definidas tienen prioridad), de modo que `npm run dev` y
+`opencore serve` se comportan igual.
 
 ## 4. Scripts
 

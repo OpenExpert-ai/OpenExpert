@@ -1,4 +1,4 @@
-# 08 · Running it
+# 08 · Deployment
 
 > **Audience:** engineering. There is no cloud deployment.
 
@@ -6,12 +6,12 @@
 
 ## 1. Ways to run OpenExpert
 
-| Way              | Command                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------- |
-| Development      | `npm ci && npm run dev`                                                                |
-| Production build | `npm run build` then `node .output/server/index.mjs`                                   |
-| Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert/openexpert:local` |
-| CLI              | `npx @openexpert/opencore serve`                                                       |
+| Way              | Command                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| Development      | `npm ci && npm run dev`                                                                   |
+| Production build | `npm run build` then `node .output/server/index.mjs`                                      |
+| Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
+| CLI              | `npx @openexpert/opencore serve`                                                          |
 
 The app listens on port 3000. The Nitro preset is `node-server`.
 
@@ -41,7 +41,7 @@ One OAuth client is enough. Register the redirect URI:
 Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (in `.env` or the
 environment). Leave the consent screen **In production** so the refresh token
 does not expire after 7 days. See
-[Integrations](./06-integrations.md#25-consent-status-in-production).
+[Integrations](./06-integrations.md#23-consent-status-in-production).
 
 ## 4. Backups
 

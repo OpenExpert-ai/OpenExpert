@@ -7,7 +7,7 @@
 ## 1. Overview
 
 One SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db` (default
-`~/.openxpert/`). The typed schema is `drizzle/schema.ts`; the DDL is
+`~/.openexpert/`). The typed schema is `drizzle/schema.ts`; the DDL is
 `drizzle/init.sql` (applied at startup by `src/lib/db.server.ts`). JSON columns
 are stored as `TEXT`.
 
@@ -28,16 +28,16 @@ Tables: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 
 ### `processes` — autonomous processes
 
-| Column                           | Type        | Notes                                   |
-| -------------------------------- | ----------- | --------------------------------------- |
-| `id`                             | TEXT PK     | `p-` prefix + short name                |
-| `name`, `description`, `trigger` | TEXT        | `trigger` is descriptive text           |
-| `stages`, `limits`               | TEXT (JSON) | String arrays                           |
-| `approval`                       | TEXT        | `Ninguna`, `Requerida` or `Doble firma` |
-| `expert_id`                      | TEXT        | Owning Expert                           |
-| `active`                         | INTEGER     | 0/1                                     |
-| `runs`                           | INTEGER     | Run counter                             |
-| `last_run`                       | TEXT        | ISO timestamp or null                   |
+| Column                           | Type        | Notes                         |
+| -------------------------------- | ----------- | ----------------------------- |
+| `id`                             | TEXT PK     | `p-` prefix + short name      |
+| `name`, `description`, `trigger` | TEXT        | `trigger` is descriptive text |
+| `stages`, `limits`               | TEXT (JSON) | String arrays                 |
+| `approval`                       | TEXT        | `Ninguna` or `Requerida`      |
+| `expert_id`                      | TEXT        | Owning Expert                 |
+| `active`                         | INTEGER     | 0/1                           |
+| `runs`                           | INTEGER     | Run counter                   |
+| `last_run`                       | TEXT        | ISO timestamp or null         |
 
 ### `integrations` — connector catalogue
 

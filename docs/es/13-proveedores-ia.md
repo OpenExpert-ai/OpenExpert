@@ -12,7 +12,7 @@ variable de entorno manda).
 | `google`            | `GOOGLE_API_KEY`       | nivel gratuito  | sí (a Google)                |
 | `openai-compatible` | `OPENEXPERT_MODEL_KEY` | según proveedor | sí                           |
 
-## Ollama (recomendado, 100 % local)
+## 1. Ollama (recomendado, 100 % local)
 
 1. Instala Ollama: <https://ollama.com> (`curl -fsSL https://ollama.com/install.sh | sh`).
 2. Descarga un modelo: `ollama pull llama3.1`.
@@ -25,7 +25,7 @@ variable de entorno manda).
 Ollama escucha en `http://localhost:11434`; OpenExpert usa su endpoint
 OpenAI-compatible (`/v1`). Ningún dato sale de tu equipo.
 
-## Google Gemini (clave gratuita)
+## 2. Google Gemini (clave gratuita)
 
 1. Entra en **Google AI Studio** (<https://aistudio.google.com/apikey>) y crea
    una clave. El nivel gratuito basta para uso personal.
@@ -39,7 +39,7 @@ export GOOGLE_API_KEY=tu-clave
 
 Con Google, el asistente muestra su razonamiento (thinking) en la interfaz.
 
-## Cualquier endpoint OpenAI-compatible (BYOK)
+## 3. Cualquier endpoint OpenAI-compatible (BYOK)
 
 ```sh
 export OPENEXPERT_MODEL_PROVIDER=openai-compatible
@@ -48,7 +48,7 @@ export OPENEXPERT_MODEL_KEY=tu-clave
 export OPENEXPERT_MODEL_ID=gpt-4o-mini
 ```
 
-## Con el CLI
+## 4. Con el CLI
 
 ```sh
 npx @openexpert/opencore        # asistente interactivo

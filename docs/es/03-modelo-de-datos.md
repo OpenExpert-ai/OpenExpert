@@ -28,16 +28,16 @@ Tablas: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 
 ### `processes` — procesos autónomos
 
-| Columna                          | Tipo        | Notas                                  |
-| -------------------------------- | ----------- | -------------------------------------- |
-| `id`                             | TEXT PK     | Prefijo `p-` + nombre corto            |
-| `name`, `description`, `trigger` | TEXT        | `trigger` es texto descriptivo         |
-| `stages`, `limits`               | TEXT (JSON) | Arrays de cadenas                      |
-| `approval`                       | TEXT        | `Ninguna`, `Requerida` o `Doble firma` |
-| `expert_id`                      | TEXT        | Experto al que pertenece               |
-| `active`                         | INTEGER     | 0/1                                    |
-| `runs`                           | INTEGER     | Contador de ejecuciones                |
-| `last_run`                       | TEXT        | Fecha ISO o null                       |
+| Columna                          | Tipo        | Notas                          |
+| -------------------------------- | ----------- | ------------------------------ |
+| `id`                             | TEXT PK     | Prefijo `p-` + nombre corto    |
+| `name`, `description`, `trigger` | TEXT        | `trigger` es texto descriptivo |
+| `stages`, `limits`               | TEXT (JSON) | Arrays de cadenas              |
+| `approval`                       | TEXT        | `Ninguna` o `Requerida`        |
+| `expert_id`                      | TEXT        | Experto al que pertenece       |
+| `active`                         | INTEGER     | 0/1                            |
+| `runs`                           | INTEGER     | Contador de ejecuciones        |
+| `last_run`                       | TEXT        | Fecha ISO o null               |
 
 ### `integrations` — catálogo de conectores
 

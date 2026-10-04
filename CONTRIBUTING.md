@@ -69,8 +69,13 @@ A signed-off-by trailer is required on every commit.
 
 The documentation in `docs/en/` and `docs/es/` is the source of truth for
 product and engineering decisions. Update it in the same change as the
-code it describes. After editing Markdown, run `npx prettier --write
-"docs/**/*.md"`.
+code it describes. Follow the [documentation style guide](./docs/STYLE.md)
+and, after editing Markdown, run:
+
+```sh
+npm run format
+npm run check:docs   # links and anchors resolve
+```
 
 ## Release process
 

@@ -9,7 +9,7 @@ Status of implemented and pending items.
 | Local-first, single-owner edition (no cloud)                         | [Architecture](./02-architecture.md)  |
 | SQLite persistence with Drizzle schema                               | [Data model](./03-data-model.md)      |
 | Chat with tools, per-Expert isolation, visible reasoning             | [AI](./05-ai.md)                      |
-| Confirmation cards, including dual signature                         | [AI](./05-ai.md)                      |
+| Confirmation cards for proposed actions                              | [AI](./05-ai.md)                      |
 | Google Drive integration (optional)                                  | [Integrations](./06-integrations.md)  |
 | Audit log and revert                                                 | [Security](./04-security.md)          |
 | Prompt-injection pre-filter                                          | [Security](./04-security.md)          |

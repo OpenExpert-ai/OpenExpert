@@ -17,7 +17,7 @@ OpenExpert is documented in two languages. Pick yours:
 | 05  | [AI](./en/05-ai.md)                         | [Inteligencia artificial](./es/05-inteligencia-artificial.md) | Both                   |
 | 06  | [Integrations](./en/06-integrations.md)     | [Integraciones](./es/06-integraciones.md)                     | Both                   |
 | 07  | [Development](./en/07-development.md)       | [Desarrollo](./es/07-desarrollo.md)                           | Engineering            |
-| 08  | [Running it](./en/08-deployment.md)         | [Cómo ejecutarlo](./es/08-despliegue.md)                      | Engineering            |
+| 08  | [Deployment](./en/08-deployment.md)         | [Despliegue](./es/08-despliegue.md)                           | Engineering            |
 | 09  | [Operation & support](./en/09-operation.md) | [Operación y soporte](./es/09-operacion-y-soporte.md)         | Both                   |
 | 10  | [Glossary](./en/10-glossary.md)             | [Glosario](./es/10-glosario.md)                               | Business               |
 | 11  | [OpenCore](./en/11-opencore.md)             | [OpenCore](./es/11-opencore.md)                               | All                    |
@@ -27,12 +27,19 @@ OpenExpert is documented in two languages. Pick yours:
 
 ## Companion files
 
-| File                              | Purpose                                                  |
-| --------------------------------- | -------------------------------------------------------- |
-| [`AGENTS.md`](../AGENTS.md)       | Operational rules for AI assistants working on the repo. |
-| [`.env.example`](../.env.example) | Documented environment variables.                        |
-| [`README.md`](../README.md)       | Top-level project entry point (English).                 |
-| [`README.es.md`](../README.es.md) | Top-level project entry point (Spanish).                 |
+| File                                            | Purpose                                                  |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| [`README.md`](../README.md)                     | Top-level project entry point (English).                 |
+| [`README.es.md`](../README.es.md)               | Top-level project entry point (Spanish).                 |
+| [`CONTRIBUTING.md`](../CONTRIBUTING.md)         | How to contribute, DCO and release process.              |
+| [`SECURITY.md`](../SECURITY.md)                 | Private vulnerability reporting and secret hygiene.      |
+| [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md)   | Community standards.                                     |
+| [`GOVERNANCE.md`](../GOVERNANCE.md)             | Roles, decisions and releases.                           |
+| [`LICENSE`](../LICENSE) / [`NOTICE`](../NOTICE) | License and third-party attributions.                    |
+| [`CHANGELOG.md`](../CHANGELOG.md)               | Released changes.                                        |
+| [`AGENTS.md`](../AGENTS.md)                     | Operational rules for AI assistants working on the repo. |
+| [`STYLE.md`](./STYLE.md)                        | Documentation style guide.                               |
+| [`.env.example`](../.env.example)               | Documented environment variables.                        |
 
 ## Conventions
 
