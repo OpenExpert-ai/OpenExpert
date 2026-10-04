@@ -34,6 +34,10 @@ pero **no la ejecución**: la IA propone y la persona aprueba.
 - **Gobierno:** registro de actividad de cada evento relevante y reversión de los
   cambios reversibles.
 - **Google Drive** (opcional): leer, crear y editar documentos desde el chat.
+- **Panel de configuración** (`/settings`): modelo e IA, chat y agentes, datos y
+  copias de seguridad, apariencia y opciones avanzadas (diagnóstico y edición de
+  `openexpert.json`). Los cambios surten efecto sin reiniciar.
+- **Interfaz bilingüe** (español/inglés) seleccionable desde Apariencia.
 
 ## 4. Uso
 

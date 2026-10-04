@@ -77,6 +77,9 @@ See [Deployment](./docs/en/08-deployment.md).
 - **Governance**: every revertible change is logged with a snapshot and can be
   reverted from the activity screen. AI actions are only _proposed_ and need
   human approval.
+- **Settings** live in a panel (`/settings`): model & AI, chat, data backups,
+  appearance and advanced options — in Spanish or English. Changes apply without
+  restarting.
 
 ## Documentation
 

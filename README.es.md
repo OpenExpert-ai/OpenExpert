@@ -75,6 +75,9 @@ Ver [Despliegue](./docs/es/08-despliegue.md).
 - **Gobierno**: cada cambio reversible se registra con snapshot y puede
   revertirse desde la pantalla de actividad. La IA solo _propone_ acciones y
   requieren aprobación humana.
+- **Configuración** en un panel (`/settings`): modelo e IA, chat, copias de
+  seguridad, apariencia y opciones avanzadas — en español o inglés. Los cambios
+  se aplican sin reiniciar.
 
 ## Documentación
 

@@ -34,6 +34,10 @@ execution**: AI proposes, a person approves.
 - **Governance:** an activity log of every relevant event and revert for
   revertible changes.
 - **Google Drive** (optional): read, create and edit documents from the chat.
+- **Configuration panel** (`/settings`): model & AI, chat & agents, data and
+  backups, appearance and advanced options (diagnostics and editing
+  `openexpert.json`). Changes take effect without restarting.
+- **Bilingual interface** (Spanish/English) selectable from Appearance.
 
 ## 4. Usage
 

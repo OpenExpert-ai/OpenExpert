@@ -1,31 +1,18 @@
 // SPDX-License-Identifier: MIT
-// Lightweight i18n. The source language is Spanish: `t("Texto")` returns the
-// text unchanged for `es` and looks it up in the English dictionary for `en`.
-// Missing entries fall back to the Spanish source, so the app never breaks.
+// Lightweight i18n provider. The source language is Spanish: `t("Texto")`
+// returns the text unchanged for `es` and looks it up in the English dictionary
+// for `en`. Missing entries fall back to the Spanish source, so the app never
+// breaks.
 //
 // Strings with values use `{placeholders}`, e.g. t("Creado {name}", { name }).
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { getUiSettings, setUiSettings } from "./settings.functions";
-import { en } from "@/locales/en";
+import { translate, type Locale, type Params } from "./translate";
 
-export type Locale = "es" | "en";
+export type { Locale };
 
 const LOCALE_KEY = "openexpert:locale";
-
-type Params = Record<string, string | number>;
-
-function interpolate(text: string, params?: Params): string {
-  if (!params) return text;
-  return text.replace(/\{(\w+)\}/g, (_, key: string) =>
-    key in params ? String(params[key]) : `{${key}}`,
-  );
-}
-
-export function translate(locale: Locale, text: string, params?: Params): string {
-  const out = locale === "en" ? (en[text] ?? text) : text;
-  return interpolate(out, params);
-}
 
 type Ctx = {
   locale: Locale;
