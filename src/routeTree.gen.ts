@@ -15,10 +15,15 @@ import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedExpertRouteImport } from './routes/_authenticated/expert'
 import { Route as AuthenticatedExpertsRouteImport } from './routes/_authenticated/experts'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedIntegrationsIndexRouteImport } from './routes/_authenticated/integrations.index'
 import { Route as AuthenticatedIntegrationsProcessesRouteImport } from './routes/_authenticated/integrations.processes'
 import { Route as AuthenticatedIntegrationsSourcesRouteImport } from './routes/_authenticated/integrations.sources'
+import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as AuthenticatedSettingsAboutRouteImport } from './routes/_authenticated/settings.about'
+import { Route as AuthenticatedSettingsAiRouteImport } from './routes/_authenticated/settings.ai'
+import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings.appearance'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google.callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -51,6 +56,11 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -74,6 +84,29 @@ const AuthenticatedIntegrationsSourcesRoute =
     path: '/sources',
     getParentRoute: () => AuthenticatedIntegrationsRoute,
   } as any)
+const AuthenticatedSettingsIndexRoute =
+  AuthenticatedSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsAboutRoute =
+  AuthenticatedSettingsAboutRouteImport.update({
+    id: '/about',
+    path: '/about',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsAiRoute = AuthenticatedSettingsAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthenticatedSettingsRoute,
+} as any)
+const AuthenticatedSettingsAppearanceRoute =
+  AuthenticatedSettingsAppearanceRouteImport.update({
+    id: '/appearance',
+    path: '/appearance',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
   id: '/auth/google/callback',
   path: '/auth/google/callback',
@@ -86,11 +119,16 @@ export interface FileRoutesByFullPath {
   '/expert': typeof AuthenticatedExpertRoute
   '/experts': typeof AuthenticatedExpertsRoute
   '/integrations': typeof AuthenticatedIntegrationsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
+  '/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/settings/ai': typeof AuthenticatedSettingsAiRoute
+  '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/integrations/': typeof AuthenticatedIntegrationsIndexRoute
+  '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,8 +138,12 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
+  '/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/settings/ai': typeof AuthenticatedSettingsAiRoute
+  '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/integrations': typeof AuthenticatedIntegrationsIndexRoute
+  '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,11 +153,16 @@ export interface FileRoutesById {
   '/_authenticated/expert': typeof AuthenticatedExpertRoute
   '/_authenticated/experts': typeof AuthenticatedExpertsRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/_authenticated/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
+  '/_authenticated/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/_authenticated/settings/ai': typeof AuthenticatedSettingsAiRoute
+  '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/_authenticated/integrations/': typeof AuthenticatedIntegrationsIndexRoute
+  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,11 +172,16 @@ export interface FileRouteTypes {
     | '/expert'
     | '/experts'
     | '/integrations'
+    | '/settings'
     | '/api/chat'
     | '/integrations/processes'
     | '/integrations/sources'
+    | '/settings/about'
+    | '/settings/ai'
+    | '/settings/appearance'
     | '/auth/google/callback'
     | '/integrations/'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,8 +191,12 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/integrations/processes'
     | '/integrations/sources'
+    | '/settings/about'
+    | '/settings/ai'
+    | '/settings/appearance'
     | '/auth/google/callback'
     | '/integrations'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -149,11 +205,16 @@ export interface FileRouteTypes {
     | '/_authenticated/expert'
     | '/_authenticated/experts'
     | '/_authenticated/integrations'
+    | '/_authenticated/settings'
     | '/api/chat'
     | '/_authenticated/integrations/processes'
     | '/_authenticated/integrations/sources'
+    | '/_authenticated/settings/about'
+    | '/_authenticated/settings/ai'
+    | '/_authenticated/settings/appearance'
     | '/auth/google/callback'
     | '/_authenticated/integrations/'
+    | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -207,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -234,6 +302,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/integrations/sources'
       preLoaderRoute: typeof AuthenticatedIntegrationsSourcesRouteImport
       parentRoute: typeof AuthenticatedIntegrationsRoute
+    }
+    '/_authenticated/settings/': {
+      id: '/_authenticated/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/about': {
+      id: '/_authenticated/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof AuthenticatedSettingsAboutRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/ai': {
+      id: '/_authenticated/settings/ai'
+      path: '/ai'
+      fullPath: '/settings/ai'
+      preLoaderRoute: typeof AuthenticatedSettingsAiRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/appearance': {
+      id: '/_authenticated/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof AuthenticatedSettingsAppearanceRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/auth/google/callback': {
       id: '/auth/google/callback'
@@ -265,11 +361,31 @@ const AuthenticatedIntegrationsRouteWithChildren =
     AuthenticatedIntegrationsRouteChildren,
   )
 
+interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsAboutRoute: typeof AuthenticatedSettingsAboutRoute
+  AuthenticatedSettingsAiRoute: typeof AuthenticatedSettingsAiRoute
+  AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
+  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+}
+
+const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsAboutRoute: AuthenticatedSettingsAboutRoute,
+  AuthenticatedSettingsAiRoute: AuthenticatedSettingsAiRoute,
+  AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
+  AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+}
+
+const AuthenticatedSettingsRouteWithChildren =
+  AuthenticatedSettingsRoute._addFileChildren(
+    AuthenticatedSettingsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedExpertRoute: typeof AuthenticatedExpertRoute
   AuthenticatedExpertsRoute: typeof AuthenticatedExpertsRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRouteWithChildren
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -277,6 +393,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExpertRoute: AuthenticatedExpertRoute,
   AuthenticatedExpertsRoute: AuthenticatedExpertsRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRouteWithChildren,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =

@@ -23,6 +23,7 @@ import {
   selectedProvider,
 } from "@/lib/opencore/model-provider.server";
 import { detectInjection as injectionMatch } from "@/lib/ai/injection";
+import { effectiveConfig } from "@/lib/config.server";
 
 const OWNER = { userId: "local-owner", name: "Propietario local" } as const;
 
@@ -404,12 +405,16 @@ Formato de salida (obligatorio):
     return json(500, (e as Error).message);
   }
 
+  const cfg = effectiveConfig();
   const result = streamText({
     model,
     system: `${system}\nProveedor activo: ${modelLabel()}.`,
     messages: await convertToModelMessages(messages),
     tools,
-    stopWhen: stepCountIs(50),
+    temperature: cfg.ai.temperature,
+    topP: cfg.ai.topP,
+    maxOutputTokens: cfg.ai.maxOutputTokens,
+    stopWhen: stepCountIs(cfg.chat.maxSteps),
     abortSignal: request.signal,
     providerOptions:
       selectedProvider() === "google"

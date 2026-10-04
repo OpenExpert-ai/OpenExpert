@@ -43,6 +43,20 @@ Documented in `.env.example`. The essentials:
 startup (existing env vars win), so `npm run dev` and `opencore serve` behave
 the same.
 
+### Configuration files and the settings panel
+
+The **Configuration** panel (`/settings`) edits the same canonical files the CLI
+uses:
+
+- `openexpert.json` — provider, model, sampling (`ai`) and chat options.
+- `~/.openexpert/secrets.json` (mode `0600`) — API keys.
+
+Precedence when reading: real environment variables > `openexpert.json` >
+`secrets.json` > defaults. The server loads both files into `process.env` at
+startup and mirrors panel changes at runtime, so a change takes effect without
+restarting. UI preferences (theme, density, language) live in the `settings`
+table of the SQLite database.
+
 ## 4. Scripts
 
 | Script                            | Function                               |

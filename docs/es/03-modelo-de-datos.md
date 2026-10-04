@@ -12,7 +12,7 @@ Un fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db` (por defecto
 columnas JSON se guardan como `TEXT`.
 
 Tablas: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
-`deals`, `invoices`, `campaigns`, `accounts`.
+`deals`, `invoices`, `campaigns`, `accounts`, `settings`.
 
 ## 2. Tablas
 
@@ -75,7 +75,16 @@ Tablas: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 | `message`         | TEXT (JSON) | Mensaje completo de UI       |
 | `created_at`      | TEXT        | Fecha ISO                    |
 
-**Retención: 30 días.** `listConversations` elimina los hilos antiguos.
+**Retención: configurable (`chat.retentionDays`, por defecto 30 días).**
+`listConversations` elimina los hilos antiguos.
+
+### `settings` — preferencias clave/valor
+
+| Columna      | Tipo        | Notas                               |
+| ------------ | ----------- | ----------------------------------- |
+| `key`        | TEXT PK     | `ui` guarda tema, densidad e idioma |
+| `value`      | TEXT (JSON) | Objeto de preferencias              |
+| `updated_at` | TEXT        | Fecha ISO                           |
 
 ### Tablas de negocio
 

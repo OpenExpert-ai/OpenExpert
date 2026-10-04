@@ -10,6 +10,10 @@ import type { Database } from "sql.js";
 import { drizzle, type SQLJsDatabase } from "drizzle-orm/sql-js";
 import schemaSql from "../../drizzle/init.sql?raw";
 import * as schema from "../../drizzle/schema";
+import { applyFileConfigToEnv } from "./config.server";
+import { dataDir, dbPath, expandHome } from "./paths.server";
+
+export { expandHome, dataDir, dbPath };
 
 const require = createRequire(import.meta.url);
 // Load sql.js at runtime (CommonJS) instead of letting the bundler inline it:
@@ -22,22 +26,6 @@ export type Db = SQLJsDatabase<typeof schema>;
 type Handle = { orm: Db; raw: Database; file: string };
 
 let handle: Promise<Handle> | null = null;
-
-export function expandHome(p: string): string {
-  if (p === "~") return process.env["HOME"] || process.env["USERPROFILE"] || ".";
-  if (p.startsWith("~/"))
-    return join(process.env["HOME"] || process.env["USERPROFILE"] || ".", p.slice(2));
-  return p;
-}
-
-export function dataDir(): string {
-  const raw = process.env["OPENEXPERT_DATA_DIR"] || "~/.openexpert";
-  return expandHome(raw);
-}
-
-export function dbPath(): string {
-  return join(dataDir(), "openexpert.db");
-}
 
 export const now = () => new Date().toISOString();
 
@@ -58,6 +46,8 @@ function loadSecretsIntoEnv(): void {
     // A malformed secrets file must never stop the server from booting.
   }
 }
+// openexpert.json first (so it can set OPENEXPERT_DATA_DIR), then the secrets.
+applyFileConfigToEnv();
 loadSecretsIntoEnv();
 
 async function init(): Promise<Handle> {

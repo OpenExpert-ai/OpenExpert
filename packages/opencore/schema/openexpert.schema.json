@@ -25,6 +25,56 @@
       "type": "string",
       "minLength": 1,
       "description": "Directory where the SQLite database and credentials live. `~/` expands to the user's home directory."
+    },
+    "ai": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Sampling parameters for the chat model.",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Sampling temperature (0 = deterministic)."
+        },
+        "topP": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Nucleus sampling probability mass."
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of tokens the model may generate per step."
+        }
+      }
+    },
+    "chat": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Chat and agent behaviour.",
+      "properties": {
+        "maxSteps": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of tool-calling steps per request."
+        },
+        "injectionGuard": {
+          "type": "boolean",
+          "description": "Enable the prompt-injection security gate."
+        },
+        "retentionDays": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Days to keep chat history before it is pruned."
+        },
+        "defaultApproval": {
+          "type": "string",
+          "enum": ["Ninguna", "Requerida"],
+          "description": "Default approval policy applied to new processes."
+        }
+      }
     }
   }
 }

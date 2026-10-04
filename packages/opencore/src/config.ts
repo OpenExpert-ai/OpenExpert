@@ -6,11 +6,26 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ModelProviderId } from "./model-provider.js";
 
+export type AiConfig = {
+  temperature: number;
+  topP: number;
+  maxOutputTokens: number;
+};
+
+export type ChatConfig = {
+  maxSteps: number;
+  injectionGuard: boolean;
+  retentionDays: number;
+  defaultApproval: "Ninguna" | "Requerida";
+};
+
 export type OpenExpertConfig = {
   modelProvider: ModelProviderId;
   modelId: string;
   ollamaBaseUrl: string;
   dataDir: string;
+  ai: AiConfig;
+  chat: ChatConfig;
 };
 
 export const DEFAULTS: OpenExpertConfig = {
@@ -18,6 +33,13 @@ export const DEFAULTS: OpenExpertConfig = {
   modelId: "gemini-2.5-flash",
   ollamaBaseUrl: "http://localhost:11434",
   dataDir: "~/.openexpert",
+  ai: { temperature: 0.2, topP: 1, maxOutputTokens: 4096 },
+  chat: {
+    maxSteps: 50,
+    injectionGuard: true,
+    retentionDays: 30,
+    defaultApproval: "Requerida",
+  },
 };
 
 function expandHome(p: string): string {
@@ -26,6 +48,11 @@ function expandHome(p: string): string {
     return join(home, p.slice(2));
   }
   return p;
+}
+
+function num(value: unknown, fallback: number): number {
+  const n = typeof value === "string" ? Number(value) : value;
+  return typeof n === "number" && Number.isFinite(n) ? n : fallback;
 }
 
 export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
@@ -46,10 +73,24 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
       ? providerEnv
       : undefined;
 
+  const fileAi: Partial<AiConfig> = file.ai ?? {};
+  const fileChat: Partial<ChatConfig> = file.chat ?? {};
+
   return {
     modelProvider: providerFromEnv ?? file.modelProvider ?? DEFAULTS.modelProvider,
     modelId: env["OPENEXPERT_MODEL_ID"] ?? file.modelId ?? DEFAULTS.modelId,
     ollamaBaseUrl: env["OLLAMA_BASE_URL"] ?? file.ollamaBaseUrl ?? DEFAULTS.ollamaBaseUrl,
     dataDir: expandHome(env["OPENEXPERT_DATA_DIR"] ?? file.dataDir ?? DEFAULTS.dataDir),
+    ai: {
+      temperature: num(fileAi.temperature, DEFAULTS.ai.temperature),
+      topP: num(fileAi.topP, DEFAULTS.ai.topP),
+      maxOutputTokens: num(fileAi.maxOutputTokens, DEFAULTS.ai.maxOutputTokens),
+    },
+    chat: {
+      maxSteps: num(fileChat.maxSteps, DEFAULTS.chat.maxSteps),
+      injectionGuard: fileChat.injectionGuard ?? DEFAULTS.chat.injectionGuard,
+      retentionDays: num(fileChat.retentionDays, DEFAULTS.chat.retentionDays),
+      defaultApproval: fileChat.defaultApproval ?? DEFAULTS.chat.defaultApproval,
+    },
   };
 }

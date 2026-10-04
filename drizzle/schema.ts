@@ -103,3 +103,10 @@ export const accounts = sqliteTable("accounts", {
   openTickets: integer("open_tickets").notNull().default(0),
   churnRisk: real("churn_risk").notNull().default(0),
 });
+
+// Key/value store for UI preferences (theme, density, language).
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value", { mode: "json" }).$type<unknown>().notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

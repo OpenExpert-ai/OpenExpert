@@ -12,7 +12,7 @@ One SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db` (default
 are stored as `TEXT`.
 
 Tables: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
-`deals`, `invoices`, `campaigns`, `accounts`.
+`deals`, `invoices`, `campaigns`, `accounts`, `settings`.
 
 ## 2. Tables
 
@@ -75,7 +75,16 @@ Tables: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 | `message`         | TEXT (JSON) | Full UI message               |
 | `created_at`      | TEXT        | ISO timestamp                 |
 
-**Retention: 30 days.** `listConversations` prunes older threads.
+**Retention: configurable (`chat.retentionDays`, default 30 days).**
+`listConversations` prunes older threads.
+
+### `settings` — key/value preferences
+
+| Column       | Type        | Notes                                  |
+| ------------ | ----------- | -------------------------------------- |
+| `key`        | TEXT PK     | `ui` holds theme, density and language |
+| `value`      | TEXT (JSON) | Preference object                      |
+| `updated_at` | TEXT        | ISO timestamp                          |
 
 ### Business tables
 

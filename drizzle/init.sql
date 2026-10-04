@@ -97,3 +97,9 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE INDEX IF NOT EXISTS chat_messages_expert_conv ON chat_messages (expert_id, conversation_id);
 CREATE INDEX IF NOT EXISTS activity_ts ON activity (ts DESC);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);

@@ -43,6 +43,20 @@ Documentadas en `.env.example`. Lo esencial:
 (las variables ya definidas tienen prioridad), de modo que `npm run dev` y
 `opencore serve` se comportan igual.
 
+### Ficheros de configuración y panel de ajustes
+
+El panel de **Configuración** (`/settings`) edita los mismos ficheros canónicos
+que usa el CLI:
+
+- `openexpert.json` — proveedor, modelo, muestreo (`ai`) y opciones de chat.
+- `~/.openexpert/secrets.json` (permisos `0600`) — claves de API.
+
+Precedencia al leer: variables de entorno reales > `openexpert.json` >
+`secrets.json` > valores por defecto. El servidor carga ambos ficheros en
+`process.env` al arrancar y refleja los cambios del panel en caliente, así que
+un cambio surte efecto sin reiniciar. Las preferencias de interfaz (tema,
+densidad, idioma) viven en la tabla `settings` de la base SQLite.
+
 ## 4. Scripts
 
 | Script                            | Función                                             |

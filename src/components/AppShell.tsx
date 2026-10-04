@@ -7,6 +7,7 @@ import {
   ScrollText,
   Building2,
   Layers,
+  Settings,
   Loader2,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -17,6 +18,7 @@ const nav = [
   { to: "/experts", label: "Experts", icon: Network },
   { to: "/integrations", label: "Procesos e Integraciones", icon: Plug },
   { to: "/activity", label: "Registro de Actividad", icon: ScrollText },
+  { to: "/settings", label: "Configuración", icon: Settings },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

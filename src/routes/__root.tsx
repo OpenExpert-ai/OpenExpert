@@ -14,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
 import { UIProvider } from "../lib/store";
+import { ThemeProvider, useTheme } from "../lib/theme";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -114,6 +115,12 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="es" className="dark">
       <head>
         <HeadContent />
+        {/* Apply the stored theme before paint to avoid a flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("openexpert:theme")||"dark";var d=localStorage.getItem("openexpert:density")||"comfortable";var r=t==="system"?(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;var e=document.documentElement;e.classList.toggle("dark",r==="dark");e.classList.toggle("density-compact",d==="compact");}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         {children}
@@ -123,6 +130,11 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ThemedToaster() {
+  const { resolvedTheme } = useTheme();
+  return <Toaster theme={resolvedTheme} />;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -130,8 +142,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <UIProvider>
-        <Outlet />
-        <Toaster theme="dark" />
+        <ThemeProvider>
+          <Outlet />
+          <ThemedToaster />
+        </ThemeProvider>
       </UIProvider>
     </QueryClientProvider>
   );

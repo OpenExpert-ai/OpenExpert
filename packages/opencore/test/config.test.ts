@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEFAULTS, loadConfig } from "../src/config.js";
 
@@ -35,5 +38,31 @@ describe("loadConfig", () => {
     const cfg = loadConfig("/nonexistent");
     expect(cfg.modelProvider).toBe(DEFAULTS.modelProvider);
     delete process.env["OPENEXPERT_MODEL_PROVIDER"];
+  });
+
+  it("exposes ai and chat defaults", () => {
+    const cfg = loadConfig("/nonexistent");
+    expect(cfg.ai.temperature).toBe(DEFAULTS.ai.temperature);
+    expect(cfg.ai.topP).toBe(DEFAULTS.ai.topP);
+    expect(cfg.chat.maxSteps).toBe(DEFAULTS.chat.maxSteps);
+    expect(cfg.chat.injectionGuard).toBe(true);
+    expect(cfg.chat.retentionDays).toBe(DEFAULTS.chat.retentionDays);
+  });
+
+  it("merges ai/chat from openexpert.json with defaults for the rest", () => {
+    const dir = mkdtempSync(join(tmpdir(), "oe-config-"));
+    try {
+      writeFileSync(
+        join(dir, "openexpert.json"),
+        JSON.stringify({ ai: { temperature: 0.9 }, chat: { retentionDays: 7 } }),
+      );
+      const cfg = loadConfig(dir);
+      expect(cfg.ai.temperature).toBe(0.9);
+      expect(cfg.ai.topP).toBe(DEFAULTS.ai.topP);
+      expect(cfg.chat.retentionDays).toBe(7);
+      expect(cfg.chat.maxSteps).toBe(DEFAULTS.chat.maxSteps);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
