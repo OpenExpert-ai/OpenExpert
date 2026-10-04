@@ -17,18 +17,19 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json* ./
-COPY packages/opencore/package.json ./packages/opencore/package.json
-COPY packages/create-openexpert/package.json ./packages/create-openexpert/package.json
+# The workspace manifests and the OpenCore sources must be present before
+# `npm ci`: npm runs the workspace `prepare` (tsup) even with
+# --ignore-scripts, and tsup needs its input files.
+COPY packages/opencore ./packages/opencore
+COPY packages/create-openexpert ./packages/create-openexpert
 
-# Install the full dependency tree. --ignore-scripts avoids running
-# postinstall scripts in the deps tree that may rely on a network.
+# Install the full dependency tree.
 RUN npm ci --ignore-scripts
 
 # Copy the rest of the source.
 COPY tsconfig.json vite.config.ts drizzle.config.ts ./
 COPY src ./src
 COPY public ./public
-COPY packages/opencore ./packages/opencore
 COPY drizzle ./drizzle
 COPY scripts ./scripts
 COPY .changeset ./.changeset

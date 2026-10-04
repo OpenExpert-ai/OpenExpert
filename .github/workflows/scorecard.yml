@@ -16,6 +16,8 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
+    # Advisory only: never block the pipeline on a registry hiccup.
+    continue-on-error: true
     permissions:
       contents: read
       id-token: write

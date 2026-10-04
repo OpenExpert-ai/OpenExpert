@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+# gitleaks configuration. Extends the default rules and allowlists
+# documentation and example files that contain obvious placeholders.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documentation and example placeholders"
+paths = [
+  '''\.env\.example$''',
+  '''openexpert\.json\.example$''',
+  '''docs/''',
+]

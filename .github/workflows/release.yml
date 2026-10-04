@@ -1,5 +1,13 @@
 name: Release
 
+# Requires two repository settings before it can publish:
+#   1. Settings → Actions → General → Workflow permissions:
+#      enable "Allow GitHub Actions to create and approve pull requests"
+#      (otherwise changesets/action cannot open the version PR).
+#   2. Add an `NPM_TOKEN` secret (or configure npm Trusted Publishing).
+# Until then, this workflow will fail on pushes that carry a pending
+# changeset; the other workflows are unaffected.
+
 on:
   push:
     branches: [main]
