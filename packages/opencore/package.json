@@ -84,7 +84,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.5",
-    "@clack/prompts": "^0.9.1",
+    "@clack/prompts": "^1.8.1",
     "ai": "^7.0.0"
   },
   "devDependencies": {
