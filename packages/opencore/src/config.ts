@@ -15,6 +15,7 @@ export type AiConfig = {
 export type ChatConfig = {
   maxSteps: number;
   injectionGuard: boolean;
+  injectionExtraPatterns: string[];
   retentionDays: number;
   defaultApproval: "Ninguna" | "Requerida";
 };
@@ -37,6 +38,7 @@ export const DEFAULTS: OpenExpertConfig = {
   chat: {
     maxSteps: 50,
     injectionGuard: true,
+    injectionExtraPatterns: [],
     retentionDays: 30,
     defaultApproval: "Requerida",
   },
@@ -89,6 +91,9 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
     chat: {
       maxSteps: num(fileChat.maxSteps, DEFAULTS.chat.maxSteps),
       injectionGuard: fileChat.injectionGuard ?? DEFAULTS.chat.injectionGuard,
+      injectionExtraPatterns: Array.isArray(fileChat.injectionExtraPatterns)
+        ? fileChat.injectionExtraPatterns.filter((p): p is string => typeof p === "string")
+        : DEFAULTS.chat.injectionExtraPatterns,
       retentionDays: num(fileChat.retentionDays, DEFAULTS.chat.retentionDays),
       defaultApproval: fileChat.defaultApproval ?? DEFAULTS.chat.defaultApproval,
     },

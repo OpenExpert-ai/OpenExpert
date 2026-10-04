@@ -25,7 +25,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
         {(
           [
             ["/settings/ai", "Modelo e IA"],
+            ["/settings/chat", "Chat y agentes"],
             ["/settings/appearance", "Apariencia"],
+            ["/settings/advanced", "Avanzado"],
             ["/settings/about", "Acerca de"],
           ] as const
         ).map(([to, label]) => (

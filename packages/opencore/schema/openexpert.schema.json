@@ -64,6 +64,11 @@
           "type": "boolean",
           "description": "Enable the prompt-injection security gate."
         },
+        "injectionExtraPatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Extra regular expressions added to the injection gate."
+        },
         "retentionDays": {
           "type": "integer",
           "minimum": 0,

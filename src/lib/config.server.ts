@@ -9,12 +9,21 @@
 // defaults. The settings panel writes the files and mirrors the result into
 // process.env so changes take effect without a restart.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { loadConfig } from "@openexpert/opencore/config";
 import type { AiConfig, ChatConfig, OpenExpertConfig } from "@openexpert/opencore/config";
-import { configPath, dataDir, secretsPath } from "./paths.server";
+import { patternsAreValid } from "./ai/injection";
+import { configPath, dataDir, dbPath, secretsPath } from "./paths.server";
 
 export type ConfigSource = "env" | "file" | "secrets" | "default";
 
@@ -80,22 +89,34 @@ export function writeSecret(name: string, value: string | null): void {
 
 /* --------------------------- environment bridge -------------------------- */
 
-function setEnvIfAbsent(key: string, value: unknown): void {
-  if (value === undefined || value === null || value === "") return;
-  if (!process.env[key]) process.env[key] = String(value);
+/** Keys whose current value in process.env came from openexpert.json. */
+const fileAppliedEnv = new Set<string>();
+
+function assignFromFile(key: string, value: unknown): void {
+  if (envAtBoot.has(key)) return; // A real environment variable always wins.
+  if (value === undefined || value === null || value === "") {
+    if (fileAppliedEnv.has(key)) {
+      delete process.env[key];
+      fileAppliedEnv.delete(key);
+    }
+    return;
+  }
+  process.env[key] = String(value);
+  fileAppliedEnv.add(key);
 }
 
 /**
  * Load openexpert.json into process.env so the model provider (which reads the
- * environment) honours the file. Real environment variables always win. Must
- * run before secrets.json is loaded and before the data dir is resolved.
+ * environment) honours the file. Real environment variables always win. Safe to
+ * call again after the file changes. Must run before secrets.json is loaded and
+ * before the data dir is resolved.
  */
 export function applyFileConfigToEnv(cwd: string = process.cwd()): void {
   const raw = readFileConfigRaw(cwd);
-  setEnvIfAbsent("OPENEXPERT_MODEL_PROVIDER", raw.modelProvider);
-  setEnvIfAbsent("OPENEXPERT_MODEL_ID", raw.modelId);
-  setEnvIfAbsent("OLLAMA_BASE_URL", raw.ollamaBaseUrl);
-  setEnvIfAbsent("OPENEXPERT_DATA_DIR", raw.dataDir);
+  assignFromFile("OPENEXPERT_MODEL_PROVIDER", raw.modelProvider);
+  assignFromFile("OPENEXPERT_MODEL_ID", raw.modelId);
+  assignFromFile("OLLAMA_BASE_URL", raw.ollamaBaseUrl);
+  assignFromFile("OPENEXPERT_DATA_DIR", raw.dataDir);
 }
 
 export function setRuntimeEnv(key: string, value: string | null): void {
@@ -179,6 +200,165 @@ export function paths() {
     secrets: secretsPath(),
   };
 }
+
+/* --------------------------- advanced / diagnostics ---------------------- */
+
+const ENV_KEYS = [
+  "OPENEXPERT_MODEL_PROVIDER",
+  "OPENEXPERT_MODEL_ID",
+  "OLLAMA_BASE_URL",
+  "OPENEXPERT_BASE_URL",
+  "OPENEXPERT_DATA_DIR",
+  "OPENEXPERT_MODEL_KEY",
+  "OPENEXPERT_GATEWAY_URL",
+  "OPENEXPERT_API_KEY",
+  "GOOGLE_API_KEY",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "PUBLIC_APP_URL",
+  "PORT",
+] as const;
+
+const SECRET_RE = /(KEY|SECRET|TOKEN|PASSWORD)/i;
+
+export type EnvVarReport = {
+  name: string;
+  set: boolean;
+  source: ConfigSource;
+  secret: boolean;
+  value?: string;
+};
+
+export function envReport(): EnvVarReport[] {
+  const secrets = readSecrets();
+  return ENV_KEYS.map((name) => {
+    const value = process.env[name];
+    const set = value !== undefined && value !== "";
+    const source: ConfigSource = envAtBoot.has(name)
+      ? "env"
+      : fileAppliedEnv.has(name)
+        ? "file"
+        : secrets[name]
+          ? "secrets"
+          : set
+            ? "env"
+            : "default";
+    const secret = SECRET_RE.test(name);
+    return value !== undefined && !secret
+      ? { name, set, source, secret, value }
+      : { name, set, source, secret };
+  });
+}
+
+export function diagnostics() {
+  const cfg = effectiveConfig();
+  const dir = dataDir();
+  let writable = true;
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch {
+    writable = false;
+  }
+  const db = dbPath();
+  let dbSize = 0;
+  try {
+    if (existsSync(db)) dbSize = statSync(db).size;
+  } catch {
+    dbSize = 0;
+  }
+  return {
+    provider: cfg.modelProvider,
+    modelId: cfg.modelId,
+    googleConfigured: Boolean(
+      (process.env["GOOGLE_CLIENT_ID"] || readSecrets()["GOOGLE_CLIENT_ID"]) &&
+      (process.env["GOOGLE_CLIENT_SECRET"] || readSecrets()["GOOGLE_CLIENT_SECRET"]),
+    ),
+    dataDir: dir,
+    dataDirWritable: writable,
+    dbPath: db,
+    dbSize,
+    configExists: existsSync(configPath()),
+    secretsExists: existsSync(secretsPath()),
+  };
+}
+
+export function rawConfigText(cwd: string = process.cwd()): string {
+  const raw = readFileConfigRaw(cwd);
+  if (Object.keys(raw).length) return JSON.stringify(raw, null, 2);
+  const cfg = effectiveConfig(cwd);
+  return JSON.stringify(
+    {
+      $schema: "./packages/opencore/schema/openexpert.schema.json",
+      modelProvider: cfg.modelProvider,
+      modelId: cfg.modelId,
+      ollamaBaseUrl: cfg.ollamaBaseUrl,
+      dataDir: cfg.dataDir,
+      ai: cfg.ai,
+      chat: cfg.chat,
+    },
+    null,
+    2,
+  );
+}
+
+export const fileConfigSchema = z.object({
+  $schema: z.string().optional(),
+  modelProvider: z.enum(["google", "ollama", "openai-compatible"]).optional(),
+  modelId: z.string().min(1).optional(),
+  ollamaBaseUrl: z.string().optional(),
+  dataDir: z.string().min(1).optional(),
+  ai: z
+    .object({
+      temperature: z.number().min(0).max(2).optional(),
+      topP: z.number().min(0).max(1).optional(),
+      maxOutputTokens: z.number().int().min(1).optional(),
+    })
+    .optional(),
+  chat: z
+    .object({
+      maxSteps: z.number().int().min(1).optional(),
+      injectionGuard: z.boolean().optional(),
+      injectionExtraPatterns: z
+        .array(z.string())
+        .refine(patternsAreValid, { message: "Patrón regular inválido" })
+        .optional(),
+      retentionDays: z.number().int().min(0).optional(),
+      defaultApproval: z.enum(["Ninguna", "Requerida"]).optional(),
+    })
+    .optional(),
+});
+
+/** Parse and validate raw openexpert.json text. Throws on invalid input. */
+export function parseRawConfig(text: string): RawFileConfig {
+  const obj = JSON.parse(text) as unknown;
+  return fileConfigSchema.parse(obj) as RawFileConfig;
+}
+
+/** Replace openexpert.json with validated content and re-apply the env bridge. */
+export function writeRawConfig(text: string, cwd: string = process.cwd()): void {
+  const parsed = parseRawConfig(text);
+  atomicWrite(configPath(cwd), `${JSON.stringify(parsed, null, 2)}\n`);
+  applyFileConfigToEnv(cwd);
+}
+
+/** Remove openexpert.json so the defaults apply again. */
+export function resetFileConfig(cwd: string = process.cwd()): void {
+  if (existsSync(configPath(cwd))) rmSync(configPath(cwd));
+  applyFileConfigToEnv(cwd);
+}
+
+export const chatUpdateSchema = z.object({
+  maxSteps: z.number().int().min(1).max(200),
+  injectionGuard: z.boolean(),
+  injectionExtraPatterns: z
+    .array(z.string())
+    .max(50)
+    .refine(patternsAreValid, { message: "Patrón regular inválido" }),
+  retentionDays: z.number().int().min(0).max(3650),
+  defaultApproval: z.enum(["Ninguna", "Requerida"]),
+});
+
+export type ChatUpdateInput = z.infer<typeof chatUpdateSchema>;
 
 /* ------------------------------ validation ------------------------------ */
 

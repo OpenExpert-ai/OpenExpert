@@ -65,4 +65,18 @@ describe("loadConfig", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("reads injectionExtraPatterns and keeps only strings", () => {
+    const dir = mkdtempSync(join(tmpdir(), "oe-config-"));
+    try {
+      writeFileSync(
+        join(dir, "openexpert.json"),
+        JSON.stringify({ chat: { injectionExtraPatterns: ["foo", 3, "bar"] } }),
+      );
+      const cfg = loadConfig(dir);
+      expect(cfg.chat.injectionExtraPatterns).toEqual(["foo", "bar"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

@@ -22,8 +22,10 @@ import { Route as AuthenticatedIntegrationsProcessesRouteImport } from './routes
 import { Route as AuthenticatedIntegrationsSourcesRouteImport } from './routes/_authenticated/integrations.sources'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsAboutRouteImport } from './routes/_authenticated/settings.about'
+import { Route as AuthenticatedSettingsAdvancedRouteImport } from './routes/_authenticated/settings.advanced'
 import { Route as AuthenticatedSettingsAiRouteImport } from './routes/_authenticated/settings.ai'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings.appearance'
+import { Route as AuthenticatedSettingsChatRouteImport } from './routes/_authenticated/settings.chat'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google.callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -96,6 +98,12 @@ const AuthenticatedSettingsAboutRoute =
     path: '/about',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsAdvancedRoute =
+  AuthenticatedSettingsAdvancedRouteImport.update({
+    id: '/advanced',
+    path: '/advanced',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsAiRoute = AuthenticatedSettingsAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -105,6 +113,12 @@ const AuthenticatedSettingsAppearanceRoute =
   AuthenticatedSettingsAppearanceRouteImport.update({
     id: '/appearance',
     path: '/appearance',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsChatRoute =
+  AuthenticatedSettingsChatRouteImport.update({
+    id: '/chat',
+    path: '/chat',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
@@ -124,8 +138,10 @@ export interface FileRoutesByFullPath {
   '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
   '/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/settings/advanced': typeof AuthenticatedSettingsAdvancedRoute
   '/settings/ai': typeof AuthenticatedSettingsAiRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
+  '/settings/chat': typeof AuthenticatedSettingsChatRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/integrations/': typeof AuthenticatedIntegrationsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -139,8 +155,10 @@ export interface FileRoutesByTo {
   '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
   '/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/settings/advanced': typeof AuthenticatedSettingsAdvancedRoute
   '/settings/ai': typeof AuthenticatedSettingsAiRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
+  '/settings/chat': typeof AuthenticatedSettingsChatRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/integrations': typeof AuthenticatedIntegrationsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -158,8 +176,10 @@ export interface FileRoutesById {
   '/_authenticated/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/_authenticated/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
   '/_authenticated/settings/about': typeof AuthenticatedSettingsAboutRoute
+  '/_authenticated/settings/advanced': typeof AuthenticatedSettingsAdvancedRoute
   '/_authenticated/settings/ai': typeof AuthenticatedSettingsAiRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
+  '/_authenticated/settings/chat': typeof AuthenticatedSettingsChatRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
   '/_authenticated/integrations/': typeof AuthenticatedIntegrationsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -177,8 +197,10 @@ export interface FileRouteTypes {
     | '/integrations/processes'
     | '/integrations/sources'
     | '/settings/about'
+    | '/settings/advanced'
     | '/settings/ai'
     | '/settings/appearance'
+    | '/settings/chat'
     | '/auth/google/callback'
     | '/integrations/'
     | '/settings/'
@@ -192,8 +214,10 @@ export interface FileRouteTypes {
     | '/integrations/processes'
     | '/integrations/sources'
     | '/settings/about'
+    | '/settings/advanced'
     | '/settings/ai'
     | '/settings/appearance'
+    | '/settings/chat'
     | '/auth/google/callback'
     | '/integrations'
     | '/settings'
@@ -210,8 +234,10 @@ export interface FileRouteTypes {
     | '/_authenticated/integrations/processes'
     | '/_authenticated/integrations/sources'
     | '/_authenticated/settings/about'
+    | '/_authenticated/settings/advanced'
     | '/_authenticated/settings/ai'
     | '/_authenticated/settings/appearance'
+    | '/_authenticated/settings/chat'
     | '/auth/google/callback'
     | '/_authenticated/integrations/'
     | '/_authenticated/settings/'
@@ -317,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAboutRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/advanced': {
+      id: '/_authenticated/settings/advanced'
+      path: '/advanced'
+      fullPath: '/settings/advanced'
+      preLoaderRoute: typeof AuthenticatedSettingsAdvancedRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/ai': {
       id: '/_authenticated/settings/ai'
       path: '/ai'
@@ -329,6 +362,13 @@ declare module '@tanstack/react-router' {
       path: '/appearance'
       fullPath: '/settings/appearance'
       preLoaderRoute: typeof AuthenticatedSettingsAppearanceRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/chat': {
+      id: '/_authenticated/settings/chat'
+      path: '/chat'
+      fullPath: '/settings/chat'
+      preLoaderRoute: typeof AuthenticatedSettingsChatRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/auth/google/callback': {
@@ -363,15 +403,19 @@ const AuthenticatedIntegrationsRouteWithChildren =
 
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsAboutRoute: typeof AuthenticatedSettingsAboutRoute
+  AuthenticatedSettingsAdvancedRoute: typeof AuthenticatedSettingsAdvancedRoute
   AuthenticatedSettingsAiRoute: typeof AuthenticatedSettingsAiRoute
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
+  AuthenticatedSettingsChatRoute: typeof AuthenticatedSettingsChatRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsAboutRoute: AuthenticatedSettingsAboutRoute,
+  AuthenticatedSettingsAdvancedRoute: AuthenticatedSettingsAdvancedRoute,
   AuthenticatedSettingsAiRoute: AuthenticatedSettingsAiRoute,
   AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
+  AuthenticatedSettingsChatRoute: AuthenticatedSettingsChatRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

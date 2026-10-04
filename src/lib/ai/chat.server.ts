@@ -82,11 +82,13 @@ export async function handleChat(request: Request) {
     createdAt: now(),
   };
 
+  const cfg = effectiveConfig();
+
   const last = messages[messages.length - 1]!;
   const lastText = last.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ");
 
   // Hard security gate before the model ever sees the message.
-  if (injectionMatch(lastText)) {
+  if (cfg.chat.injectionGuard && injectionMatch(lastText, cfg.chat.injectionExtraPatterns)) {
     await ee.logActivity({
       actor: "human",
       actor_name: OWNER.name,
@@ -405,7 +407,6 @@ Formato de salida (obligatorio):
     return json(500, (e as Error).message);
   }
 
-  const cfg = effectiveConfig();
   const result = streamText({
     model,
     system: `${system}\nProveedor activo: ${modelLabel()}.`,

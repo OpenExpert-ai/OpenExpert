@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
-import { aiUpdateSchema } from "./config.server";
+import { aiUpdateSchema, chatUpdateSchema } from "./config.server";
 
 const base = {
   provider: "ollama" as const,
@@ -31,5 +31,27 @@ describe("aiUpdateSchema", () => {
 
   it("allows an empty URL (uses the provider default)", () => {
     expect(aiUpdateSchema.parse({ ...base, ollamaBaseUrl: "" }).ollamaBaseUrl).toBe("");
+  });
+});
+
+describe("chatUpdateSchema", () => {
+  const chat = {
+    maxSteps: 50,
+    injectionGuard: true,
+    injectionExtraPatterns: [] as string[],
+    retentionDays: 30,
+    defaultApproval: "Requerida" as const,
+  };
+
+  it("accepts a valid payload", () => {
+    expect(chatUpdateSchema.parse(chat).retentionDays).toBe(30);
+  });
+
+  it("rejects an invalid regex pattern", () => {
+    expect(() => chatUpdateSchema.parse({ ...chat, injectionExtraPatterns: ["("] })).toThrow();
+  });
+
+  it("rejects an out-of-range maxSteps", () => {
+    expect(() => chatUpdateSchema.parse({ ...chat, maxSteps: 0 })).toThrow();
   });
 });

@@ -14,11 +14,18 @@ import * as schema from "../../drizzle/schema";
 import {
   aiSettings,
   aiUpdateSchema,
+  chatSettings,
+  chatUpdateSchema,
+  diagnostics,
+  envReport,
   paths,
+  rawConfigText,
+  resetFileConfig,
   revealSecretValue,
   secretStatus,
   setRuntimeEnv,
   writeFileConfig,
+  writeRawConfig,
   writeSecret,
 } from "./config.server";
 
@@ -144,6 +151,70 @@ export const revealSecret = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => ({ value: revealSecretValue(data.name) }));
+
+/* ------------------------------ chat / agents ---------------------------- */
+
+export const getChatSettings = createServerFn({ method: "GET" }).handler(async () =>
+  chatSettings(),
+);
+
+export const updateChatSettings = createServerFn({ method: "POST" })
+  .validator((d) => chatUpdateSchema.parse(d))
+  .handler(async ({ data }) => {
+    writeFileConfig({ chat: data });
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Configuración",
+      expert_id: "general",
+      status: "ok",
+      summary: `Ajustes de chat actualizados (guardia: ${data.injectionGuard ? "activada" : "desactivada"}, retención: ${data.retentionDays} días)`,
+      sources: ["Configuración"],
+    });
+    return { ok: true };
+  });
+
+/* -------------------------------- advanced ------------------------------- */
+
+export const getAdvanced = createServerFn({ method: "GET" }).handler(async () => ({
+  raw: rawConfigText(),
+  env: envReport(),
+  diagnostics: diagnostics(),
+}));
+
+export const saveRawConfig = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ content: z.string().max(100_000) }).parse(d))
+  .handler(async ({ data }) => {
+    try {
+      writeRawConfig(data.content);
+    } catch (e) {
+      throw new Error(e instanceof Error ? e.message : "JSON inválido", { cause: e });
+    }
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Configuración",
+      expert_id: "general",
+      status: "ok",
+      summary: "openexpert.json editado manualmente",
+      sources: ["Configuración"],
+    });
+    return { ok: true };
+  });
+
+export const resetConfig = createServerFn({ method: "POST" }).handler(async () => {
+  resetFileConfig();
+  await ee.logActivity({
+    actor: "human",
+    actor_name: OWNER_NAME,
+    type: "Configuración",
+    expert_id: "general",
+    status: "ok",
+    summary: "openexpert.json restaurado a valores por defecto",
+    sources: ["Configuración"],
+  });
+  return { ok: true };
+});
 
 /* ------------------------------ UI preferences --------------------------- */
 

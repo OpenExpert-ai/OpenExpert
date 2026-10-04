@@ -7,6 +7,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
+import { chatSettings } from "@/lib/config.server";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
@@ -295,8 +296,6 @@ export const getChat = createServerFn({ method: "GET" })
     return JSON.stringify(rows.map((r) => r.message));
   });
 
-const RETENTION_MS = 30 * 24 * 3600 * 1000;
-
 export const listConversations = createServerFn({ method: "GET" })
   .validator((d) => z.object({ expertId: z.string() }).parse(d))
   .handler(async ({ data }) => {
@@ -326,7 +325,8 @@ export const listConversations = createServerFn({ method: "GET" })
       cur.count++;
       map.set(r.conversationId, cur);
     }
-    const cutoff = Date.now() - RETENTION_MS;
+    const retentionMs = chatSettings().retentionDays * 24 * 3600 * 1000;
+    const cutoff = Date.now() - retentionMs;
     const expired = [...map.values()]
       .filter((c) => new Date(c.updatedAt).getTime() < cutoff)
       .map((c) => c.id);
