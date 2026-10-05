@@ -6,19 +6,21 @@
 
 ## 1. Estado
 
-Solo **Google Drive** está conectada, y es opcional. Los demás conectores están
-modelados en los datos pero pendientes de credenciales.
+Solo **Google Drive** y las **carpetas locales** están disponibles, y ambas son
+opcionales. Los demás conectores están modelados en los datos pero pendientes de
+credenciales.
 
-| Integración      | Categoría      | Conexión       | Estado         |
-| ---------------- | -------------- | -------------- | -------------- |
-| **Google Drive** | Productividad  | OAuth + Picker | **Disponible** |
-| Pipedrive        | CRM            | Por licencia   | Pendiente      |
-| Salesforce       | CRM            | Por licencia   | Pendiente      |
-| Holded           | ERP / Finanzas | Por licencia   | Pendiente      |
-| Gmail            | Productividad  | API            | Pendiente      |
-| Slack            | Productividad  | API            | Pendiente      |
-| Google Analytics | Publicidad     | API            | Pendiente      |
-| Meta Ads         | Publicidad     | Token          | Pendiente      |
+| Integración          | Categoría      | Conexión       | Estado         |
+| -------------------- | -------------- | -------------- | -------------- |
+| **Google Drive**     | Productividad  | OAuth + Picker | **Disponible** |
+| **Carpetas locales** | Productividad  | Servidor local | **Disponible** |
+| Pipedrive            | CRM            | Por licencia   | Pendiente      |
+| Salesforce           | CRM            | Por licencia   | Pendiente      |
+| Holded               | ERP / Finanzas | Por licencia   | Pendiente      |
+| Gmail                | Productividad  | API            | Pendiente      |
+| Slack                | Productividad  | API            | Pendiente      |
+| Google Analytics     | Publicidad     | API            | Pendiente      |
+| Meta Ads             | Publicidad     | Token          | Pendiente      |
 
 ## 2. Google Drive
 
@@ -69,28 +71,53 @@ obligatoria de Limited Use está en [`PRIVACY.md`](../../PRIVACY.md) (inglés) y
 extracto aparece en el diálogo de conectar. La URL es configurable vía
 `OPENEXPERT_PRIVACY_URL`.
 
-## 3. Herramientas de IA
+## 3. Carpetas locales
 
-| Herramienta         | Comportamiento                                   |
-| ------------------- | ------------------------------------------------ |
-| `search_drive`      | Busca **solo** dentro de los archivos concedidos |
-| `read_drive_file`   | Lee solo dentro de las concesiones               |
-| `create_drive_file` | Crea un nuevo archivo propiedad de la app        |
-| `update_drive_file` | Edita un archivo concedido o creado por la app   |
+El asistente también puede leer y escribir archivos en **carpetas del propio
+equipo**, sin Google. Se eligen en **Integraciones → Fuentes → Archivos
+locales**, con el navegador de carpetas integrado o escribiendo una ruta
+absoluta. Las concesiones se guardan cifradas en
+`~/.openexpert/local-roots.json`.
 
-Las lecturas requieren `gdrive` en `sources` del Experto. Las escrituras
-requieren aprobación humana.
+- El acceso es **solo dentro de las carpetas autorizadas**. Cada ruta se resuelve
+  con `realpath` y se comprueba contra las raíces, así que se rechazan los
+  enlaces simbólicos que escapen.
+- Las lecturas devuelven texto (y el texto de PDFs). Las escrituras
+  (`create_local_file`, `update_local_file`) requieren **aprobación humana**,
+  igual que las de Drive.
+- Con límites: 25 MB por archivo, 200.000 caracteres devueltos, 5.000 archivos y
+  profundidad 8 por listado; se omiten `.git`, `node_modules`, ficheros ocultos y
+  ficheros de secretos.
+- Docker: el servidor ve el sistema de archivos del contenedor, así que hay que
+  montar la carpeta con `-v /ruta/host:/data/ruta`.
 
-## 4. Notas de seguridad
+## 4. Herramientas de IA
+
+| Herramienta                               | Comportamiento                                   |
+| ----------------------------------------- | ------------------------------------------------ |
+| `search_drive`                            | Busca **solo** dentro de los archivos concedidos |
+| `read_drive_file`                         | Lee solo dentro de las concesiones               |
+| `create_drive_file`                       | Crea un nuevo archivo propiedad de la app        |
+| `update_drive_file`                       | Edita un archivo concedido o creado por la app   |
+| `list_local_files` / `search_local_files` | Lista/busca en las carpetas locales autorizadas  |
+| `read_local_file`                         | Lee un archivo local autorizado                  |
+| `create_local_file` / `update_local_file` | Escribe un archivo local, con aprobación humana  |
+
+Las lecturas de Drive requieren `gdrive` en `sources` del Experto; las locales
+requieren `local`. Todas las escrituras requieren aprobación humana.
+
+## 5. Notas de seguridad
 
 - Los **tokens** y la **lista de concesiones** están cifrados con **AES-256-GCM**
   con una clave generada en tu máquina (`~/.openexpert/secret.key`, `0600`).
 - El `state` de OAuth incluye el verifier PKCE firmado con HMAC; el secreto
   vive en `~/.openexpert/state-secret` (o en `GOOGLE_OAUTH_STATE_SECRET`).
+- El acceso a archivos locales queda restringido a las carpetas autorizadas (ver
+  [`04-seguridad-y-acceso.md`](./04-seguridad-y-acceso.md)).
 - El navegador se considera de confianza en la edición local
   monopropietario (ver [`04-seguridad-y-acceso.md`](./04-seguridad-y-acceso.md)).
 
-## 5. Añadir una integración
+## 6. Añadir una integración
 
 1. **Credenciales.** Documenta el flujo OAuth o los requisitos de plan.
 2. **Tokens.** Reutiliza el patrón de Drive (fichero local cifrado, `0600`).
@@ -100,7 +127,7 @@ requieren aprobación humana.
    de scope y registro de fuente. Incluye siempre un disclosure en producto si
    los datos se envían a un modelo.
 
-## 6. Referencias
+## 7. Referencias
 
 - [Arquitectura](./02-arquitectura.md) — capas.
 - [IA](./05-inteligencia-artificial.md) — catálogo de herramientas.

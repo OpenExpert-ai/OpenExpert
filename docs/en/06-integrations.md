@@ -6,12 +6,13 @@
 
 ## 1. Status
 
-Only **Google Drive** is connected, and it is optional. The other connectors are
-modelled in the data but pending credentials.
+Only **Google Drive** and **local folders** are available, and both are optional.
+The other connectors are modelled in the data but pending credentials.
 
 | Integration      | Category      | Connection     | Status        |
 | ---------------- | ------------- | -------------- | ------------- |
 | **Google Drive** | Productivity  | OAuth + Picker | **Available** |
+| **Local files**  | Productivity  | Local server   | **Available** |
 | Pipedrive        | CRM           | By licence     | Pending       |
 | Salesforce       | CRM           | By licence     | Pending       |
 | Holded           | ERP / Finance | By licence     | Pending       |
@@ -72,29 +73,50 @@ required by Google's User Data Policy is included in
 A copy is shown in the Connect dialog. The URL is configurable via
 `OPENEXPERT_PRIVACY_URL`.
 
-## 3. AI tools
+## 3. Local folders
 
-| Tool                | Behaviour                                      |
-| ------------------- | ---------------------------------------------- |
-| `search_drive`      | Searches the granted files only                |
-| `read_drive_file`   | Reads only within the grants                   |
-| `create_drive_file` | Creates a new file the app owns                |
-| `update_drive_file` | Edits a granted file or a file the app created |
+The assistant can read and write files in **folders on the same machine**,
+without Google. Pick them in **Integraciones → Fuentes → Archivos locales**,
+either with the built-in folder navigator or by typing an absolute path. The
+grants live encrypted in `~/.openexpert/local-roots.json`.
 
-All read tools require `gdrive` in the Expert's `sources`. All writes go
-through human approval.
+- Access is **only inside the granted folders**. Every path is resolved with
+  `realpath` and checked against the roots, so symlink escapes are rejected.
+- Reads return text (and PDF text). Writes (`create_local_file`,
+  `update_local_file`) require **human approval**, like Drive writes.
+- Bounded: 25 MB per file, 200k characters returned, 5,000 files and depth 8 per
+  listing; `.git`, `node_modules`, dotfiles and secret files are skipped.
+- Docker: the server sees the container filesystem, so mount the folder with
+  `-v /host/folder:/data/folder`.
 
-## 4. Security notes
+## 4. AI tools
+
+| Tool                                      | Behaviour                                      |
+| ----------------------------------------- | ---------------------------------------------- |
+| `search_drive`                            | Searches the granted files only                |
+| `read_drive_file`                         | Reads only within the grants                   |
+| `create_drive_file`                       | Creates a new file the app owns                |
+| `update_drive_file`                       | Edits a granted file or a file the app created |
+| `list_local_files` / `search_local_files` | Lists/searches the granted local folders       |
+| `read_local_file`                         | Reads a granted local file                     |
+| `create_local_file` / `update_local_file` | Writes a local file, with human approval       |
+
+Drive reads require `gdrive` in the Expert's `sources`; local reads require
+`local`. All writes go through human approval.
+
+## 5. Security notes
 
 - Tokens and grants are **AES-256-GCM encrypted** with a key file generated
   on the local machine (`~/.openexpert/secret.key`, mode `0600`).
 - OAuth `state` includes a PKCE verifier signed with an HMAC of the
   nonce + verifier; the secret lives in `~/.openexpert/state-secret` (or
   `GOOGLE_OAUTH_STATE_SECRET`).
+- Local folder access is restricted to the granted roots (see
+  [`04-security.md`](./04-security.md)).
 - The browser is trusted in the local single-owner edition (see
   [`04-security.md`](./04-security.md)).
 
-## 5. Adding a new integration
+## 6. Adding a new integration
 
 1. **Credentials.** Document the OAuth flow or plan requirements.
 2. **Tokens.** Reuse the Drive pattern (encrypted local file, `0600`).
@@ -104,7 +126,7 @@ through human approval.
    logging. Always include an in-product disclosure if user data is sent to
    a model provider.
 
-## 6. References
+## 7. References
 
 - [Architecture](./02-architecture.md) — layers.
 - [AI](./05-ai.md) — tool catalogue.

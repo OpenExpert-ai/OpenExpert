@@ -303,5 +303,124 @@ export function createChatTools(ctx: ChatToolsContext) {
         }
       },
     }),
+    list_local_files: tool({
+      description:
+        "Lista los archivos de las carpetas locales que el usuario autorizó (ruta, nombre y tamaño). Úsalo antes de leer para localizar el archivo.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        if (!expert.sources.includes("local")) return deny("con archivos locales");
+        used.add("Archivos locales");
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const fs = await import("../local-fs.server");
+          const roots = local.loadLocalRoots().map((r) => r.path);
+          const files = fs.listLocalFiles(roots);
+          return { roots, files };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    search_local_files: tool({
+      description:
+        "Busca archivos por NOMBRE en las carpetas locales autorizadas. Devuelve [{path, name, size}].",
+      inputSchema: z.object({ query: z.string() }),
+      execute: async ({ query }) => {
+        if (!expert.sources.includes("local")) return deny("con archivos locales");
+        used.add("Archivos locales");
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const fs = await import("../local-fs.server");
+          const roots = local.loadLocalRoots().map((r) => r.path);
+          const q = query.trim().toLowerCase();
+          const files = fs
+            .listLocalFiles(roots)
+            .filter((f) => f.name.toLowerCase().includes(q))
+            .slice(0, 200);
+          return { files };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    read_local_file: tool({
+      description:
+        "Lee el contenido de texto de un archivo local autorizado. Pasa la ruta devuelta por list_local_files o search_local_files.",
+      inputSchema: z.object({ path: z.string() }),
+      execute: async ({ path }) => {
+        if (!expert.sources.includes("local")) return deny("con archivos locales");
+        used.add("Archivos locales");
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const fs = await import("../local-fs.server");
+          const roots = local.loadLocalRoots().map((r) => r.path);
+          return await fs.readLocalFile(path, roots);
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    create_local_file: tool({
+      description:
+        "Crea un archivo NUEVO dentro de una carpeta local autorizada. Requiere aprobación humana antes de escribir.",
+      inputSchema: z.object({
+        folder: z.string(),
+        name: z.string().min(1).max(200),
+        content: z.string().max(200000),
+      }),
+      execute: async ({ folder, name, content }) => {
+        if (!expert.sources.includes("local")) return deny("con archivos locales");
+        used.add("Archivos locales");
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const fs = await import("../local-fs.server");
+          const roots = local.loadLocalRoots().map((r) => r.path);
+          const f = fs.createLocalFile(folder, name, roots, content);
+          await ee
+            .logActivity({
+              actor: "agent",
+              actor_name: "OpenExpert",
+              type: "Archivos locales · creación",
+              expert_id: expertId,
+              status: "ok",
+              summary: `Creado archivo local: ${f.name}`,
+              sources: ["Archivos locales"],
+            })
+            .catch(() => {});
+          return { action: "created", ...f };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    update_local_file: tool({
+      description:
+        "Reemplaza el contenido completo de un archivo local autorizado. Requiere aprobación humana antes de escribir.",
+      inputSchema: z.object({ path: z.string(), content: z.string().max(200000) }),
+      execute: async ({ path, content }) => {
+        if (!expert.sources.includes("local")) return deny("con archivos locales");
+        used.add("Archivos locales");
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const fs = await import("../local-fs.server");
+          const roots = local.loadLocalRoots().map((r) => r.path);
+          const f = fs.writeLocalFile(path, roots, content);
+          await ee
+            .logActivity({
+              actor: "agent",
+              actor_name: "OpenExpert",
+              type: "Archivos locales · edición",
+              expert_id: expertId,
+              status: "ok",
+              summary: `Editado archivo local: ${f.name}`,
+              sources: ["Archivos locales"],
+            })
+            .catch(() => {});
+          return { action: "updated", ...f };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
   };
 }

@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown, FileText, Trash2 } from "lucide-react";
+import { ArrowUp, ChevronDown, FileText, Folder, FolderPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import {
   acceptDriveConsent,
+  addLocalRoot,
+  browseLocalDir,
   disconnectDrive,
   getDriveAccessToken,
   getDriveConsent,
   getGrantedFiles,
+  getLocalRoots,
+  removeLocalRoot,
   setGrantedFiles,
   startDriveAuth,
   syncIntegration,
@@ -16,6 +21,7 @@ import {
 import { useAct, useDriveStatus, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { Modal, btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +76,21 @@ function SourcesPage() {
     queryKey: ["drive-grants"],
     queryFn: () => getGrantedFiles(),
   });
+
+  const getRoots = useServerFn(getLocalRoots);
+  const browseFn = useServerFn(browseLocalDir);
+  const addRoot = useAct(addLocalRoot, t("Carpeta añadida"));
+  const removeRoot = useAct(removeLocalRoot, t("Carpeta quitada"));
+  const [localOpen, setLocalOpen] = useState(false);
+  const [browsePath, setBrowsePath] = useState<string | undefined>(undefined);
+  const roots = useQuery({ queryKey: ["local-roots"], queryFn: () => getRoots() });
+  const browse = useQuery({
+    queryKey: ["browse-local", browsePath ?? "~"],
+    queryFn: () => browseFn({ data: browsePath ? { path: browsePath } : {} }),
+    enabled: localOpen,
+    retry: false,
+  });
+  const refreshRoots = () => qc.invalidateQueries({ queryKey: ["local-roots"] });
 
   useEffect(() => {
     if (search.gdrive === "ok") {
@@ -251,11 +272,68 @@ function SourcesPage() {
 
       <section>
         <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+          {t("Archivos locales")}
+        </h2>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-medium">{t("Carpetas locales")}</div>
+              <div className="mt-1 text-[0.7rem] text-muted-foreground">
+                {roots.data?.roots.length
+                  ? t("{n} carpeta(s) autorizada(s)", { n: roots.data.roots.length })
+                  : t("Ninguna carpeta autorizada")}
+              </div>
+            </div>
+            <Button
+              onClick={() => {
+                setBrowsePath(undefined);
+                setLocalOpen(true);
+              }}
+              className="items-center gap-2"
+            >
+              <FolderPlus className="size-4" /> {t("Añadir carpeta")}
+            </Button>
+          </div>
+          <p className="mt-3 text-[0.7rem] text-muted-foreground">
+            {t(
+              "El asistente puede leer y escribir (con tu aprobación) dentro de estas carpetas. El contenido se envía al modelo para responderte.",
+            )}
+          </p>
+          {roots.data?.roots.length ? (
+            <ul className="mt-4 space-y-1">
+              {roots.data.roots.map((r) => (
+                <li
+                  key={r.path}
+                  className="flex items-center gap-2 rounded border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <Folder className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                  <span className="hidden truncate font-mono text-[0.7rem] text-muted-foreground sm:inline">
+                    {r.path}
+                  </span>
+                  <button
+                    onClick={() =>
+                      removeRoot.mutate({ data: { path: r.path } }, { onSuccess: refreshRoots })
+                    }
+                    aria-label={t("Quitar carpeta")}
+                    className="rounded p-1 text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
           {t("Fuentes pendientes")}
         </h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {ws.integrations
-            .filter((i) => i.id !== "gdrive")
+            .filter((i) => i.id !== "gdrive" && i.id !== "local")
             .map((i) => (
               <div key={i.id} className="rounded-lg border border-border bg-card">
                 <div className="flex items-center gap-3 p-4">
@@ -288,6 +366,92 @@ function SourcesPage() {
             ))}
         </div>
       </section>
+
+      <Modal open={localOpen} onClose={() => setLocalOpen(false)} title={t("Elegir carpeta")}>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <input
+              className={inputCls}
+              value={browsePath ?? ""}
+              onChange={(e) => setBrowsePath(e.target.value)}
+              placeholder={t("Ruta absoluta (p. ej. /home/tu-usuario/Documentos)")}
+            />
+            <button
+              className={btnGhost}
+              onClick={() => qc.invalidateQueries({ queryKey: ["browse-local"] })}
+            >
+              {t("Ir")}
+            </button>
+          </div>
+          {browse.isError ? (
+            <p className="text-xs text-destructive">{(browse.error as Error).message}</p>
+          ) : null}
+          {browse.data ? (
+            <div className="rounded-md border border-border">
+              <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+                <button
+                  onClick={() => setBrowsePath(browse.data.parent ?? browse.data.path)}
+                  disabled={!browse.data.parent}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+                >
+                  <ArrowUp className="size-3.5" /> {t("Subir")}
+                </button>
+                <span className="min-w-0 flex-1 truncate font-mono text-[0.7rem] text-muted-foreground">
+                  {browse.data.path}
+                </span>
+              </div>
+              <ul className="max-h-64 overflow-y-auto">
+                {browse.data.entries.filter((e) => e.isDirectory).length === 0 && (
+                  <li className="px-3 py-2 text-xs text-muted-foreground">
+                    {t("Sin subcarpetas")}
+                  </li>
+                )}
+                {browse.data.entries
+                  .filter((e) => e.isDirectory)
+                  .map((e) => (
+                    <li key={e.path}>
+                      <button
+                        onClick={() => setBrowsePath(e.path)}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent/60"
+                      >
+                        <Folder className="size-4 shrink-0 text-primary" />
+                        <span className="truncate">{e.name}</span>
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ) : browse.isLoading ? (
+            <p className="text-xs text-muted-foreground">{t("Cargando…")}</p>
+          ) : null}
+          <div className="flex items-center justify-between gap-3">
+            <span className="min-w-0 flex-1 truncate font-mono text-[0.7rem] text-muted-foreground">
+              {browse.data?.path}
+            </span>
+            <button
+              className={btnPrimary}
+              disabled={!browse.data || addRoot.isPending}
+              onClick={() =>
+                browse.data &&
+                addRoot.mutate(
+                  { data: { path: browse.data.path } },
+                  {
+                    onSuccess: () => {
+                      setLocalOpen(false);
+                      refreshRoots();
+                    },
+                  },
+                )
+              }
+            >
+              {addRoot.isPending ? t("Añadiendo…") : t("Añadir esta carpeta")}
+            </button>
+          </div>
+          <p className="text-[0.7rem] text-muted-foreground">
+            {t("Solo se listan carpetas; no se lee ningún archivo al elegirlas.")}
+          </p>
+        </div>
+      </Modal>
 
       <AlertDialog open={consentOpen} onOpenChange={setConsentOpen}>
         <AlertDialogContent>

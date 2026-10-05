@@ -17,7 +17,8 @@ No Expert can read another Expert's data. Each read tool belongs to a domain
 (`ventas`, `finanzas`, `marketing`, `general`) and the server checks that the
 active Expert matches the domain (or is `general`) before returning data.
 Out-of-context calls return an explicit error, not data. Google Drive access is
-decided by the Expert's `sources` column.
+decided by the Expert's `sources` column, and local folder access by the `local`
+source, restricted to the folders the user granted.
 
 ## 3. Guarantees against assistant misuse
 
@@ -41,6 +42,7 @@ decided by the Expert's `sources` column.
 | `GOOGLE_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY` | env or `~/.openexpert/secrets.json` (`0600`)                                     |
 | Google Drive tokens                             | `~/.openexpert/credentials.json` (`0600`, AES-256-GCM encrypted)                 |
 | Picker grants (the files you picked)            | `~/.openexpert/drive-grants.json` (`0600`, AES-256-GCM encrypted)                |
+| Local folder grants                             | `~/.openexpert/local-roots.json` (`0600`, AES-256-GCM encrypted)                 |
 | OAuth `state` signing key                       | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`) |
 | Encryption key file                             | `~/.openexpert/secret.key` (`0600`, generated on first run)                      |
 
@@ -58,6 +60,9 @@ Rules:
   callback verifies the MAC in constant time.
 - Drive tokens and the Picker grants are AES-256-GCM encrypted with a key
   generated and stored on the local machine (`~/.openexpert/secret.key`).
+- Local files are read/written **only** inside the granted folders: every path
+  is resolved with `realpath` and checked against the roots, so symlink escapes
+  are rejected. Dotfiles, `.git`, `node_modules` and secret files are skipped.
 - Google user data is used only for the in-product features (chat, source
   list, backup). No training of non-personalised models. No sale or transfer to
   advertising platforms. See [`PRIVACY.md`](../../PRIVACY.md).

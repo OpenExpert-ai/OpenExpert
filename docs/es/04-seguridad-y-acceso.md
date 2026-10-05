@@ -19,7 +19,8 @@ pertenece a un dominio (`ventas`, `finanzas`, `marketing`, `general`) y el
 servidor comprueba que el Experto activo coincida con el dominio (o sea
 `general`) antes de devolver datos. Las llamadas fuera de contexto devuelven un
 error explícito, sin datos. El acceso a Google Drive se decide por la columna
-`sources` del Experto.
+`sources` del Experto, y el de archivos locales por el origen `local`,
+restringido a las carpetas autorizadas.
 
 ## 3. Garantías frente a uso indebido del asistente
 
@@ -44,6 +45,7 @@ error explícito, sin datos. El acceso a Google Drive se decide por la columna
 | `GOOGLE_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY`    | env o `~/.openexpert/secrets.json` (`0600`)                                     |
 | Tokens de Google Drive                             | `~/.openexpert/credentials.json` (`0600`, cifrado AES-256-GCM)                  |
 | Concesiones del Picker (los archivos que elegiste) | `~/.openexpert/drive-grants.json` (`0600`, cifrado AES-256-GCM)                 |
+| Carpetas locales autorizadas                       | `~/.openexpert/local-roots.json` (`0600`, cifrado AES-256-GCM)                  |
 | Clave de firma del `state` OAuth                   | `GOOGLE_OAUTH_STATE_SECRET` o un `~/.openexpert/state-secret` generado (`0600`) |
 | Clave de cifrado local                             | `~/.openexpert/secret.key` (`0600`, generada en el primer arranque)             |
 
@@ -63,6 +65,10 @@ Reglas:
 - Los tokens de Drive y la lista de concesiones del Picker están cifrados
   con AES-256-GCM, usando una clave generada y guardada en tu propio equipo
   (`~/.openexpert/secret.key`).
+- Los archivos locales se leen/escriben **solo** dentro de las carpetas
+  autorizadas: cada ruta se resuelve con `realpath` y se comprueba contra las
+  raíces, así que se rechazan los enlaces simbólicos que escapen. Se omiten
+  ficheros ocultos, `.git`, `node_modules` y ficheros de secretos.
 - Los datos de Google se usan solo para funciones visibles del producto
   (chat, lista de fuentes, auditoría). No entrenamos modelos no
   personalizados. No vendemos ni cedemos los datos a terceros. Ver

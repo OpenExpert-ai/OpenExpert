@@ -243,6 +243,39 @@ export const en: Record<string, string> = {
   "Google Drive sincronizado": "Google Drive synced",
   "Google Drive desconectado": "Google Drive disconnected",
 
+  // --- Local files -----------------------------------------------------------
+  "Archivos locales": "Local files",
+  "Carpetas locales": "Local folders",
+  "{n} carpeta(s) autorizada(s)": "{n} authorised folder(s)",
+  "Ninguna carpeta autorizada": "No authorised folders",
+  "Añadir carpeta": "Add folder",
+  "El asistente puede leer y escribir (con tu aprobación) dentro de estas carpetas. El contenido se envía al modelo para responderte.":
+    "The assistant can read and write (with your approval) inside these folders. Content is sent to the model to answer you.",
+  "Quitar carpeta": "Remove folder",
+  "Carpeta añadida": "Folder added",
+  "Carpeta quitada": "Folder removed",
+  "Elegir carpeta": "Choose folder",
+  "Ruta absoluta (p. ej. /home/tu-usuario/Documentos)":
+    "Absolute path (e.g. /home/your-user/Documents)",
+  Ir: "Go",
+  Subir: "Up",
+  "Sin subcarpetas": "No subfolders",
+  "Añadiendo…": "Adding…",
+  "Añadir esta carpeta": "Add this folder",
+  "Solo se listan carpetas; no se lee ningún archivo al elegirlas.":
+    "Only folders are listed; no file is read when choosing them.",
+  "Escritura en archivos locales": "Write to local files",
+  "Crear «{name}» en la carpeta {folder}": "Create “{name}” in folder {folder}",
+  "Reescribir el archivo {path}": "Overwrite file {path}",
+  "Aprobado. Escribiendo el archivo…": "Approved. Writing the file…",
+  "Denegado. No se escribirá nada.": "Denied. Nothing will be written.",
+  "Escritura local denegada": "Local write denied",
+  "Listando archivos locales": "Listing local files",
+  "Buscando archivos locales": "Searching local files",
+  "Leyendo archivo local": "Reading a local file",
+  "Creando archivo local": "Creating a local file",
+  "Actualizando archivo local": "Updating a local file",
+
   // --- Chat ------------------------------------------------------------------
   "¿Cómo va el pipeline comercial?": "How is the sales pipeline doing?",
   "Reclamar facturas vencidas > 5.000€": "Claim overdue invoices > €5,000",

@@ -535,6 +535,11 @@ const TOOL_LABEL: Record<string, string> = {
   read_drive_file: "Leyendo documento de Drive",
   create_drive_file: "Creando archivo en Google Drive",
   update_drive_file: "Actualizando archivo en Google Drive",
+  list_local_files: "Listando archivos locales",
+  search_local_files: "Buscando archivos locales",
+  read_local_file: "Leyendo archivo local",
+  create_local_file: "Creando archivo local",
+  update_local_file: "Actualizando archivo local",
 };
 
 type ToolPart = {
@@ -561,6 +566,11 @@ const SOURCE: Record<string, string> = {
   read_drive_file: "Google Drive",
   create_drive_file: "Google Drive",
   update_drive_file: "Google Drive",
+  list_local_files: "Archivos locales",
+  search_local_files: "Archivos locales",
+  read_local_file: "Archivos locales",
+  create_local_file: "Archivos locales",
+  update_local_file: "Archivos locales",
 };
 
 function AssistantMsg({
@@ -647,7 +657,10 @@ function AssistantMsg({
                 key={part.toolCallId + "dn"}
                 className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
               >
-                <X className="size-3.5" /> {t("Acceso a Google Drive denegado")}
+                <X className="size-3.5" />{" "}
+                {part.type.includes("local")
+                  ? t("Escritura local denegada")
+                  : t("Acceso a Google Drive denegado")}
               </div>
             );
           }
@@ -1019,8 +1032,15 @@ function DriveApprovalCard({
 }) {
   const { t } = useT();
   const [decision, setDecision] = useState<null | boolean>(null);
-  const summary =
-    tool === "search_drive"
+  const isLocal = tool === "create_local_file" || tool === "update_local_file";
+  const summary = isLocal
+    ? tool === "create_local_file"
+      ? t("Crear «{name}» en la carpeta {folder}", {
+          name: String(input["name"] ?? ""),
+          folder: String(input["folder"] ?? ""),
+        })
+      : t("Reescribir el archivo {path}", { path: String(input["path"] ?? "") })
+    : tool === "search_drive"
       ? input["query"]
         ? t("Buscar «{q}» en los archivos de Drive que elegiste", { q: String(input["query"]) })
         : t("Listar tus archivos de Drive elegidos")
@@ -1038,7 +1058,8 @@ function DriveApprovalCard({
   return (
     <div className="rounded-md border border-info/40 bg-info/5 p-3">
       <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wider text-info">
-        <ShieldCheck className="size-3.5" /> {t("Acceso a Google Drive")} · {tool}
+        <ShieldCheck className="size-3.5" />{" "}
+        {isLocal ? t("Escritura en archivos locales") : t("Acceso a Google Drive")} · {tool}
       </div>
       <div className="mt-1.5 text-sm">{summary}</div>
       {decision === null ? (
@@ -1052,11 +1073,17 @@ function DriveApprovalCard({
         </div>
       ) : decision ? (
         <div className="mt-2 flex items-center gap-2 text-xs text-success">
-          <Check className="size-3.5" /> {t("Aprobado. Consultando Google Drive…")}
+          <Check className="size-3.5" />{" "}
+          {isLocal
+            ? t("Aprobado. Escribiendo el archivo…")
+            : t("Aprobado. Consultando Google Drive…")}
         </div>
       ) : (
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <X className="size-3.5" /> {t("Denegado. El asistente seguirá sin ese dato.")}
+          <X className="size-3.5" />{" "}
+          {isLocal
+            ? t("Denegado. No se escribirá nada.")
+            : t("Denegado. El asistente seguirá sin ese dato.")}
         </div>
       )}
     </div>

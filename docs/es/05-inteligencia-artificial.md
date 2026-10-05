@@ -36,6 +36,14 @@ herramientas.
 | `create_drive_file` | `gdrive` en `sources` |
 | `update_drive_file` | `gdrive` en `sources` |
 
+### Archivos locales (opcional)
+
+| Herramienta                               | Requiere                                 |
+| ----------------------------------------- | ---------------------------------------- |
+| `list_local_files` / `search_local_files` | `local` en `sources`                     |
+| `read_local_file`                         | `local` en `sources`                     |
+| `create_local_file` / `update_local_file` | `local` en `sources` + aprobación humana |
+
 ### Propuestas (no ejecutan)
 
 | Herramienta                 | Propone                                 |
@@ -61,8 +69,10 @@ contra esa lista antes de devolver datos; si no, devuelve un error explícito
 "fuera de contexto", sin datos. `list_processes` y `request_process_run`
 respetan la misma lista, así que un proceso solo es visible y ejecutable desde un
 Experto dueño de su dominio. El acceso a Drive se decide por la columna
-`sources` del Experto. Los dominios se eligen al crear o editar un Experto; un
-Experto sin dominios puede chatear y usar Drive, pero no lee datos de negocio.
+`sources` del Experto; el acceso a archivos locales se decide por el origen
+`local` y queda además restringido a las carpetas autorizadas. Los dominios se
+eligen al crear o editar un Experto; un Experto sin dominios puede chatear y usar
+Drive, pero no lee datos de negocio.
 
 ## 4. Límites
 

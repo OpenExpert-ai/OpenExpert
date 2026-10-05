@@ -620,3 +620,77 @@ export const syncIntegration = createServerFn({ method: "POST" })
       sources: ["Google Drive"],
     });
   });
+
+/* ---------------------------- Local folders ---------------------------- */
+
+async function setLocalIntegration(roots: { path: string }[]): Promise<void> {
+  const { orm } = await getDb();
+  orm
+    .update(schema.integrations)
+    .set({
+      connected: roots.length > 0,
+      entities: roots.length ? [{ name: "Carpetas", count: roots.length }] : [],
+      lastSync: new Date().toISOString(),
+    })
+    .where(eq(schema.integrations.id, "local"))
+    .run();
+  await persist();
+}
+
+export const getLocalRoots = createServerFn({ method: "GET" }).handler(async () => {
+  const local: typeof import("@/lib/opencore/local-secrets.server") =
+    await import("@/lib/opencore/local-secrets.server");
+  return { roots: local.loadLocalRoots() };
+});
+
+export const browseLocalDir = createServerFn({ method: "GET" })
+  .validator((d) => z.object({ path: z.string().max(4096).optional() }).parse(d ?? {}))
+  .handler(async ({ data }) => {
+    const fs: typeof import("./local-fs.server") = await import("./local-fs.server");
+    return fs.browseDirectory(data?.path ?? null);
+  });
+
+export const addLocalRoot = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ path: z.string().trim().min(1).max(4096) }).parse(d))
+  .handler(async ({ data }) => {
+    const fs: typeof import("./local-fs.server") = await import("./local-fs.server");
+    const local: typeof import("@/lib/opencore/local-secrets.server") =
+      await import("@/lib/opencore/local-secrets.server");
+    const info = fs.rootInfo(data.path);
+    const roots = local.loadLocalRoots();
+    if (!roots.some((r) => r.path === info.path)) {
+      roots.push({ ...info, addedAt: new Date().toISOString() });
+      local.saveLocalRoots(roots);
+    }
+    await setLocalIntegration(roots);
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Integración",
+      expert_id: "general",
+      status: "ok",
+      summary: `Añadida carpeta local "${info.name}"`,
+      sources: ["Archivos locales"],
+    });
+    return { roots };
+  });
+
+export const removeLocalRoot = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ path: z.string().min(1).max(4096) }).parse(d))
+  .handler(async ({ data }) => {
+    const local: typeof import("@/lib/opencore/local-secrets.server") =
+      await import("@/lib/opencore/local-secrets.server");
+    const roots = local.loadLocalRoots().filter((r) => r.path !== data.path);
+    local.saveLocalRoots(roots);
+    await setLocalIntegration(roots);
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Integración",
+      expert_id: "general",
+      status: "ok",
+      summary: `Quitada carpeta local ${data.path}`,
+      sources: ["Archivos locales"],
+    });
+    return { roots };
+  });

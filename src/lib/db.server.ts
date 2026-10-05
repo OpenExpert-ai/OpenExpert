@@ -185,6 +185,7 @@ const DEFAULT_PROCESSES = [
 
 const DEFAULT_INTEGRATIONS = [
   { id: "gdrive", name: "Google Drive", category: "Productividad" },
+  { id: "local", name: "Archivos locales", category: "Productividad" },
   { id: "pipedrive", name: "Pipedrive", category: "CRM" },
   { id: "salesforce", name: "Salesforce", category: "CRM" },
   { id: "holded", name: "Holded", category: "ERP / Finanzas" },
@@ -428,11 +429,18 @@ function seedIfEmpty(orm: Db): void {
       )
       .run();
   }
-  const hasIntegrations = orm.select().from(schema.integrations).limit(1).all().length > 0;
-  if (!hasIntegrations) {
+  const existingIntegrationIds = new Set(
+    orm
+      .select()
+      .from(schema.integrations)
+      .all()
+      .map((i) => i.id),
+  );
+  const missingIntegrations = DEFAULT_INTEGRATIONS.filter((i) => !existingIntegrationIds.has(i.id));
+  if (missingIntegrations.length) {
     orm
       .insert(schema.integrations)
-      .values(DEFAULT_INTEGRATIONS.map((i) => ({ ...i, connected: false, entities: [] })))
+      .values(missingIntegrations.map((i) => ({ ...i, connected: false, entities: [] })))
       .run();
   }
   const hasDeals = orm.select().from(schema.deals).limit(1).all().length > 0;

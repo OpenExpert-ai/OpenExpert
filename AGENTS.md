@@ -19,6 +19,7 @@
   distributing, the distributor must publish a privacy policy
   ([`PRIVACY.md`](./PRIVACY.md) is the template) and register its URL via
   `OPENEXPERT_PRIVACY_URL`.
+- Local folders are an optional source (`local`): the local server browses directories and reads/writes files **only** inside the folders the user granted, resolved with `realpath` against the roots (`~/.openexpert/local-roots.json`, AES-256-GCM encrypted). Picker is a built-in folder navigator plus a typed path; writes (`create_local_file`/`update_local_file`) require human approval. Engine in `src/lib/local-fs.server.ts`.
 - Deployment is `node .output/server/index.mjs` (Nitro `node-server`) or Docker. There is no Vercel preset.
 - **Desktop shell (Linux).** `src-tauri/` is a Tauri 2 app whose only job is to render the local server in a native WebKitGTK window; all logic stays in the web app. It is launched by the `openexpert desktop` CLI command (`packages/opencore/src/cli/desktop.ts`), which starts/reuses the Node server and stops it when the window closes. `scripts/install-desktop.mjs` installs a per-user `openexpert` launcher, `.desktop` entry and icon; `scripts/uninstall-desktop.mjs` removes them.
 - npm is the package manager; there is no bun lockfile.

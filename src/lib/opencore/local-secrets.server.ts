@@ -118,6 +118,41 @@ export function removeGrantedFiles(): void {
   if (existsSync(f)) writeFileSync(f, "", { mode: 0o600 });
 }
 
+/* ---------------------------- Local folder roots ------------------------ */
+
+export type LocalRoot = {
+  path: string;
+  name: string;
+  addedAt: string;
+};
+
+function localRootsFile(): string {
+  const d = dataDir();
+  mkdirSync(d, { recursive: true });
+  return join(d, "local-roots.json");
+}
+
+export function loadLocalRoots(): LocalRoot[] {
+  const f = localRootsFile();
+  if (!existsSync(f)) return [];
+  try {
+    const raw = readFileSync(f, "utf8");
+    if (!raw) return [];
+    return JSON.parse(decrypt(raw)) as LocalRoot[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalRoots(roots: LocalRoot[]): void {
+  writeFileSync(localRootsFile(), encrypt(JSON.stringify(roots)), { mode: 0o600 });
+}
+
+export function removeLocalRoots(): void {
+  const f = localRootsFile();
+  if (existsSync(f)) writeFileSync(f, "", { mode: 0o600 });
+}
+
 /* --------------------------- Drive consent ----------------------------- */
 
 export type DriveConsent = { at: string; privacyUrl: string };

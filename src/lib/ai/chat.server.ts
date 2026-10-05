@@ -173,6 +173,7 @@ export async function handleChat(request: Request) {
   const tools = createChatTools({ expert, expertId, used, allowed, proposePending });
 
   const hasDrive = expert.sources.includes("gdrive");
+  const hasLocal = expert.sources.includes("local");
   const system = `Eres OpenExpert, el sistema operativo de IA de la empresa del usuario. Respondes SIEMPRE en español, con tono directo, claro y útil. Usa markdown (listas, negritas, tablas pequeñas) y cifras en formato español (1.234 €).
 Contexto activo: Experto "${expert.name}" — ${expert.description}. Fuentes: ${expert.sources.join(", ")}.
 ${
@@ -186,6 +187,15 @@ FLUJO OBLIGATORIO para preguntas sobre un archivo, documento, tema o contenido:
 2) En cuanto tengas el id, llama a read_drive_file y RESPONDE con el contenido leído.
 NUNCA respondas "solicite su lectura" ni pidas al usuario que abra o lea el archivo: leerlo es tu trabajo. Encadena las herramientas tú mismo hasta tener el contenido. Si read_drive_file devuelve "no legible" o vacío, dilo y ofrece alternativas. Para crear o reescribir, usa create_drive_file/update_drive_file y comparte el enlace.`
     : `Este Experto no tiene Google Drive conectado: si piden Drive, sugiere cambiar a General, Marketing o Finanzas.`
+}
+${
+  hasLocal
+    ? `ARCHIVOS LOCALES CONECTADOS (solo las carpetas que el usuario autorizó en Fuentes):
+- list_local_files / search_local_files: localiza archivos por nombre o lista la carpeta.
+- read_local_file: lee el contenido de texto de un archivo por su ruta.
+- create_local_file / update_local_file: crean o reescriben un archivo; requieren aprobación humana.
+Trabaja SIEMPRE dentro de esas carpetas autorizadas; nunca propongas rutas fuera de ellas.`
+    : `Este Experto no tiene acceso a archivos locales: si lo piden, sugiere activarlo en el Experto.`
 }
 Reglas:
 - Basa toda respuesta en datos obtenidos con herramientas; nunca inventes.
@@ -218,6 +228,8 @@ Formato (adáptalo a la pregunta):
     toolApproval: {
       create_drive_file: "user-approval",
       update_drive_file: "user-approval",
+      create_local_file: "user-approval",
+      update_local_file: "user-approval",
     },
     temperature: cfg.ai.temperature,
     topP: cfg.ai.topP,
