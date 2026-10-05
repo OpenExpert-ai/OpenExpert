@@ -19,6 +19,7 @@ ship with their respective packages.
 | Nitro | MIT | unjs/nitro |
 | `unpdf` | MIT | conspiring-engineer/unpdf |
 | `lucide-react` (icons) | ISC | lucide-icons/lucide |
+| Google Drive / Picker APIs | Google APIs ToS | The Qwant stores a user-grantable OAuth client. Use of data is governed by [PRIVACY.md](./PRIVACY.md) and the [Google User Data Policy](https://developers.google.com/workspace/workspace-api-user-data-developer-policy) including the Limited Use requirements. |
 
 This NOTICE is provided for attribution only. The MIT License under which
 OpenExpert is distributed does not grant any rights to the trademarks of

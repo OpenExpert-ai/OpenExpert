@@ -6,8 +6,20 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, Download, Loader2, Trash2, Upload } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SettingsCard as Card } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
+import { formatBytes } from "@/lib/format";
 import {
   clearChatHistory,
   getDataStats,
@@ -19,12 +31,6 @@ import {
 export const Route = createFileRoute("/_authenticated/settings/data")({
   component: DataSettings,
 });
-
-function bytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function DataSettings() {
   const get = useServerFn(getDataStats);
@@ -38,6 +44,9 @@ function DataSettings() {
 
   const [busy, setBusy] = useState<string | null>(null);
   const [resetWord, setResetWord] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importWord, setImportWord] = useState("");
+  const [clearOpen, setClearOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -60,7 +69,6 @@ function DataSettings() {
   };
 
   const onClearChat = async () => {
-    if (!window.confirm(t("¿Borrar todo el historial de conversaciones?"))) return;
     setBusy("chat");
     try {
       const r = await doClearChat();
@@ -107,7 +115,7 @@ function DataSettings() {
         {data ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              [t("Base de datos"), bytes(data.dbSize)],
+              [t("Base de datos"), formatBytes(data.dbSize)],
               [t("Experts"), String(data.experts)],
               [t("Procesos"), String(data.processes)],
               [t("Integraciones"), String(data.integrations)],
@@ -134,10 +142,10 @@ function DataSettings() {
         desc={t("Incluye la base de datos, la configuración y las credenciales locales.")}
       >
         <div className="flex flex-wrap gap-3">
-          <a href="/api/backup" download className={`${btnPrimary} flex items-center gap-1.5`}>
+          <a href="/api/backup" download className={`${btnPrimary} items-center gap-1.5`}>
             <Download className="h-4 w-4" /> {t("Descargar copia")}
           </a>
-          <label className={`${btnGhost} flex cursor-pointer items-center gap-1.5`}>
+          <label className={`${btnGhost} cursor-pointer items-center gap-1.5`}>
             {busy === "import" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -151,7 +159,7 @@ function DataSettings() {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) void onImport(f);
+                if (f) setImportFile(f);
               }}
             />
           </label>
@@ -166,7 +174,7 @@ function DataSettings() {
           <button
             onClick={onVacuum}
             disabled={busy !== null}
-            className={`${btnGhost} flex items-center gap-1.5`}
+            className={`${btnGhost} items-center gap-1.5`}
           >
             {busy === "vacuum" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -176,14 +184,14 @@ function DataSettings() {
             {t("Compactar (VACUUM)")}
           </button>
           <button
-            onClick={onClearChat}
+            onClick={() => setClearOpen(true)}
             disabled={busy !== null}
-            className={`${btnGhost} flex items-center gap-1.5`}
+            className={`${btnGhost} items-center gap-1.5`}
           >
             {busy === "chat" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="size-4" />
             )}
             {t("Borrar historial de chat")}
           </button>
@@ -221,6 +229,74 @@ function DataSettings() {
           </button>
         </div>
       </Card>
+
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("¿Borrar todo el historial de conversaciones?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Se eliminarán todos los mensajes guardados. No afecta a Experts ni a procesos.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                setClearOpen(false);
+                void onClearChat();
+              }}
+            >
+              {t("Borrar")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={importFile !== null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setImportFile(null);
+            setImportWord("");
+            if (fileRef.current) fileRef.current.value = "";
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Importar copia de seguridad")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "Importar reemplaza los datos actuales y no se puede deshacer. Escribe {word} para confirmar.",
+                { word: "IMPORTAR" },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <input
+            value={importWord}
+            onChange={(e) => setImportWord(e.target.value)}
+            className={inputCls}
+            placeholder="IMPORTAR"
+            aria-label={t("Escribir {word}", { word: "IMPORTAR" })}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              disabled={importWord !== "IMPORTAR" || busy !== null}
+              onClick={() => {
+                const f = importFile;
+                setImportFile(null);
+                setImportWord("");
+                if (f) void onImport(f);
+              }}
+            >
+              {t("Importar")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

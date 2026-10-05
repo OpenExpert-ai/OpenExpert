@@ -33,7 +33,7 @@ const apprCls: Record<string, string> = {
 function ProcessesPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
-  const { t } = useT();
+  const { t, locale } = useT();
   const run = useAct(runProcess);
   const toggle = useAct(toggleProcess);
   if (!ws || !me) return null;
@@ -97,7 +97,7 @@ function ProcessesPage() {
             <span className="font-mono text-[10px] text-muted-foreground">
               {t("{n} ejecuciones · última {t}", {
                 n: p.runs,
-                t: p.last_run ? fmtTime(p.last_run) : "—",
+                t: p.last_run ? fmtTime(p.last_run, locale) : "—",
               })}
             </span>
             <button

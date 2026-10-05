@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — OpenExpert</title>
+    <meta
+      name="description"
+      content="OpenExpert privacy policy: local-first, no telemetry, and only the Google Drive files you choose."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site">
+      <div class="wrap">
+        <a class="wordmark" href="./">OpenExpert</a>
+        <div class="tagline">Privacy Policy</div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <h1>Privacy Policy</h1>
+      <p class="lede">
+        OpenExpert is a local-first operations dashboard for a single owner. It runs entirely on
+        your machine and your data stays there by default. This policy explains what data OpenExpert
+        accesses, stores and, when you explicitly opt in to a cloud service, transmits.
+      </p>
+
+      <h2>1. Data we do not collect</h2>
+      <ul>
+        <li>No telemetry, analytics, cookies or tracking pixels.</li>
+        <li>No servers operated by OpenExpert. There is no hosted edition.</li>
+        <li>No user accounts. There is no login.</li>
+      </ul>
+
+      <h2>2. What lives on your machine</h2>
+      <p>
+        Everything lives under <code>~/.openexpert/</code> and never reaches OpenExpert or a third
+        party unless you configure a cloud integration explicitly.
+      </p>
+      <ul>
+        <li>
+          <strong>openexpert.db</strong> (SQLite) — your workspace, Experts, integrations,
+          processes, invoices, campaigns, chat history and activity log.
+        </li>
+        <li>
+          <strong>openexpert.json</strong> — your non-secret preferences (model, sampling, chat
+          limits, Google OAuth client id).
+        </li>
+        <li>
+          <strong>secrets.json</strong> (mode <code>0600</code>) — API keys. Stored encrypted at
+          rest and never sent by OpenExpert.
+        </li>
+        <li>
+          <strong>credentials.json</strong> (mode <code>0600</code>) — Google Drive OAuth tokens,
+          encrypted at rest and used only to call Google APIs with your consent.
+        </li>
+        <li>
+          <strong>drive-grants.json</strong> — the list of Drive files you chose to share, encrypted
+          at rest. Remove them any time from Integrations → Sources.
+        </li>
+        <li>
+          <strong>state-secret</strong> and <strong>secret.key</strong> (mode <code>0600</code>) —
+          local keys used to sign the OAuth state and to encrypt the files above.
+        </li>
+      </ul>
+
+      <h2>3. The AI model</h2>
+      <p>You choose the model provider.</p>
+      <ul>
+        <li>
+          <strong>Default and recommended: Ollama.</strong> Runs locally. Your prompts and the
+          content of files you choose from Google Drive never leave your machine.
+        </li>
+        <li>
+          <strong>Optional: Google Gemini or any OpenAI-compatible endpoint.</strong> You provide
+          your own key. In that case, the text of the conversation and the content of the files you
+          chose from Google Drive are sent to that provider so it can respond. OpenExpert is not
+          party to those exchanges.
+        </li>
+      </ul>
+      <p>
+        OpenExpert does not use any of this data to train, fine-tune or improve a model. Third-party
+        providers have their own terms.
+      </p>
+
+      <h2>4. Google Drive (optional)</h2>
+      <p>OpenExpert connects to Google Drive only if you choose to.</p>
+      <ul>
+        <li>
+          <strong>What it asks for.</strong> The minimum scope
+          <code>https://www.googleapis.com/auth/drive.file</code>. This is non-sensitive: it grants
+          access only to the files you select with the Google Picker and to the files OpenExpert
+          creates on your behalf. It cannot read or list the rest of your Drive.
+        </li>
+        <li>
+          <strong>What it does.</strong> Search, summarise, create and edit the files you picked.
+        </li>
+        <li>
+          <strong>What it does not do.</strong> It does not read, index or transmit the rest of your
+          Drive, and does not use Drive as storage for OpenExpert's own data.
+        </li>
+        <li>
+          <strong>Human approval.</strong> Every write is proposed by the assistant and shown as a
+          confirmation card. Nothing changes until you approve it. Every read of a Drive file is
+          confirmed by you before it runs.
+        </li>
+        <li>
+          <strong>How to disconnect.</strong> Integrations → Sources → Disconnect. The refresh token
+          is also revoked on Google's side.
+        </li>
+      </ul>
+
+      <h3>Limited Use acknowledgement</h3>
+      <blockquote>
+        The use of information received from Google Workspace scopes will adhere to the Google User
+        Data Policy, including the Limited Use requirements.
+      </blockquote>
+      <ul>
+        <li>
+          Data is used only to provide the user-facing features visible in OpenExpert (the chat, the
+          source list, the audit log).
+        </li>
+        <li>
+          No transfer to advertising platforms, no resale, and no use to determine creditworthiness
+          or for lending.
+        </li>
+        <li>
+          No use to create, train or improve a machine learning or artificial intelligence model
+          beyond that specific user's personalised model.
+        </li>
+        <li>
+          Humans do not read your files unless you ask for support and grant explicit additional
+          consent for the specific file.
+        </li>
+      </ul>
+
+      <h3>The OAuth client</h3>
+      <p>
+        When you install OpenExpert you may be authorising against a shared OAuth client owned by
+        the distributor of your build. That client only requests the <code>drive.file</code> scope
+        and a localhost redirect URI. You always authorise with your own Google account; your tokens
+        stay on your machine.
+      </p>
+
+      <h2>5. Backups</h2>
+      <p>
+        Backups bundle the database, <code>openexpert.json</code>, <code>secrets.json</code> and
+        <code>credentials.json</code> into one file on your machine. They never leave it.
+        Cross-origin downloads are rejected by the server.
+      </p>
+
+      <h2>6. Activity log and revert</h2>
+      <p>
+        OpenExpert records a local activity log of every change and exposes a Revert action that
+        restores them. You can wipe the chat history and reset the workspace from Settings → Data.
+      </p>
+
+      <h2>7. Children</h2>
+      <p>
+        OpenExpert is a general-audience business tool. It is not directed at children under the age
+        of 13.
+      </p>
+
+      <h2>8. Security incidents</h2>
+      <p>
+        If you suspect a security incident involving Google user data, report the data to
+        <a href="mailto:security@google.com">security@google.com</a> and to the OpenExpert
+        maintainers via the channel listed in
+        <a href="https://github.com/OpenExpert-ai/OpenExpert/blob/main/SECURITY.md">SECURITY.md</a>.
+      </p>
+
+      <h2>9. Changes to this policy</h2>
+      <p>
+        Material changes will be described in the repository changelog. The canonical version is
+        <a href="https://github.com/OpenExpert-ai/OpenExpert/blob/main/PRIVACY.md">PRIVACY.md</a>.
+      </p>
+
+      <h2>10. License</h2>
+      <p>
+        OpenExpert is distributed under the
+        <a href="https://github.com/OpenExpert-ai/OpenExpert/blob/main/LICENSE">MIT License</a>.
+        This policy is informational.
+      </p>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <a href="./">Home</a> &nbsp;·&nbsp; <a href="./terms.html">Terms</a> &nbsp;·&nbsp;
+        <a href="https://github.com/OpenExpert-ai/OpenExpert">GitHub</a>
+      </div>
+    </footer>
+  </body>
+</html>

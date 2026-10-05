@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Eye, Loader2, PlugZap, RefreshCw } from "lucide-react";
+import { Copy, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import { SettingsCard as Card, SettingsField as Field } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
@@ -128,10 +128,14 @@ function AiSettings() {
   const onReveal = async (name: "GOOGLE_API_KEY" | "OPENEXPERT_MODEL_KEY") => {
     try {
       const r = await reveal({ data: { name } });
-      if (r.value) toast.message(`${name}: ${r.value}`);
-      else toast.info(t("No hay valor definido"));
+      if (!r.value) {
+        toast.info(t("No hay valor definido"));
+        return;
+      }
+      await navigator.clipboard.writeText(r.value);
+      toast.success(t("Copiada al portapapeles"));
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error((e as Error).message || t("No se pudo copiar"));
     }
   };
 
@@ -182,7 +186,7 @@ function AiSettings() {
               type="button"
               onClick={onList}
               disabled={busy !== null}
-              className={`${btnGhost} flex shrink-0 items-center gap-1.5`}
+              className={`${btnGhost} shrink-0 items-center gap-1.5`}
             >
               {busy === "list" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -231,9 +235,9 @@ function AiSettings() {
                   type="button"
                   onClick={() => onReveal("OPENEXPERT_MODEL_KEY")}
                   className={`${btnGhost} shrink-0`}
-                  title={t("Revelar")}
+                  title={t("Copiar")}
                 >
-                  <Eye className="h-4 w-4" />
+                  <Copy className="size-4" />
                 </button>
                 <button
                   type="button"
@@ -262,9 +266,9 @@ function AiSettings() {
                 type="button"
                 onClick={() => onReveal("GOOGLE_API_KEY")}
                 className={`${btnGhost} shrink-0`}
-                title={t("Revelar")}
+                title={t("Copiar")}
               >
-                <Eye className="h-4 w-4" />
+                <Copy className="size-4" />
               </button>
               <button
                 type="button"
@@ -327,7 +331,7 @@ function AiSettings() {
         <button
           onClick={onTest}
           disabled={busy !== null}
-          className={`${btnGhost} flex items-center gap-1.5`}
+          className={`${btnGhost} items-center gap-1.5`}
         >
           {busy === "test" ? (
             <Loader2 className="h-4 w-4 animate-spin" />

@@ -35,23 +35,32 @@ decided by the Expert's `sources` column.
 
 ## 4. Secret management
 
-| Secret                                   | Where                                                                            |
-| ---------------------------------------- | -------------------------------------------------------------------------------- |
-| `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY` | `.env` or `~/.openexpert/secrets.json` (`0600`)                                  |
-| Google Drive tokens                      | `~/.openexpert/credentials.json` (`0600`)                                        |
-| OAuth `state` signing key                | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`) |
+| Secret                                          | Where                                                                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------- |
+| `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY`        | `.env` or `~/.openexpert/secrets.json` (`0600`)                                  |
+| `GOOGLE_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY` | env or `~/.openexpert/secrets.json` (`0600`)                                     |
+| Google Drive tokens                             | `~/.openexpert/credentials.json` (`0600`, AES-256-GCM encrypted)                 |
+| Picker grants (the files you picked)            | `~/.openexpert/drive-grants.json` (`0600`, AES-256-GCM encrypted)                |
+| OAuth `state` signing key                       | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`) |
+| Encryption key file                             | `~/.openexpert/secret.key` (`0600`, generated on first run)                      |
 
 Rules:
 
 - `.env`, `openexpert.json`, `~/.openexpert/` are git-ignored and never
   committed.
 - Secrets are stored server-side and are not part of the normal data flow. The
-  local settings panel can **reveal** a stored key on demand (the "Revelar"
+  local settings panel can **reveal** a stored key on demand (the "Copiar"
   button), so treat the browser as trusted and do not expose the port.
 - Backups (`GET /api/backup`) embed `secrets.json` and `credentials.json`.
   Cross-origin downloads are rejected; still, download backups only on a
   trusted machine and store them safely.
-- The Drive OAuth `state` is HMAC-signed and compared in constant time.
+- The Drive OAuth `state` carries a PKCE verifier signed with HMAC; the
+  callback verifies the MAC in constant time.
+- Drive tokens and the Picker grants are AES-256-GCM encrypted with a key
+  generated and stored on the local machine (`~/.openexpert/secret.key`).
+- Google user data is used only for the in-product features (chat, source
+  list, backup). No training of non-personalised models. No sale or transfer to
+  advertising platforms. See [`PRIVACY.md`](../../PRIVACY.md).
 
 ## 5. Data at rest
 

@@ -1,26 +1,51 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAct, useDriveStatus, useWorkspace, fmtTime } from "@/lib/store";
+import {
+  acceptDriveConsent,
+  disconnectDrive,
+  getDriveAccessToken,
+  getDriveConsent,
+  getGrantedFiles,
+  setGrantedFiles,
+  startDriveAuth,
+  syncIntegration,
+} from "@/lib/data.functions";
+import { useAct, useDriveStatus, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
-import { disconnectDrive, startDriveAuth, syncIntegration } from "@/lib/data.functions";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { pickDriveFiles } from "@/lib/drive-picker";
 
 export const Route = createFileRoute("/_authenticated/integrations/sources")({
   head: () => ({
     meta: [
       { title: "Fuentes de Datos — OpenExpert" },
-      { name: "description", content: "Conectores CRM, ERP, publicidad y productividad." },
+      { name: "description", content: "Conecta archivos concretos de Google Drive vía Picker." },
       { property: "og:title", content: "Fuentes de Datos — OpenExpert" },
       {
         property: "og:description",
-        content: "Pipedrive, Salesforce, Holded, Meta Ads, Google y Slack.",
+        content: "OpenExpert solo ve los archivos que tú elijas.",
       },
     ],
   }),
   component: SourcesPage,
 });
+
+const PICKER_KEY_HINT =
+  "Configura GOOGLE_PICKER_API_KEY en el archivo de secretos para habilitar el Picker.";
 
 function SourcesPage() {
   const { data: ws } = useWorkspace();
@@ -28,26 +53,41 @@ function SourcesPage() {
   const nav = useNavigate();
   const search = useSearch({ strict: false }) as { gdrive?: string };
   const { t } = useT();
+  const qc = useQueryClient();
   const sync = useAct(syncIntegration, t("Google Drive sincronizado"));
   const disconnect = useAct(disconnectDrive, t("Google Drive desconectado"));
   const [open, setOpen] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [pickerLoading, setPickerLoading] = useState(false);
+
+  const consent = useQuery({
+    queryKey: ["drive-consent"],
+    queryFn: () => getDriveConsent(),
+  });
+
+  const granted = useQuery({
+    queryKey: ["drive-grants"],
+    queryFn: () => getGrantedFiles(),
+  });
 
   useEffect(() => {
     if (search.gdrive === "ok") {
-      toast.success(t("Google Drive conectado"));
+      toast.success("Google Drive conectado. Ahora selecciona archivos con el Picker.");
       nav({ search: {} as never });
     } else if (search.gdrive) {
-      toast.error(t("No se pudo conectar Google Drive"));
+      toast.error(decodeURIComponent(search.gdrive));
       nav({ search: {} as never });
     }
-  }, [search.gdrive, nav, t]);
+  }, [search.gdrive, nav]);
 
   if (!ws) return null;
 
-  const connect = async () => {
-    setConnecting(true);
+  const onAcceptConsentAndConnect = async () => {
     try {
+      await acceptDriveConsent();
+      setConsentOpen(false);
+      setConnecting(true);
       const { url } = await startDriveAuth();
       window.location.href = url;
     } catch (e) {
@@ -56,124 +96,244 @@ function SourcesPage() {
     }
   };
 
-  const cats = [...new Set(ws.integrations.map((i) => i.category))];
+  const onPickFiles = async () => {
+    if (!drive.data?.configured) {
+      toast.error("Falta configurar el cliente OAuth en el servidor.");
+      return;
+    }
+    setPickerLoading(true);
+    try {
+      const tokenAccess = await getDriveAccessToken();
+      const apiKey = (window as unknown as { __OPENEXPERT_PICKER_KEY__?: string })
+        .__OPENEXPERT_PICKER_KEY__;
+      if (!apiKey) {
+        toast.error(PICKER_KEY_HINT);
+        return;
+      }
+      const picked = await pickDriveFiles({
+        accessToken: tokenAccess.accessToken,
+        apiKey,
+        appId:
+          (window as unknown as { __OPENEXPERT_PICKER_APP_ID__?: string })
+            .__OPENEXPERT_PICKER_APP_ID__ || "",
+      });
+      if (!picked.length) return;
+      await setGrantedFiles({ data: { files: picked } });
+      await qc.invalidateQueries({ queryKey: ["drive-grants"] });
+      await qc.invalidateQueries({ queryKey: ["drive-status"] });
+      await qc.invalidateQueries({ queryKey: ["workspace"] });
+      toast.success(`${picked.length} archivo(s) añadido(s).`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPickerLoading(false);
+    }
+  };
+
+  const onRemoveGranted = async (id: string) => {
+    const remaining = granted.data?.files.filter((f) => f.id !== id) ?? [];
+    await setGrantedFiles({ data: { files: remaining } });
+    await qc.invalidateQueries({ queryKey: ["drive-grants"] });
+    await qc.invalidateQueries({ queryKey: ["workspace"] });
+  };
+
   return (
     <div className="space-y-8 p-6">
-      {cats.map((c) => (
-        <section key={c}>
-          <h2 className="mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            {c}
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {ws.integrations
-              .filter((i) => i.category === c)
-              .map((i) => {
-                const entities = i.entities as { name: string; count: number }[];
-                const isDrive = i.id === "gdrive";
-                const mine = isDrive && drive.data?.connected;
-                return (
-                  <div key={i.id} className="rounded-lg border border-border bg-card">
-                    <div className="flex items-center gap-3 p-4">
-                      <div className="flex h-9 w-9 items-center justify-center rounded border border-border font-display text-lg">
-                        {i.name[0]}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium">{i.name}</div>
-                        <div className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${i.connected ? "bg-success" : "bg-muted-foreground/40"}`}
-                          />
-                          {i.connected && i.last_sync
-                            ? `sync ${fmtTime(i.last_sync)}`
-                            : i.connected
-                              ? t("conectado")
-                              : t("desconectado")}
-                        </div>
-                      </div>
-                      {!isDrive ? (
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {t("Pendiente")}
-                        </span>
-                      ) : (
-                        <>
-                          {!mine && (
-                            <button
-                              disabled={connecting || drive.data?.configured === false}
-                              title={
-                                drive.data?.configured === false
-                                  ? "Faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET"
-                                  : ""
-                              }
-                              onClick={connect}
-                              className="rounded-md border border-primary px-3 py-1.5 text-xs text-primary hover:bg-primary/10 disabled:opacity-40"
-                            >
-                              {connecting ? t("Abriendo Google…") : t("Conectar mi cuenta")}
-                            </button>
-                          )}
-                          {mine && !i.connected && (
-                            <button
-                              disabled={sync.isPending}
-                              onClick={() => sync.mutate({ data: { id: "gdrive" } })}
-                              className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                            >
-                              {sync.isPending ? t("Sincronizando…") : t("Activar")}
-                            </button>
-                          )}
-                          {i.connected && (
-                            <button
-                              disabled={sync.isPending}
-                              onClick={() => sync.mutate({ data: { id: "gdrive" } })}
-                              className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                            >
-                              {sync.isPending ? t("Sincronizando…") : t("Sincronizar")}
-                            </button>
-                          )}
-                          {mine && (
-                            <button
-                              disabled={disconnect.isPending}
-                              onClick={() => disconnect.mutate()}
-                              className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-destructive/50 hover:text-destructive disabled:opacity-40"
-                            >
-                              {t("Desconectar")}
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    {isDrive && (
-                      <div className="px-4 pb-3 font-mono text-[10px] text-muted-foreground">
-                        {mine
-                          ? t("Tu cuenta de Google está conectada")
-                          : t("Conecta tu cuenta de Google para buscar, leer y crear archivos")}
-                      </div>
-                    )}
-                    <button
-                      onClick={() => setOpen(open === i.id ? null : i.id)}
-                      className="flex w-full items-center gap-1 border-t border-border px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronDown
-                        className={`h-3 w-3 transition ${open === i.id ? "rotate-180" : ""}`}
-                      />{" "}
-                      {t("Entidades sincronizadas")}
-                    </button>
-                    {open === i.id && (
-                      <div className="space-y-1 px-4 pb-4">
-                        {entities.map((e) => (
-                          <div key={e.name} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{e.name}</span>
-                            <span className="font-mono">
-                              {i.connected ? e.count.toLocaleString("es-ES") : "—"}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+      <section>
+        <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+          {t("Google Drive")}
+        </h2>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-medium">Google Drive</div>
+              <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                <span
+                  className={`size-1.5 rounded-full ${drive.data?.connected ? "bg-success" : "bg-muted-foreground/40"}`}
+                />
+                {drive.data?.connected ? t("conectado") : t("desconectado")}
+                {granted.data?.files.length
+                  ? ` · ${granted.data.files.length} archivo(s) elegido(s)`
+                  : ""}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {!drive.data?.configured && (
+                <span className="text-xs text-muted-foreground">{PICKER_KEY_HINT}</span>
+              )}
+              {drive.data?.configured && !drive.data.connected && (
+                <Button onClick={() => setConsentOpen(true)} disabled={connecting}>
+                  {connecting ? t("Abriendo Google…") : t("Conectar mi cuenta")}
+                </Button>
+              )}
+              {drive.data?.connected && (
+                <>
+                  <Button onClick={() => onPickFiles()} disabled={pickerLoading}>
+                    {pickerLoading ? "Abriendo Picker…" : "Seleccionar archivos"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => sync.mutate({ data: { id: "gdrive" } })}
+                    disabled={sync.isPending}
+                  >
+                    {sync.isPending ? t("Sincronizando…") : t("Sincronizar")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => disconnect.mutate()}
+                    disabled={disconnect.isPending}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    {t("Desconectar")}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </section>
-      ))}
+
+          <p className="mt-3 text-[0.7rem] text-muted-foreground">
+            OpenExpert usa <code className="rounded bg-muted px-1">drive.file</code> (no sensible,
+            archivo por archivo). Solo ves lo que elijas en el Picker. El contenido se envía al
+            proveedor del modelo (por defecto local) para responderte.
+          </p>
+          <p className="mt-2 text-[0.7rem] text-muted-foreground">
+            <em>
+              The use of information received from Google Workspace scopes will adhere to the{" "}
+              <a
+                href={
+                  consent.data?.consent?.privacyUrl ||
+                  "https://github.com/OpenExpert-ai/OpenExpert/blob/main/PRIVACY.md"
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Google User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </em>
+          </p>
+
+          {granted.data?.files.length ? (
+            <ul className="mt-4 space-y-1">
+              {granted.data?.files.map((f) => (
+                <li
+                  key={f.id}
+                  className="flex items-center gap-2 rounded border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <FileText className="size-4 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                  <span className="font-mono text-[0.7rem] text-muted-foreground">
+                    {f.mimeType}
+                  </span>
+                  <button
+                    onClick={() => onRemoveGranted(f.id)}
+                    aria-label="Quitar archivo"
+                    className="rounded p-1 text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : drive.data?.connected ? (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Aún no has elegido archivos. Pulsa “Seleccionar archivos”.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+          {t("Fuentes pendientes")}
+        </h2>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {ws.integrations
+            .filter((i) => i.id !== "gdrive")
+            .map((i) => (
+              <div key={i.id} className="rounded-lg border border-border bg-card">
+                <div className="flex items-center gap-3 p-4">
+                  <div className="flex size-9 items-center justify-center rounded border border-border font-display text-lg">
+                    {i.name[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{i.name}</div>
+                    <div className="text-xs text-muted-foreground">Pendiente de credenciales</div>
+                  </div>
+                  <span className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">
+                    {t("Pendiente")}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setOpen(open === i.id ? null : i.id)}
+                  className="flex w-full items-center gap-1 border-t border-border px-4 py-2 text-[0.7rem] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronDown
+                    className={`size-3 transition ${open === i.id ? "rotate-180" : ""}`}
+                  />{" "}
+                  {t("Entidades")}
+                </button>
+                {open === i.id && (
+                  <div className="space-y-1 px-4 pb-4 text-sm text-muted-foreground">
+                    <p>(Pronto)</p>
+                  </div>
+                )}
+              </div>
+            ))}
+        </div>
+      </section>
+
+      <AlertDialog open={consentOpen} onOpenChange={setConsentOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conectar Google Drive</AlertDialogTitle>
+            <AlertDialogDescription>
+              OpenExpert va a acceder a Google Drive con tu consentimiento. Antes de continuar,
+              confirma que entiendes lo siguiente:
+              <ul className="ml-4 mt-3 list-disc space-y-1 text-xs">
+                <li>
+                  Solo pedimos el scope <strong>drive.file</strong> (no sensible). El asistente no
+                  puede leer ni listar tu Drive completo.
+                </li>
+                <li>
+                  Con el Picker elegirás <strong>archivo por archivo</strong> qué puede ver
+                  OpenExpert.
+                </li>
+                <li>
+                  El contenido de los archivos elegidos se transmite al modelo para responderte; usa
+                  <strong> Ollama local</strong> si no quieres que salga de tu equipo.
+                </li>
+                <li>
+                  No usamos tus datos para entrenar modelos. No los vendemos ni los cedemos a
+                  terceros.
+                </li>
+                <li>
+                  Los tokens se guardan cifrados (AES-GCM) en <code>~/.openexpert/</code> con modo
+                  0600.
+                </li>
+              </ul>
+              <p className="mt-3 text-[0.7rem]">
+                <em>
+                  The use of information received from Google Workspace scopes will adhere to the
+                  Google User Data Policy, including the Limited Use requirements.
+                </em>
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConsentOpen(false);
+                onAcceptConsentAndConnect().catch(() => {});
+              }}
+            >
+              Entiendo y conecto
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

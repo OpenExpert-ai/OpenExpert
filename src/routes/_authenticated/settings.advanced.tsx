@@ -6,19 +6,25 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SettingsCard as Card } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
+import { formatBytes } from "@/lib/format";
 import { getAdvanced, resetConfig, saveRawConfig } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/advanced")({
   component: AdvancedSettings,
 });
-
-function bytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 const SOURCE_LABEL: Record<string, string> = {
   env: "entorno",
@@ -37,6 +43,7 @@ function AdvancedSettings() {
 
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState<"save" | "reset" | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -68,7 +75,6 @@ function AdvancedSettings() {
   };
 
   const onReset = async () => {
-    if (!window.confirm(t("¿Eliminar openexpert.json y volver a los valores por defecto?"))) return;
     setBusy("reset");
     try {
       await reset();
@@ -111,7 +117,7 @@ function AdvancedSettings() {
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               {t("Base de datos")}
             </div>
-            <code className="break-all text-xs">{d.dbPath}</code> · {bytes(d.dbSize)}
+            <code className="break-all text-xs">{d.dbPath}</code> · {formatBytes(d.dbSize)}
           </div>
         </div>
       </Card>
@@ -161,7 +167,7 @@ function AdvancedSettings() {
           <button
             onClick={onSave}
             disabled={busy !== null}
-            className={`${btnPrimary} flex items-center gap-1.5`}
+            className={`${btnPrimary} items-center gap-1.5`}
           >
             {busy === "save" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -171,19 +177,44 @@ function AdvancedSettings() {
             {t("Guardar")}
           </button>
           <button
-            onClick={onReset}
+            onClick={() => setResetOpen(true)}
             disabled={busy !== null}
-            className={`${btnGhost} flex items-center gap-1.5`}
+            className={`${btnGhost} items-center gap-1.5`}
           >
             {busy === "reset" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="size-4" />
             )}
             {t("Restaurar por defecto")}
           </button>
         </div>
       </Card>
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("¿Eliminar openexpert.json y volver a los valores por defecto?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Se quitará el fichero de configuración y se aplicarán los valores por defecto.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                setResetOpen(false);
+                void onReset();
+              }}
+            >
+              {t("Restaurar por defecto")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

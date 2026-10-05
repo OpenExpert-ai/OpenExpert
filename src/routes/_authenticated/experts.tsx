@@ -66,6 +66,7 @@ export function ExpertForm({
               onClick={() =>
                 setSrcs((x) => (x.includes(i.id) ? x.filter((y) => y !== i.id) : [...x, i.id]))
               }
+              aria-pressed={srcs.includes(i.id)}
               className={`rounded-full border px-3 py-1 text-xs ${srcs.includes(i.id) ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
             >
               {i.name}
@@ -103,7 +104,7 @@ function ExpertsPage() {
         title={t("Experts")}
         desc={t("Cada Experto solo ve sus fuentes conectadas y responde dentro de su dominio.")}
       >
-        <button onClick={() => setOpen(true)} className={`${btnPrimary} flex items-center gap-2`}>
+        <button onClick={() => setOpen(true)} className={`${btnPrimary} items-center gap-2`}>
           <Plus className="h-4 w-4" /> {t("Nuevo Experto")}
         </button>
       </PageHeader>

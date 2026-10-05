@@ -13,7 +13,7 @@ const dist = join(here, "..", "dist", "cli.js");
 
 if (!existsSync(dist)) {
   console.error(
-    "OpenCore CLI is not built yet.\n" +
+    "OpenExpert CLI is not built yet.\n" +
       "Run: npm run build --workspace @openexpert/opencore\n" +
       "(or use `npm run opencore:doctor` from the repository root).",
   );

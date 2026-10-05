@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { RichMarkdown } from "@/components/chat/RichMarkdown";
 import {
   ArrowUp,
   Mic,
   Check,
-  Loader2,
   ChevronDown,
   ShieldAlert,
   ShieldCheck,
@@ -27,10 +26,27 @@ import {
 import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { useT } from "@/lib/i18n";
-import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
-import { btnPrimary } from "@/components/AppShell";
+import { formatCurrency, formatDateTime } from "@/lib/format";
+import {
+  clearChat,
+  decideAction,
+  getChat,
+  listConversations,
+  approveDriveTool,
+} from "@/lib/data.functions";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ExpertForm } from "./experts";
-import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/expert")({
   head: () => ({
@@ -60,6 +76,7 @@ const SUGGESTIONS = [
 
 function ExpertPage() {
   const { activeExpert } = useUI();
+  const { t } = useT();
   const fetchChat = useServerFn(getChat);
   const fetchConvs = useServerFn(listConversations);
   const convs = useQuery({
@@ -87,7 +104,7 @@ function ExpertPage() {
   if (!conversationId || history.isLoading)
     return (
       <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Spinner label={t("Cargando conversación…")} />
       </div>
     );
   return (
@@ -121,11 +138,13 @@ function ChatWindow({
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
   const qc = useQueryClient();
-  const { t } = useT();
+  const { t, locale } = useT();
   const clear = useAct(clearChat);
+  const driveConnected = ws?.integrations.find((i) => i.id === "gdrive")?.connected;
   const expert = ws?.experts.find((e) => e.id === expertId);
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
+  const [toDelete, setToDelete] = useState<string | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -165,8 +184,10 @@ function ChatWindow({
     if (busy) return;
     onSelect(`c-${expertId}-${Date.now().toString(36)}`);
   };
-  const removeConversation = (id: string) => {
-    if (!confirm(t("¿Eliminar esta conversación definitivamente?"))) return;
+  const removeConversation = (id: string) => setToDelete(id);
+  const confirmRemove = () => {
+    const id = toDelete;
+    if (!id) return;
     clear.mutate(
       { data: { expertId, conversationId: id } },
       {
@@ -179,6 +200,7 @@ function ChatWindow({
         },
       },
     );
+    setToDelete(null);
   };
 
   const send = (text: string) => {
@@ -192,29 +214,26 @@ function ChatWindow({
     if (listening) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setListening(true);
-    if (SR) {
-      const r = new SR();
-      r.lang = "es-ES";
-      r.interimResults = false;
-      r.onresult = (e: { results: { 0: { 0: { transcript: string } } } }) =>
-        setInput(e.results[0][0].transcript);
-      r.onend = () => setListening(false);
-      r.onerror = () => {
-        setListening(false);
-        toast.error(t("No se pudo usar el micrófono"));
-      };
-      r.start();
-    } else {
-      setTimeout(() => {
-        setListening(false);
-        setInput(SUGGESTIONS[Math.floor(Math.random() * SUGGESTIONS.length)] ?? "");
-      }, 2000);
+    if (!SR) {
+      toast.error(t("El reconocimiento de voz no está disponible en este navegador."));
+      return;
     }
+    setListening(true);
+    const r = new SR();
+    r.lang = locale === "en" ? "en-GB" : "es-ES";
+    r.interimResults = false;
+    r.onresult = (e: { results: { 0: { 0: { transcript: string } } } }) =>
+      setInput(e.results[0][0].transcript);
+    r.onend = () => setListening(false);
+    r.onerror = () => {
+      setListening(false);
+      toast.error(t("No se pudo usar el micrófono"));
+    };
+    r.start();
   };
 
   return (
-    <div className="relative flex h-[calc(100vh-57px)] flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <div className="pointer-events-none absolute right-4 top-3 z-10 flex flex-col items-end gap-2">
         <div className="flex gap-2">
           {conversations.length > 0 && (
@@ -256,18 +275,14 @@ function ChatWindow({
                     className="min-w-0 flex-1 text-left"
                   >
                     <div className="truncate">{c.title || t("Conversación")}</div>
-                    <div className="font-mono text-[10px] opacity-70">
-                      {new Date(c.updatedAt).toLocaleString("es-ES", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}{" "}
-                      · {c.count} msgs
+                    <div className="font-mono text-[0.7rem] opacity-70">
+                      {formatDateTime(c.updatedAt, locale)} · {t("{n} mensajes", { n: c.count })}
                     </div>
                   </button>
                   <button
                     onClick={() => removeConversation(c.id)}
                     aria-label={t("Eliminar conversación")}
-                    className="opacity-60 hover:text-destructive group-hover:opacity-100"
+                    className="opacity-60 hover:text-destructive hover:opacity-100 focus-visible:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -280,32 +295,60 @@ function ChatWindow({
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-8">
           {messages.length === 0 && (
-            <div className="py-16 text-center">
-              <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-primary">
+            <div className="py-14 text-center">
+              <div className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-primary">
                 {t("Experto")} · {expert?.name}
               </div>
-              <h1 className="mt-4 font-display text-5xl tracking-tight">
+              <h1 className="mt-4 font-display text-4xl tracking-tight sm:text-5xl">
                 {t("Habla con tu empresa.")}
               </h1>
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
                 {expert?.description}
               </p>
-              <div className="mx-auto mt-8 max-w-md rounded-md border border-border bg-card p-4 text-left">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-primary">
+              <div className="mx-auto mt-8 max-w-lg rounded-lg border border-border bg-card p-5 text-left">
+                <div className="text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
                   {t("Primeros pasos")}
                 </div>
-                <ol className="mt-2 space-y-1 text-sm text-muted-foreground">
-                  <li>{t("1. Elige tu modelo con `opencore init` (Ollama o Gemini).")}</li>
-                  <li>{t("2. Conecta Google Drive, si quieres, en Integraciones → Fuentes.")}</li>
-                  <li>{t("3. Escribe tu primera pregunta abajo.")}</li>
+                <ol className="mt-3 space-y-2 text-sm">
+                  <SetupStep
+                    done
+                    title={t("Elige tu modelo")}
+                    desc={t("Ollama, Gemini o tu propio endpoint.")}
+                    action={
+                      <Link
+                        to="/settings/ai"
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        {t("Configurar")}
+                      </Link>
+                    }
+                  />
+                  <SetupStep
+                    done={!!driveConnected}
+                    title={t("Conecta Google Drive")}
+                    desc={t("Opcional: leer, crear y editar tus documentos.")}
+                    action={
+                      <Link
+                        to="/integrations/sources"
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        {driveConnected ? t("Gestionar") : t("Conectar")}
+                      </Link>
+                    }
+                  />
+                  <SetupStep
+                    done
+                    title={t("Pregunta lo que necesites")}
+                    desc={t("Las acciones sensibles te pedirán aprobación antes de ejecutarse.")}
+                  />
                 </ol>
               </div>
-              <div className="mt-10 grid gap-2 sm:grid-cols-2">
+              <div className="mt-8 grid gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     onClick={() => send(t(s))}
-                    className="rounded-md border border-border bg-card px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
+                    className="rounded-lg border border-border bg-card px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {t(s)}
                   </button>
@@ -326,7 +369,9 @@ function ChatWindow({
                   key={m.id}
                   m={m}
                   expertId={expertId}
+                  conversationId={conversationId}
                   streaming={status === "streaming" && i === messages.length - 1}
+                  onDriveApproved={(msg) => setMessages((prev) => [...prev, msg])}
                 />
               ),
             )}
@@ -334,7 +379,7 @@ function ChatWindow({
               <div className="flex items-center gap-3">
                 <Avatar />
                 <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  <Spinner className="size-3 text-primary" />
                   {t("Analizando contexto…")}
                 </span>
               </div>
@@ -351,27 +396,6 @@ function ChatWindow({
       </div>
       <div className="border-t border-border bg-background px-4 py-4">
         <div className="mx-auto max-w-3xl">
-          {messages.length > 0 && (
-            <div className="mb-2 flex gap-2 overflow-x-auto">
-              <button
-                onClick={newConversation}
-                className="flex items-center gap-1 whitespace-nowrap rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3" />
-                {t("Nueva")}
-              </button>
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(t(s))}
-                  disabled={busy}
-                  className="whitespace-nowrap rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
-                >
-                  {t(s)}
-                </button>
-              ))}
-            </div>
-          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -393,17 +417,19 @@ function ChatWindow({
             <textarea
               ref={taRef}
               rows={1}
-              value={listening ? t("Escuchando…") : input}
+              value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   send(input);
                 }
               }}
-              placeholder={t("Pregunta u ordena algo a {name}…", {
-                name: expert?.name ?? "OpenExpert",
-              })}
+              placeholder={
+                listening
+                  ? t("Escuchando…")
+                  : t("Pregunta u ordena algo a {name}…", { name: expert?.name ?? "OpenExpert" })
+              }
               className="max-h-40 flex-1 resize-none bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
             />
             {busy ? (
@@ -426,14 +452,71 @@ function ChatWindow({
               </button>
             )}
           </form>
-          <div className="mt-2 text-center font-mono text-[10px] text-muted-foreground">
+          <div className="mt-2 text-center text-[0.7rem] text-muted-foreground">
             {t("{name} · local · las acciones sensibles requieren confirmación humana", {
               name: me?.name ?? "",
             })}
           </div>
         </div>
       </div>
+      <AlertDialog open={toDelete !== null} onOpenChange={(next) => !next && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("¿Eliminar esta conversación?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Se borrarán sus mensajes de forma permanente. Esta acción no se puede deshacer.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemove}
+              className={buttonVariants({ variant: "destructive" })}
+            >
+              {t("Eliminar")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function SetupStep({
+  done,
+  title,
+  desc,
+  action,
+}: {
+  done: boolean;
+  title: string;
+  desc: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-start gap-3">
+      <span
+        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
+          done
+            ? "border-success/50 bg-success/10 text-success"
+            : "border-border text-muted-foreground"
+        }`}
+        aria-hidden
+      >
+        {done ? (
+          <Check className="size-3" />
+        ) : (
+          <span className="size-1.5 rounded-full bg-current" />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-medium text-foreground">{title}</span>
+          {action}
+        </span>
+        <span className="block text-xs text-muted-foreground">{desc}</span>
+      </span>
+    </li>
   );
 }
 
@@ -488,11 +571,15 @@ const SOURCE: Record<string, string> = {
 function AssistantMsg({
   m,
   expertId,
+  conversationId,
   streaming,
+  onDriveApproved,
 }: {
   m: UIMessage;
   expertId: string;
+  conversationId: string;
   streaming?: boolean;
+  onDriveApproved: (msg: UIMessage) => void;
 }) {
   const tools = m.parts.filter((p) => p.type.startsWith("tool-")) as unknown as ToolPart[];
   const reasoning = m.parts
@@ -513,7 +600,7 @@ function AssistantMsg({
     <div className="group flex gap-3">
       <Avatar />
       <div className="min-w-0 flex-1 space-y-3 text-sm">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">
           <span className="text-primary">OpenExpert</span>
           <span>· {expertId}</span>
           {sources.map((s) => (
@@ -526,8 +613,8 @@ function AssistantMsg({
           ))}
           {streaming && (
             <span className="flex items-center gap-1 text-primary">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-              live
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              {t("en vivo")}
             </span>
           )}
         </div>
@@ -550,17 +637,38 @@ function AssistantMsg({
         {tools.length > 0 && <ExecutionTimeline tools={tools} />}
         {tools
           .filter((t) => t.state === "output-available")
-          .map((t) => (
-            <ToolCard
-              key={t.toolCallId + "c"}
-              name={t.type.slice(5)}
-              output={t.output}
-              expertId={expertId}
-            />
-          ))}
+          .map((t) => {
+            const o = t.output as
+              | {
+                  pendingConsent?: { tool: string; args: Record<string, unknown>; summary: string };
+                }
+              | undefined;
+            if (o?.pendingConsent) {
+              return (
+                <DriveConsentCard
+                  key={t.toolCallId + "pc"}
+                  tool={o.pendingConsent.tool as "search_drive" | "read_drive_file"}
+                  args={o.pendingConsent.args}
+                  summary={o.pendingConsent.summary}
+                  expertId={expertId}
+                  conversationId={conversationId}
+                  messageId={m.id}
+                  onApproved={onDriveApproved}
+                />
+              );
+            }
+            return (
+              <ToolCard
+                key={t.toolCallId + "c"}
+                name={t.type.slice(5)}
+                output={t.output}
+                expertId={expertId}
+              />
+            );
+          })}
         {(text || streaming) && <RichMarkdown text={text} streaming={!!streaming} />}
         {text && !streaming && (
-          <div className="flex items-center gap-3 opacity-0 transition group-hover:opacity-100">
+          <div className="flex items-center gap-3 opacity-60 transition hover:opacity-100 focus-within:opacity-100">
             <button
               onClick={() => {
                 navigator.clipboard.writeText(text);
@@ -655,8 +763,6 @@ function Collapsible({
   );
 }
 
-const eur = (n: number) => `${Math.round(n).toLocaleString("es-ES")} €`;
-
 function Metrics({
   title,
   items,
@@ -689,6 +795,7 @@ function Metrics({
 }
 
 function ToolCard({ name, output, expertId }: { name: string; output: unknown; expertId: string }) {
+  const { t, locale } = useT();
   const o = output as Record<string, unknown> & { error?: string };
   if (!o || o.error) return null;
   if (name === "get_pipeline_summary") {
@@ -701,12 +808,16 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
     };
     return (
       <Metrics
-        title="Pipeline comercial"
+        title={t("Pipeline comercial")}
         items={[
-          { label: "Valor abierto", value: eur(p.openValue) },
-          { label: "Deals activos", value: String(p.openDeals) },
-          { label: "Win rate", value: `${(p.winRate * 100).toFixed(1)}%` },
-          { label: "Previsión ponderada", value: eur(p.forecast), tone: "good" },
+          { label: t("Valor abierto"), value: formatCurrency(p.openValue, locale) },
+          { label: t("Deals activos"), value: String(p.openDeals) },
+          { label: t("Win rate"), value: `${(p.winRate * 100).toFixed(1)}%` },
+          {
+            label: t("Previsión ponderada"),
+            value: formatCurrency(p.forecast, locale),
+            tone: "good",
+          },
         ]}
       />
     );
@@ -715,12 +826,15 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
     const inv = (o["invoices"] as { amount: number }[]) ?? [];
     return (
       <Metrics
-        title="Facturas vencidas"
+        title={t("Facturas vencidas")}
         items={[
-          { label: "Facturas", value: String(inv.length) },
+          { label: t("Facturas"), value: String(inv.length) },
           {
-            label: "Importe total",
-            value: eur(inv.reduce((a, i) => a + i.amount, 0)),
+            label: t("Importe total"),
+            value: formatCurrency(
+              inv.reduce((a, i) => a + i.amount, 0),
+              locale,
+            ),
             tone: "bad",
           },
         ]}
@@ -733,12 +847,18 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
     ).filter((x) => x.status === "active");
     return (
       <Metrics
-        title="Campañas activas · 7 días"
+        title={t("Campañas activas · 7 días")}
         items={[
-          { label: "Activas", value: String(c.length) },
-          { label: "Gasto", value: eur(c.reduce((a, x) => a + x.spend7d, 0)) },
+          { label: t("Activas"), value: String(c.length) },
           {
-            label: "Sobre CPA objetivo",
+            label: t("Gasto"),
+            value: formatCurrency(
+              c.reduce((a, x) => a + x.spend7d, 0),
+              locale,
+            ),
+          },
+          {
+            label: t("Sobre CPA objetivo"),
             value: String(c.filter((x) => (x.overTargetPct ?? 0) > 30).length),
             tone: "bad",
           },
@@ -752,10 +872,16 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
     );
     return (
       <Metrics
-        title="Riesgo de churn"
+        title={t("Riesgo de churn")}
         items={[
-          { label: "Cuentas en riesgo", value: String(a.length), tone: "bad" },
-          { label: "MRR expuesto", value: eur(a.reduce((s, x) => s + x.mrr, 0)) },
+          { label: t("Cuentas en riesgo"), value: String(a.length), tone: "bad" },
+          {
+            label: t("MRR expuesto"),
+            value: formatCurrency(
+              a.reduce((s, x) => s + x.mrr, 0),
+              locale,
+            ),
+          },
         ]}
       />
     );
@@ -770,12 +896,12 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
   if ((name === "create_drive_file" || name === "update_drive_file") && !o["error"])
     return (
       <div className="flex items-center gap-3 rounded-md border border-success/40 bg-success/10 p-3">
-        <FileText className="h-5 w-5 shrink-0 text-success" />
+        <FileText className="size-5 shrink-0 text-success" />
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[10px] uppercase tracking-wider text-success">
+          <div className="text-[0.7rem] uppercase tracking-wider text-success">
             {name === "create_drive_file"
-              ? "Archivo creado en Drive"
-              : "Archivo actualizado en Drive"}
+              ? t("Archivo creado en Drive")
+              : t("Archivo actualizado en Drive")}
           </div>
           <div className="truncate font-medium">{String(o["name"] ?? "")}</div>
         </div>
@@ -784,9 +910,9 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
             href={o["webViewLink"]}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 rounded border border-border px-2 py-1 text-xs hover:bg-accent"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
-            Abrir <ExternalLink className="h-3 w-3" />
+            {t("Abrir")} <ExternalLink className="size-3" />
           </a>
         )}
       </div>
@@ -809,12 +935,14 @@ function ConfirmCard({
 }) {
   const { data: ws } = useWorkspace();
   const decide = useAct(decideAction);
+  const { t } = useT();
   const ev = ws?.activity.find((a) => a.id === p.eventId);
   const st = ev?.status ?? "pending";
   return (
     <div className="rounded-md border border-warning/40 bg-card">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-warning">
-        <ShieldCheck className="h-3.5 w-3.5" /> Confirmación humana obligatoria · {p.risk}
+      <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-[0.7rem] uppercase tracking-wider text-warning">
+        <ShieldCheck className="size-3.5" />
+        {t("Confirmación humana obligatoria")} · {p.risk}
       </div>
       <div className="p-4">
         <div className="font-medium">{p.title}</div>
@@ -825,8 +953,7 @@ function ConfirmCard({
         </ul>
         {st === "pending" ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              className={btnPrimary}
+            <Button
               disabled={decide.isPending}
               onClick={() =>
                 decide.mutate(
@@ -835,24 +962,29 @@ function ConfirmCard({
                     onSuccess: (r) =>
                       toast.success(
                         r.status === "pending"
-                          ? "Firma registrada: falta una segunda aprobación"
-                          : "Acción ejecutada y registrada",
+                          ? t("Firma registrada: falta una segunda aprobación")
+                          : t("Acción ejecutada y registrada"),
                       ),
                   },
                 )
               }
             >
-              Aprobar y ejecutar
-            </button>
-            <button
-              className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+              {t("Aprobar y ejecutar")}
+            </Button>
+            <Button
+              variant="outline"
               disabled={decide.isPending}
-              onClick={() => decide.mutate({ data: { eventId: p.eventId, approve: false } })}
+              onClick={() =>
+                decide.mutate(
+                  { data: { eventId: p.eventId, approve: false } },
+                  { onSuccess: () => toast.message(t("Acción rechazada")) },
+                )
+              }
             >
-              Rechazar
-            </button>
+              {t("Rechazar")}
+            </Button>
             {ev?.summary.includes("1/2") && (
-              <span className="font-mono text-[10px] text-warning">1/2 firmas</span>
+              <span className="font-mono text-[0.7rem] text-warning">{t("1/2 firmas")}</span>
             )}
           </div>
         ) : (
@@ -861,13 +993,13 @@ function ConfirmCard({
           >
             {st === "ok" ? (
               <>
-                <Check className="h-3.5 w-3.5" /> Ejecutado · {p.eventId}
+                <Check className="size-3.5" /> {t("Ejecutado")} · {p.eventId}
               </>
             ) : st === "reverted" ? (
-              <>↺ Revertido desde snapshot</>
+              <>↺ {t("Revertido desde snapshot")}</>
             ) : (
               <>
-                <X className="h-3.5 w-3.5" /> Rechazado
+                <X className="size-3.5" /> {t("Rechazado")}
               </>
             )}
           </div>
@@ -877,17 +1009,82 @@ function ConfirmCard({
   );
 }
 
+function DriveConsentCard({
+  tool,
+  args,
+  summary,
+  expertId,
+  conversationId,
+  messageId,
+  onApproved,
+}: {
+  tool: "search_drive" | "read_drive_file";
+  args: Record<string, unknown>;
+  summary: string;
+  expertId: string;
+  conversationId: string;
+  messageId: string;
+  onApproved: (msg: UIMessage) => void;
+}) {
+  const { t } = useT();
+  const qc = useQueryClient();
+  const [state, setState] = useState<"pending" | "approving" | "approved" | "denied">("pending");
+  const onApprove = async () => {
+    setState("approving");
+    try {
+      const res = await approveDriveTool({
+        data: { expertId, conversationId, tool, args },
+      });
+      onApproved(JSON.parse(res.messageJson) as UIMessage);
+      setState("approved");
+      await qc.invalidateQueries({ queryKey: ["convs", expertId] });
+      await qc.invalidateQueries({ queryKey: ["workspace"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+      setState("pending");
+    }
+  };
+  const onDeny = () => setState("denied");
+  return (
+    <div data-message-id={messageId} className="rounded-md border border-info/40 bg-info/5 p-3">
+      <div className="flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-wider text-info">
+        <ShieldCheck className="size-3.5" /> {t("Acceso a Google Drive")} · {tool}
+      </div>
+      <div className="mt-1.5 text-sm">{summary}</div>
+      {state === "approved" ? (
+        <div className="mt-2 flex items-center gap-2 text-xs text-success">
+          <Check className="size-3.5" /> {t("Aprobado. El resultado aparecerá en la conversación.")}
+        </div>
+      ) : state === "denied" ? (
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <X className="size-3.5" /> {t("Denegado. El asistente seguirá sin ese dato.")}
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" onClick={onApprove} disabled={state === "approving"}>
+            {state === "approving" ? t("Aprobando…") : t("Aprobar este acceso")}
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDeny}>
+            {t("Denegar")}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormCard({ name, desc }: { name: string; desc: string }) {
   const [done, setDone] = useState(false);
   const { setActiveExpert } = useUI();
+  const { t } = useT();
   return (
     <div className="rounded-md border border-primary/40 bg-card p-4">
-      <div className="mb-3 font-mono text-[10px] uppercase tracking-wider text-primary">
-        Nuevo Experto
+      <div className="mb-3 text-[0.7rem] uppercase tracking-wider text-primary">
+        {t("Nuevo Experto")}
       </div>
       {done ? (
         <div className="flex items-center gap-2 text-success">
-          <Check className="h-4 w-4" /> Experto creado y disponible en el selector superior.
+          <Check className="size-4" /> {t("Experto creado y disponible en el selector superior.")}
         </div>
       ) : (
         <ExpertForm
@@ -895,8 +1092,8 @@ function FormCard({ name, desc }: { name: string; desc: string }) {
           initialDesc={desc}
           onDone={(id) => {
             setDone(true);
-            toast.message("Puedes activarlo cuando quieras", {
-              action: { label: "Activar", onClick: () => setActiveExpert(id) },
+            toast.message(t("Puedes activarlo cuando quieras"), {
+              action: { label: t("Activar"), onClick: () => setActiveExpert(id) },
             });
           }}
         />

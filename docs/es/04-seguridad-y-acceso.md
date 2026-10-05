@@ -38,11 +38,14 @@ error explícito, sin datos. El acceso a Google Drive se decide por la columna
 
 ## 4. Gestión de secretos
 
-| Secreto                                  | Dónde                                                                           |
-| ---------------------------------------- | ------------------------------------------------------------------------------- |
-| `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY` | `.env` o `~/.openexpert/secrets.json` (`0600`)                                  |
-| Tokens de Google Drive                   | `~/.openexpert/credentials.json` (`0600`)                                       |
-| Clave de firma del `state` OAuth         | `GOOGLE_OAUTH_STATE_SECRET` o un `~/.openexpert/state-secret` generado (`0600`) |
+| Secreto                                            | Dónde                                                                           |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY`           | `.env` o `~/.openexpert/secrets.json` (`0600`)                                  |
+| `GOOGLE_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY`    | env o `~/.openexpert/secrets.json` (`0600`)                                     |
+| Tokens de Google Drive                             | `~/.openexpert/credentials.json` (`0600`, cifrado AES-256-GCM)                  |
+| Concesiones del Picker (los archivos que elegiste) | `~/.openexpert/drive-grants.json` (`0600`, cifrado AES-256-GCM)                 |
+| Clave de firma del `state` OAuth                   | `GOOGLE_OAUTH_STATE_SECRET` o un `~/.openexpert/state-secret` generado (`0600`) |
+| Clave de cifrado local                             | `~/.openexpert/secret.key` (`0600`, generada en el primer arranque)             |
 
 Reglas:
 
@@ -50,11 +53,20 @@ Reglas:
   versionan.
 - Los secretos se guardan en el servidor y no forman parte del flujo normal de
   datos. El panel de ajustes local puede **revelar** una clave guardada a
-  petición (botón "Revelar"), así que considera el navegador como entorno de
+  petición (botón "Copiar"), así que considera el navegador como entorno de
   confianza y no expongas el puerto.
 - Las copias de seguridad (`GET /api/backup`) incluyen `secrets.json` y
   `credentials.json`. Se rechazan las descargas entre orígenes; aun así,
   descarga copias solo en un equipo de confianza y guárdalas con cuidado.
+- El `state` de OAuth lleva un verifier PKCE firmado con HMAC; el callback
+  lo verifica en tiempo constante.
+- Los tokens de Drive y la lista de concesiones del Picker están cifrados
+  con AES-256-GCM, usando una clave generada y guardada en tu propio equipo
+  (`~/.openexpert/secret.key`).
+- Los datos de Google se usan solo para funciones visibles del producto
+  (chat, lista de fuentes, auditoría). No entrenamos modelos no
+  personalizados. No vendemos ni cedemos los datos a terceros. Ver
+  [`PRIVACY.md`](../../PRIVACY.md).
 - El `state` del OAuth de Drive va firmado con HMAC y se compara en tiempo constante.
 
 ## 5. Datos en reposo

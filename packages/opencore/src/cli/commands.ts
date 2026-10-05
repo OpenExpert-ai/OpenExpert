@@ -22,7 +22,7 @@ import {
 } from "./lib.js";
 
 export function cmdVersion(): number {
-  console.log(`@openexpert/opencore ${packageVersion()}`);
+  console.log(`OpenExpert ${packageVersion()}`);
   return 0;
 }
 
@@ -37,14 +37,14 @@ export function cmdDoctor(cwd = process.cwd()): number {
   const dataDir = resolvedDataDir(cwd);
   const secrets = readSecrets(cwd);
 
-  console.log("OpenCore doctor");
+  console.log("OpenExpert doctor");
   console.log(`  provider: ${provider}`);
   console.log(`  data dir: ${dataDir}`);
 
   const problems: string[] = [];
 
   if (provider === "google" && !process.env["GOOGLE_API_KEY"] && !secrets.GOOGLE_API_KEY) {
-    problems.push("Falta GOOGLE_API_KEY. Ejecuta `opencore init` o usa Ollama.");
+    problems.push("Falta GOOGLE_API_KEY. Ejecuta `openexpert init` o usa Ollama.");
   }
   if (provider === "openai-compatible") {
     if (!process.env["OPENEXPERT_MODEL_KEY"] && !secrets.OPENEXPERT_MODEL_KEY) {
@@ -104,7 +104,7 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
 
   console.log("✓ directorio de datos listo:", dataDir);
   cmdDoctor(cwd);
-  console.log("\nSiguiente paso: `opencore serve` (o `opencore init` para elegir modelo).");
+  console.log("\nSiguiente paso: `openexpert serve` (o `openexpert init` para elegir modelo).");
   return 0;
 }
 
@@ -133,7 +133,7 @@ export async function cmdModels(cwd = process.cwd()): Promise<number> {
     const base = process.env["OPENEXPERT_BASE_URL"] || secrets.OPENEXPERT_BASE_URL;
     const key = process.env["OPENEXPERT_MODEL_KEY"] || secrets.OPENEXPERT_MODEL_KEY;
     if (!base || !key) {
-      console.log("Configura OPENEXPERT_BASE_URL y OPENEXPERT_MODEL_KEY (opencore init).");
+      console.log("Configura OPENEXPERT_BASE_URL y OPENEXPERT_MODEL_KEY (openexpert init).");
       return 1;
     }
     const data = await httpGetJson<{ data?: { id: string }[] }>(
@@ -173,7 +173,7 @@ export async function cmdServe(cwd = process.cwd()): Promise<number> {
     );
     return 1;
   }
-  console.log("Arrancando OpenCore en http://localhost:3000 …");
+  console.log("Arrancando OpenExpert en http://localhost:3000 …");
   return run(process.execPath, [join(app, ".output", "server", "index.mjs")], {
     cwd: app,
     env: { ...env, PORT: process.env["PORT"] || "3000" },

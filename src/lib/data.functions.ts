@@ -356,18 +356,215 @@ export const listConversations = createServerFn({ method: "GET" })
 
 export const getDriveStatus = createServerFn({ method: "GET" }).handler(async () => {
   const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
-  return { ...(await tokens.driveConnection()), configured: tokens.googleConfigured() };
+  const local: typeof import("@/lib/opencore/local-secrets.server") =
+    await import("@/lib/opencore/local-secrets.server");
+  return {
+    ...(await tokens.driveConnection()),
+    configured: tokens.googleConfigured(),
+    granted: local.loadGrantedFiles(),
+  };
+});
+
+export const getGrantedFiles = createServerFn({ method: "GET" }).handler(async () => {
+  const local: typeof import("@/lib/opencore/local-secrets.server") =
+    await import("@/lib/opencore/local-secrets.server");
+  return { files: local.loadGrantedFiles() };
+});
+
+export const getDriveConsent = createServerFn({ method: "GET" }).handler(async () => {
+  const local: typeof import("@/lib/opencore/local-secrets.server") =
+    await import("@/lib/opencore/local-secrets.server");
+  return { consent: local.loadDriveConsent() };
+});
+
+export const acceptDriveConsent = createServerFn({ method: "POST" }).handler(async () => {
+  const local: typeof import("@/lib/opencore/local-secrets.server") =
+    await import("@/lib/opencore/local-secrets.server");
+  const privacyUrl =
+    process.env["OPENEXPERT_PRIVACY_URL"]?.trim() ||
+    "https://github.com/OpenExpert-ai/OpenExpert/blob/main/PRIVACY.md";
+  const c = { at: new Date().toISOString(), privacyUrl };
+  local.saveDriveConsent(c);
+  return { ok: true, ...c };
+});
+
+export const setGrantedFiles = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        files: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              name: z.string(),
+              mimeType: z.string(),
+            }),
+          )
+          .max(5000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const local: typeof import("@/lib/opencore/local-secrets.server") =
+      await import("@/lib/opencore/local-secrets.server");
+    const existing = local.loadGrantedFiles();
+    const map = new Map(existing.map((f) => [f.id, f]));
+    const now = new Date().toISOString();
+    for (const f of data.files) {
+      map.set(f.id, { ...f, addedAt: map.get(f.id)?.addedAt ?? now });
+    }
+    const next = [...map.values()].slice(-5000);
+    local.saveGrantedFiles(next);
+    const { orm } = await getDb();
+    const entities = summarizeGrants(next);
+    orm
+      .update(schema.integrations)
+      .set({ connected: true, entities, lastSync: now })
+      .where(eq(schema.integrations.id, "gdrive"))
+      .run();
+    await persist();
+    return { ok: true, count: next.length };
+  });
+
+function summarizeGrants(files: { mimeType: string }[]) {
+  const counts: Record<string, number> = {};
+  for (const f of files) {
+    const kind = KIND_GRANT[f.mimeType] ?? "Otros archivos";
+    counts[kind] = (counts[kind] ?? 0) + 1;
+  }
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count }));
+}
+
+const KIND_GRANT: Record<string, string> = {
+  "application/vnd.google-apps.document": "Documentos",
+  "application/vnd.google-apps.spreadsheet": "Hojas de cálculo",
+  "application/vnd.google-apps.presentation": "Presentaciones",
+  "application/vnd.google-apps.folder": "Carpetas",
+  "application/pdf": "PDF",
+};
+
+export const privacyUrl = createServerFn({ method: "GET" }).handler(async () => ({
+  url:
+    process.env["OPENEXPERT_PRIVACY_URL"]?.trim() ||
+    "https://github.com/OpenExpert-ai/OpenExpert/blob/main/PRIVACY.md",
+}));
+
+/**
+ * Non-secret client configuration the browser needs (Picker key, project
+ * number, OAuth client id). Public identifiers only.
+ */
+export const getClientConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const secrets = await import("@/lib/opencore/local-secrets.server").then((m) =>
+    m.loadGrantedFiles(),
+  );
+  void secrets;
+  return {
+    pickerKey: process.env["GOOGLE_PICKER_API_KEY"]?.trim() || "",
+    pickerAppId: process.env["GOOGLE_PICKER_APP_ID"]?.trim() || "",
+    googleClientId:
+      process.env["OPENEXPERT_GOOGLE_CLIENT_ID"]?.trim() ||
+      process.env["GOOGLE_CLIENT_ID"]?.trim() ||
+      "",
+    privacyUrl:
+      process.env["OPENEXPERT_PRIVACY_URL"]?.trim() ||
+      "https://github.com/OpenExpert-ai/OpenExpert/blob/main/PRIVACY.md",
+  };
+});
+
+/**
+ * Granular per-invocation consent for Drive reads. The chat tool first returns
+ * a `pendingConsent` payload; the user must explicitly approve this server
+ * function for the tool to actually run. The result is appended to the
+ * conversation as a new assistant message containing the real tool output.
+ */
+export const approveDriveTool = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        expertId: z.string().min(1).max(80),
+        conversationId: z.string().min(1).max(64),
+        tool: z.enum(["search_drive", "read_drive_file"]),
+        args: z.object({
+          query: z.string().nullable().optional(),
+          fileId: z.string().optional(),
+        }),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const local = await import("@/lib/opencore/local-secrets.server");
+    const granted = local.loadGrantedFiles().map((g) => g.id);
+    const drive = await import("./drive.server");
+    let output: unknown;
+    if (data.tool === "search_drive") {
+      output = { files: await drive.listFiles(data.args.query ?? null, granted) };
+    } else {
+      if (!data.args.fileId) throw new Error("Falta fileId");
+      output = await drive.readFile(data.args.fileId, granted);
+    }
+    const partType = data.tool === "search_drive" ? "tool-search_drive" : "tool-read_drive_file";
+    const newMsg = {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      parts: [
+        {
+          type: partType,
+          toolCallId: "approved-" + crypto.randomUUID(),
+          state: "output-available",
+          input: data.args,
+          output,
+        },
+      ],
+    };
+    const { orm } = await getDb();
+    orm
+      .insert(schema.chatMessages)
+      .values({
+        id: crypto.randomUUID(),
+        expertId: data.expertId,
+        conversationId: data.conversationId,
+        message: newMsg as never,
+        createdAt: now(),
+      })
+      .run();
+    await persist();
+    await ee.logActivity({
+      actor: "human",
+      actor_name: "Propietario local",
+      type: "Drive · acceso aprobado",
+      expert_id: data.expertId,
+      status: "ok",
+      summary: `${data.tool} aprobado (${data.args.query ?? data.args.fileId ?? ""})`,
+      sources: ["Google Drive"],
+    });
+    return { ok: true, messageJson: JSON.stringify(newMsg) };
+  });
+
+export const getDriveAccessToken = createServerFn({ method: "GET" }).handler(async () => {
+  const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
+  const access = await tokens.getAccessToken();
+  // The browser is trusted in the local single-owner edition (see SECURITY.md).
+  return { accessToken: access };
 });
 
 export const startDriveAuth = createServerFn({ method: "POST" }).handler(async () => {
   const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
   if (!tokens.googleConfigured())
-    throw new Error("Falta configurar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.");
+    throw new Error(
+      "Falta configurar el cliente OAuth de Google (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).",
+    );
   const origin =
     process.env["PUBLIC_APP_URL"]?.replace(/\/$/, "") ||
     (await getRequestHeaders()).get("origin") ||
     "http://localhost:3000";
-  return { url: tokens.authorizationUrl(origin, tokens.signState()) };
+  const { state, verifier } = tokens.signState();
+  const codeChallenge = await (async () => {
+    const { createHash } = await import("node:crypto");
+    return createHash("sha256").update(verifier).digest("base64url");
+  })();
+  return { url: tokens.authorizationUrl(origin, state, codeChallenge) };
 });
 
 export const disconnectDrive = createServerFn({ method: "POST" }).handler(async () => {
@@ -385,15 +582,18 @@ export const disconnectDrive = createServerFn({ method: "POST" }).handler(async 
 export const syncIntegration = createServerFn({ method: "POST" })
   .validator((d) => z.object({ id: z.literal("gdrive") }).parse(d))
   .handler(async () => {
-    const drive = await import("./drive.server");
+    const local: typeof import("@/lib/opencore/local-secrets.server") =
+      await import("@/lib/opencore/local-secrets.server");
     const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
     const conn = await tokens.driveConnection();
-    ee.assert(conn.connected, "Primero conecta tu cuenta de Google en Fuentes.");
-    const entities = await drive.stats();
+    ee.assert(conn.connected, "Primero selecciona archivos de Google Drive en Fuentes.");
+    const grants = local.loadGrantedFiles();
+    const entities = summarizeGrants(grants);
     const { orm } = await getDb();
+    const now = new Date().toISOString();
     orm
       .update(schema.integrations)
-      .set({ connected: true, lastSync: now(), entities })
+      .set({ connected: true, lastSync: now, entities })
       .where(eq(schema.integrations.id, "gdrive"))
       .run();
     await persist();
@@ -403,7 +603,7 @@ export const syncIntegration = createServerFn({ method: "POST" })
       type: "Integración",
       expert_id: "general",
       status: "ok",
-      summary: `Sincronizado Google Drive (${entities.reduce((a, e) => a + e.count, 0)} archivos)`,
+      summary: `Sincronizado Google Drive (${grants.length} archivos concedidos)`,
       sources: ["Google Drive"],
     });
   });

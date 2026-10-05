@@ -294,8 +294,8 @@ export const en: Record<string, string> = {
   "Fuentes de datos sincronizadas y agentes autónomos gobernados por límites y aprobación humana.":
     "Synced data sources and autonomous agents governed by limits and human approval.",
   Experto: "Expert",
-  "1. Elige tu modelo con `opencore init` (Ollama o Gemini).":
-    "1. Choose your model with `opencore init` (Ollama or Gemini).",
+  "1. Elige tu modelo con `openexpert init` (Ollama o Gemini).":
+    "1. Choose your model with `openexpert init` (Ollama or Gemini).",
   "2. Conecta Google Drive, si quieres, en Integraciones → Fuentes.":
     "2. Connect Google Drive, if you want, under Integrations → Sources.",
   "3. Escribe tu primera pregunta abajo.": "3. Type your first question below.",
@@ -320,4 +320,84 @@ export const en: Record<string, string> = {
   "Leyendo documento de Drive": "Reading a Drive document",
   "Creando archivo en Google Drive": "Creating a Google Drive file",
   "Actualizando archivo en Google Drive": "Updating a Google Drive file",
+  "Saltar al contenido": "Skip to content",
+  "No se pudo cargar tu espacio": "We couldn't load your workspace",
+  "El servidor local no respondió. Comprueba que sigue en marcha e inténtalo de nuevo.":
+    "The local server didn't respond. Check that it's still running and try again.",
+  LOCAL: "LOCAL",
+  "Experto · {name}": "Expert · {name}",
+  "Cargando conversación…": "Loading conversation…",
+  "El reconocimiento de voz no está disponible en este navegador.":
+    "Voice input isn't available in this browser.",
+  "¿Eliminar esta conversación?": "Delete this conversation?",
+  "Se borrarán sus mensajes de forma permanente. Esta acción no se puede deshacer.":
+    "Its messages will be permanently deleted. This can't be undone.",
+  Eliminar: "Delete",
+  "Elige tu modelo": "Choose your model",
+  "Ollama, Gemini o tu propio endpoint.": "Ollama, Gemini or your own endpoint.",
+  Configurar: "Set up",
+  "Conecta Google Drive": "Connect Google Drive",
+  "Opcional: leer, crear y editar tus documentos.":
+    "Optional: read, create and edit your documents.",
+  Gestionar: "Manage",
+  Conectar: "Connect",
+  "Pregunta lo que necesites": "Ask whatever you need",
+  "Las acciones sensibles te pedirán aprobación antes de ejecutarse.":
+    "Sensitive actions will ask for your approval before running.",
+  "{n} mensajes": "{n} messages",
+  "en vivo": "live",
+  "Confirmación humana obligatoria": "Human approval required",
+  "Firma registrada: falta una segunda aprobación":
+    "Signature recorded: a second approval is pending",
+  "Acción ejecutada y registrada": "Action executed and logged",
+  "Aprobar y ejecutar": "Approve and run",
+  "Acción rechazada": "Action rejected",
+  "1/2 firmas": "1/2 signatures",
+  Ejecutado: "Executed",
+  "Revertido desde snapshot": "Reverted from snapshot",
+  Rechazado: "Rejected",
+  "Experto creado y disponible en el selector superior.":
+    "Expert created and available in the switcher above.",
+  "Puedes activarlo cuando quieras": "You can activate it whenever you want",
+  "Pipeline comercial": "Sales pipeline",
+  "Valor abierto": "Open value",
+  "Deals activos": "Active deals",
+  "Win rate": "Win rate",
+  "Previsión ponderada": "Weighted forecast",
+  "Facturas vencidas": "Overdue invoices",
+  Facturas: "Invoices",
+  "Importe total": "Total amount",
+  "Campañas activas · 7 días": "Active campaigns · 7 days",
+  Activas: "Active",
+  Gasto: "Spend",
+  "Sobre CPA objetivo": "Over target CPA",
+  "Riesgo de churn": "Churn risk",
+  "Cuentas en riesgo": "Accounts at risk",
+  "MRR expuesto": "MRR at risk",
+  "Archivo creado en Drive": "File created in Drive",
+  "Archivo actualizado en Drive": "File updated in Drive",
+  Abrir: "Open",
+  "Buscar en el registro…": "Search the log…",
+  "Cargar más": "Load more",
+  "No se encontraron eventos": "No events found",
+  "No hay eventos todavía.": "No events yet.",
+  "Sin resultados para «{q}».": "No results for “{q}”.",
+  ok: "done",
+  failed: "failed",
+  denied: "denied",
+  "Copiada al portapapeles": "Copied to clipboard",
+  "No se pudo copiar": "Couldn't copy",
+  "Importar copia de seguridad": "Import backup",
+  "Importar reemplaza los datos actuales y no se puede deshacer. Escribe {word} para confirmar.":
+    "Importing replaces your current data and can't be undone. Type {word} to confirm.",
+  Importar: "Import",
+  "Escribir {word}": "Type {word}",
+  "Se restaurarán los datos al estado anterior almacenado en el snapshot.":
+    "Data will be restored to the previous state stored in the snapshot.",
+  "Cuando ejecutes procesos o converses con un Experto, aparecerán aquí.":
+    "When you run processes or chat with an Expert, they'll show up here.",
+  "Se eliminarán todos los mensajes guardados. No afecta a Experts ni a procesos.":
+    "All saved messages will be deleted. This doesn't affect Experts or processes.",
+  "Se quitará el fichero de configuración y se aplicarán los valores por defecto.":
+    "The configuration file will be removed and the defaults applied.",
 };

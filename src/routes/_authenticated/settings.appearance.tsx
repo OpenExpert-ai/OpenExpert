@@ -26,6 +26,7 @@ function Option<T extends string>({
     <button
       type="button"
       onClick={() => onSelect(value)}
+      aria-pressed={active}
       className={`flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-left transition-colors ${
         active ? "border-primary bg-primary/10" : "border-border hover:bg-accent/60"
       }`}

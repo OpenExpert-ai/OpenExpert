@@ -24,6 +24,12 @@ export type OpenExpertConfig = {
   modelId: string;
   ollamaBaseUrl: string;
   dataDir: string;
+  /**
+   * Google OAuth client ID for the shared, distributor-baked client. Non-secret
+   * (public identifier); the secret lives in env or ~/.openexpert/secrets.json.
+   * End users never edit this.
+   */
+  googleClientId: string;
   ai: AiConfig;
   chat: ChatConfig;
 };
@@ -33,6 +39,7 @@ export const DEFAULTS: OpenExpertConfig = {
   modelId: "gemini-2.5-flash",
   ollamaBaseUrl: "http://localhost:11434",
   dataDir: "~/.openexpert",
+  googleClientId: "",
   ai: { temperature: 0.2, topP: 1, maxOutputTokens: 4096 },
   chat: {
     maxSteps: 50,
@@ -81,6 +88,8 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
     modelId: env["OPENEXPERT_MODEL_ID"] ?? file.modelId ?? DEFAULTS.modelId,
     ollamaBaseUrl: env["OLLAMA_BASE_URL"] ?? file.ollamaBaseUrl ?? DEFAULTS.ollamaBaseUrl,
     dataDir: expandHome(env["OPENEXPERT_DATA_DIR"] ?? file.dataDir ?? DEFAULTS.dataDir),
+    googleClientId:
+      env["OPENEXPERT_GOOGLE_CLIENT_ID"] ?? file.googleClientId ?? DEFAULTS.googleClientId,
     ai: {
       temperature: num(fileAi.temperature, DEFAULTS.ai.temperature),
       topP: num(fileAi.topP, DEFAULTS.ai.topP),

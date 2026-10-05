@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
-// Server-only. Talks to the real Google Drive API with the owner's OAuth token.
+// Server-only. Talks to Google Drive with the owner's OAuth token.
+// All reads are restricted to the files the user explicitly granted via the
+// Google Picker and stored in ~/.openexpert/drive-grants.json. Writes go to
+// new files or to files the user previously picked.
 
 import { getAccessToken } from "./drive-tokens.server";
 import { logger } from "./logger.server";
@@ -31,16 +34,24 @@ export type DriveFile = {
 };
 const FIELDS = "files(id,name,mimeType,modifiedTime,size,webViewLink),nextPageToken";
 
-export async function listFiles(search: string | null, limit = 25): Promise<DriveFile[]> {
+/** Restrict searches to the granted file IDs (Picker scope). */
+export async function listFiles(
+  search: string | null,
+  grantedIds: string[],
+  limit = 25,
+): Promise<DriveFile[]> {
+  if (grantedIds.length === 0) return [];
   const term = (search ?? "").replace(/['\\]/g, "");
-  const q = [
+  const idClause = grantedIds.map((id) => `'${id.replace(/'/g, "")}'`).join(" or ");
+  const cleanQ = [
     "trashed = false",
     term ? `(name contains '${term}' or fullText contains '${term}')` : null,
+    `(${idClause})`,
   ]
     .filter(Boolean)
     .join(" and ");
   const r = await call("/files", {
-    q,
+    q: cleanQ,
     fields: FIELDS,
     pageSize: String(limit),
     orderBy: search ? "" : "modifiedTime desc",
@@ -48,45 +59,18 @@ export async function listFiles(search: string | null, limit = 25): Promise<Driv
   return ((await r.json()) as { files: DriveFile[] }).files ?? [];
 }
 
-const KIND: Record<string, string> = {
-  "application/vnd.google-apps.document": "Documentos",
-  "application/vnd.google-apps.spreadsheet": "Hojas de cálculo",
-  "application/vnd.google-apps.presentation": "Presentaciones",
-  "application/vnd.google-apps.folder": "Carpetas",
-  "application/pdf": "PDF",
-};
-
-/** Counts files by type (up to 5 pages) for the sources screen. */
-export async function stats() {
-  const counts: Record<string, number> = {};
-  let token = "";
-  for (let i = 0; i < 5; i++) {
-    const r = await call("/files", {
-      q: "trashed = false",
-      fields: "files(mimeType),nextPageToken",
-      pageSize: "1000",
-      ...(token ? { pageToken: token } : {}),
-    });
-    const j = (await r.json()) as { files: { mimeType: string }[]; nextPageToken?: string };
-    for (const f of j.files ?? []) {
-      const k = KIND[f.mimeType] ?? "Otros archivos";
-      counts[k] = (counts[k] ?? 0) + 1;
-    }
-    if (!j.nextPageToken) break;
-    token = j.nextPageToken;
+/** Read only if the ID is in the granted set. */
+export async function readFile(id: string, grantedIds: string[]) {
+  if (!grantedIds.includes(id)) {
+    return {
+      id,
+      name: "(sin acceso)",
+      mimeType: "application/octet-stream",
+      modifiedTime: "",
+      content: null,
+      note: "OpenExpert solo tiene acceso a los archivos que elegiste con el Picker.",
+    };
   }
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => ({ name, count }));
-}
-
-const EXPORT: Record<string, string> = {
-  "application/vnd.google-apps.document": "text/plain",
-  "application/vnd.google-apps.spreadsheet": "text/csv",
-  "application/vnd.google-apps.presentation": "text/plain",
-};
-
-export async function readFile(id: string) {
   const meta = (await (
     await call(`/files/${encodeURIComponent(id)}`, {
       fields: "id,name,mimeType,modifiedTime,webViewLink",
@@ -120,6 +104,12 @@ export async function readFile(id: string) {
   return { ...meta, content: text.slice(0, 20000), truncated: text.length > 20000 };
 }
 
+const EXPORT: Record<string, string> = {
+  "application/vnd.google-apps.document": "text/plain",
+  "application/vnd.google-apps.spreadsheet": "text/csv",
+  "application/vnd.google-apps.presentation": "text/plain",
+};
+
 export type DriveKind = "document" | "spreadsheet" | "text" | "markdown";
 const TARGET: Record<DriveKind, { src: string; dst: string }> = {
   document: { src: "text/markdown", dst: "application/vnd.google-apps.document" },
@@ -152,7 +142,7 @@ async function upload(
     logger.warn("drive.upload_failed", { status: res.status, body: t.slice(0, 500) });
     if (res.status === 403 || res.status === 404)
       throw new Error(
-        `Google Drive no permite modificar este archivo (${res.status}). Solo se pueden editar archivos creados por OpenExpert o requiere permiso completo de Drive.`,
+        `Google Drive no permite modificar este archivo (${res.status}). Solo puedes editar archivos que elegiste con el Picker o que OpenExpert creó.`,
       );
     throw new Error(`Google Drive respondió ${res.status}: ${t.slice(0, 200)}`);
   }
@@ -175,7 +165,15 @@ export async function createFile(
   );
 }
 
-export async function updateFile(id: string, content: string, newName?: string | null) {
+export async function updateFile(
+  id: string,
+  content: string,
+  grantedIds: string[],
+  newName?: string | null,
+) {
+  if (!grantedIds.includes(id)) {
+    throw new Error("No tienes permiso para editar este archivo (no está en tu selección).");
+  }
   const meta = (await (
     await call(`/files/${encodeURIComponent(id)}`, { fields: "mimeType" })
   ).json()) as { mimeType: string };

@@ -45,7 +45,7 @@ export async function runWizard(
     return { config, secrets: {}, provider: "ollama", modelId: config.modelId!, started: false };
   }
 
-  p.intro("OpenCore — configuración");
+  p.intro("OpenExpert — configuración");
 
   const spin = p.spinner();
   spin.start("Buscando Ollama local…");
@@ -82,7 +82,7 @@ export async function runWizard(
       "Instala Ollama y descarga un modelo:\n\n" +
         "  curl -fsSL https://ollama.com/install.sh | sh\n" +
         "  ollama pull llama3.1\n\n" +
-        "Vuelve a ejecutar `opencore init` cuando esté listo.",
+        "Vuelve a ejecutar `openexpert init` cuando esté listo.",
       "Instalar Ollama",
     );
     p.outro("Sin cambios.");

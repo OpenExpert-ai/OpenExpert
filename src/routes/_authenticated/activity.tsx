@@ -1,11 +1,24 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Bot, User, Undo2, Check, X } from "lucide-react";
-import { PageHeader } from "@/components/AppShell";
+import { Bot, User, Undo2, Check, X, Search, ScrollText } from "lucide-react";
+import { PageHeader, inputCls } from "@/components/AppShell";
 import { useAct, useMe, useWorkspace, fmtTime } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { decideAction, revertEvent } from "@/lib/data.functions";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Empty } from "@/components/ui/empty";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/activity")({
   head: () => ({
@@ -23,33 +36,44 @@ export const Route = createFileRoute("/_authenticated/activity")({
 });
 
 const statusCls: Record<string, string> = {
-  ok: "text-success border-success/40",
-  pending: "text-warning border-warning/40",
-  reverted: "text-muted-foreground border-border line-through",
-  denied: "text-destructive border-destructive/40",
-  failed: "text-destructive border-destructive/40",
+  ok: "border-success/40 text-success",
+  pending: "border-warning/40 text-warning",
+  reverted: "text-muted-foreground line-through",
+  denied: "border-destructive/40 text-destructive",
+  failed: "border-destructive/40 text-destructive",
 };
+
+const STATUSES = ["ok", "pending", "reverted", "denied", "failed"] as const;
+const PAGE = 40;
 
 function ActivityPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
-  const { t } = useT();
+  const { t, locale } = useT();
   const revert = useAct(revertEvent, t("Estado restaurado desde snapshot"));
   const decide = useAct(decideAction);
   const [actor, setActor] = useState("all");
   const [type, setType] = useState("all");
   const [expertFilter, setExpertFilter] = useState("all");
   const [status, setStatus] = useState("all");
+  const [q, setQ] = useState("");
+  const [limit, setLimit] = useState(PAGE);
+  const [toRevert, setToRevert] = useState<string | null>(null);
   const types = useMemo(() => [...new Set(ws?.activity.map((a) => a.type) ?? [])], [ws]);
   if (!ws || !me) return null;
+
+  const needle = q.trim().toLowerCase();
   const rows = ws.activity.filter(
     (a) =>
       (actor === "all" || a.actor === actor) &&
       (type === "all" || a.type === type) &&
       (expertFilter === "all" || a.expert_id === expertFilter) &&
-      (status === "all" || a.status === status),
+      (status === "all" || a.status === status) &&
+      (needle === "" ||
+        `${a.summary} ${a.type} ${a.actor_name} ${a.id}`.toLowerCase().includes(needle)),
   );
-  const sel = "rounded-md border border-input bg-card px-2 py-1.5 text-xs";
+  const visible = rows.slice(0, limit);
+  const sel = inputCls + " w-auto py-1.5 text-xs";
   const canDecide = () => me.role === "ADMIN";
 
   return (
@@ -61,8 +85,27 @@ function ActivityPage() {
           "Cada consulta, acción y cambio de configuración queda trazado. Los ADMIN pueden revertir acciones con snapshot; las acciones pendientes se aprueban aquí o en el chat.",
         )}
       />
-      <div className="flex flex-wrap gap-2 border-b border-border px-6 py-3">
-        <select className={sel} value={actor} onChange={(e) => setActor(e.target.value)}>
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-6 py-3">
+        <label className="relative flex min-w-52 flex-1 items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+          <span className="sr-only">{t("Buscar en el registro…")}</span>
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("Buscar en el registro…")}
+            className={`${inputCls} py-1.5 pl-8 text-xs`}
+          />
+        </label>
+        <label className="sr-only" htmlFor="activity-actor">
+          {t("Todos los actores")}
+        </label>
+        <select
+          id="activity-actor"
+          className={sel}
+          value={actor}
+          onChange={(e) => setActor(e.target.value)}
+        >
           <option value="all">{t("Todos los actores")}</option>
           <option value="human">{t("Humano")}</option>
           <option value="agent">{t("Agente")}</option>
@@ -87,39 +130,42 @@ function ActivityPage() {
         </select>
         <select className={sel} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">{t("Todos los estados")}</option>
-          {["ok", "pending", "reverted", "denied", "failed"].map((s) => (
-            <option key={s}>{s}</option>
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {t(s)}
+            </option>
           ))}
         </select>
-        <span className="ml-auto self-center font-mono text-[10px] text-muted-foreground">
+        <span className="ml-auto self-center font-mono text-[0.7rem] text-muted-foreground">
           {t("{a} / {b} eventos", { a: rows.length, b: ws.activity.length })}
         </span>
       </div>
       <div className="divide-y divide-border">
-        {rows.map((a) => (
+        {visible.map((a) => (
           <div key={a.id} className="flex flex-wrap items-start gap-4 px-6 py-4 hover:bg-card/50">
             <div
-              className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded border ${a.actor === "agent" ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}
+              className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded border ${a.actor === "agent" ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}
             >
-              {a.actor === "agent" ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+              {a.actor === "agent" ? <Bot className="size-4" /> : <User className="size-4" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="font-medium">{a.actor_name}</span>
                 <span className="text-muted-foreground">· {a.type}</span>
-                <span className="rounded border border-border px-1.5 font-mono text-[10px]">
+                <span className="rounded border border-border px-1.5 font-mono text-[0.7rem]">
                   expert::{a.expert_id}
                 </span>
-                <span
-                  className={`rounded border px-1.5 font-mono text-[10px] uppercase ${statusCls[a.status] ?? ""}`}
+                <Badge
+                  variant="outline"
+                  className={`font-mono text-[0.7rem] uppercase ${statusCls[a.status] ?? ""}`}
                 >
-                  {a.status}
-                </span>
+                  {t(a.status)}
+                </Badge>
               </div>
               <p className="mt-1 text-sm">{a.summary}</p>
-              <div className="mt-1 flex flex-wrap gap-x-4 font-mono text-[10px] text-muted-foreground">
+              <div className="mt-1 flex flex-wrap gap-x-4 font-mono text-[0.7rem] text-muted-foreground">
                 <span>{a.id}</span>
-                <span>{fmtTime(a.ts)}</span>
+                <span>{fmtTime(a.ts, locale)}</span>
                 <span>{(a.duration_ms / 1000).toFixed(2)}s</span>
                 {a.sources.length > 0 && (
                   <span>
@@ -131,43 +177,80 @@ function ActivityPage() {
             </div>
             {a.status === "pending" && a.pending && (
               <div className="flex gap-2">
-                <button
+                <Button
+                  size="sm"
                   disabled={!a.expert_id || !canDecide() || decide.isPending}
                   onClick={() => decide.mutate({ data: { eventId: a.id, approve: true } })}
-                  className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-30"
                 >
-                  <Check className="h-3 w-3" /> {t("Aprobar")}
-                </button>
-                <button
+                  <Check data-icon="inline-start" /> {t("Aprobar")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   disabled={!a.expert_id || !canDecide() || decide.isPending}
                   onClick={() => decide.mutate({ data: { eventId: a.id, approve: false } })}
-                  className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground disabled:opacity-30"
                 >
-                  <X className="h-3 w-3" /> {t("Rechazar")}
-                </button>
+                  <X data-icon="inline-start" /> {t("Rechazar")}
+                </Button>
               </div>
             )}
             {a.hasSnapshot && a.status === "ok" && (
-              <button
+              <Button
+                size="sm"
+                variant="outline"
                 disabled={me.role !== "ADMIN" || revert.isPending}
-                onClick={() => {
-                  if (confirm(t("¿Revertir {id}?", { id: a.id })))
-                    revert.mutate({ data: { id: a.id } });
-                }}
-                title={me.role !== "ADMIN" ? t("Solo ADMIN") : ""}
-                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary disabled:opacity-30"
+                onClick={() => setToRevert(a.id)}
+                title={me.role !== "ADMIN" ? t("Solo ADMIN") : undefined}
               >
-                <Undo2 className="h-3 w-3" /> {t("Revertir")}
-              </button>
+                <Undo2 data-icon="inline-start" /> {t("Revertir")}
+              </Button>
             )}
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="px-6 py-16 text-center text-sm text-muted-foreground">
-            {t("Sin eventos para estos filtros.")}
-          </div>
+          <Empty
+            icon={ScrollText}
+            title={needle ? t("No se encontraron eventos") : t("No hay eventos todavía.")}
+            description={
+              needle
+                ? t("Sin resultados para «{q}».", { q })
+                : t("Cuando ejecutes procesos o converses con un Experto, aparecerán aquí.")
+            }
+          />
         )}
       </div>
+      {rows.length > visible.length && (
+        <div className="flex justify-center border-t border-border px-6 py-4">
+          <button
+            onClick={() => setLimit((n) => n + PAGE)}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            {t("Cargar más")}
+          </button>
+        </div>
+      )}
+      <AlertDialog open={toRevert !== null} onOpenChange={(next) => !next && setToRevert(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("¿Revertir {id}?", { id: toRevert ?? "" })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Se restaurarán los datos al estado anterior almacenado en el snapshot.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => {
+                if (toRevert) revert.mutate({ data: { id: toRevert } });
+                setToRevert(null);
+              }}
+            >
+              {t("Revertir")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

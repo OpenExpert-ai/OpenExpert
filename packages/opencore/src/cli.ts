@@ -6,18 +6,18 @@ import { cmdDesktop } from "./cli/desktop.js";
 import { runWizard } from "./cli/wizard.js";
 
 function help(): void {
-  console.log(`opencore — motor abierto de OpenExpert
+  console.log(`OpenExpert — motor local
 
 Uso:
-  opencore            asistente de configuración y arranque
-  opencore init       igual que sin argumentos
-  opencore serve      arranca la edición local en http://localhost:3000
-  opencore desktop    arranca el servidor y abre la ventana de escritorio
-  opencore doctor     revisa tu configuración
-  opencore fix        auto-configura lo que falte
-  opencore models     lista los modelos del proveedor actual
-  opencore update     limpia la caché del servidor descargado
-  opencore version    muestra la versión
+  openexpert            asistente de configuración y arranque
+  openexpert init       igual que sin argumentos
+  openexpert serve      arranca la edición local en http://localhost:3000
+  openexpert desktop    arranca el servidor y abre la ventana de escritorio
+  openexpert doctor     revisa tu configuración
+  openexpert fix        auto-configura lo que falte
+  openexpert models     lista los modelos del proveedor actual
+  openexpert update     limpia la caché del servidor descargado
+  openexpert version    muestra la versión
 
 Ejemplos:
   npx @openexpert/opencore

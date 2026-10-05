@@ -48,3 +48,8 @@ db/
 openexpert.json
 .openexpert/
 credentials.json
+secrets.json
+drive-grants.json
+drive-consent.json
+secret.key
+state-secret

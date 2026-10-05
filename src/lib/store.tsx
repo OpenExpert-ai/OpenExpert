@@ -63,8 +63,8 @@ export function useAct<F extends (arg: any) => Promise<any>>(serverFn: F, succes
   });
 }
 
-export const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleString("es-ES", {
+export const fmtTime = (iso: string, locale: "es" | "en" = "es") =>
+  new Date(iso).toLocaleString(locale === "en" ? "en-GB" : "es-ES", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",

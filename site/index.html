@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenExpert — Talk to your company</title>
+    <meta
+      name="description"
+      content="OpenExpert is a local-first operations dashboard with AI Experts, strict data isolation and a full audit trail. No cloud, no accounts, no database server."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site">
+      <div class="wrap">
+        <a class="wordmark" href="./">OpenExpert</a>
+        <div class="tagline">Talk to your company</div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <h1>An operations dashboard that runs entirely on your machine.</h1>
+      <p class="lede">
+        OpenExpert gives you AI Experts with their own data context, a tool-using chat, and
+        human-approved processes — with no cloud, no accounts and no database server. Just SQLite
+        and your own model.
+      </p>
+
+      <div class="card">
+        <h2 style="margin-top: 0">What it does</h2>
+        <ul>
+          <li>
+            <strong>Experts</strong> with per-domain isolation: an Expert only sees the data it is
+            allowed to see.
+          </li>
+          <li>
+            <strong>Chat with real data</strong> through tools that query your local database and,
+            optionally, specific files you pick in Google Drive.
+          </li>
+          <li>
+            <strong>Human-approved processes</strong>: the assistant proposes, you approve. Nothing
+            changes until you say so.
+          </li>
+          <li>
+            <strong>Governance</strong>: an activity log of every relevant event, with revert for
+            revertible changes.
+          </li>
+        </ul>
+      </div>
+
+      <p>
+        <a class="btn" href="https://github.com/OpenExpert-ai/OpenExpert">View the source</a>
+        <a class="btn secondary" href="./privacy.html">Privacy Policy</a>
+      </p>
+
+      <h2>Google Drive access</h2>
+      <p>
+        If you choose to connect Google Drive, OpenExpert requests only the
+        <code>drive.file</code> scope — a non-sensitive permission that grants access to the
+        specific files you select with the Google Picker. It cannot read the rest of your Drive.
+        Every read of a Drive file is confirmed by you in the chat before it runs.
+      </p>
+      <blockquote>
+        The use of information received from Google Workspace scopes will adhere to the Google User
+        Data Policy, including the Limited Use requirements.
+      </blockquote>
+      <p>
+        See the <a href="./privacy.html">Privacy Policy</a> and the
+        <a href="https://developers.google.com/terms/api-services-user-data-policy"
+          >Google API Services User Data Policy</a
+        >.
+      </p>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        OpenExpert is open source under the
+        <a href="https://github.com/OpenExpert-ai/OpenExpert/blob/main/LICENSE">MIT License</a>.
+        &nbsp;·&nbsp; <a href="./privacy.html">Privacy</a> &nbsp;·&nbsp;
+        <a href="./terms.html">Terms</a> &nbsp;·&nbsp;
+        <a href="https://github.com/OpenExpert-ai/OpenExpert">GitHub</a>
+        <p class="muted">
+          Google Drive is a trademark of Google LLC. OpenExpert is not affiliated with or endorsed
+          by Google.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

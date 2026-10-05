@@ -192,32 +192,39 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_drive: tool({
       description:
-        "Busca archivos reales en el Google Drive conectado por nombre o contenido. Sin búsqueda devuelve los más recientes.",
+        "Pide al asistente acceso de lectura a los archivos de Google Drive que el usuario eligió con el Picker. Devuelve un pendingConsent que el usuario debe aprobar antes de ejecutarse.",
       inputSchema: z.object({ query: z.string().nullable() }),
       execute: async ({ query }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
-        try {
-          const d = await import("../drive.server");
-          return { files: await d.listFiles(query) };
-        } catch (e) {
-          return { error: (e as Error).message };
-        }
+        return {
+          pendingConsent: {
+            tool: "search_drive",
+            args: { query: query ?? null },
+            summary: query
+              ? `Buscar «${query}» en los archivos de Drive que elegiste`
+              : "Listar archivos recientes de Drive",
+          },
+        };
       },
     }),
     read_drive_file: tool({
       description:
-        "Lee el contenido de texto de un archivo de Google Drive por su id (Docs, Sheets como CSV, Slides, PDF, texto).",
+        "Pide al asistente acceso de lectura al contenido de un archivo de Google Drive que el usuario eligió con el Picker. Devuelve un pendingConsent que el usuario debe aprobar.",
       inputSchema: z.object({ fileId: z.string() }),
       execute: async ({ fileId }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
-        try {
-          const d = await import("../drive.server");
-          return await d.readFile(fileId);
-        } catch (e) {
-          return { error: (e as Error).message };
-        }
+        const local = await import("../opencore/local-secrets.server");
+        const granted = local.loadGrantedFiles();
+        const meta = granted.find((g) => g.id === fileId);
+        return {
+          pendingConsent: {
+            tool: "read_drive_file",
+            args: { fileId },
+            summary: `Leer el archivo de Drive${meta ? ` «${meta.name}»` : ` (${fileId})`}`,
+          },
+        };
       },
     }),
     create_drive_file: tool({
@@ -265,7 +272,9 @@ export function createChatTools(ctx: ChatToolsContext) {
         used.add("Google Drive");
         try {
           const d = await import("../drive.server");
-          const f = await d.updateFile(fileId, content, newName);
+          const local = await import("../opencore/local-secrets.server");
+          const granted = local.loadGrantedFiles().map((g) => g.id);
+          const f = await d.updateFile(fileId, content, granted, newName);
           await ee
             .logActivity({
               actor: "agent",

@@ -89,15 +89,20 @@ describe("handleChat", () => {
 
   it("returns a 500 when the model key is missing", async () => {
     const { handleChat } = await import("./chat.server");
-    const previous = process.env["GOOGLE_API_KEY"];
+    const prevKey = process.env["GOOGLE_API_KEY"];
+    const prevProvider = process.env["OPENEXPERT_MODEL_PROVIDER"];
     delete process.env["GOOGLE_API_KEY"];
+    // Make the test hermetic: do not depend on a local openexpert.json.
+    process.env["OPENEXPERT_MODEL_PROVIDER"] = "google";
     try {
       const res = await handleChat(
         chatRequest({ expertId: "ventas", messages: [userMessage("¿Cómo va el pipeline?")] }),
       );
       expect(res.status).toBe(500);
     } finally {
-      if (previous !== undefined) process.env["GOOGLE_API_KEY"] = previous;
+      if (prevKey !== undefined) process.env["GOOGLE_API_KEY"] = prevKey;
+      if (prevProvider === undefined) delete process.env["OPENEXPERT_MODEL_PROVIDER"];
+      else process.env["OPENEXPERT_MODEL_PROVIDER"] = prevProvider;
     }
   });
 });

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
-// Server-only. Google Drive OAuth for the single local owner. Tokens live in
-// ~/.openexpert/credentials.json (0600) and never leave the machine.
+// Google Drive OAuth for the single local owner.
+// Tokens live encrypted in ~/.openexpert/credentials.json (0600) and never
+// touch the wire except to call Google's own endpoints with the user's
+// consent. We request only the non-sensitive `drive.file` scope; the
+// user chooses which files OpenExpert can see through the Google Picker.
 
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -11,32 +14,40 @@ import * as local from "@/lib/opencore/local-secrets.server";
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
-/** drive.readonly searches and reads; drive.file creates and edits. */
-export const DRIVE_SCOPES = [
-  "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/drive.file",
-];
+/** Non-sensitive scope: per-file access. No CASA required. */
+export const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 
 export const DRIVE_NOT_CONNECTED =
-  "Google Drive no está conectado. Conecta tu cuenta desde Integraciones → Fuentes.";
+  "Google Drive no está conectado. Selecciona archivos desde Integraciones → Fuentes.";
 
 const env = (k: string) => process.env[k]?.trim() || undefined;
 
-export const googleConfigured = () =>
-  Boolean(env("GOOGLE_CLIENT_ID") && env("GOOGLE_CLIENT_SECRET"));
+function clientId(): string {
+  return env("OPENEXPERT_GOOGLE_CLIENT_ID") || env("GOOGLE_CLIENT_ID") || "";
+}
+function clientSecret(): string {
+  return env("GOOGLE_CLIENT_SECRET") || "";
+}
+
+export const googleConfigured = () => Boolean(clientId() && clientSecret());
 
 export const googleRedirectUri = (origin: string) =>
   env("GOOGLE_REDIRECT_URI") || `${origin.replace(/\/$/, "")}/auth/google/callback`;
 
-type Tokens = { access_token: string; refresh_token?: string; expires_in: number; scope?: string };
+type Tokens = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  scope?: string;
+};
 
 async function postToken(body: Record<string, string>): Promise<Tokens> {
   const r = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: env("GOOGLE_CLIENT_ID") ?? "",
-      client_secret: env("GOOGLE_CLIENT_SECRET") ?? "",
+      client_id: clientId(),
+      client_secret: clientSecret(),
       ...body,
     }),
   });
@@ -49,58 +60,73 @@ function stateSecret(): string {
   const fromEnv = env("GOOGLE_OAUTH_STATE_SECRET");
   if (fromEnv) return fromEnv;
   const dir = dataDir();
-  mkdirSync(dir, { recursive: true });
   const f = join(dir, "state-secret");
-  if (existsSync(f)) return readFileSync(f, "utf8").trim();
+  if (existsSync(f)) {
+    const v = readFileSync(f, "utf8");
+    if (v && v.trim()) return v.trim();
+  }
+  mkdirSync(dir, { recursive: true });
   const secret = randomBytes(32).toString("hex");
   writeFileSync(f, secret, { mode: 0o600 });
   return secret;
 }
 
-const mac = (value: string) =>
-  createHmac("sha256", stateSecret()).update(value).digest("base64url");
-
-export function signState(): string {
+/**
+ * Sign an OAuth `state` that also carries the PKCE `code_verifier`.
+ * Layout: `nonce.verifier.mac(nonce|verifier)`. The verifier never leaves
+ * the URL except to be sent back to the token URL with `code_verifier`.
+ */
+export function signState(): { state: string; verifier: string } {
   const nonce = randomBytes(16).toString("hex");
-  return `${nonce}.${mac(nonce)}`;
+  const verifier = randomBytes(64).toString("base64url");
+  const mac = createHmac("sha256", stateSecret())
+    .update(`${nonce}|${verifier}`)
+    .digest("base64url");
+  return { state: `${nonce}.${verifier}.${mac}`, verifier };
 }
 
-export function verifyState(state: string): boolean {
-  const i = state.lastIndexOf(".");
-  if (i < 1) return false;
-  const nonce = state.slice(0, i);
-  const got = Buffer.from(state.slice(i + 1));
-  const want = Buffer.from(mac(nonce));
-  return got.length === want.length && timingSafeEqual(got, want);
+export function verifyState(state: string): { ok: boolean; verifier?: string } {
+  const parts = state.split(".");
+  if (parts.length !== 3) return { ok: false };
+  const nonce = parts[0];
+  const verifier = parts[1];
+  const got = parts[2];
+  if (!nonce || !verifier || !got) return { ok: false };
+  const wantMac = Buffer.from(
+    createHmac("sha256", stateSecret()).update(`${nonce}|${verifier}`).digest("base64url"),
+  );
+  const g = Buffer.from(got);
+  if (g.length !== wantMac.length || !timingSafeEqual(g, wantMac)) return { ok: false };
+  return { ok: true, verifier };
 }
 
-export function authorizationUrl(origin: string, state: string) {
+export function authorizationUrl(origin: string, state: string, codeChallenge: string) {
   const p = new URLSearchParams({
-    client_id: env("GOOGLE_CLIENT_ID") ?? "",
+    client_id: clientId(),
     redirect_uri: googleRedirectUri(origin),
     response_type: "code",
     scope: DRIVE_SCOPES.join(" "),
-    // offline + consent is what makes Google hand back a refresh token.
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
     state,
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
   });
   return `${AUTH_URL}?${p}`;
 }
 
-export async function exchangeCode(code: string, origin: string) {
+export async function exchangeCode(code: string, verifier: string, origin: string) {
   return postToken({
     code,
     grant_type: "authorization_code",
     redirect_uri: googleRedirectUri(origin),
+    code_verifier: verifier,
   });
 }
 
 export async function saveTokens(t: Tokens): Promise<void> {
   const prev = local.loadTokens();
-  // Google omits refresh_token when the user re-authorises without revoking,
-  // so keep the one we already hold rather than nulling it.
   local.saveTokens({
     access_token: t.access_token,
     refresh_token: t.refresh_token || prev?.refresh_token || null,
@@ -111,14 +137,16 @@ export async function saveTokens(t: Tokens): Promise<void> {
 export async function disconnectDrive(): Promise<void> {
   const prev = local.loadTokens();
   local.removeTokens();
-  if (prev?.refresh_token && env("GOOGLE_CLIENT_ID") && env("GOOGLE_CLIENT_SECRET")) {
+  local.removeGrantedFiles();
+  local.removeDriveConsent();
+  if (prev?.refresh_token && clientId() && clientSecret()) {
     await fetch("https://oauth2.googleapis.com/revoke", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         token: prev.refresh_token,
-        client_id: env("GOOGLE_CLIENT_ID")!,
-        client_secret: env("GOOGLE_CLIENT_SECRET")!,
+        client_id: clientId(),
+        client_secret: clientSecret(),
       }),
     }).catch(() => {});
   }

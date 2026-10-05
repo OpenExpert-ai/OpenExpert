@@ -17,6 +17,8 @@ import { UIProvider } from "../lib/store";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { I18nProvider, useT } from "../lib/i18n";
 import { Toaster } from "../components/ui/sonner";
+import { buttonVariants } from "../components/ui/button";
+import { getClientConfig } from "../lib/data.functions";
 
 function NotFoundComponent() {
   const { t } = useT();
@@ -29,10 +31,7 @@ function NotFoundComponent() {
           {t("La página que buscas no existe o se ha movido.")}
         </p>
         <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
+          <Link to="/" className={buttonVariants()}>
             {t("Volver al inicio")}
           </Link>
         </div>
@@ -64,14 +63,11 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className={buttonVariants()}
           >
             {t("Reintentar")}
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
+          <a href="/" className={buttonVariants({ variant: "outline" })}>
             {t("Volver al inicio")}
           </a>
         </div>
@@ -134,6 +130,23 @@ function ThemedToaster() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    getClientConfig()
+      .then((c) => {
+        (window as unknown as { __OPENEXPERT_PICKER_KEY__?: string }).__OPENEXPERT_PICKER_KEY__ =
+          c.pickerKey;
+        (
+          window as unknown as { __OPENEXPERT_PICKER_APP_ID__?: string }
+        ).__OPENEXPERT_PICKER_APP_ID__ = c.pickerAppId;
+        (
+          window as unknown as { __OPENEXPERT_GOOGLE_CLIENT_ID__?: string }
+        ).__OPENEXPERT_GOOGLE_CLIENT_ID__ = c.googleClientId;
+        (window as unknown as { __OPENEXPERT_PRIVACY_URL__?: string }).__OPENEXPERT_PRIVACY_URL__ =
+          c.privacyUrl;
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

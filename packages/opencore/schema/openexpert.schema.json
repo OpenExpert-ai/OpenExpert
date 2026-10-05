@@ -26,6 +26,11 @@
       "minLength": 1,
       "description": "Directory where the SQLite database and credentials live. `~/` expands to the user's home directory."
     },
+    "googleClientId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Google OAuth client ID baked by the distributor (shared client model). End users do not edit this. OpenExpert ships with drive.file scope and a localhost redirect URI."
+    },
     "ai": {
       "type": "object",
       "additionalProperties": false,
