@@ -45,7 +45,13 @@ function loadScript(src: string): Promise<void> {
     s.src = src;
     s.async = true;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`failed to load ${src}`));
+    s.onerror = () =>
+      reject(
+        new Error(
+          "No se pudo cargar el Google Picker (apis.google.com). Comprueba tu conexión, " +
+            "desactiva bloqueadores de scripts para localhost y que la CSP permita apis.google.com.",
+        ),
+      );
     document.head.appendChild(s);
   });
 }
@@ -55,8 +61,12 @@ function ensureLoaded(): Promise<void> {
   if (readyP) return readyP;
   readyP = loadScript(APIS_URL).then(
     () =>
-      new Promise<void>((resolve) => {
-        window.gapi?.load("picker", () => resolve());
+      new Promise<void>((resolve, reject) => {
+        if (!window.gapi) {
+          reject(new Error("El cargador de Google (gapi) no está disponible."));
+          return;
+        }
+        window.gapi.load("picker", () => resolve());
       }),
   );
   return readyP;
