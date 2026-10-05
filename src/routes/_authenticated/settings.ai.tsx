@@ -44,7 +44,7 @@ function AiSettings() {
   const [modelId, setModelId] = useState("");
   const [ollamaBaseUrl, setOllamaBaseUrl] = useState("http://localhost:11434");
   const [baseUrl, setBaseUrl] = useState("");
-  const [temperature, setTemperature] = useState(0.2);
+  const [temperature, setTemperature] = useState(0.5);
   const [topP, setTopP] = useState(1);
   const [maxOutputTokens, setMaxOutputTokens] = useState(4096);
   const [googleKeyDraft, setGoogleKeyDraft] = useState<string | null>(null);

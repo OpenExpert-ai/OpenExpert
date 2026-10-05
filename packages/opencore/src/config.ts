@@ -40,7 +40,7 @@ export const DEFAULTS: OpenExpertConfig = {
   ollamaBaseUrl: "http://localhost:11434",
   dataDir: "~/.openexpert",
   googleClientId: "",
-  ai: { temperature: 0.2, topP: 1, maxOutputTokens: 4096 },
+  ai: { temperature: 0.5, topP: 1, maxOutputTokens: 4096 },
   chat: {
     maxSteps: 50,
     injectionGuard: true,
