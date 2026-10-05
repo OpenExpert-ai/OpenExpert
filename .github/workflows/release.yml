@@ -26,7 +26,6 @@ jobs:
       id-token: write
     outputs:
       published: ${{ steps.changesets.outputs.published }}
-      has_changesets: ${{ steps.changesets.outputs.hasChangesets }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,15 +40,13 @@ jobs:
       - run: npm ci
 
       - id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          publish: npm run release
-          version: npm run version-packages
-          commit: "chore(release): version packages"
-          title: "chore(release): version packages"
-          createGithubReleases: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          publish-script: npm run release
+          version-script: npm run version-packages
+          commit-message: "chore(release): version packages"
+          pr-title: "chore(release): version packages"
+          create-github-releases: "true"
 
   docker:
     name: Build and publish Docker image
