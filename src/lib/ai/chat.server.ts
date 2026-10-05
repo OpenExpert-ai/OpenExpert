@@ -211,12 +211,10 @@ Formato (adáptalo a la pregunta):
     system: `${system}\nProveedor activo: ${modelLabel()}.`,
     messages: await convertToModelMessages(messages),
     tools,
-    // Reading content and writing require explicit, per-invocation human
-    // approval. Searching only lists the files already granted by the Picker,
-    // so it runs without an extra prompt. The SDK pauses the turn, the user
-    // approves in the UI, and the model then resumes with the tool result.
+    // Only writes require explicit approval: they modify the user's Drive.
+    // Reads (search and read) run directly. The user already controls which
+    // files exist via the Picker.
     toolApproval: {
-      read_drive_file: "user-approval",
       create_drive_file: "user-approval",
       update_drive_file: "user-approval",
     },

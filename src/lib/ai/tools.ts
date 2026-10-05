@@ -218,7 +218,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_drive_file: tool({
       description:
-        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker. Requiere aprobación humana antes de ejecutarse.",
+        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker (Docs, Sheets como CSV, Slides, PDF, texto).",
       inputSchema: z.object({ fileId: z.string() }),
       execute: async ({ fileId }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
