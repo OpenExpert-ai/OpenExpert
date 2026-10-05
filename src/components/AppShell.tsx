@@ -29,14 +29,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navLinkActive = "bg-accent text-foreground";
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border focus:border-border focus:bg-card focus:px-3 focus:py-2 focus:text-sm"
       >
         {t("Saltar al contenido")}
       </a>
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+      <aside className="sticky top-0 hidden h-full w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
         <div className="border-b border-sidebar-border px-5 py-5">
           <div className="font-display text-2xl tracking-tight">OpenExpert</div>
           <div className="mt-1 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
       ) : (
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-6">
             <div className="font-display text-lg md:hidden">OpenExpert</div>
             <label className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-sm focus-within:ring-2 focus-within:ring-ring/40">
@@ -132,7 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <main id="main" className="flex min-h-0 flex-1 flex-col">
+          <main id="main" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             {children}
           </main>
         </div>
