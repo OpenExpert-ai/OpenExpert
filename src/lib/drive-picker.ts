@@ -92,6 +92,7 @@ export async function pickDriveFiles(opts: {
     // `google.picker.Action.PICKED` is the lowercase string "picked". Comparing
     // to the uppercase name never matches, which silently dropped the selection.
     const pickedAction = picker?.Action?.PICKED ?? "picked";
+    const cancelAction = picker?.Action?.CANCEL ?? "cancel";
     const actionKey = picker?.Response?.ACTION ?? "action";
     const docsKey = picker?.Response?.DOCUMENTS ?? "documents";
 
@@ -106,15 +107,25 @@ export async function pickDriveFiles(opts: {
         const action = String(data.action ?? rec[actionKey] ?? "");
         const docs = (data.docs ?? rec[docsKey]) as RawDoc[] | undefined;
         // Visible in the browser console to diagnose picker issues.
-        console.debug("[drive-picker] callback", { action, count: docs?.length ?? 0, data });
+        console.debug("[drive-picker] callback", { action, count: docs?.length ?? 0 });
+        // The callback also fires with "loaded" (and other lifecycle events) while
+        // the dialog is still open; only settle on a final user action.
         if (action === pickedAction && docs?.length) {
           resolve({
             files: docs.map((d) => ({ id: d.id, name: d.name, mimeType: d.mimeType })),
             action,
           });
-        } else {
+          return;
+        }
+        if (
+          action === cancelAction ||
+          action === "cancel" ||
+          action === "cancelled" ||
+          action === "error"
+        ) {
           resolve({ files: [], action });
         }
+        // Anything else (e.g. "loaded") means the dialog is still open: ignore.
       });
     const instance = builder.build() as unknown as PickerInstance;
     instance.setVisible(true);
