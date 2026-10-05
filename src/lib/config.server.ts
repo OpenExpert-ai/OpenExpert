@@ -125,20 +125,27 @@ export function writeSecret(name: string, value: string | null): void {
 
 /* --------------------------- environment bridge -------------------------- */
 
-/** Keys whose current value in process.env came from openexpert.json. */
-const fileAppliedEnv = new Set<string>();
+/** Keys whose current value in process.env came from openexpert.json, and the
+ * exact value we wrote. A runtime change (tests, CLI) makes it a "real" env
+ * var and the file must stop overriding it. */
+const fileAppliedEnv = new Map<string, string>();
 
 function assignFromFile(key: string, value: unknown): void {
-  if (envAtBoot.has(key)) return; // A real environment variable always wins.
+  // A real environment variable always wins: one present at boot, or one
+  // changed at runtime since the file was last applied.
+  if (envAtBoot.has(key)) return;
+  const applied = fileAppliedEnv.get(key);
+  const current = process.env[key];
+  if (current !== undefined && current !== applied) return;
   if (value === undefined || value === null || value === "") {
-    if (fileAppliedEnv.has(key)) {
+    if (applied !== undefined) {
       delete process.env[key];
       fileAppliedEnv.delete(key);
     }
     return;
   }
   process.env[key] = String(value);
-  fileAppliedEnv.add(key);
+  fileAppliedEnv.set(key, String(value));
 }
 
 /**
