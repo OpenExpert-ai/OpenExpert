@@ -68,7 +68,7 @@ required**.
 In-product disclosure is shown before connecting. The Limited Use statement
 required by Google's User Data Policy is included in
 [`PRIVACY.md`](../../PRIVACY.md) (English) and
-[`docs/es/POLITICA-DE-PRIVACIDAD.md`](../../POLITICA-DE-PRIVACIDAD.md) (Spanish).
+[`docs/es/POLITICA-DE-PRIVACIDAD.md`](../es/POLITICA-DE-PRIVACIDAD.md) (Spanish).
 A copy is shown in the Connect dialog. The URL is configurable via
 `OPENEXPERT_PRIVACY_URL`.
 

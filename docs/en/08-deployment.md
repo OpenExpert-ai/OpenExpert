@@ -42,7 +42,7 @@ One OAuth client is enough. Register the redirect URI:
 Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (in `.env` or the
 environment). Leave the consent screen **In production** so the refresh token
 does not expire after 7 days. See
-[Integrations](./06-integrations.md#23-consent-status-in-production).
+[Integrations](./06-integrations.md#24-consent-screen).
 
 ## 4. Backups
 
