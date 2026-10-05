@@ -4,16 +4,15 @@
 
 export type TableName =
   | "experts"
-  | "expert_access"
-  | "user_roles"
   | "integrations"
   | "processes"
-  | "invoices"
-  | "campaigns"
-  | "invitations"
   | "activity"
   | "chat_messages"
-  | "profiles";
+  | "deals"
+  | "invoices"
+  | "campaigns"
+  | "accounts"
+  | "settings";
 
 export type Row = Record<string, unknown>;
 
@@ -25,14 +24,13 @@ export interface Storage {
 
 export const LOCAL_TABLES: TableName[] = [
   "experts",
-  "expert_access",
-  "user_roles",
   "integrations",
   "processes",
-  "invoices",
-  "campaigns",
-  "invitations",
   "activity",
   "chat_messages",
-  "profiles",
+  "deals",
+  "invoices",
+  "campaigns",
+  "accounts",
+  "settings",
 ];

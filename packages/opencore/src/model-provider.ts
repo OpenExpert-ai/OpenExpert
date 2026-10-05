@@ -41,6 +41,19 @@ export function selectModel(env: NodeJS.ProcessEnv = process.env): ModelSelectio
   };
 }
 
+/**
+ * Ollama exposes two surfaces: the native API at the server root (`/api/*`)
+ * and an OpenAI-compatible API under `/v1`. Callers may configure either
+ * shape, so normalise before using it.
+ */
+export function ollamaApiBaseUrl(baseUrl: string): string {
+  return baseUrl.trim().replace(/\/+$/, "").replace(/\/v1$/, "");
+}
+
+export function ollamaChatBaseUrl(baseUrl: string): string {
+  return `${ollamaApiBaseUrl(baseUrl)}/v1`;
+}
+
 export function missingKeyHint(
   sel: ModelSelection,
   env: NodeJS.ProcessEnv = process.env,

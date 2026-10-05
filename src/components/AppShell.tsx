@@ -1,16 +1,8 @@
 // SPDX-License-Identifier: MIT
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  MessagesSquare,
-  Network,
-  Plug,
-  ScrollText,
-  Building2,
-  Layers,
-  Settings,
-  Loader2,
-} from "lucide-react";
+import { MessagesSquare, Network, Plug, ScrollText, Layers, Settings, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect, useId } from "react";
 import { useMe, useUI, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 
@@ -84,13 +76,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-6">
             <div className="font-display text-lg md:hidden">OpenExpert</div>
             <label className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-sm">
-              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-              <select className="bg-transparent outline-none">
-                <option className="bg-card">Nexora Tech S.L. · SaaS B2B</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-sm">
               <Layers className="h-3.5 w-3.5 text-primary" />
+              <span className="sr-only">{t("Experto activo")}</span>
               <select
                 value={activeExpert}
                 onChange={(e) => setActiveExpert(e.target.value)}
@@ -163,17 +150,33 @@ export function Modal({
   title: string;
   children: ReactNode;
 }) {
+  const titleId = useId();
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
       onClick={onClose}
+      role="presentation"
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-2xl">{title}</h2>
+        <h2 id={titleId} className="font-display text-2xl">
+          {title}
+        </h2>
         <div className="mt-4">{children}</div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Eye, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { SettingsCard as Card, SettingsField as Field } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
 import {
   getSettings,
@@ -27,44 +28,6 @@ const SOURCE_LABEL: Record<string, string> = {
   secrets: "secrets.json",
   default: "valor por defecto",
 };
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </span>
-      {children}
-      {hint && <span className="block text-xs text-muted-foreground">{hint}</span>}
-    </label>
-  );
-}
-
-function Card({
-  title,
-  desc,
-  children,
-}: {
-  title: string;
-  desc?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="font-display text-xl">{title}</h2>
-      {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
-      <div className="mt-5 space-y-5">{children}</div>
-    </section>
-  );
-}
 
 function AiSettings() {
   const get = useServerFn(getSettings);
@@ -178,6 +141,7 @@ function AiSettings() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <Card
+        bodyClassName="mt-5 space-y-5"
         title={t("Proveedor de IA")}
         desc={t("Elige dónde se ejecuta el modelo. Ollama es local y no necesita claves.")}
       >
@@ -316,6 +280,7 @@ function AiSettings() {
       </Card>
 
       <Card
+        bodyClassName="mt-5 space-y-5"
         title={t("Parámetros de muestreo")}
         desc={t("Controlan cómo de creativo y largo es el modelo.")}
       >

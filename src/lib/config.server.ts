@@ -323,7 +323,6 @@ export const fileConfigSchema = z.object({
         .refine(patternsAreValid, { message: "Patrón regular inválido" })
         .optional(),
       retentionDays: z.number().int().min(0).optional(),
-      defaultApproval: z.enum(["Ninguna", "Requerida"]).optional(),
     })
     .optional(),
 });
@@ -355,7 +354,6 @@ export const chatUpdateSchema = z.object({
     .max(50)
     .refine(patternsAreValid, { message: "Patrón regular inválido" }),
   retentionDays: z.number().int().min(0).max(3650),
-  defaultApproval: z.enum(["Ninguna", "Requerida"]),
 });
 
 export type ChatUpdateInput = z.infer<typeof chatUpdateSchema>;

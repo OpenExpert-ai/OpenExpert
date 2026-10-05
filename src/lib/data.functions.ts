@@ -12,7 +12,6 @@ import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
 const OWNER_NAME = "Propietario local";
-const ACCESS = z.enum(["none", "read", "exec"]);
 
 /* ----------------------------- Workspace ----------------------------- */
 
@@ -33,7 +32,6 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
     me: {
       name: OWNER_NAME,
       role: "ADMIN" as const,
-      access: {} as Record<string, z.infer<typeof ACCESS>>,
     },
     experts: experts.map((e) => ({
       id: e.id,
@@ -143,10 +141,12 @@ export const toggleProcess = createServerFn({ method: "POST" })
     const { orm } = await getDb();
     const p = orm.select().from(schema.processes).where(eq(schema.processes.id, data.id)).all()[0];
     ee.assert(p, "No existe");
+    // Snapshot the full row so reverting only flips `active` and never drops
+    // the rest of the process metadata.
     const snap = ee.snapshotRows(
       "processes",
       ["id"],
-      [{ id: p.id, active: p.active ? 1 : 0, name: p.name, expert_id: p.expertId }],
+      await ee.fetchRows("processes", "id", [p.id]),
     );
     orm
       .update(schema.processes)
@@ -209,7 +209,11 @@ export const decideAction = createServerFn({ method: "POST" })
       .where(eq(schema.activity.id, data.eventId))
       .all()[0];
     ee.assert(ev && ev.status === "pending", "La acción ya fue resuelta");
-    const snap = ev.snapshot as { pending: ee.PendingAction };
+    const parsedPending = ee.pendingActionSchema.safeParse(
+      (ev.snapshot as { pending?: unknown } | null)?.pending,
+    );
+    ee.assert(parsedPending.success, "Acción pendiente no válida");
+    const pending = parsedPending.data;
     if (!data.approve) {
       orm
         .update(schema.activity)
@@ -219,14 +223,14 @@ export const decideAction = createServerFn({ method: "POST" })
       await persist();
       return { status: "failed" };
     }
-    const r = await ee.executePending(snap.pending);
+    const r = await ee.executePending(pending);
     orm
       .update(schema.activity)
       .set({
         status: "ok",
         summary: `${r.summary} · aprobado`,
         sources: r.sources,
-        snapshot: { entries: r.snapshot, pending: snap.pending } as never,
+        snapshot: { entries: r.snapshot, pending } as never,
       })
       .where(eq(schema.activity.id, ev.id))
       .run();

@@ -2,6 +2,7 @@
 // Server-only. Talks to the real Google Drive API with the owner's OAuth token.
 
 import { getAccessToken } from "./drive-tokens.server";
+import { logger } from "./logger.server";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -14,7 +15,7 @@ async function call(path: string, query: Record<string, string> = {}) {
   });
   if (!res.ok) {
     const body = await res.text();
-    console.error(`Drive [${res.status}]: ${body}`);
+    logger.warn("drive.request_failed", { status: res.status, body: body.slice(0, 500) });
     throw new Error(`Google Drive respondió ${res.status}`);
   }
   return res;
@@ -148,7 +149,7 @@ async function upload(
   });
   if (!res.ok) {
     const t = await res.text();
-    console.error(`Drive upload [${res.status}]: ${t}`);
+    logger.warn("drive.upload_failed", { status: res.status, body: t.slice(0, 500) });
     if (res.status === 403 || res.status === 404)
       throw new Error(
         `Google Drive no permite modificar este archivo (${res.status}). Solo se pueden editar archivos creados por OpenExpert o requiere permiso completo de Drive.`,

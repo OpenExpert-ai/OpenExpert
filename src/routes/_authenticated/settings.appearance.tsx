@@ -1,29 +1,12 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute } from "@tanstack/react-router";
+import { SettingsCard as Card } from "@/components/ui/settings";
 import { useTheme, type Density, type Theme } from "@/lib/theme";
 import { useT, type Locale } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/settings/appearance")({
   component: AppearanceSettings,
 });
-
-function Card({
-  title,
-  desc,
-  children,
-}: {
-  title: string;
-  desc?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="font-display text-xl">{title}</h2>
-      {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
-      <div className="mt-5">{children}</div>
-    </section>
-  );
-}
 
 function Option<T extends string>({
   value,
@@ -66,7 +49,11 @@ function AppearanceSettings() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Card title={t("Tema")} desc={t("Se aplica al instante y se guarda en tu equipo.")}>
+      <Card
+        bodyClassName="mt-5"
+        title={t("Tema")}
+        desc={t("Se aplica al instante y se guarda en tu equipo.")}
+      >
         <div className="grid gap-3 sm:grid-cols-3">
           <Option<Theme>
             value="dark"
@@ -92,7 +79,11 @@ function AppearanceSettings() {
         </div>
       </Card>
 
-      <Card title={t("Densidad")} desc={t("Controla el tamaño base del texto.")}>
+      <Card
+        bodyClassName="mt-5"
+        title={t("Densidad")}
+        desc={t("Controla el tamaño base del texto.")}
+      >
         <div className="grid gap-3 sm:grid-cols-2">
           <Option<Density>
             value="comfortable"
@@ -111,7 +102,7 @@ function AppearanceSettings() {
         </div>
       </Card>
 
-      <Card title={t("Idioma")} desc={t("Idioma de la interfaz.")}>
+      <Card bodyClassName="mt-5" title={t("Idioma")} desc={t("Idioma de la interfaz.")}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Option<Locale>
             value="es"

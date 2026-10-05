@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, Download, Loader2, Trash2, Upload } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { SettingsCard as Card } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
 import {
   clearChatHistory,
@@ -23,28 +24,6 @@ function bytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function Card({
-  title,
-  desc,
-  children,
-  danger,
-}: {
-  title: string;
-  desc?: string;
-  children: React.ReactNode;
-  danger?: boolean;
-}) {
-  return (
-    <section
-      className={`rounded-lg border bg-card p-6 ${danger ? "border-destructive/40" : "border-border"}`}
-    >
-      <h2 className="font-display text-xl">{title}</h2>
-      {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
-      <div className="mt-5 space-y-4">{children}</div>
-    </section>
-  );
 }
 
 function DataSettings() {

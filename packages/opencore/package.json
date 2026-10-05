@@ -77,6 +77,7 @@
     "prepack": "tsup",
     "test": "vitest run",
     "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "doctor": "node ./bin/opencore.js doctor",
     "serve": "node ./bin/opencore.js serve",

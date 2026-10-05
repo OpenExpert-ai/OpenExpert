@@ -3,6 +3,7 @@
 
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { ollamaApiBaseUrl } from "../model-provider.js";
 import {
   DEFAULT_OLLAMA_URL,
   appCacheDir,
@@ -113,7 +114,9 @@ export async function cmdModels(cwd = process.cwd()): Promise<number> {
   const cfg = readConfig(cwd);
 
   if (provider === "ollama") {
-    const base = process.env["OLLAMA_BASE_URL"] || cfg.ollamaBaseUrl || DEFAULT_OLLAMA_URL;
+    const base = ollamaApiBaseUrl(
+      process.env["OLLAMA_BASE_URL"] || cfg.ollamaBaseUrl || DEFAULT_OLLAMA_URL,
+    );
     const { up, models } = await detectOllama(base);
     if (!up) {
       console.log(`No se puede contactar con Ollama en ${base}.`);

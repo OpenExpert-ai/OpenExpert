@@ -2,6 +2,7 @@
 // Business core: audit log, revertible snapshots and the business queries
 // used by the AI tools. Local SQLite, single owner (no RBAC).
 
+import { z } from "zod";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
@@ -93,17 +94,31 @@ export async function revertSnapshot(entries: SnapEntry[]): Promise<void> {
   const { raw } = await getDb();
   for (const s of [...entries].reverse()) {
     if (!REVERTIBLE[s.table]) continue;
+    const keys = Object.keys(s.pk);
     if (s.before === null) {
-      const keys = Object.keys(s.pk);
       raw.run(
         `DELETE FROM ${s.table} WHERE ${keys.map((k) => `${k}=?`).join(" AND ")}`,
         Object.values(s.pk) as never,
       );
-    } else {
-      const cols = Object.keys(s.before);
+      continue;
+    }
+    const cols = Object.entries(s.before);
+    if (!cols.length) continue;
+    // Restore only the columns captured in the snapshot so a partial row never
+    // wipes untouched columns (regression: process toggle used to reset the
+    // whole row via INSERT OR REPLACE).
+    raw.run(
+      `UPDATE ${s.table} SET ${cols.map(([c]) => `${c}=?`).join(", ")} WHERE ${keys
+        .map((k) => `${k}=?`)
+        .join(" AND ")}`,
+      [...cols.map(([, v]) => v), ...keys.map((k) => s.pk[k])] as never,
+    );
+    // The row may have been deleted since the snapshot; recreate it then.
+    if (raw.getRowsModified() === 0) {
+      const before = Object.keys(s.before);
       raw.run(
-        `INSERT OR REPLACE INTO ${s.table} (${cols.join(",")}) VALUES (${cols.map(() => "?").join(",")})`,
-        cols.map((c) => s.before?.[c]) as never,
+        `INSERT OR REPLACE INTO ${s.table} (${before.join(",")}) VALUES (${before.map(() => "?").join(",")})`,
+        before.map((c) => s.before?.[c]) as never,
       );
     }
   }
@@ -230,6 +245,13 @@ export type PendingAction =
   | { kind: "pause_campaigns"; ids: string[] }
   | { kind: "run_process"; ids: string[] };
 
+/** Validates a pending action read back from an activity snapshot. */
+export const pendingActionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("invoice_reminders"), ids: z.array(z.string()).min(1) }),
+  z.object({ kind: z.literal("pause_campaigns"), ids: z.array(z.string()).min(1) }),
+  z.object({ kind: z.literal("run_process"), ids: z.array(z.string()).min(1) }),
+]);
+
 export async function executePending(
   action: PendingAction,
 ): Promise<{ snapshot: SnapEntry[]; summary: string; sources: string[] }> {
@@ -258,17 +280,21 @@ export async function executePending(
       sources: ["Meta Ads"],
     };
   }
-  const rows = await fetchRows("processes", "id", action.ids);
-  const snap = snapshotRows("processes", ["id"], rows);
-  for (const r of rows)
-    raw.run("UPDATE processes SET runs = runs + 1, last_run = ? WHERE id = ?", [
-      now(),
-      r["id"] as string,
-    ]);
-  await persist();
-  return {
-    snapshot: snap,
-    summary: `Ejecutado proceso ${rows.map((r) => r["name"]).join(", ")}`,
-    sources: [],
-  };
+  if (action.kind === "run_process") {
+    const rows = await fetchRows("processes", "id", action.ids);
+    const snap = snapshotRows("processes", ["id"], rows);
+    for (const r of rows)
+      raw.run("UPDATE processes SET runs = runs + 1, last_run = ? WHERE id = ?", [
+        now(),
+        r["id"] as string,
+      ]);
+    await persist();
+    return {
+      snapshot: snap,
+      summary: `Ejecutado proceso ${rows.map((r) => r["name"]).join(", ")}`,
+      sources: [],
+    };
+  }
+  const exhaustive: never = action;
+  throw new Error(`Acción no soportada: ${JSON.stringify(exhaustive)}`);
 }

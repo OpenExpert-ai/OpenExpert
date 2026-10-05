@@ -7,6 +7,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
   missingKeyHint,
+  ollamaChatBaseUrl,
   selectModel,
   type ModelProviderId,
 } from "@openexpert/opencore/model-provider";
@@ -29,7 +30,7 @@ export function getLanguageModel(): LanguageModel {
   const sel = selectModel();
   const id = sel.modelId;
   if (sel.provider === "ollama") {
-    const baseURL = process.env["OLLAMA_BASE_URL"] || "http://localhost:11434/v1";
+    const baseURL = ollamaChatBaseUrl(process.env["OLLAMA_BASE_URL"] || "http://localhost:11434");
     return createOpenAI({ apiKey: "ollama", baseURL })(id);
   }
   if (sel.provider === "openai-compatible") {

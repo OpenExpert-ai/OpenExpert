@@ -40,7 +40,6 @@ describe("chatUpdateSchema", () => {
     injectionGuard: true,
     injectionExtraPatterns: [] as string[],
     retentionDays: 30,
-    defaultApproval: "Requerida" as const,
   };
 
   it("accepts a valid payload", () => {

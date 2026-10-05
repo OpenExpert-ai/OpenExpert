@@ -31,6 +31,30 @@ describe("local SQLite database", () => {
     expect(orm.select().from(schema.integrations).all().length).toBe(8);
   });
 
+  it("seeds example business data for the assistant", async () => {
+    const { getDb } = await import("./db.server");
+    const schema = await import("../../drizzle/schema");
+    const { orm } = await getDb();
+
+    expect(orm.select().from(schema.deals).all().length).toBeGreaterThan(0);
+    expect(orm.select().from(schema.accounts).all().length).toBeGreaterThan(0);
+
+    const invoices = orm.select().from(schema.invoices).all();
+    expect(invoices.some((i) => i.status === "overdue")).toBe(true);
+
+    const campaigns = orm.select().from(schema.campaigns).all();
+    expect(campaigns.some((c) => c.status === "active")).toBe(true);
+  });
+
+  it("applies migrations and tracks the schema version", async () => {
+    const { getDb } = await import("./db.server");
+    const { raw } = await getDb();
+    const version = raw.exec("PRAGMA user_version")[0]?.values[0]?.[0];
+    expect(Number(version)).toBeGreaterThanOrEqual(1);
+    const indexes = raw.exec("PRAGMA index_list(activity)")[0]?.values ?? [];
+    expect(indexes.some((row) => row.includes("activity_expert"))).toBe(true);
+  });
+
   it("persists writes across calls", async () => {
     const { getDb, persist } = await import("./db.server");
     const schema = await import("../../drizzle/schema");

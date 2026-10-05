@@ -50,8 +50,7 @@ function ActivityPage() {
       (status === "all" || a.status === status),
   );
   const sel = "rounded-md border border-input bg-card px-2 py-1.5 text-xs";
-  const canDecide = (expertId: string) =>
-    me.role === "ADMIN" || (me.role === "INTERMEDIO" && me.access[expertId] === "exec");
+  const canDecide = () => me.role === "ADMIN";
 
   return (
     <div>
@@ -133,14 +132,14 @@ function ActivityPage() {
             {a.status === "pending" && a.pending && (
               <div className="flex gap-2">
                 <button
-                  disabled={!a.expert_id || !canDecide(a.expert_id) || decide.isPending}
+                  disabled={!a.expert_id || !canDecide() || decide.isPending}
                   onClick={() => decide.mutate({ data: { eventId: a.id, approve: true } })}
                   className="flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-30"
                 >
                   <Check className="h-3 w-3" /> {t("Aprobar")}
                 </button>
                 <button
-                  disabled={!a.expert_id || !canDecide(a.expert_id) || decide.isPending}
+                  disabled={!a.expert_id || !canDecide() || decide.isPending}
                   onClick={() => decide.mutate({ data: { eventId: a.id, approve: false } })}
                   className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground disabled:opacity-30"
                 >

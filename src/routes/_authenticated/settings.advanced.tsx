@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, RotateCcw, Save } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { SettingsCard as Card } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
 import { getAdvanced, resetConfig, saveRawConfig } from "@/lib/settings.functions";
 
@@ -25,24 +26,6 @@ const SOURCE_LABEL: Record<string, string> = {
   secrets: "secrets.json",
   default: "por defecto",
 };
-
-function Card({
-  title,
-  desc,
-  children,
-}: {
-  title: string;
-  desc?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="font-display text-xl">{title}</h2>
-      {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
-      <div className="mt-5 space-y-4">{children}</div>
-    </section>
-  );
-}
 
 function AdvancedSettings() {
   const get = useServerFn(getAdvanced);

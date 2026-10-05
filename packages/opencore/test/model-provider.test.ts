@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
-import { missingKeyHint, selectModel } from "../src/model-provider.js";
+import {
+  missingKeyHint,
+  ollamaApiBaseUrl,
+  ollamaChatBaseUrl,
+  selectModel,
+} from "../src/model-provider.js";
 
 describe("selectModel", () => {
   it("defaults to google / gemini-2.5-flash", () => {
@@ -20,6 +25,19 @@ describe("selectModel", () => {
   it("ignores unknown providers", () => {
     const sel = selectModel({ OPENEXPERT_MODEL_PROVIDER: "wat" });
     expect(sel.provider).toBe("google");
+  });
+});
+
+describe("ollama base url normalisation", () => {
+  it("turns a native root into an OpenAI-compatible base", () => {
+    expect(ollamaChatBaseUrl("http://localhost:11434")).toBe("http://localhost:11434/v1");
+    expect(ollamaChatBaseUrl("http://localhost:11434/")).toBe("http://localhost:11434/v1");
+  });
+
+  it("accepts a base that already ends in /v1", () => {
+    expect(ollamaChatBaseUrl("http://localhost:11434/v1")).toBe("http://localhost:11434/v1");
+    expect(ollamaApiBaseUrl("http://ollama:11434/v1")).toBe("http://ollama:11434");
+    expect(ollamaApiBaseUrl("http://ollama:11434/")).toBe("http://ollama:11434");
   });
 });
 

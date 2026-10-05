@@ -72,8 +72,9 @@ USER openexpert
 
 EXPOSE 3000
 
+# Healthcheck without wget/curl: the runtime image only ships node.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD node -e "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 # node-server Nitro preset exposes server entrypoint at .output/server/index.mjs

@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ollamaApiBaseUrl } from "../model-provider.js";
 
 export type Provider = "google" | "ollama" | "openai-compatible";
 
@@ -143,7 +144,8 @@ export async function detectOllama(
   baseUrl = DEFAULT_OLLAMA_URL,
   timeoutMs = 1500,
 ): Promise<{ up: boolean; models: string[] }> {
-  const data = await httpGetJson<{ models?: { name: string }[] }>(`${baseUrl}/api/tags`, {
+  const root = ollamaApiBaseUrl(baseUrl);
+  const data = await httpGetJson<{ models?: { name: string }[] }>(`${root}/api/tags`, {
     timeoutMs,
   });
   if (!data) return { up: false, models: [] };

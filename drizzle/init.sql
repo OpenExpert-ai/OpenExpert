@@ -1,6 +1,8 @@
 -- SPDX-License-Identifier: MIT
 -- SQLite schema for the local edition. Applied idempotently at startup.
 -- Keep in sync with drizzle/schema.ts.
+-- For changes to *existing* databases add a numbered file under
+-- drizzle/migrations/ (tracked by PRAGMA user_version); see db.server.ts.
 
 CREATE TABLE IF NOT EXISTS experts (
   id TEXT PRIMARY KEY,

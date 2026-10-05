@@ -17,7 +17,6 @@ export type ChatConfig = {
   injectionGuard: boolean;
   injectionExtraPatterns: string[];
   retentionDays: number;
-  defaultApproval: "Ninguna" | "Requerida";
 };
 
 export type OpenExpertConfig = {
@@ -40,7 +39,6 @@ export const DEFAULTS: OpenExpertConfig = {
     injectionGuard: true,
     injectionExtraPatterns: [],
     retentionDays: 30,
-    defaultApproval: "Requerida",
   },
 };
 
@@ -95,7 +93,6 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
         ? fileChat.injectionExtraPatterns.filter((p): p is string => typeof p === "string")
         : DEFAULTS.chat.injectionExtraPatterns,
       retentionDays: num(fileChat.retentionDays, DEFAULTS.chat.retentionDays),
-      defaultApproval: fileChat.defaultApproval ?? DEFAULTS.chat.defaultApproval,
     },
   };
 }

@@ -6,50 +6,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { btnPrimary, inputCls } from "@/components/AppShell";
+import { SettingsCard as Card, SettingsField as Field } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
 import { getChatSettings, updateChatSettings } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/chat")({
   component: ChatSettings,
 });
-
-function Card({
-  title,
-  desc,
-  children,
-}: {
-  title: string;
-  desc?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h2 className="font-display text-xl">{title}</h2>
-      {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
-      <div className="mt-5 space-y-5">{children}</div>
-    </section>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </span>
-      {children}
-      {hint && <span className="block text-xs text-muted-foreground">{hint}</span>}
-    </label>
-  );
-}
 
 function ChatSettings() {
   const get = useServerFn(getChatSettings);
@@ -62,7 +25,6 @@ function ChatSettings() {
   const [injectionGuard, setInjectionGuard] = useState(true);
   const [extraPatterns, setExtraPatterns] = useState("");
   const [retentionDays, setRetentionDays] = useState(30);
-  const [defaultApproval, setDefaultApproval] = useState<"Ninguna" | "Requerida">("Requerida");
   const [busy, setBusy] = useState(false);
   const loaded = useRef(false);
 
@@ -73,7 +35,6 @@ function ChatSettings() {
     setInjectionGuard(data.injectionGuard);
     setExtraPatterns(data.injectionExtraPatterns.join("\n"));
     setRetentionDays(data.retentionDays);
-    setDefaultApproval(data.defaultApproval);
   }, [data]);
 
   if (!data) {
@@ -96,7 +57,6 @@ function ChatSettings() {
             .map((p) => p.trim())
             .filter(Boolean),
           retentionDays,
-          defaultApproval,
         },
       });
       toast.success(t("Ajustes de chat guardados"));
@@ -112,6 +72,7 @@ function ChatSettings() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <Card
+        bodyClassName="mt-5 space-y-5"
         title={t("Seguridad del chat")}
         desc={t("La puerta de inyección bloquea intentos de evasión antes de llamar al modelo.")}
       >
@@ -149,6 +110,7 @@ function ChatSettings() {
       </Card>
 
       <Card
+        bodyClassName="mt-5 space-y-5"
         title={t("Comportamiento")}
         desc={t("Límites de ejecución y conservación de conversaciones.")}
       >
@@ -177,19 +139,6 @@ function ChatSettings() {
             />
           </Field>
         </div>
-        <Field
-          label={t("Aprobación por defecto")}
-          hint={t("Política aplicada a los procesos nuevos.")}
-        >
-          <select
-            value={defaultApproval}
-            onChange={(e) => setDefaultApproval(e.target.value as "Ninguna" | "Requerida")}
-            className={inputCls}
-          >
-            <option value="Requerida">{t("Requerida")}</option>
-            <option value="Ninguna">{t("Ninguna")}</option>
-          </select>
-        </Field>
       </Card>
 
       <button onClick={onSave} disabled={busy} className={btnPrimary}>

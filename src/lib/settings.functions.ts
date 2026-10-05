@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { ollamaApiBaseUrl } from "@openexpert/opencore/model-provider";
 import * as ee from "./ee.server";
 import * as backup from "./backup.server";
 import { getDb, now, persist } from "@/lib/db.server";
@@ -98,7 +99,7 @@ async function fetchModels(): Promise<{ ok: boolean; models: string[]; error?: s
   const cfg = aiSettings();
   try {
     if (cfg.provider === "ollama") {
-      const base = cfg.ollamaBaseUrl.replace(/\/+$/, "");
+      const base = ollamaApiBaseUrl(cfg.ollamaBaseUrl);
       const r = await fetch(`${base}/api/tags`, { signal: AbortSignal.timeout(4000) });
       if (!r.ok) return { ok: false, models: [], error: `Ollama respondió ${r.status}` };
       const j = (await r.json()) as { models?: { name: string }[] };
@@ -137,6 +138,11 @@ export const testProvider = createServerFn({ method: "GET" }).handler(async () =
   return { ok: r.ok, count: r.models.length, error: r.error ?? null };
 });
 
+/**
+ * Returns a stored secret so the local settings panel can show it on demand.
+ * This is intentional in the single-owner edition: the browser is trusted and
+ * the server must not be exposed beyond `localhost`. See docs/en/04-security.md.
+ */
 export const revealSecret = createServerFn({ method: "POST" })
   .validator((d) =>
     z

@@ -41,7 +41,7 @@ function SourcesPage() {
       toast.error(t("No se pudo conectar Google Drive"));
       nav({ search: {} as never });
     }
-  }, [search.gdrive]);
+  }, [search.gdrive, nav, t]);
 
   if (!ws) return null;
 

@@ -9,7 +9,6 @@ import * as p from "@clack/prompts";
 const OPENEXPERT_JSON = {
   $schema:
     "https://raw.githubusercontent.com/OpenExpert-ai/OpenExpert/main/packages/opencore/schema/openexpert.schema.json",
-  mode: "local",
   modelProvider: "ollama",
   modelId: "llama3.1",
   ollamaBaseUrl: "http://localhost:11434",

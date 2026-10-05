@@ -73,11 +73,6 @@
           "type": "integer",
           "minimum": 0,
           "description": "Days to keep chat history before it is pruned."
-        },
-        "defaultApproval": {
-          "type": "string",
-          "enum": ["Ninguna", "Requerida"],
-          "description": "Default approval policy applied to new processes."
         }
       }
     }

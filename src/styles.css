@@ -62,10 +62,10 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-code: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --font-code: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
 :root {
