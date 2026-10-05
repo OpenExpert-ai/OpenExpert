@@ -414,5 +414,148 @@ export function createChatTools(ctx: ChatToolsContext) {
         }
       },
     }),
+    search_notion: tool({
+      description:
+        "Busca páginas y bases de datos en el Notion del usuario (solo lo que compartió con OpenExpert). Devuelve [{id, object, title, url}].",
+      inputSchema: z.object({ query: z.string(), type: z.enum(["page", "database"]).nullish() }),
+      execute: async ({ query, type }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          return { results: await n.search(query, type ?? undefined) };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    query_notion_database: tool({
+      description:
+        "Consulta una base de datos de Notion por su id. Acepta filter/sorts en el formato de la API de Notion (p. ej. tareas pendientes: filtrar por la propiedad de estado). Devuelve [{id, title, url}].",
+      inputSchema: z.object({
+        databaseId: z.string(),
+        filter: z.unknown().optional(),
+        sorts: z.unknown().optional(),
+        pageSize: z.coerce.number().int().min(1).max(100).optional(),
+      }),
+      execute: async ({ databaseId, filter, sorts, pageSize }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          const opts: { filter?: unknown; sorts?: unknown; pageSize?: number } = {};
+          if (filter !== undefined) opts.filter = filter;
+          if (sorts !== undefined) opts.sorts = sorts;
+          if (pageSize !== undefined) opts.pageSize = pageSize;
+          return { results: await n.queryDatabase(databaseId, opts) };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    read_notion_page: tool({
+      description:
+        "Lee el texto de una página de Notion por su id (incluye bloques anidados). Úsala tras search_notion o query_notion_database.",
+      inputSchema: z.object({ pageId: z.string() }),
+      execute: async ({ pageId }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          const text = await n.readPage(pageId);
+          return {
+            pageId,
+            content: text || null,
+            ...(text ? {} : { note: "La página no contiene texto." }),
+          };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    create_notion_page: tool({
+      description:
+        "Crea una página en una base de datos de Notion. properties sigue el formato de la API de Notion. Requiere aprobación humana.",
+      inputSchema: z.object({
+        databaseId: z.string(),
+        properties: z.record(z.string(), z.unknown()),
+      }),
+      execute: async ({ databaseId, properties }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          const page = await n.createPage(databaseId, properties);
+          await ee
+            .logActivity({
+              actor: "agent",
+              actor_name: "OpenExpert",
+              type: "Notion · creación",
+              expert_id: expertId,
+              status: "ok",
+              summary: `Creada página en Notion: ${page.title}`,
+              sources: ["Notion"],
+            })
+            .catch(() => {});
+          return { action: "created", ...page };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    update_notion_page: tool({
+      description:
+        "Actualiza las propiedades de una página de Notion. properties sigue el formato de la API de Notion. Requiere aprobación humana.",
+      inputSchema: z.object({ pageId: z.string(), properties: z.record(z.string(), z.unknown()) }),
+      execute: async ({ pageId, properties }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          const page = await n.updatePage(pageId, properties);
+          await ee
+            .logActivity({
+              actor: "agent",
+              actor_name: "OpenExpert",
+              type: "Notion · edición",
+              expert_id: expertId,
+              status: "ok",
+              summary: `Actualizada página en Notion: ${page.title}`,
+              sources: ["Notion"],
+            })
+            .catch(() => {});
+          return { action: "updated", ...page };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    append_notion_blocks: tool({
+      description:
+        "Añade bloques de contenido al final de una página de Notion. children sigue el formato de la API de Notion. Requiere aprobación humana.",
+      inputSchema: z.object({ pageId: z.string(), children: z.array(z.unknown()) }),
+      execute: async ({ pageId, children }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          const r = await n.appendBlocks(pageId, children);
+          await ee
+            .logActivity({
+              actor: "agent",
+              actor_name: "OpenExpert",
+              type: "Notion · edición",
+              expert_id: expertId,
+              status: "ok",
+              summary: "Añadidos bloques a una página de Notion",
+              sources: ["Notion"],
+            })
+            .catch(() => {});
+          return { action: "appended", ...r };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
   };
 }

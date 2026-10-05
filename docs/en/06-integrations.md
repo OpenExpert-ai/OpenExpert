@@ -6,13 +6,14 @@
 
 ## 1. Status
 
-Only **Google Drive** and **local folders** are available, and both are optional.
-The other connectors are modelled in the data but pending credentials.
+Only **Google Drive**, **local folders** and **Notion** are available, and all are
+optional. The other connectors are modelled in the data but pending credentials.
 
 | Integration      | Category      | Connection     | Status        |
 | ---------------- | ------------- | -------------- | ------------- |
 | **Google Drive** | Productivity  | OAuth + Picker | **Available** |
 | **Local files**  | Productivity  | Local server   | **Available** |
+| **Notion**       | Productivity  | OAuth 2.0      | **Available** |
 | Pipedrive        | CRM           | By licence     | Pending       |
 | Salesforce       | CRM           | By licence     | Pending       |
 | Holded           | ERP / Finance | By licence     | Pending       |
@@ -73,7 +74,47 @@ required by Google's User Data Policy is included in
 A copy is shown in the Connect dialog. The URL is configurable via
 `OPENEXPERT_PRIVACY_URL`.
 
-## 3. Local folders
+## 3. Notion
+
+Notion uses a **public connection (OAuth 2.0)**. The distributor bakes a shared
+Notion client, so the end user only clicks `Conectar Notion` and picks pages in
+Notion's own picker — no API keys to configure.
+
+1. **Integraciones → Fuentes → Notion** → `Conectar Notion`.
+2. Notion shows the connection capabilities and its page picker; the user chooses
+   which pages/databases OpenExpert may access.
+3. Notion redirects to `http://localhost:3000/auth/notion/callback` with a code.
+4. The callback verifies the HMAC-signed `state`, exchanges the code
+   (`POST /v1/oauth/token`, HTTP Basic) and stores the **long-lived** token
+   encrypted in `~/.openexpert/notion.json` (`0600`). Notion has no refresh token.
+
+### 3.1 Distributor setup (once)
+
+1. In the [Notion developer portal](https://www.notion.so/profile/integrations),
+   create a **public connection** (see the
+   [public connections guide](https://developers.notion.com/guides/get-started/public-connections)).
+2. Redirect URI: `http://localhost:3000/auth/notion/callback`.
+3. [Capabilities](https://developers.notion.com/reference/capabilities): read
+   content, insert content, update content, read user info without email.
+4. Installation scope: _Any workspace_ (for distribution) or _Selected
+   workspaces_ (for testing).
+5. Copy the **client ID** and **client secret** from the Configuration tab.
+6. Put the client ID in `openexpert.json` (`notionClientId`) and the secret in
+   `~/.openexpert/secrets.json` as `NOTION_CLIENT_SECRET` (`0600`) — or set both
+   as environment variables. Then the end user only clicks `Conectar Notion`.
+
+Each end user authorizes the connection **in their own workspace** (`owner=user`)
+and gets their own token, stored locally. The distributor's client is only the
+**app identity**: there is no distributor server and no shared data token, so the
+distributor never sees a user's token or content. The installation scope must be
+_Any workspace_ so any user can install it.
+
+The API version is pinned with the `Notion-Version` header (`2026-03-11`); the
+rate limit is ~3 requests/second and `Retry-After` is respected. A Notion
+security review is only required to be listed on the Notion Marketplace —
+**not** to use the connection.
+
+## 4. Local folders
 
 The assistant can read and write files in **folders on the same machine**,
 without Google. Pick them in **Integraciones → Fuentes → Archivos locales**,
@@ -90,34 +131,38 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 - Docker: the server sees the container filesystem, so mount the folder with
   `-v /host/folder:/data/folder`.
 
-## 4. AI tools
+## 5. AI tools
 
-| Tool                                      | Behaviour                                      |
-| ----------------------------------------- | ---------------------------------------------- |
-| `search_drive`                            | Searches the granted files only                |
-| `read_drive_file`                         | Reads only within the grants                   |
-| `create_drive_file`                       | Creates a new file the app owns                |
-| `update_drive_file`                       | Edits a granted file or a file the app created |
-| `list_local_files` / `search_local_files` | Lists/searches the granted local folders       |
-| `read_local_file`                         | Reads a granted local file                     |
-| `create_local_file` / `update_local_file` | Writes a local file, with human approval       |
+| Tool                                                                 | Behaviour                                      |
+| -------------------------------------------------------------------- | ---------------------------------------------- |
+| `search_drive`                                                       | Searches the granted files only                |
+| `read_drive_file`                                                    | Reads only within the grants                   |
+| `create_drive_file`                                                  | Creates a new file the app owns                |
+| `update_drive_file`                                                  | Edits a granted file or a file the app created |
+| `list_local_files` / `search_local_files`                            | Lists/searches the granted local folders       |
+| `read_local_file`                                                    | Reads a granted local file                     |
+| `create_local_file` / `update_local_file`                            | Writes a local file, with human approval       |
+| `search_notion` / `query_notion_database` / `read_notion_page`       | Reads the shared Notion content                |
+| `create_notion_page` / `update_notion_page` / `append_notion_blocks` | Writes to Notion, with human approval          |
 
 Drive reads require `gdrive` in the Expert's `sources`; local reads require
-`local`. All writes go through human approval.
+`local`; Notion reads require `notion`. All writes go through human approval.
 
-## 5. Security notes
+## 6. Security notes
 
 - Tokens and grants are **AES-256-GCM encrypted** with a key file generated
   on the local machine (`~/.openexpert/secret.key`, mode `0600`).
 - OAuth `state` includes a PKCE verifier signed with an HMAC of the
   nonce + verifier; the secret lives in `~/.openexpert/state-secret` (or
   `GOOGLE_OAUTH_STATE_SECRET`).
+- Notion's long-lived token lives in `~/.openexpert/notion.json` (`0600`,
+  AES-256-GCM); its `state` is HMAC-signed with `~/.openexpert/state-secret-notion`.
 - Local folder access is restricted to the granted roots (see
   [`04-security.md`](./04-security.md)).
 - The browser is trusted in the local single-owner edition (see
   [`04-security.md`](./04-security.md)).
 
-## 6. Adding a new integration
+## 7. Adding a new integration
 
 1. **Credentials.** Document the OAuth flow or plan requirements.
 2. **Tokens.** Reuse the Drive pattern (encrypted local file, `0600`).
@@ -127,7 +172,7 @@ Drive reads require `gdrive` in the Expert's `sources`; local reads require
    logging. Always include an in-product disclosure if user data is sent to
    a model provider.
 
-## 7. References
+## 8. References
 
 - [Architecture](./02-architecture.md) — layers.
 - [AI](./05-ai.md) — tool catalogue.

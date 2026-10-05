@@ -262,6 +262,26 @@ export const en: Record<string, string> = {
   "Creando archivo local": "Creating a local file",
   "Actualizando archivo local": "Updating a local file",
 
+  // --- Notion ----------------------------------------------------------------
+  Notion: "Notion",
+  "Conectar Notion": "Connect Notion",
+  "Notion desconectado": "Notion disconnected",
+  "Falta configurar el cliente OAuth de Notion en el servidor.":
+    "The Notion OAuth client is not configured on the server.",
+  "Conecta tu Notion: al autorizar eliges qué páginas y bases comparte con OpenExpert. El asistente puede buscarlas, consultarlas y editarlas (con tu aprobación).":
+    "Connect your Notion: when you authorize, you choose which pages and databases it shares with OpenExpert. The assistant can search, query and edit them (with your approval).",
+  "Buscando en Notion": "Searching Notion",
+  "Consultando base de Notion": "Querying a Notion database",
+  "Leyendo página de Notion": "Reading a Notion page",
+  "Creando página en Notion": "Creating a Notion page",
+  "Actualizando página de Notion": "Updating a Notion page",
+  "Añadiendo contenido en Notion": "Adding content in Notion",
+  "Escritura en Notion": "Write to Notion",
+  "Crear una página en la base {db}": "Create a page in database {db}",
+  "Actualizar la página {id}": "Update page {id}",
+  "Añadir contenido a la página {id}": "Add content to page {id}",
+  "Aprobado. Escribiendo en Notion…": "Approved. Writing to Notion…",
+
   // --- Chat ------------------------------------------------------------------
   "¿Cómo va el pipeline comercial?": "How is the sales pipeline doing?",
   "Reclamar facturas vencidas > 5.000€": "Claim overdue invoices > €5,000",

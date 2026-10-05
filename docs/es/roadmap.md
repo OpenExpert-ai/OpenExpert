@@ -12,6 +12,7 @@ Estado de los elementos implementados y pendientes.
 | Tarjetas de confirmación para acciones propuestas                       | [IA](./05-inteligencia-artificial.md)       |
 | Integración con Google Drive (opcional)                                 | [Integraciones](./06-integraciones.md)      |
 | Carpetas locales (opcional, lectura + escritura con aprobación)         | [Integraciones](./06-integraciones.md)      |
+| Notion (opcional, OAuth 2.0, lectura + escritura con aprobación)        | [Integraciones](./06-integraciones.md)      |
 | Registro de actividad y reversión                                       | [Seguridad](./04-seguridad-y-acceso.md)     |
 | Filtro previo anti-inyección                                            | [Seguridad](./04-seguridad-y-acceso.md)     |
 | Proveedores de modelo: Ollama, Gemini, BYOK                             | [Proveedores de IA](./13-proveedores-ia.md) |

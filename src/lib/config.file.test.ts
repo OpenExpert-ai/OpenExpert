@@ -83,4 +83,11 @@ describe("openexpert.json", () => {
     expect(parsed.$schema).toBeTruthy();
     expect(parsed.modelProvider).toBeTruthy();
   });
+
+  it("carries the distributor Notion client id", async () => {
+    const { writeFileConfig, effectiveConfig, resetFileConfig } = await import("./config.server");
+    writeFileConfig({ notionClientId: "notion-abc" }, cwd);
+    expect(effectiveConfig(cwd).notionClientId).toBe("notion-abc");
+    resetFileConfig(cwd);
+  });
 });

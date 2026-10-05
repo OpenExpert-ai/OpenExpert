@@ -9,13 +9,16 @@ import {
   addLocalRoot,
   browseLocalDir,
   disconnectDrive,
+  disconnectNotion,
   getDriveAccessToken,
   getDriveConsent,
   getGrantedFiles,
   getLocalRoots,
+  getNotionStatus,
   removeLocalRoot,
   setGrantedFiles,
   startDriveAuth,
+  startNotionAuth,
   syncIntegration,
 } from "@/lib/data.functions";
 import { useAct, useDriveStatus, useWorkspace } from "@/lib/store";
@@ -57,7 +60,7 @@ function SourcesPage() {
   const { data: ws } = useWorkspace();
   const drive = useDriveStatus();
   const nav = useNavigate();
-  const search = useSearch({ strict: false }) as { gdrive?: string };
+  const search = useSearch({ strict: false }) as { gdrive?: string; notion?: string };
   const { t } = useT();
   const qc = useQueryClient();
   const sync = useAct(syncIntegration, t("Google Drive sincronizado"));
@@ -92,6 +95,23 @@ function SourcesPage() {
   });
   const refreshRoots = () => qc.invalidateQueries({ queryKey: ["local-roots"] });
 
+  const getNotion = useServerFn(getNotionStatus);
+  const startNotion = useServerFn(startNotionAuth);
+  const disconnectNotionAct = useAct(disconnectNotion, t("Notion desconectado"));
+  const notion = useQuery({ queryKey: ["notion-status"], queryFn: () => getNotion() });
+
+  useEffect(() => {
+    if (search.notion === "ok") {
+      toast.success("Notion conectado.");
+      nav({ search: {} as never });
+      qc.invalidateQueries({ queryKey: ["notion-status"] });
+      qc.invalidateQueries({ queryKey: ["workspace"] });
+    } else if (search.notion) {
+      toast.error(decodeURIComponent(search.notion));
+      nav({ search: {} as never });
+    }
+  }, [search.notion, nav, qc]);
+
   useEffect(() => {
     if (search.gdrive === "ok") {
       toast.success("Google Drive conectado. Ahora selecciona archivos con el Picker.");
@@ -114,6 +134,15 @@ function SourcesPage() {
     } catch (e) {
       toast.error((e as Error).message);
       setConnecting(false);
+    }
+  };
+
+  const onConnectNotion = async () => {
+    try {
+      const { url } = await startNotion();
+      window.location.href = url;
+    } catch (e) {
+      toast.error((e as Error).message);
     }
   };
 
@@ -329,11 +358,56 @@ function SourcesPage() {
 
       <section>
         <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+          {t("Notion")}
+        </h2>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-medium">Notion</div>
+              <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                <span
+                  className={`size-1.5 rounded-full ${notion.data?.connected ? "bg-success" : "bg-muted-foreground/40"}`}
+                />
+                {notion.data?.connected ? t("conectado") : t("desconectado")}
+                {notion.data?.workspace ? ` · ${notion.data.workspace}` : ""}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {!notion.data?.configured && (
+                <span className="text-xs text-muted-foreground">
+                  {t("Falta configurar el cliente OAuth de Notion en el servidor.")}
+                </span>
+              )}
+              {notion.data?.configured && !notion.data.connected && (
+                <Button onClick={onConnectNotion}>{t("Conectar Notion")}</Button>
+              )}
+              {notion.data?.connected && (
+                <Button
+                  variant="outline"
+                  onClick={() => disconnectNotionAct.mutate()}
+                  disabled={disconnectNotionAct.isPending}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  {t("Desconectar")}
+                </Button>
+              )}
+            </div>
+          </div>
+          <p className="mt-3 text-[0.7rem] text-muted-foreground">
+            {t(
+              "Conecta tu Notion: al autorizar eliges qué páginas y bases comparte con OpenExpert. El asistente puede buscarlas, consultarlas y editarlas (con tu aprobación).",
+            )}
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
           {t("Fuentes pendientes")}
         </h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {ws.integrations
-            .filter((i) => i.id !== "gdrive" && i.id !== "local")
+            .filter((i) => i.id !== "gdrive" && i.id !== "local" && i.id !== "notion")
             .map((i) => (
               <div key={i.id} className="rounded-lg border border-border bg-card">
                 <div className="flex items-center gap-3 p-4">

@@ -51,5 +51,8 @@ credentials.json
 secrets.json
 drive-grants.json
 drive-consent.json
+local-roots.json
+notion.json
 secret.key
 state-secret
+state-secret-notion

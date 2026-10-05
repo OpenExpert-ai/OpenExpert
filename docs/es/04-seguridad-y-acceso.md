@@ -19,7 +19,9 @@ lectura pertenece a un dominio (`ventas`, `finanzas`, `marketing`, `clientes`) y
 el servidor comprueba que el Experto activo lo incluya antes de devolver datos.
 Las llamadas fuera de contexto devuelven un error explícito, sin datos. El acceso
 a Google Drive se decide por la columna `sources` del Experto, y el de archivos
-locales por el origen `local`, restringido a las carpetas autorizadas.
+locales por el origen `local`, restringido a las carpetas autorizadas; el de
+Notion por el origen `notion`, restringido a las páginas compartidas en su
+selector.
 
 ## 3. Garantías frente a uso indebido del asistente
 
@@ -45,6 +47,7 @@ locales por el origen `local`, restringido a las carpetas autorizadas.
 | Tokens de Google Drive                             | `~/.openexpert/credentials.json` (`0600`, cifrado AES-256-GCM)                  |
 | Concesiones del Picker (los archivos que elegiste) | `~/.openexpert/drive-grants.json` (`0600`, cifrado AES-256-GCM)                 |
 | Carpetas locales autorizadas                       | `~/.openexpert/local-roots.json` (`0600`, cifrado AES-256-GCM)                  |
+| Token de Notion                                    | `~/.openexpert/notion.json` (`0600`, cifrado AES-256-GCM)                       |
 | Clave de firma del `state` OAuth                   | `GOOGLE_OAUTH_STATE_SECRET` o un `~/.openexpert/state-secret` generado (`0600`) |
 | Clave de cifrado local                             | `~/.openexpert/secret.key` (`0600`, generada en el primer arranque)             |
 

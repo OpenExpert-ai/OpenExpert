@@ -12,6 +12,7 @@ Status of implemented and pending items.
 | Confirmation cards for proposed actions                              | [AI](./05-ai.md)                      |
 | Google Drive integration (optional)                                  | [Integrations](./06-integrations.md)  |
 | Local folders (optional, read + approved writes)                     | [Integrations](./06-integrations.md)  |
+| Notion (optional, OAuth 2.0, read + approved writes)                 | [Integrations](./06-integrations.md)  |
 | Audit log and revert                                                 | [Security](./04-security.md)          |
 | Prompt-injection pre-filter                                          | [Security](./04-security.md)          |
 | Model providers: Ollama, Gemini, BYOK                                | [AI providers](./13-ai-providers.md)  |

@@ -602,3 +602,45 @@ export const removeLocalRoot = createServerFn({ method: "POST" })
     });
     return { roots };
   });
+
+/* ------------------------------- Notion ------------------------------- */
+
+export const getNotionStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const notion: typeof import("./notion-tokens.server") = await import("./notion-tokens.server");
+  return { ...notion.notionConnection(), configured: notion.notionConfigured() };
+});
+
+export const startNotionAuth = createServerFn({ method: "POST" }).handler(async () => {
+  const notion: typeof import("./notion-tokens.server") = await import("./notion-tokens.server");
+  if (!notion.notionConfigured())
+    throw new Error(
+      "Falta configurar el cliente OAuth de Notion (NOTION_CLIENT_ID / NOTION_CLIENT_SECRET).",
+    );
+  const origin =
+    process.env["PUBLIC_APP_URL"]?.replace(/\/$/, "") ||
+    (await getRequestHeaders()).get("origin") ||
+    "http://localhost:3000";
+  const { state } = notion.signState();
+  return { url: notion.authorizationUrl(origin, state) };
+});
+
+export const disconnectNotion = createServerFn({ method: "POST" }).handler(async () => {
+  const notion: typeof import("./notion-tokens.server") = await import("./notion-tokens.server");
+  notion.disconnectNotion();
+  const { orm } = await getDb();
+  orm
+    .update(schema.integrations)
+    .set({ connected: false, entities: [] })
+    .where(eq(schema.integrations.id, "notion"))
+    .run();
+  await persist();
+  await ee.logActivity({
+    actor: "human",
+    actor_name: OWNER_NAME,
+    type: "Integración",
+    expert_id: "general",
+    status: "ok",
+    summary: "Desconectado Notion",
+    sources: ["Notion"],
+  });
+});

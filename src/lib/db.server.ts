@@ -153,6 +153,7 @@ const DEFAULT_EXPERTS = [
 const DEFAULT_INTEGRATIONS = [
   { id: "gdrive", name: "Google Drive", category: "Productividad" },
   { id: "local", name: "Archivos locales", category: "Productividad" },
+  { id: "notion", name: "Notion", category: "Productividad" },
   { id: "pipedrive", name: "Pipedrive", category: "CRM" },
   { id: "salesforce", name: "Salesforce", category: "CRM" },
   { id: "holded", name: "Holded", category: "ERP / Finanzas" },

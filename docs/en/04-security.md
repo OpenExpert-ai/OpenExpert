@@ -18,7 +18,8 @@ No Expert can read data outside its domains. Each read tool belongs to a domain
 active Expert lists that domain before returning data. Out-of-context calls
 return an explicit error, not data. Google Drive access is decided by the
 Expert's `sources` column, and local folder access by the `local` source,
-restricted to the folders the user granted.
+restricted to the folders the user granted; Notion access by the `notion` source,
+restricted to the pages shared in Notion's picker.
 
 ## 3. Guarantees against assistant misuse
 
@@ -43,6 +44,7 @@ restricted to the folders the user granted.
 | Google Drive tokens                             | `~/.openexpert/credentials.json` (`0600`, AES-256-GCM encrypted)                 |
 | Picker grants (the files you picked)            | `~/.openexpert/drive-grants.json` (`0600`, AES-256-GCM encrypted)                |
 | Local folder grants                             | `~/.openexpert/local-roots.json` (`0600`, AES-256-GCM encrypted)                 |
+| Notion OAuth token                              | `~/.openexpert/notion.json` (`0600`, AES-256-GCM encrypted)                      |
 | OAuth `state` signing key                       | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`) |
 | Encryption key file                             | `~/.openexpert/secret.key` (`0600`, generated on first run)                      |
 

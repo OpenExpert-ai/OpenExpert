@@ -174,6 +174,7 @@ export async function handleChat(request: Request) {
 
   const hasDrive = expert.sources.includes("gdrive");
   const hasLocal = expert.sources.includes("local");
+  const hasNotion = expert.sources.includes("notion");
   const system = `Eres OpenExpert, el sistema operativo de IA de la empresa del usuario. Respondes SIEMPRE en español, con tono directo, claro y útil. Usa markdown (listas, negritas, tablas pequeñas) y cifras en formato español (1.234 €).
 Contexto activo: Experto "${expert.name}" — ${expert.description}. Fuentes: ${expert.sources.join(", ")}.
 ${
@@ -196,6 +197,16 @@ ${
 - create_local_file / update_local_file: crean o reescriben un archivo; requieren aprobación humana.
 Trabaja SIEMPRE dentro de esas carpetas autorizadas; nunca propongas rutas fuera de ellas.`
     : `Este Experto no tiene acceso a archivos locales: si lo piden, sugiere activarlo en el Experto.`
+}
+${
+  hasNotion
+    ? `NOTION CONECTADO (solo las páginas y bases que el usuario compartió):
+- search_notion: busca páginas y bases por texto.
+- query_notion_database: consulta una base con filtros/orden en el formato de la API de Notion (p. ej. tareas pendientes filtrando por la propiedad de estado).
+- read_notion_page: lee el contenido de una página por su id.
+- create_notion_page / update_notion_page / append_notion_blocks: crean o editan; requieren aprobación humana.
+Trabaja SIEMPRE dentro de lo compartido; si una búsqueda no devuelve nada, dilo.`
+    : `Este Experto no tiene Notion conectado: si lo piden, sugiere conectarlo en Fuentes o activarlo en el Experto.`
 }
 Reglas:
 - Basa toda respuesta en datos obtenidos con herramientas; nunca inventes.
@@ -232,6 +243,9 @@ Formato (adáptalo a la pregunta):
       update_drive_file: "user-approval",
       create_local_file: "user-approval",
       update_local_file: "user-approval",
+      create_notion_page: "user-approval",
+      update_notion_page: "user-approval",
+      append_notion_blocks: "user-approval",
     },
     temperature: cfg.ai.temperature,
     topP: cfg.ai.topP,

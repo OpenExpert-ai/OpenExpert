@@ -161,6 +161,7 @@ export function applyFileConfigToEnv(cwd: string = process.cwd()): void {
   assignFromFile("OLLAMA_BASE_URL", raw.ollamaBaseUrl);
   assignFromFile("OPENEXPERT_DATA_DIR", raw.dataDir);
   assignFromFile("OPENEXPERT_GOOGLE_CLIENT_ID", raw.googleClientId);
+  assignFromFile("OPENEXPERT_NOTION_CLIENT_ID", raw.notionClientId);
 }
 
 export function setRuntimeEnv(key: string, value: string | null): void {
@@ -357,6 +358,8 @@ export const fileConfigSchema = z.object({
   modelId: z.string().min(1).optional(),
   ollamaBaseUrl: z.string().optional(),
   dataDir: z.string().min(1).optional(),
+  googleClientId: z.string().optional(),
+  notionClientId: z.string().optional(),
   ai: z
     .object({
       temperature: z.number().min(0).max(2).optional(),

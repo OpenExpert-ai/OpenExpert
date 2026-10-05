@@ -28,6 +28,7 @@ import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_a
 import { Route as AuthenticatedSettingsChatRouteImport } from './routes/_authenticated/settings.chat'
 import { Route as AuthenticatedSettingsDataRouteImport } from './routes/_authenticated/settings.data'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google.callback'
+import { Route as AuthNotionCallbackRouteImport } from './routes/auth.notion.callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -132,6 +133,11 @@ const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
   path: '/auth/google/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthNotionCallbackRoute = AuthNotionCallbackRouteImport.update({
+  id: '/auth/notion/callback',
+  path: '/auth/notion/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/settings/chat': typeof AuthenticatedSettingsChatRoute
   '/settings/data': typeof AuthenticatedSettingsDataRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/auth/notion/callback': typeof AuthNotionCallbackRoute
   '/integrations/': typeof AuthenticatedIntegrationsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/settings/chat': typeof AuthenticatedSettingsChatRoute
   '/settings/data': typeof AuthenticatedSettingsDataRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/auth/notion/callback': typeof AuthNotionCallbackRoute
   '/integrations': typeof AuthenticatedIntegrationsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/chat': typeof AuthenticatedSettingsChatRoute
   '/_authenticated/settings/data': typeof AuthenticatedSettingsDataRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/auth/notion/callback': typeof AuthNotionCallbackRoute
   '/_authenticated/integrations/': typeof AuthenticatedIntegrationsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/settings/chat'
     | '/settings/data'
     | '/auth/google/callback'
+    | '/auth/notion/callback'
     | '/integrations/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/settings/chat'
     | '/settings/data'
     | '/auth/google/callback'
+    | '/auth/notion/callback'
     | '/integrations'
     | '/settings'
   id:
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/chat'
     | '/_authenticated/settings/data'
     | '/auth/google/callback'
+    | '/auth/notion/callback'
     | '/_authenticated/integrations/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
@@ -261,6 +273,7 @@ export interface RootRouteChildren {
   ApiBackupRoute: typeof ApiBackupRoute
   ApiChatRoute: typeof ApiChatRoute
   AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
+  AuthNotionCallbackRoute: typeof AuthNotionCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGoogleCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/notion/callback': {
+      id: '/auth/notion/callback'
+      path: '/auth/notion/callback'
+      fullPath: '/auth/notion/callback'
+      preLoaderRoute: typeof AuthNotionCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -468,6 +488,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBackupRoute: ApiBackupRoute,
   ApiChatRoute: ApiChatRoute,
   AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
+  AuthNotionCallbackRoute: AuthNotionCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

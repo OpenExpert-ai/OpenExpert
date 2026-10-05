@@ -551,6 +551,12 @@ const TOOL_LABEL: Record<string, string> = {
   read_local_file: "Leyendo archivo local",
   create_local_file: "Creando archivo local",
   update_local_file: "Actualizando archivo local",
+  search_notion: "Buscando en Notion",
+  query_notion_database: "Consultando base de Notion",
+  read_notion_page: "Leyendo página de Notion",
+  create_notion_page: "Creando página en Notion",
+  update_notion_page: "Actualizando página de Notion",
+  append_notion_blocks: "Añadiendo contenido en Notion",
 };
 
 type ToolPart = {
@@ -580,6 +586,12 @@ const SOURCE: Record<string, string> = {
   read_local_file: "Archivos locales",
   create_local_file: "Archivos locales",
   update_local_file: "Archivos locales",
+  search_notion: "Notion",
+  query_notion_database: "Notion",
+  read_notion_page: "Notion",
+  create_notion_page: "Notion",
+  update_notion_page: "Notion",
+  append_notion_blocks: "Notion",
 };
 
 function AssistantMsg({
@@ -1045,24 +1057,34 @@ function DriveApprovalCard({
   const { t } = useT();
   const [decision, setDecision] = useState<null | boolean>(null);
   const isLocal = tool === "create_local_file" || tool === "update_local_file";
-  const summary = isLocal
-    ? tool === "create_local_file"
-      ? t("Crear «{name}» en la carpeta {folder}", {
-          name: String(input["name"] ?? ""),
-          folder: String(input["folder"] ?? ""),
-        })
-      : t("Reescribir el archivo {path}", { path: String(input["path"] ?? "") })
-    : tool === "search_drive"
-      ? input["query"]
-        ? t("Buscar «{q}» en los archivos de Drive que elegiste", { q: String(input["query"]) })
-        : t("Listar tus archivos de Drive elegidos")
-      : tool === "read_drive_file"
-        ? t("Leer un archivo de Drive")
-        : tool === "create_drive_file"
-          ? t("Crear «{name}» en Google Drive", { name: String(input["name"] ?? "") })
-          : tool === "update_drive_file"
-            ? t("Editar un archivo de Drive")
-            : tool;
+  const isNotion =
+    tool === "create_notion_page" ||
+    tool === "update_notion_page" ||
+    tool === "append_notion_blocks";
+  const summary = isNotion
+    ? tool === "create_notion_page"
+      ? t("Crear una página en la base {db}", { db: String(input["databaseId"] ?? "") })
+      : tool === "update_notion_page"
+        ? t("Actualizar la página {id}", { id: String(input["pageId"] ?? "") })
+        : t("Añadir contenido a la página {id}", { id: String(input["pageId"] ?? "") })
+    : isLocal
+      ? tool === "create_local_file"
+        ? t("Crear «{name}» en la carpeta {folder}", {
+            name: String(input["name"] ?? ""),
+            folder: String(input["folder"] ?? ""),
+          })
+        : t("Reescribir el archivo {path}", { path: String(input["path"] ?? "") })
+      : tool === "search_drive"
+        ? input["query"]
+          ? t("Buscar «{q}» en los archivos de Drive que elegiste", { q: String(input["query"]) })
+          : t("Listar tus archivos de Drive elegidos")
+        : tool === "read_drive_file"
+          ? t("Leer un archivo de Drive")
+          : tool === "create_drive_file"
+            ? t("Crear «{name}» en Google Drive", { name: String(input["name"] ?? "") })
+            : tool === "update_drive_file"
+              ? t("Editar un archivo de Drive")
+              : tool;
   const decide = (approved: boolean) => {
     setDecision(approved);
     onApproval(approvalId, approved);
@@ -1071,7 +1093,12 @@ function DriveApprovalCard({
     <div className="rounded-md border border-info/40 bg-info/5 p-3">
       <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wider text-info">
         <ShieldCheck className="size-3.5" />{" "}
-        {isLocal ? t("Escritura en archivos locales") : t("Acceso a Google Drive")} · {tool}
+        {isNotion
+          ? t("Escritura en Notion")
+          : isLocal
+            ? t("Escritura en archivos locales")
+            : t("Acceso a Google Drive")}{" "}
+        · {tool}
       </div>
       <div className="mt-1.5 text-sm">{summary}</div>
       {decision === null ? (
@@ -1086,14 +1113,16 @@ function DriveApprovalCard({
       ) : decision ? (
         <div className="mt-2 flex items-center gap-2 text-xs text-success">
           <Check className="size-3.5" />{" "}
-          {isLocal
-            ? t("Aprobado. Escribiendo el archivo…")
-            : t("Aprobado. Consultando Google Drive…")}
+          {isNotion
+            ? t("Aprobado. Escribiendo en Notion…")
+            : isLocal
+              ? t("Aprobado. Escribiendo el archivo…")
+              : t("Aprobado. Consultando Google Drive…")}
         </div>
       ) : (
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
           <X className="size-3.5" />{" "}
-          {isLocal
+          {isNotion || isLocal
             ? t("Denegado. No se escribirá nada.")
             : t("Denegado. El asistente seguirá sin ese dato.")}
         </div>

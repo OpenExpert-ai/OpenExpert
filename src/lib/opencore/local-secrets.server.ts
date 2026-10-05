@@ -153,6 +153,43 @@ export function removeLocalRoots(): void {
   if (existsSync(f)) writeFileSync(f, "", { mode: 0o600 });
 }
 
+/* ------------------------------ Notion token ---------------------------- */
+
+export type NotionToken = {
+  access_token: string;
+  workspace_id: string;
+  workspace_name: string;
+  bot_id: string | null;
+  connected_at: string;
+};
+
+function notionFile(): string {
+  const d = dataDir();
+  mkdirSync(d, { recursive: true });
+  return join(d, "notion.json");
+}
+
+export function loadNotionToken(): NotionToken | null {
+  const f = notionFile();
+  if (!existsSync(f)) return null;
+  try {
+    const raw = readFileSync(f, "utf8");
+    if (!raw) return null;
+    return JSON.parse(decrypt(raw)) as NotionToken;
+  } catch {
+    return null;
+  }
+}
+
+export function saveNotionToken(t: NotionToken): void {
+  writeFileSync(notionFile(), encrypt(JSON.stringify(t)), { mode: 0o600 });
+}
+
+export function removeNotionToken(): void {
+  const f = notionFile();
+  if (existsSync(f)) writeFileSync(f, "", { mode: 0o600 });
+}
+
 /* --------------------------- Drive consent ----------------------------- */
 
 export type DriveConsent = { at: string; privacyUrl: string };

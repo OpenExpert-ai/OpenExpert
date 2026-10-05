@@ -53,6 +53,17 @@ Las herramientas de lectura extraen texto de ficheros de texto, PDF, Word
 (`.docx`), Excel (`.xlsx`) y PowerPoint (`.pptx`), tanto en carpetas locales como
 en Google Drive.
 
+### Notion (opcional)
+
+| Herramienta                                                          | Requiere                                  |
+| -------------------------------------------------------------------- | ----------------------------------------- |
+| `search_notion` / `query_notion_database` / `read_notion_page`       | `notion` en `sources`                     |
+| `create_notion_page` / `update_notion_page` / `append_notion_blocks` | `notion` en `sources` + aprobación humana |
+
+Notion se conecta con OAuth 2.0 (cliente compartido embebido por el
+distribuidor); el usuario elige qué páginas/bases comparte en el selector de
+Notion.
+
 ### Propuestas (no ejecutan)
 
 | Herramienta                 | Propone                                 |
