@@ -32,12 +32,12 @@ const OWNER = { userId: "local-owner", name: "Propietario local" } as const;
 export { DOMAIN } from "@/lib/ai/tools";
 
 /**
- * Whether `expertId` may read data belonging to `domain`. The general Expert
- * sees every domain; every other Expert only its own. Enforced server-side, not
- * by the model.
+ * Whether an Expert with `domains` may read data belonging to `domain`. The
+ * domains are stored per Expert (migration 0002); the General Expert simply
+ * lists every domain. Enforced server-side, not by the model.
  */
-export function domainAllowed(expertId: string, domain: string): boolean {
-  return expertId === domain || expertId === "general";
+export function domainAllowed(domains: string[], domain: string): boolean {
+  return domains.includes(domain);
 }
 
 /** Plain text of the last message, used by the injection gate and the log. */
@@ -107,6 +107,7 @@ export async function handleChat(request: Request) {
     name: expertId,
     description: `Experto local "${expertId}".`,
     sources: ["gdrive"] as string[],
+    domains: [] as string[],
     createdAt: now(),
   };
 
@@ -145,7 +146,7 @@ export async function handleChat(request: Request) {
     return createUIMessageStreamResponse({ stream });
   }
 
-  const allowed = (domain: string) => domainAllowed(expertId, domain);
+  const allowed = (domain: string) => domainAllowed(expert.domains, domain);
   const startedAt = Date.now();
   const used = new Set<string>();
 

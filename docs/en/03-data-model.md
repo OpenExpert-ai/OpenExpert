@@ -24,13 +24,14 @@ re-seed.
 
 ### `experts` — Experts
 
-| Column        | Type        | Notes                                      |
-| ------------- | ----------- | ------------------------------------------ |
-| `id`          | TEXT PK     | Human-readable id (`general`, `ventas`, …) |
-| `name`        | TEXT        | Display name                               |
-| `description` | TEXT        | Injected into the system prompt            |
-| `sources`     | TEXT (JSON) | Authorised connectors, e.g. `["gdrive"]`   |
-| `created_at`  | TEXT        | ISO timestamp                              |
+| Column        | Type        | Notes                                                                                                |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------- |
+| `id`          | TEXT PK     | Human-readable id (`general`, `ventas`, …)                                                           |
+| `name`        | TEXT        | Display name                                                                                         |
+| `description` | TEXT        | Injected into the system prompt                                                                      |
+| `sources`     | TEXT (JSON) | Authorised connectors, e.g. `["gdrive"]`                                                             |
+| `domains`     | TEXT (JSON) | Business domains it may read, e.g. `["ventas"]`; empty = no business data. Added by migration `0002` |
+| `created_at`  | TEXT        | ISO timestamp                                                                                        |
 
 ### `processes` — autonomous processes
 

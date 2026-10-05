@@ -18,14 +18,14 @@ herramientas.
 
 ### Lectura
 
-| Herramienta                | Contenido                                                   | Dominio     |
-| -------------------------- | ----------------------------------------------------------- | ----------- |
-| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados | `ventas`    |
-| `list_deals`               | Oportunidades abiertas, opcionalmente por etapa             | `ventas`    |
-| `list_overdue_invoices`    | Facturas vencidas con importe, días y recordatorios         | `finanzas`  |
-| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado           | `marketing` |
-| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `general`   |
-| `list_processes`           | Catálogo de procesos                                        | transversal |
+| Herramienta                | Contenido                                                   | Dominio              |
+| -------------------------- | ----------------------------------------------------------- | -------------------- |
+| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados | `ventas`             |
+| `list_deals`               | Oportunidades abiertas, opcionalmente por etapa             | `ventas`             |
+| `list_overdue_invoices`    | Facturas vencidas con importe, días y recordatorios         | `finanzas`           |
+| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado           | `marketing`          |
+| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `general`            |
+| `list_processes`           | Catálogo de procesos (solo los dominios del Experto)        | Dominios del Experto |
 
 ### Google Drive (opcional)
 
@@ -55,10 +55,14 @@ confirmación. Nada cambia hasta que la apruebas.
 
 ## 3. Aislamiento por dominio
 
-Cada herramienta de lectura pertenece a un dominio. El servidor comprueba que el
-Experto activo coincida con el dominio (o sea `general`) antes de devolver datos;
-si no, devuelve un error explícito "fuera de contexto", sin datos. El acceso a
-Drive se decide por la columna `sources` del Experto.
+Cada herramienta de lectura pertenece a un dominio. Cada Experto guarda los
+dominios que puede leer en `experts.domains`; el servidor comprueba el dominio
+contra esa lista antes de devolver datos; si no, devuelve un error explícito
+"fuera de contexto", sin datos. `list_processes` y `request_process_run`
+respetan la misma lista, así que un proceso solo es visible y ejecutable desde un
+Experto dueño de su dominio. El acceso a Drive se decide por la columna
+`sources` del Experto. Los dominios se eligen al crear o editar un Experto; un
+Experto sin dominios puede chatear y usar Drive, pero no lee datos de negocio.
 
 ## 4. Límites
 

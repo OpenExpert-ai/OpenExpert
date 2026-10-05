@@ -126,6 +126,37 @@ describe("revertSnapshot", () => {
     const exists = raw.exec("SELECT id FROM experts WHERE id='e-revert'")[0]?.values.length ?? 0;
     expect(exists).toBe(0);
   });
+
+  it("restores an Expert edited after the snapshot", async () => {
+    const { getDb, persist } = await import("./db.server");
+    const ee = await import("./ee.server");
+    const schema = await import("../../drizzle/schema");
+    const { orm, raw } = await getDb();
+
+    const id = "e-edit";
+    raw.run(
+      "INSERT OR REPLACE INTO experts (id,name,description,sources,domains,created_at) VALUES (?,?,?,?,?,?)",
+      [id, "Original", "desc", '["gdrive"]', '["ventas"]', "2026-01-01"],
+    );
+    await persist();
+
+    // Same shape `updateExpert` records: raw columns, not Drizzle field names.
+    const entries = ee.snapshotRows("experts", ["id"], await ee.fetchRows("experts", "id", [id]));
+
+    raw.run("UPDATE experts SET name = 'Cambiado', domains = '[\"finanzas\"]' WHERE id = ?", [id]);
+    await persist();
+
+    await ee.revertSnapshot(entries);
+
+    const row = orm
+      .select()
+      .from(schema.experts)
+      .all()
+      .find((e) => e.id === id);
+    expect(row?.name).toBe("Original");
+    expect(row?.domains).toEqual(["ventas"]);
+    expect(row?.sources).toEqual(["gdrive"]);
+  });
 });
 
 describe("executePending", () => {

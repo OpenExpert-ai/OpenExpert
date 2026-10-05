@@ -195,6 +195,22 @@ export const en: Record<string, string> = {
   "Creando…": "Creating…",
   "Crear Experto": "Create Expert",
   "Experto creado": "Expert created",
+  "Experto actualizado": "Expert updated",
+  "Experto eliminado": "Expert deleted",
+  "Editar Experto": "Edit Expert",
+  "Eliminar Experto": "Delete Expert",
+  "¿Eliminar este Experto?": "Delete this Expert?",
+  "Se borrarán sus conversaciones y sus procesos pasarán a General. Podrás revertir el Experto desde el Registro, pero no las conversaciones.":
+    "Its conversations will be deleted and its processes will move to General. You can revert the Expert from the Activity log, but not the conversations.",
+  Dominios: "Domains",
+  "Dominios de datos": "Data domains",
+  "Sin dominios": "No domains",
+  "Determina qué datos de negocio puede consultar. Sin dominios, el Experto solo puede chatear y usar Drive.":
+    "Decides which business data it may read. With no domains, the Expert can only chat and use Drive.",
+  Ventas: "Sales",
+  Finanzas: "Finance",
+  Marketing: "Marketing",
+  "Cuentas / churn": "Accounts / churn",
   Cancelar: "Cancel",
 
   // --- Integrations ----------------------------------------------------------

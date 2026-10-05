@@ -24,13 +24,14 @@ base de datos para volver a sembrar.
 
 ### `experts` — Expertos
 
-| Columna       | Tipo        | Notas                                       |
-| ------------- | ----------- | ------------------------------------------- |
-| `id`          | TEXT PK     | Id legible (`general`, `ventas`, …)         |
-| `name`        | TEXT        | Nombre visible                              |
-| `description` | TEXT        | Se inyecta en el prompt del sistema         |
-| `sources`     | TEXT (JSON) | Conectores autorizados, p. ej. `["gdrive"]` |
-| `created_at`  | TEXT        | Fecha ISO                                   |
+| Columna       | Tipo        | Notas                                                                                                                  |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `id`          | TEXT PK     | Id legible (`general`, `ventas`, …)                                                                                    |
+| `name`        | TEXT        | Nombre visible                                                                                                         |
+| `description` | TEXT        | Se inyecta en el prompt del sistema                                                                                    |
+| `sources`     | TEXT (JSON) | Conectores autorizados, p. ej. `["gdrive"]`                                                                            |
+| `domains`     | TEXT (JSON) | Dominios de negocio que puede leer, p. ej. `["ventas"]`; vacío = sin datos de negocio. Añadido por la migración `0002` |
+| `created_at`  | TEXT        | Fecha ISO                                                                                                              |
 
 ### `processes` — procesos autónomos
 

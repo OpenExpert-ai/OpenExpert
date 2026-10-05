@@ -7,6 +7,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
+import { EXPERT_DOMAINS } from "./domains";
 import { chatSettings } from "@/lib/config.server";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
@@ -38,6 +39,7 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
       name: e.name,
       description: e.description,
       sources: e.sources,
+      domains: e.domains,
       created_at: e.createdAt,
     })),
     processes: processes.map((p) => ({
@@ -97,6 +99,7 @@ export const createExpert = createServerFn({ method: "POST" })
         name: z.string().trim().min(1).max(60),
         description: z.string().max(400),
         sources: z.array(z.string()).max(20),
+        domains: z.array(z.enum(EXPERT_DOMAINS)).max(EXPERT_DOMAINS.length).default([]),
       })
       .parse(d),
   )
@@ -117,6 +120,7 @@ export const createExpert = createServerFn({ method: "POST" })
         name: data.name,
         description: data.description,
         sources: data.sources,
+        domains: data.domains,
         createdAt: now(),
       })
       .run();
@@ -131,6 +135,84 @@ export const createExpert = createServerFn({ method: "POST" })
       snapshot: { entries: [{ table: "experts", pk: { id }, before: null }] },
     });
     return { id };
+  });
+
+export const updateExpert = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        id: z.string().min(1).max(80),
+        name: z.string().trim().min(1).max(60),
+        description: z.string().max(400),
+        sources: z.array(z.string()).max(20),
+        domains: z.array(z.enum(EXPERT_DOMAINS)).max(EXPERT_DOMAINS.length),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { orm } = await getDb();
+    const rows = await ee.fetchRows("experts", "id", [data.id]);
+    ee.assert(rows[0], "Experto no encontrado");
+    orm
+      .update(schema.experts)
+      .set({
+        name: data.name,
+        description: data.description,
+        sources: data.sources,
+        domains: data.domains,
+      })
+      .where(eq(schema.experts.id, data.id))
+      .run();
+    await persist();
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Configuración",
+      expert_id: data.id,
+      status: "ok",
+      summary: `Editado Experto "${data.name}"`,
+      snapshot: { entries: ee.snapshotRows("experts", ["id"], rows) },
+    });
+    return { id: data.id };
+  });
+
+export const deleteExpert = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ id: z.string().min(1).max(80) }).parse(d))
+  .handler(async ({ data }) => {
+    ee.assert(data.id !== "general", "El Experto General no se puede eliminar");
+    const { orm } = await getDb();
+    const rows = await ee.fetchRows("experts", "id", [data.id]);
+    const before = rows[0];
+    ee.assert(before, "Experto no encontrado");
+    // Reassign its processes to General and drop its conversations. The Expert
+    // row and the process reassignment are snapshot-backed (revertible); the
+    // conversations are permanent, like clearing a chat.
+    const procs = await ee.fetchRows("processes", "expert_id", [data.id]);
+    orm
+      .update(schema.processes)
+      .set({ expertId: "general" })
+      .where(eq(schema.processes.expertId, data.id))
+      .run();
+    orm.delete(schema.experts).where(eq(schema.experts.id, data.id)).run();
+    orm.delete(schema.chatMessages).where(eq(schema.chatMessages.expertId, data.id)).run();
+    await persist();
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Configuración",
+      expert_id: data.id,
+      status: "ok",
+      summary:
+        `Eliminado Experto "${String(before["name"])}"` +
+        (procs.length ? ` · ${procs.length} proceso(s) reasignados a General` : ""),
+      snapshot: {
+        entries: [
+          ...ee.snapshotRows("experts", ["id"], rows),
+          ...ee.snapshotRows("processes", ["id"], procs),
+        ],
+      },
+    });
+    return { id: data.id };
   });
 
 /* ----------------------------- Processes ----------------------------- */

@@ -31,16 +31,21 @@ const userMessage = (text: string) => ({
 });
 
 describe("domainAllowed", () => {
-  it("lets the general expert see every domain", async () => {
+  it("allows every domain the expert lists", async () => {
     const { domainAllowed } = await import("./chat.server");
-    expect(domainAllowed("general", "ventas")).toBe(true);
-    expect(domainAllowed("general", "finanzas")).toBe(true);
+    const all = ["ventas", "finanzas", "marketing", "general"];
+    expect(domainAllowed(all, "ventas")).toBe(true);
+    expect(domainAllowed(all, "finanzas")).toBe(true);
+    expect(domainAllowed(all, "marketing")).toBe(true);
+    expect(domainAllowed(all, "general")).toBe(true);
   });
 
-  it("isolates an expert to its own domain", async () => {
+  it("isolates an expert to its own domains", async () => {
     const { domainAllowed } = await import("./chat.server");
-    expect(domainAllowed("ventas", "ventas")).toBe(true);
-    expect(domainAllowed("ventas", "finanzas")).toBe(false);
+    expect(domainAllowed(["ventas"], "ventas")).toBe(true);
+    expect(domainAllowed(["ventas"], "finanzas")).toBe(false);
+    expect(domainAllowed(["ventas", "finanzas"], "finanzas")).toBe(true);
+    expect(domainAllowed([], "ventas")).toBe(false);
   });
 });
 

@@ -13,6 +13,10 @@ export const experts = sqliteTable("experts", {
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
   sources: text("sources", { mode: "json" }).$type<string[]>().notNull().default([]),
+  // Business domains the Expert may read. Empty = no business data (chat and
+  // Drive only). Added by migration 0002, so it is intentionally absent from
+  // the baseline init.sql.
+  domains: text("domains", { mode: "json" }).$type<string[]>().notNull().default([]),
   createdAt: text("created_at").notNull(),
 });
 

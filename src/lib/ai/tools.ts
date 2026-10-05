@@ -103,7 +103,11 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({}),
       execute: async () => {
         const { orm: db } = await getDb();
-        const processes = db.select().from(schema.processes).all();
+        const processes = db
+          .select()
+          .from(schema.processes)
+          .all()
+          .filter((p) => allowed(p.expertId));
         return {
           processes: processes.map((p) => ({
             id: p.id,
@@ -170,6 +174,7 @@ export function createChatTools(ctx: ChatToolsContext) {
           .where(eq(schema.processes.id, processId))
           .all()[0];
         if (!p) return { error: "Proceso no encontrado" };
+        if (!allowed(p.expertId)) return deny(p.expertId);
         if (!p.active) return { error: "El proceso está desactivado" };
         return proposePending(
           p.expertId,
