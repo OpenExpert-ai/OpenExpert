@@ -11,6 +11,7 @@ Estado de los elementos implementados y pendientes.
 | Chat con herramientas, aislamiento por Experto, razonamiento visible    | [IA](./05-inteligencia-artificial.md)       |
 | Tarjetas de confirmación para acciones propuestas                       | [IA](./05-inteligencia-artificial.md)       |
 | Integración con Google Drive (opcional)                                 | [Integraciones](./06-integraciones.md)      |
+| Carpetas locales (opcional, lectura + escritura con aprobación)         | [Integraciones](./06-integraciones.md)      |
 | Registro de actividad y reversión                                       | [Seguridad](./04-seguridad-y-acceso.md)     |
 | Filtro previo anti-inyección                                            | [Seguridad](./04-seguridad-y-acceso.md)     |
 | Proveedores de modelo: Ollama, Gemini, BYOK                             | [Proveedores de IA](./13-proveedores-ia.md) |
@@ -22,9 +23,12 @@ Estado de los elementos implementados y pendientes.
 
 ## Pendiente
 
-- [ ] **Más conectores** (Pipedrive, Holded, Meta Ads, Gmail, Slack, Google
-      Analytics). Las tablas existen; los conectores están pendientes.
+- [ ] **Conectores reales** (Pipedrive, Holded, Meta Ads, Gmail, Slack, Google
+      Analytics, Salesforce). OpenExpert se distribuye **sin datos de negocio**:
+      las tablas están vacías hasta que un conector las rellene. Las herramientas
+      de negocio ya indican la procedencia y avisan cuando no hay nada conectado.
 - [ ] **Disparadores efectivos de procesos.** El campo `trigger` es descriptivo;
       no hay planificador todavía.
-- [ ] **Ingesta automática** de las tablas de negocio.
+- [ ] **Importación de datos reales** (CSV) como paso intermedio antes de los
+      conectores.
 - [ ] **Asistente de copia de seguridad** de `OPENEXPERT_DATA_DIR`.

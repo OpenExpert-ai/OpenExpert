@@ -31,19 +31,15 @@ describe("local SQLite database", () => {
     expect(orm.select().from(schema.integrations).all().length).toBe(9);
   });
 
-  it("seeds example business data for the assistant", async () => {
+  it("does not seed example business data", async () => {
     const { getDb } = await import("./db.server");
     const schema = await import("../../drizzle/schema");
     const { orm } = await getDb();
 
-    expect(orm.select().from(schema.deals).all().length).toBeGreaterThan(0);
-    expect(orm.select().from(schema.accounts).all().length).toBeGreaterThan(0);
-
-    const invoices = orm.select().from(schema.invoices).all();
-    expect(invoices.some((i) => i.status === "overdue")).toBe(true);
-
-    const campaigns = orm.select().from(schema.campaigns).all();
-    expect(campaigns.some((c) => c.status === "active")).toBe(true);
+    expect(orm.select().from(schema.deals).all().length).toBe(0);
+    expect(orm.select().from(schema.invoices).all().length).toBe(0);
+    expect(orm.select().from(schema.campaigns).all().length).toBe(0);
+    expect(orm.select().from(schema.accounts).all().length).toBe(0);
   });
 
   it("applies migrations and tracks the schema version", async () => {

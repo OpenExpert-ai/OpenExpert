@@ -15,10 +15,12 @@ columnas JSON se guardan como `TEXT`.
 Tablas: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 `deals`, `invoices`, `campaigns`, `accounts`, `settings`.
 
-En el primer arranque `src/lib/db.server.ts` siembra Expertos, procesos,
-integraciones y datos de negocio de ejemplo (`deals`, `invoices`, `campaigns`,
-`accounts`) para que el asistente tenga con qué responder. Borra el fichero de
-base de datos para volver a sembrar.
+En el primer arranque `src/lib/db.server.ts` siembra la **configuración**
+(Expertos, procesos, integraciones). Las tablas de negocio (`deals`, `invoices`,
+`campaigns`, `accounts`) arrancan **vacías**: solo las rellena un conector real o
+una importación. Las herramientas de negocio indican si hay una fuente conectada
+y nunca presentan datos locales como reales. Borra el fichero de base de datos
+para volver a sembrar la configuración.
 
 ## 2. Tablas
 

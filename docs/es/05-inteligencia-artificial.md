@@ -27,6 +27,12 @@ herramientas.
 | `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `general`            |
 | `list_processes`           | Catálogo de procesos (solo los dominios del Experto)        | Dominios del Experto |
 
+Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Una
+herramienta solo atribuye el dato a un proveedor cuando esa integración está
+conectada (`connected: true`); si no, devuelve un `note` indicando que no hay
+fuente conectada, de modo que el asistente nunca presenta datos locales como
+reales.
+
 ### Google Drive (opcional)
 
 | Herramienta         | Requiere              |

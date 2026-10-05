@@ -124,8 +124,8 @@ export const en: Record<string, string> = {
   "Compactar (VACUUM)": "Compact (VACUUM)",
   "Borrar historial de chat": "Clear chat history",
   "Zona de peligro": "Danger zone",
-  "Restaura la base de datos a su estado inicial con los datos de ejemplo. La configuración y las credenciales no se tocan.":
-    "Restores the database to its initial state with the example data. Configuration and credentials are untouched.",
+  "Restaura la base de datos a su estado inicial (vacía, sin datos de negocio). La configuración y las credenciales no se tocan.":
+    "Restores the database to its initial state (empty, no business data). Configuration and credentials are untouched.",
   "Escribe {word} para confirmar. Esta acción no se puede deshacer.":
     "Type {word} to confirm. This action cannot be undone.",
   "Restaurar datos iniciales": "Reset data",
@@ -355,10 +355,16 @@ export const en: Record<string, string> = {
   "working…": "working…",
   "Detalles técnicos": "Technical details",
   Copiar: "Copy",
-  "Consultando pipeline en Pipedrive": "Querying the pipeline in Pipedrive",
-  "Listando deals del CRM": "Listing CRM deals",
-  "Leyendo facturas vencidas en Holded": "Reading overdue invoices in Holded",
-  "Extrayendo métricas de Meta Ads y GA": "Fetching Meta Ads and GA metrics",
+  "Consultando pipeline comercial": "Querying the sales pipeline",
+  "Listando oportunidades del CRM": "Listing CRM opportunities",
+  "Leyendo facturas vencidas": "Reading overdue invoices",
+  "Extrayendo métricas de campañas": "Fetching campaign metrics",
+  CRM: "CRM",
+  Facturación: "Billing",
+  Publicidad: "Advertising",
+  Clientes: "Customers",
+  "Sin fuentes de negocio conectadas. Los conectores reales están en la hoja de ruta; hasta entonces el asistente no tiene datos que consultar.":
+    "No business sources are connected. Real connectors are on the roadmap; until then the assistant has no data to query.",
   "Evaluando riesgo de churn": "Assessing churn risk",
   "Cargando catálogo de procesos": "Loading the process catalogue",
   "Preparando reclamaciones de cobro": "Preparing payment claims",

@@ -72,6 +72,9 @@ const SUGGESTIONS = [
   "Crear nuevo Experto para Operaciones",
 ];
 
+/** Integrations that would provide real business data. None is connected yet. */
+const BUSINESS_SOURCE_IDS = ["pipedrive", "salesforce", "holded", "gmail", "slack", "ga", "meta"];
+
 function ExpertPage() {
   const { activeExpert } = useUI();
   const { t } = useT();
@@ -167,6 +170,9 @@ function ChatWindow({
       },
     });
   const busy = status === "submitted" || status === "streaming";
+  const hasBusinessSource = ws?.integrations.some(
+    (i) => BUSINESS_SOURCE_IDS.includes(i.id) && i.connected,
+  );
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -388,6 +394,13 @@ function ChatWindow({
           <div ref={endRef} />
         </div>
       </div>
+      {!hasBusinessSource && (
+        <div className="border-t border-warning/40 bg-warning/10 px-4 py-2 text-center text-[0.7rem] text-warning">
+          {t(
+            "Sin fuentes de negocio conectadas. Los conectores reales están en la hoja de ruta; hasta entonces el asistente no tiene datos que consultar.",
+          )}
+        </div>
+      )}
       <div className="border-t border-border bg-background px-4 py-4">
         <div className="mx-auto max-w-3xl">
           <form
@@ -521,10 +534,10 @@ const Avatar = () => (
 );
 
 const TOOL_LABEL: Record<string, string> = {
-  get_pipeline_summary: "Consultando pipeline en Pipedrive",
-  list_deals: "Listando deals del CRM",
-  list_overdue_invoices: "Leyendo facturas vencidas en Holded",
-  get_campaign_performance: "Extrayendo métricas de Meta Ads y GA",
+  get_pipeline_summary: "Consultando pipeline comercial",
+  list_deals: "Listando oportunidades del CRM",
+  list_overdue_invoices: "Leyendo facturas vencidas",
+  get_campaign_performance: "Extrayendo métricas de campañas",
   get_churn_risk: "Evaluando riesgo de churn",
   list_processes: "Cargando catálogo de procesos",
   propose_invoice_reminders: "Preparando reclamaciones de cobro",
@@ -553,15 +566,15 @@ type ToolPart = {
 };
 
 const SOURCE: Record<string, string> = {
-  get_pipeline_summary: "Pipedrive",
-  list_deals: "Pipedrive",
-  list_overdue_invoices: "Holded",
-  propose_invoice_reminders: "Holded",
-  get_campaign_performance: "Meta Ads",
-  propose_pause_campaigns: "Meta Ads",
-  get_churn_risk: "CRM",
-  list_processes: "Procs",
-  request_process_run: "Procs",
+  get_pipeline_summary: "CRM",
+  list_deals: "CRM",
+  list_overdue_invoices: "Facturación",
+  propose_invoice_reminders: "Facturación",
+  get_campaign_performance: "Publicidad",
+  propose_pause_campaigns: "Publicidad",
+  get_churn_risk: "Clientes",
+  list_processes: "Procesos",
+  request_process_run: "Procesos",
   search_drive: "Google Drive",
   read_drive_file: "Google Drive",
   create_drive_file: "Google Drive",
@@ -806,8 +819,11 @@ function Metrics({
 
 function ToolCard({ name, output, expertId }: { name: string; output: unknown; expertId: string }) {
   const { t, locale } = useT();
-  const o = output as Record<string, unknown> & { error?: string };
+  const o = output as Record<string, unknown> & { error?: string; connected?: boolean };
   if (!o || o.error) return null;
+  // No connected source: don't render empty metric cards that would look like
+  // real zeros. The assistant's text explains there is no data.
+  if (o.connected === false) return null;
   if (name === "get_pipeline_summary") {
     const p = o as unknown as {
       openValue: number;

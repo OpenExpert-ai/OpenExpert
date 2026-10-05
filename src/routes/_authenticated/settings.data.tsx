@@ -202,7 +202,7 @@ function DataSettings() {
         danger
         title={t("Zona de peligro")}
         desc={t(
-          "Restaura la base de datos a su estado inicial con los datos de ejemplo. La configuración y las credenciales no se tocan.",
+          "Restaura la base de datos a su estado inicial (vacía, sin datos de negocio). La configuración y las credenciales no se tocan.",
         )}
       >
         <div className="flex items-start gap-2 text-sm text-muted-foreground">

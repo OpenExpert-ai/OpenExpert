@@ -15,10 +15,12 @@ One SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db` (default
 Tables: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 `deals`, `invoices`, `campaigns`, `accounts`, `settings`.
 
-On first run `src/lib/db.server.ts` seeds example Experts, processes,
-integrations and business data (`deals`, `invoices`, `campaigns`, `accounts`)
-so the assistant has something to answer with. Delete the database file to
-re-seed.
+On first run `src/lib/db.server.ts` seeds the **configuration** (Experts,
+processes, integrations). The business tables (`deals`, `invoices`, `campaigns`,
+`accounts`) start **empty**: they are only filled by a real connector or an
+import. Business tools report whether a source is connected and never present
+local fixtures as real data. Delete the database file to re-seed the
+configuration.
 
 ## 2. Tables
 

@@ -40,6 +40,37 @@ export interface ChatToolsContext {
   ) => Promise<ProposedAction>;
 }
 
+/**
+ * Business tools only tell the truth about where their data comes from.
+ * `connected` is true only when a real integration that feeds the data is
+ * connected. The app ships with no business data and no connectors, so tools
+ * return a clear note instead of invented figures.
+ */
+const NO_SOURCE_NOTE =
+  "No hay ninguna fuente de negocio conectada. Los datos no son reales: la base local está vacía y los conectores reales están en la hoja de ruta.";
+
+async function sourceStatus(ids: string[]): Promise<{ connected: boolean; name: string | null }> {
+  const { orm } = await getDb();
+  const hit = orm
+    .select()
+    .from(schema.integrations)
+    .all()
+    .find((i) => ids.includes(i.id) && i.connected);
+  return { connected: !!hit, name: hit?.name ?? null };
+}
+
+function withSource<T extends object>(
+  data: T,
+  src: { connected: boolean; name: string | null },
+): T & { source: string; connected: boolean; note?: string } {
+  return {
+    ...data,
+    source: src.connected ? (src.name ?? "conectado") : "sin conexión",
+    connected: src.connected,
+    ...(src.connected ? {} : { note: NO_SOURCE_NOTE }),
+  };
+}
+
 export function createChatTools(ctx: ChatToolsContext) {
   const { expert, expertId, used, allowed, proposePending } = ctx;
 
@@ -54,28 +85,31 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({}),
       execute: async () => {
         if (!allowed(DOMAIN.deals)) return deny("ventas");
-        used.add("Pipedrive");
-        return ee.pipelineSummary();
+        used.add("CRM");
+        const src = await sourceStatus(["pipedrive", "salesforce"]);
+        return withSource(await ee.pipelineSummary(), src);
       },
     }),
     list_deals: tool({
       description:
         "Lista deals abiertos del CRM, opcionalmente filtrados por etapa (Cualificación, Demo, Propuesta, Negociación).",
-      inputSchema: z.object({ stage: z.string().nullable() }),
+      inputSchema: z.object({ stage: z.string().nullish() }),
       execute: async ({ stage }) => {
         if (!allowed(DOMAIN.deals)) return deny("ventas");
-        used.add("Pipedrive");
-        return { deals: await ee.listDeals(stage) };
+        used.add("CRM");
+        const src = await sourceStatus(["pipedrive", "salesforce"]);
+        return withSource({ deals: await ee.listDeals(stage ?? null) }, src);
       },
     }),
     list_overdue_invoices: tool({
       description:
-        "Facturas vencidas, con importe, días de retraso y recordatorios enviados. Filtra por importe mínimo en euros.",
-      inputSchema: z.object({ minAmount: z.number().nullable() }),
+        "Facturas vencidas, con importe, días de retraso y recordatorios enviados. Filtra por importe mínimo en euros (opcional).",
+      inputSchema: z.object({ minAmount: z.coerce.number().nullish() }),
       execute: async ({ minAmount }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
-        used.add("Holded");
-        return { invoices: await ee.overdueInvoices(minAmount) };
+        used.add("Facturación");
+        const src = await sourceStatus(["holded"]);
+        return withSource({ invoices: await ee.overdueInvoices(minAmount ?? null) }, src);
       },
     }),
     get_campaign_performance: tool({
@@ -84,8 +118,9 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({}),
       execute: async () => {
         if (!allowed(DOMAIN.campaigns)) return deny("marketing");
-        used.add("Meta Ads");
-        return { campaigns: await ee.campaignPerformance() };
+        used.add("Publicidad");
+        const src = await sourceStatus(["meta", "ga"]);
+        return withSource({ campaigns: await ee.campaignPerformance() }, src);
       },
     }),
     get_churn_risk: tool({
@@ -94,7 +129,9 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({}),
       execute: async () => {
         if (!allowed(DOMAIN.accounts)) return deny("general");
-        return { accounts: await ee.churnRisk() };
+        used.add("Clientes");
+        const src = await sourceStatus(["salesforce"]);
+        return withSource({ accounts: await ee.churnRisk() }, src);
       },
     }),
     list_processes: tool({
@@ -124,10 +161,13 @@ export function createChatTools(ctx: ChatToolsContext) {
     propose_invoice_reminders: tool({
       description:
         "Propone enviar reclamaciones de cobro por email para facturas vencidas concretas. NO las envía: crea una tarjeta de confirmación humana obligatoria.",
-      inputSchema: z.object({ invoiceIds: z.array(z.string()) }),
+      inputSchema: z.object({ invoiceIds: z.union([z.array(z.string()), z.string()]) }),
       execute: async ({ invoiceIds }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
-        const rows = (await ee.overdueInvoices(null)).filter((i) => invoiceIds.includes(i.id));
+        const src = await sourceStatus(["holded"]);
+        if (!src.connected) return { error: NO_SOURCE_NOTE };
+        const ids = Array.isArray(invoiceIds) ? invoiceIds : [invoiceIds];
+        const rows = (await ee.overdueInvoices(null)).filter((i) => ids.includes(i.id));
         if (!rows.length) return { error: "Ninguna de esas facturas está vencida." };
         return proposePending(
           "finanzas",
@@ -144,11 +184,14 @@ export function createChatTools(ctx: ChatToolsContext) {
     propose_pause_campaigns: tool({
       description:
         "Propone pausar campañas publicitarias concretas. NO las pausa: crea una tarjeta de confirmación humana obligatoria.",
-      inputSchema: z.object({ campaignIds: z.array(z.string()) }),
+      inputSchema: z.object({ campaignIds: z.union([z.array(z.string()), z.string()]) }),
       execute: async ({ campaignIds }) => {
         if (!allowed(DOMAIN.campaigns)) return deny("marketing");
+        const src = await sourceStatus(["meta", "ga"]);
+        if (!src.connected) return { error: NO_SOURCE_NOTE };
+        const ids = Array.isArray(campaignIds) ? campaignIds : [campaignIds];
         const rows = (await ee.campaignPerformance()).filter(
-          (x) => campaignIds.includes(x.id) && x.status === "active",
+          (x) => ids.includes(x.id) && x.status === "active",
         );
         if (!rows.length) return { error: "No hay campañas activas con esos IDs." };
         return proposePending(
@@ -198,7 +241,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     search_drive: tool({
       description:
         "Busca por nombre entre los archivos de Google Drive que el usuario eligió con el Picker. Devuelve [{id, name, mimeType}].",
-      inputSchema: z.object({ query: z.string().nullable() }),
+      inputSchema: z.object({ query: z.string().nullish() }),
       execute: async ({ query }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
@@ -245,7 +288,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         name: z.string().min(1).max(200),
         content: z.string().max(200000),
         kind: z.enum(["document", "spreadsheet", "text", "markdown"]),
-        folderId: z.string().nullable(),
+        folderId: z.string().nullish(),
       }),
       execute: async ({ name, content, kind, folderId }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
@@ -276,7 +319,7 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({
         fileId: z.string(),
         content: z.string().max(200000),
-        newName: z.string().nullable(),
+        newName: z.string().nullish(),
       }),
       execute: async ({ fileId, content, newName }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
