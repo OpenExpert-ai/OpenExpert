@@ -31,6 +31,11 @@
       "minLength": 1,
       "description": "Google OAuth client ID baked by the distributor (shared client model). End users do not edit this. OpenExpert ships with drive.file scope and a localhost redirect URI."
     },
+    "notionClientId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Notion OAuth client ID baked by the distributor (shared public connection). End users do not edit this. The matching client secret lives in secrets.json."
+    },
     "ai": {
       "type": "object",
       "additionalProperties": false,

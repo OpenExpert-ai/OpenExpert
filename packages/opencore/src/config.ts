@@ -30,6 +30,12 @@ export type OpenExpertConfig = {
    * End users never edit this.
    */
   googleClientId: string;
+  /**
+   * Notion OAuth client ID for the shared, distributor-baked public connection.
+   * Non-secret (public identifier); the secret lives in env or
+   * ~/.openexpert/secrets.json. End users never edit this.
+   */
+  notionClientId: string;
   ai: AiConfig;
   chat: ChatConfig;
 };
@@ -40,6 +46,7 @@ export const DEFAULTS: OpenExpertConfig = {
   ollamaBaseUrl: "http://localhost:11434",
   dataDir: "~/.openexpert",
   googleClientId: "",
+  notionClientId: "",
   ai: { temperature: 0.5, topP: 1, maxOutputTokens: 4096 },
   chat: {
     maxSteps: 50,
@@ -90,6 +97,8 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
     dataDir: expandHome(env["OPENEXPERT_DATA_DIR"] ?? file.dataDir ?? DEFAULTS.dataDir),
     googleClientId:
       env["OPENEXPERT_GOOGLE_CLIENT_ID"] ?? file.googleClientId ?? DEFAULTS.googleClientId,
+    notionClientId:
+      env["OPENEXPERT_NOTION_CLIENT_ID"] ?? file.notionClientId ?? DEFAULTS.notionClientId,
     ai: {
       temperature: num(fileAi.temperature, DEFAULTS.ai.temperature),
       topP: num(fileAi.topP, DEFAULTS.ai.topP),
