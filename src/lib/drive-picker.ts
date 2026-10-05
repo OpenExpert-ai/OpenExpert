@@ -24,6 +24,8 @@ interface PickerInstance {
 interface PickerNs {
   PickerBuilder: new () => PickerBuilderAPI;
   DocsView: new () => unknown;
+  /** Enum values are lowercase strings (`PICKED` -> "picked"). */
+  Action?: { PICKED?: string; CANCEL?: string };
 }
 
 declare global {
@@ -84,17 +86,17 @@ export async function pickDriveFiles(opts: {
   if (!PickerBuilder || !DocsView) throw new Error("Google Picker no disponible.");
 
   return new Promise<PickerResult[]>((resolve) => {
+    // `google.picker.Action.PICKED` is the lowercase string "picked". Comparing
+    // to the uppercase name never matches, which silently dropped the selection.
+    const pickedAction = w.google?.picker.Action?.PICKED ?? "picked";
     const builder = new PickerBuilder()
       .setOAuthToken(opts.accessToken)
       .setDeveloperKey(opts.apiKey)
       .setAppId(opts.appId)
       .enableFeature("MULTISELECT_ENABLED")
       .addView(new DocsView())
-      .setSelectableMimeTypes(
-        "application/pdf,text/plain,application/vnd.google-apps.document,application/vnd.google-apps.spreadsheet,application/vnd.google-apps.presentation",
-      )
       .setCallback((data) => {
-        if (data.action === "PICKED" && data.docs) {
+        if (data.action === pickedAction && data.docs?.length) {
           resolve(data.docs.map((d) => ({ id: d.id, name: d.name, mimeType: d.mimeType })));
         } else {
           resolve([]);
