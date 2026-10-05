@@ -192,39 +192,45 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_drive: tool({
       description:
-        "Busca por nombre entre los archivos de Google Drive que el usuario eligió con el Picker. Devuelve un pendingConsent que el usuario debe aprobar antes de ejecutarse.",
+        "Busca por nombre entre los archivos de Google Drive que el usuario eligió con el Picker. Requiere aprobación humana antes de ejecutarse.",
       inputSchema: z.object({ query: z.string().nullable() }),
       execute: async ({ query }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
-        return {
-          pendingConsent: {
-            tool: "search_drive",
-            args: { query: query ?? null },
-            summary: query
-              ? `Buscar «${query}» en los archivos de Drive que elegiste`
-              : "Listar archivos recientes de Drive",
-          },
-        };
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const grants = local.loadGrantedFiles();
+          const q = (query ?? "").trim().toLowerCase();
+          const files = grants
+            .filter((f) => !q || f.name.toLowerCase().includes(q))
+            .slice(0, 100)
+            .map((f) => ({ id: f.id, name: f.name, mimeType: f.mimeType }));
+          return {
+            files,
+            note: files.length
+              ? undefined
+              : "No hay archivos que coincidan entre los que elegiste con el Picker.",
+          };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
       },
     }),
     read_drive_file: tool({
       description:
-        "Pide al asistente acceso de lectura al contenido de un archivo de Google Drive que el usuario eligió con el Picker. Devuelve un pendingConsent que el usuario debe aprobar.",
+        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker. Requiere aprobación humana antes de ejecutarse.",
       inputSchema: z.object({ fileId: z.string() }),
       execute: async ({ fileId }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
-        const local = await import("../opencore/local-secrets.server");
-        const granted = local.loadGrantedFiles();
-        const meta = granted.find((g) => g.id === fileId);
-        return {
-          pendingConsent: {
-            tool: "read_drive_file",
-            args: { fileId },
-            summary: `Leer el archivo de Drive${meta ? ` «${meta.name}»` : ` (${fileId})`}`,
-          },
-        };
+        try {
+          const d = await import("../drive.server");
+          const local = await import("../opencore/local-secrets.server");
+          const granted = local.loadGrantedFiles().map((g) => g.id);
+          return await d.readFile(fileId, granted);
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
       },
     }),
     create_drive_file: tool({

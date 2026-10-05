@@ -201,6 +201,15 @@ Formato de salida (obligatorio):
     system: `${system}\nProveedor activo: ${modelLabel()}.`,
     messages: await convertToModelMessages(messages),
     tools,
+    // Drive reads and writes require explicit, per-invocation human approval.
+    // The SDK pauses the turn, the user approves in the UI, and the model then
+    // resumes with the tool result to produce the final answer.
+    toolApproval: {
+      search_drive: "user-approval",
+      read_drive_file: "user-approval",
+      create_drive_file: "user-approval",
+      update_drive_file: "user-approval",
+    },
     temperature: cfg.ai.temperature,
     topP: cfg.ai.topP,
     maxOutputTokens: cfg.ai.maxOutputTokens,
@@ -225,7 +234,13 @@ Formato de salida (obligatorio):
           : "Error al generar la respuesta.";
     },
     onFinish: async ({ responseMessage }) => {
-      await save(expertId, [last, responseMessage], conversationId);
+      // On an approval continuation the last incoming message is the assistant
+      // message (already persisted), so only store the new assistant response.
+      await save(
+        expertId,
+        last.role === "user" ? [last, responseMessage] : [responseMessage],
+        conversationId,
+      );
       await ee
         .logActivity({
           actor: "human",

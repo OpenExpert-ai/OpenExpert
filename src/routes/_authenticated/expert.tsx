@@ -2,7 +2,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type UIMessage,
+} from "ai";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { RichMarkdown } from "@/components/chat/RichMarkdown";
@@ -27,13 +31,7 @@ import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { formatCurrency, formatDateTime } from "@/lib/format";
-import {
-  clearChat,
-  decideAction,
-  getChat,
-  listConversations,
-  approveDriveTool,
-} from "@/lib/data.functions";
+import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -153,24 +151,28 @@ function ChatWindow({
     [expertId, conversationId],
   );
 
-  const { messages, sendMessage, status, stop, error, setMessages } = useChat({
-    id: `expert-${expertId}-${conversationId}`,
-    messages: initial,
-    transport,
-    onError: (e) =>
-      toast.error(
-        e.message?.includes("402")
-          ? t("Sin créditos de IA disponibles.")
-          : e.message?.includes("429")
-            ? t("Demasiadas peticiones, espera unos segundos.")
-            : t("No se pudo completar la respuesta."),
-      ),
-    onFinish: () => {
-      qc.invalidateQueries({ queryKey: workspaceKey });
-      qc.invalidateQueries({ queryKey: ["convs", expertId] });
-      taRef.current?.focus();
-    },
-  });
+  const { messages, sendMessage, status, stop, error, setMessages, addToolApprovalResponse } =
+    useChat({
+      id: `expert-${expertId}-${conversationId}`,
+      messages: initial,
+      transport,
+      // After the user approves/denies a Drive tool, continue the turn so the
+      // model can answer with the tool result.
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+      onError: (e) =>
+        toast.error(
+          e.message?.includes("402")
+            ? t("Sin créditos de IA disponibles.")
+            : e.message?.includes("429")
+              ? t("Demasiadas peticiones, espera unos segundos.")
+              : t("No se pudo completar la respuesta."),
+        ),
+      onFinish: () => {
+        qc.invalidateQueries({ queryKey: workspaceKey });
+        qc.invalidateQueries({ queryKey: ["convs", expertId] });
+        taRef.current?.focus();
+      },
+    });
   const busy = status === "submitted" || status === "streaming";
 
   useEffect(() => {
@@ -369,9 +371,8 @@ function ChatWindow({
                   key={m.id}
                   m={m}
                   expertId={expertId}
-                  conversationId={conversationId}
                   streaming={status === "streaming" && i === messages.length - 1}
-                  onDriveApproved={(msg) => setMessages((prev) => [...prev, msg])}
+                  onApproval={(id, approved) => addToolApprovalResponse({ id, approved })}
                 />
               ),
             )}
@@ -550,6 +551,7 @@ type ToolPart = {
   input?: unknown;
   output?: unknown;
   errorText?: string;
+  approval?: { id: string; approved?: boolean };
 };
 
 const SOURCE: Record<string, string> = {
@@ -571,15 +573,13 @@ const SOURCE: Record<string, string> = {
 function AssistantMsg({
   m,
   expertId,
-  conversationId,
   streaming,
-  onDriveApproved,
+  onApproval,
 }: {
   m: UIMessage;
   expertId: string;
-  conversationId: string;
   streaming?: boolean;
-  onDriveApproved: (msg: UIMessage) => void;
+  onApproval: (approvalId: string, approved: boolean) => void;
 }) {
   const tools = m.parts.filter((p) => p.type.startsWith("tool-")) as unknown as ToolPart[];
   const reasoning = m.parts
@@ -635,37 +635,41 @@ function AssistantMsg({
           </Collapsible>
         )}
         {tools.length > 0 && <ExecutionTimeline tools={tools} />}
-        {tools
-          .filter((t) => t.state === "output-available")
-          .map((t) => {
-            const o = t.output as
-              | {
-                  pendingConsent?: { tool: string; args: Record<string, unknown>; summary: string };
-                }
-              | undefined;
-            if (o?.pendingConsent) {
-              return (
-                <DriveConsentCard
-                  key={t.toolCallId + "pc"}
-                  tool={o.pendingConsent.tool as "search_drive" | "read_drive_file"}
-                  args={o.pendingConsent.args}
-                  summary={o.pendingConsent.summary}
-                  expertId={expertId}
-                  conversationId={conversationId}
-                  messageId={m.id}
-                  onApproved={onDriveApproved}
-                />
-              );
-            }
+        {tools.map((part) => {
+          // The SDK pauses the turn here and waits for the user's decision.
+          if (part.state === "approval-requested" && part.approval?.id) {
+            return (
+              <DriveApprovalCard
+                key={part.toolCallId + "ap"}
+                tool={part.type.slice(5)}
+                input={(part.input ?? {}) as Record<string, unknown>}
+                approvalId={part.approval.id}
+                onApproval={onApproval}
+              />
+            );
+          }
+          if (part.state === "approval-responded" || part.state === "output-denied") {
+            return (
+              <div
+                key={part.toolCallId + "dn"}
+                className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
+              >
+                <X className="size-3.5" /> {t("Acceso a Google Drive denegado")}
+              </div>
+            );
+          }
+          if (part.state === "output-available") {
             return (
               <ToolCard
-                key={t.toolCallId + "c"}
-                name={t.type.slice(5)}
-                output={t.output}
+                key={part.toolCallId + "c"}
+                name={part.type.slice(5)}
+                output={part.output}
                 expertId={expertId}
               />
             );
-          })}
+          }
+          return null;
+        })}
         {(text || streaming) && <RichMarkdown text={text} streaming={!!streaming} />}
         {text && !streaming && (
           <div className="flex items-center gap-3 opacity-60 transition hover:opacity-100 focus-within:opacity-100">
@@ -1009,64 +1013,57 @@ function ConfirmCard({
   );
 }
 
-function DriveConsentCard({
+function DriveApprovalCard({
   tool,
-  args,
-  summary,
-  expertId,
-  conversationId,
-  messageId,
-  onApproved,
+  input,
+  approvalId,
+  onApproval,
 }: {
-  tool: "search_drive" | "read_drive_file";
-  args: Record<string, unknown>;
-  summary: string;
-  expertId: string;
-  conversationId: string;
-  messageId: string;
-  onApproved: (msg: UIMessage) => void;
+  tool: string;
+  input: Record<string, unknown>;
+  approvalId: string;
+  onApproval: (approvalId: string, approved: boolean) => void;
 }) {
   const { t } = useT();
-  const qc = useQueryClient();
-  const [state, setState] = useState<"pending" | "approving" | "approved" | "denied">("pending");
-  const onApprove = async () => {
-    setState("approving");
-    try {
-      const res = await approveDriveTool({
-        data: { expertId, conversationId, tool, args },
-      });
-      onApproved(JSON.parse(res.messageJson) as UIMessage);
-      setState("approved");
-      await qc.invalidateQueries({ queryKey: ["convs", expertId] });
-      await qc.invalidateQueries({ queryKey: ["workspace"] });
-    } catch (e) {
-      toast.error((e as Error).message);
-      setState("pending");
-    }
+  const [decision, setDecision] = useState<null | boolean>(null);
+  const summary =
+    tool === "search_drive"
+      ? input["query"]
+        ? t("Buscar «{q}» en los archivos de Drive que elegiste", { q: String(input["query"]) })
+        : t("Listar tus archivos de Drive elegidos")
+      : tool === "read_drive_file"
+        ? t("Leer un archivo de Drive")
+        : tool === "create_drive_file"
+          ? t("Crear «{name}» en Google Drive", { name: String(input["name"] ?? "") })
+          : tool === "update_drive_file"
+            ? t("Editar un archivo de Drive")
+            : tool;
+  const decide = (approved: boolean) => {
+    setDecision(approved);
+    onApproval(approvalId, approved);
   };
-  const onDeny = () => setState("denied");
   return (
-    <div data-message-id={messageId} className="rounded-md border border-info/40 bg-info/5 p-3">
-      <div className="flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-wider text-info">
+    <div className="rounded-md border border-info/40 bg-info/5 p-3">
+      <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wider text-info">
         <ShieldCheck className="size-3.5" /> {t("Acceso a Google Drive")} · {tool}
       </div>
       <div className="mt-1.5 text-sm">{summary}</div>
-      {state === "approved" ? (
-        <div className="mt-2 flex items-center gap-2 text-xs text-success">
-          <Check className="size-3.5" /> {t("Aprobado. El resultado aparecerá en la conversación.")}
-        </div>
-      ) : state === "denied" ? (
-        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <X className="size-3.5" /> {t("Denegado. El asistente seguirá sin ese dato.")}
-        </div>
-      ) : (
+      {decision === null ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button size="sm" onClick={onApprove} disabled={state === "approving"}>
-            {state === "approving" ? t("Aprobando…") : t("Aprobar este acceso")}
+          <Button size="sm" onClick={() => decide(true)}>
+            {t("Aprobar este acceso")}
           </Button>
-          <Button size="sm" variant="outline" onClick={onDeny}>
+          <Button size="sm" variant="outline" onClick={() => decide(false)}>
             {t("Denegar")}
           </Button>
+        </div>
+      ) : decision ? (
+        <div className="mt-2 flex items-center gap-2 text-xs text-success">
+          <Check className="size-3.5" /> {t("Aprobado. Consultando Google Drive…")}
+        </div>
+      ) : (
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <X className="size-3.5" /> {t("Denegado. El asistente seguirá sin ese dato.")}
         </div>
       )}
     </div>

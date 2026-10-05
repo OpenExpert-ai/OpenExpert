@@ -400,4 +400,17 @@ export const en: Record<string, string> = {
     "All saved messages will be deleted. This doesn't affect Experts or processes.",
   "Se quitará el fichero de configuración y se aplicarán los valores por defecto.":
     "The configuration file will be removed and the defaults applied.",
+  "Acceso a Google Drive": "Google Drive access",
+  "Aprobar este acceso": "Approve this access",
+  Denegar: "Deny",
+  "Denegado. El asistente seguirá sin ese dato.":
+    "Denied. The assistant will continue without that data.",
+  "Aprobado. Consultando Google Drive…": "Approved. Querying Google Drive…",
+  "Acceso a Google Drive denegado": "Google Drive access denied",
+  "Listar tus archivos de Drive elegidos": "List your chosen Drive files",
+  "Leer un archivo de Drive": "Read a Drive file",
+  "Editar un archivo de Drive": "Edit a Drive file",
+  "Buscar «{q}» en los archivos de Drive que elegiste":
+    "Search for “{q}” in the Drive files you chose",
+  "Crear «{name}» en Google Drive": "Create “{name}” in Google Drive",
 };
