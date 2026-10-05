@@ -4,6 +4,8 @@
 //   1. Every commit carries a `Signed-off-by:` trailer (DCO 1.1).
 //   2. The subject follows Conventional Commits.
 //
+// Bot commits (Dependabot, GitHub Actions) are exempt: they cannot sign off.
+//
 // Usage:
 //   node scripts/check-commits.mjs [<git-range>]
 // When no range is given it checks the last commit only, which keeps local
@@ -28,7 +30,7 @@ function git(args) {
 }
 
 const range = process.argv[2];
-const logArgs = ["log", `--format=%H${SEP}%s${SEP}%B${RECORD}`];
+const logArgs = ["log", `--format=%H${SEP}%s${SEP}%an${SEP}%ae${SEP}%B${RECORD}`];
 if (range) logArgs.push(range);
 
 const raw = git(logArgs);
@@ -37,8 +39,8 @@ const commits = raw
   .map((chunk) => chunk.trim())
   .filter(Boolean)
   .map((chunk) => {
-    const [hash, subject, body = ""] = chunk.split(SEP);
-    return { hash, subject: subject ?? "", body };
+    const [hash, subject, authorName, authorEmail, body = ""] = chunk.split(SEP);
+    return { hash, subject: subject ?? "", authorName, authorEmail, body };
   });
 
 if (!commits.length) {
@@ -46,11 +48,14 @@ if (!commits.length) {
   process.exit(0);
 }
 
+const isBot = (c) => /\[bot\]$/.test(c.authorName ?? "") || (c.authorEmail ?? "").includes("[bot]");
+
 const problems = [];
 for (const c of commits) {
+  if (isBot(c)) continue;
   const short = c.hash.slice(0, 8);
   const firstLine = c.body.split("\n")[0] ?? "";
-  // Merge and changelog commits do not follow Conventional Commits.
+  // Merge and version commits do not follow Conventional Commits.
   if (/^(Merge |Revert )/.test(firstLine) || firstLine.startsWith("chore(release):")) {
     continue;
   }
