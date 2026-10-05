@@ -32,32 +32,6 @@ export type DriveFile = {
   size?: string;
   webViewLink?: string;
 };
-const FIELDS = "files(id,name,mimeType,modifiedTime,size,webViewLink),nextPageToken";
-
-/** Restrict searches to the granted file IDs (Picker scope). */
-export async function listFiles(
-  search: string | null,
-  grantedIds: string[],
-  limit = 25,
-): Promise<DriveFile[]> {
-  if (grantedIds.length === 0) return [];
-  const term = (search ?? "").replace(/['\\]/g, "");
-  const idClause = grantedIds.map((id) => `'${id.replace(/'/g, "")}'`).join(" or ");
-  const cleanQ = [
-    "trashed = false",
-    term ? `(name contains '${term}' or fullText contains '${term}')` : null,
-    `(${idClause})`,
-  ]
-    .filter(Boolean)
-    .join(" and ");
-  const r = await call("/files", {
-    q: cleanQ,
-    fields: FIELDS,
-    pageSize: String(limit),
-    orderBy: search ? "" : "modifiedTime desc",
-  });
-  return ((await r.json()) as { files: DriveFile[] }).files ?? [];
-}
 
 /** Read only if the ID is in the granted set. */
 export async function readFile(id: string, grantedIds: string[]) {

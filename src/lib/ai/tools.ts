@@ -192,7 +192,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_drive: tool({
       description:
-        "Pide al asistente acceso de lectura a los archivos de Google Drive que el usuario eligió con el Picker. Devuelve un pendingConsent que el usuario debe aprobar antes de ejecutarse.",
+        "Busca por nombre entre los archivos de Google Drive que el usuario eligió con el Picker. Devuelve un pendingConsent que el usuario debe aprobar antes de ejecutarse.",
       inputSchema: z.object({ query: z.string().nullable() }),
       execute: async ({ query }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");

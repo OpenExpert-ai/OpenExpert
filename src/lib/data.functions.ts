@@ -495,12 +495,24 @@ export const approveDriveTool = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const local = await import("@/lib/opencore/local-secrets.server");
-    const granted = local.loadGrantedFiles().map((g) => g.id);
-    const drive = await import("./drive.server");
+    const grants = local.loadGrantedFiles();
+    const granted = grants.map((g) => g.id);
     let output: unknown;
     if (data.tool === "search_drive") {
-      output = { files: await drive.listFiles(data.args.query ?? null, granted) };
+      // Search the files the user already granted; no Drive `files.list` call.
+      const q = (data.args.query ?? "").trim().toLowerCase();
+      const files = grants
+        .filter((f) => !q || f.name.toLowerCase().includes(q))
+        .slice(0, 100)
+        .map((f) => ({ id: f.id, name: f.name, mimeType: f.mimeType }));
+      output = {
+        files,
+        note: files.length
+          ? undefined
+          : "No hay archivos que coincidan entre los que elegiste con el Picker.",
+      };
     } else {
+      const drive = await import("./drive.server");
       if (!data.args.fileId) throw new Error("Falta fileId");
       output = await drive.readFile(data.args.fileId, granted);
     }
