@@ -20,6 +20,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, extname, join, resolve, sep } from "node:path";
+import { OFFICE_EXT, extractOfficeText } from "./office.server";
 
 /** Names never listed or walked, to avoid leaking secrets and huge trees. */
 const IGNORED = new Set([
@@ -230,7 +231,9 @@ async function extractText(abs: string): Promise<{ text: string | null; note?: s
   if (size > MAX_READ_BYTES)
     return { text: null, note: `Archivo demasiado grande (${size} bytes > 25 MB).` };
   const buf = readFileSync(abs);
-  if (extname(abs).toLowerCase() === ".pdf") {
+  const ext = extname(abs).toLowerCase();
+  if (OFFICE_EXT.has(ext)) return extractOfficeText(new Uint8Array(buf), ext);
+  if (ext === ".pdf") {
     const { extractText: extract, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buf));
     const out = await extract(pdf, { mergePages: true });
@@ -240,7 +243,6 @@ async function extractText(abs: string): Promise<{ text: string | null; note?: s
     if (!text) return { text: null, note: "PDF escaneado sin texto seleccionable." };
     return { text };
   }
-  const ext = extname(abs).toLowerCase();
   if (!TEXT_EXT.has(ext) && buf.subarray(0, 8000).includes(0))
     return { text: null, note: "Tipo de archivo no legible como texto." };
   return { text: buf.toString("utf8") };

@@ -82,7 +82,8 @@ absoluta. Las concesiones se guardan cifradas en
 - El acceso es **solo dentro de las carpetas autorizadas**. Cada ruta se resuelve
   con `realpath` y se comprueba contra las raíces, así que se rechazan los
   enlaces simbólicos que escapen.
-- Las lecturas devuelven texto (y el texto de PDFs). Las escrituras
+- Las lecturas devuelven texto, texto de PDFs y contenido de Office (Word
+  `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, OpenDocument). Las escrituras
   (`create_local_file`, `update_local_file`) requieren **aprobación humana**,
   igual que las de Drive.
 - Con límites: 25 MB por archivo, 200.000 caracteres devueltos, 5.000 archivos y

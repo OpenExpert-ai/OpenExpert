@@ -266,7 +266,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_drive_file: tool({
       description:
-        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker (Docs, Sheets como CSV, Slides, PDF, texto).",
+        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker (Docs, Sheets como CSV, Slides, PDF, Word/Excel/PowerPoint y texto).",
       inputSchema: z.object({ fileId: z.string() }),
       execute: async ({ fileId }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
@@ -388,7 +388,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_local_file: tool({
       description:
-        "Lee el contenido de texto de un archivo local autorizado. Pasa la ruta devuelta por list_local_files o search_local_files.",
+        "Lee el contenido de texto de un archivo local autorizado (texto, PDF, Word, Excel y PowerPoint). Pasa la ruta devuelta por list_local_files o search_local_files.",
       inputSchema: z.object({ path: z.string() }),
       execute: async ({ path }) => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");

@@ -50,6 +50,10 @@ reales.
 | `read_local_file`                         | `local` en `sources`                     |
 | `create_local_file` / `update_local_file` | `local` en `sources` + aprobación humana |
 
+Las herramientas de lectura extraen texto de ficheros de texto, PDF, Word
+(`.docx`), Excel (`.xlsx`) y PowerPoint (`.pptx`), tanto en carpetas locales como
+en Google Drive.
+
 ### Propuestas (no ejecutan)
 
 | Herramienta                 | Propone                                 |

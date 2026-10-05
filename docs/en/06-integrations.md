@@ -82,7 +82,8 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 
 - Access is **only inside the granted folders**. Every path is resolved with
   `realpath` and checked against the roots, so symlink escapes are rejected.
-- Reads return text (and PDF text). Writes (`create_local_file`,
+- Reads return text, PDF text and Office content (Word `.docx`, Excel `.xlsx`,
+  PowerPoint `.pptx`, OpenDocument). Writes (`create_local_file`,
   `update_local_file`) require **human approval**, like Drive writes.
 - Bounded: 25 MB per file, 200k characters returned, 5,000 files and depth 8 per
   listing; `.git`, `node_modules`, dotfiles and secret files are skipped.

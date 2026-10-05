@@ -6,6 +6,7 @@
 
 import { getAccessToken } from "./drive-tokens.server";
 import { logger } from "./logger.server";
+import { OFFICE_MIME, extractOfficeText } from "./office.server";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -74,6 +75,21 @@ export async function readFile(id: string, grantedIds: string[]) {
       .replace(/\s+\n/g, "\n")
       .trim();
     if (!text) return { ...meta, content: null, note: "PDF escaneado sin texto seleccionable." };
+  } else if (OFFICE_MIME[meta.mimeType]) {
+    const officeExt = OFFICE_MIME[meta.mimeType]!;
+    const token = await getAccessToken();
+    const buf = new Uint8Array(
+      await (
+        await fetch(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ).arrayBuffer(),
+    );
+    if (buf.byteLength > 25_000_000)
+      return { ...meta, content: null, note: "Documento demasiado grande (>25 MB) para leerlo." };
+    const r = await extractOfficeText(buf, officeExt);
+    if (!r.text) return { ...meta, content: null, note: r.note };
+    text = r.text;
   } else return { ...meta, content: null, note: "Tipo de archivo no legible como texto." };
   return { ...meta, content: text.slice(0, 20000), truncated: text.length > 20000 };
 }
