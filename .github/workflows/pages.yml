@@ -35,9 +35,6 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          # Auto-enable Pages if it is not enabled yet (safe if it is).
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
