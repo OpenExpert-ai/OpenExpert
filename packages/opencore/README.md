@@ -10,7 +10,7 @@ edición cloud.
 - `src/config.ts` — lee `openexpert.json` + `OPENEXPERT_*`.
 - `src/storage.ts` — interfaz de guardado local.
 - `src/secrets.ts` — interfaz de tokens de Drive (fichero local, `0600`).
-- `src/tools.ts` — catálogo de las 14 herramientas y sus dominios.
+- `src/tools.ts` — catálogo de las 12 herramientas y sus dominios.
 - `src/cli/` — el CLI `opencore` (asistente, doctor, fix, models, serve, update).
 
 ## Uso

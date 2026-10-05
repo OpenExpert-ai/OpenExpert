@@ -5,7 +5,6 @@
 export type TableName =
   | "experts"
   | "integrations"
-  | "processes"
   | "activity"
   | "chat_messages"
   | "deals"
@@ -25,7 +24,6 @@ export interface Storage {
 export const LOCAL_TABLES: TableName[] = [
   "experts",
   "integrations",
-  "processes",
   "activity",
   "chat_messages",
   "deals",

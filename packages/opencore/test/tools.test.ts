@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { TOOL_CATALOG } from "../src/tools.js";
 
 describe("TOOL_CATALOG", () => {
-  it("declares 14 tools", () => {
-    expect(TOOL_CATALOG.length).toBe(14);
+  it("declares 12 tools", () => {
+    expect(TOOL_CATALOG.length).toBe(12);
   });
 
   it("uses unique names", () => {
