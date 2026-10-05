@@ -54,7 +54,9 @@ jobs:
   docker:
     name: Build and publish Docker image
     needs: version
-    if: github.event_name != 'pull_request'
+    # Only publish an image when a release was actually published, not on every
+    # merge into main.
+    if: needs.version.outputs.published == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,6 +64,15 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      # GHCR requires lowercase repository names, but the org is `OpenExpert-ai`.
+      - name: Compute lowercase image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Read package version
+        id: pkg
+        run: node -e "console.log('version=' + require('./packages/opencore/package.json').version)" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -81,8 +92,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/openexpert:latest
-            ghcr.io/${{ github.repository_owner }}/openexpert:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ steps.pkg.outputs.version }}
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
           provenance: true
           sbom: true
           cache-from: type=gha
