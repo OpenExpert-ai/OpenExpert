@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Los "Expertos" (ventas, finanzas, marketing, general) no deben leer los datos de
+Los "Expertos" (ventas, finanzas, marketing, clientes) no deben leer los datos de
 los demás. No se puede confiar en que un modelo lo garantice: el prompt del
 sistema puede ignorarse o manipularse.
 

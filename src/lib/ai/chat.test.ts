@@ -33,11 +33,11 @@ const userMessage = (text: string) => ({
 describe("domainAllowed", () => {
   it("allows every domain the expert lists", async () => {
     const { domainAllowed } = await import("./chat.server");
-    const all = ["ventas", "finanzas", "marketing", "general"];
+    const all = ["ventas", "finanzas", "marketing", "clientes"];
     expect(domainAllowed(all, "ventas")).toBe(true);
     expect(domainAllowed(all, "finanzas")).toBe(true);
     expect(domainAllowed(all, "marketing")).toBe(true);
-    expect(domainAllowed(all, "general")).toBe(true);
+    expect(domainAllowed(all, "clientes")).toBe(true);
   });
 
   it("isolates an expert to its own domains", async () => {

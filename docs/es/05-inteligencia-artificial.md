@@ -24,7 +24,7 @@ herramientas.
 | `list_deals`               | Oportunidades abiertas, opcionalmente por etapa             | `ventas`    |
 | `list_overdue_invoices`    | Facturas vencidas con importe, días y recordatorios         | `finanzas`  |
 | `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado           | `marketing` |
-| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `general`   |
+| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `clientes`  |
 
 Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Una
 herramienta solo atribuye el dato a un proveedor cuando esa integración está

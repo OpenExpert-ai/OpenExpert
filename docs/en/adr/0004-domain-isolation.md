@@ -5,7 +5,7 @@
 
 ## Context
 
-"Experts" (ventas, finanzas, marketing, general) must not read each other's
+"Experts" (ventas, finanzas, marketing, clientes) must not read each other's
 data. A model cannot be trusted to enforce this: the system prompt can be
 ignored or manipulated.
 

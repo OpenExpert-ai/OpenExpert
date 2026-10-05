@@ -13,8 +13,8 @@ ejecuta **en tu propio equipo**. Su principio central:
 > propio chat y su propio dominio, capaz de leer y actuar sobre los datos de su
 > dominio — siempre con aprobación humana explícita.
 
-Cada Experto está vinculado a un dominio (`general`, `ventas`, `finanzas`,
-`marketing`), y el sistema impide que un Experto lea los datos de otro.
+Cada Experto está vinculado a uno o varios dominios (`ventas`, `finanzas`,
+`marketing`, `clientes`), y el sistema impide que lea datos fuera de ellos.
 
 ## 2. Problema que resuelve
 

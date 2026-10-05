@@ -125,7 +125,7 @@ const DEFAULT_EXPERTS = [
     name: "General",
     description: "Dirección: indicadores consolidados y OKR. Consulta datos de todos los dominios.",
     sources: ["gdrive"],
-    domains: ["ventas", "finanzas", "marketing", "general"],
+    domains: ["ventas", "finanzas", "marketing", "clientes"],
   },
   {
     id: "ventas",

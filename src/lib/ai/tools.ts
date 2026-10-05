@@ -12,7 +12,7 @@ export const DOMAIN = {
   deals: "ventas",
   invoices: "finanzas",
   campaigns: "marketing",
-  accounts: "general",
+  accounts: "clientes",
 } as const;
 
 /** Result of proposing an action that requires human confirmation. */
@@ -127,7 +127,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         "Riesgo de churn por cuenta cliente: MRR, tendencia de uso, tickets abiertos y probabilidad de baja.",
       inputSchema: z.object({}),
       execute: async () => {
-        if (!allowed(DOMAIN.accounts)) return deny("general");
+        if (!allowed(DOMAIN.accounts)) return deny("clientes");
         used.add("Clientes");
         const src = await sourceStatus(["salesforce"]);
         return withSource({ accounts: await ee.churnRisk() }, src);

@@ -13,8 +13,8 @@
 > and its own domain, able to read and act on its domain's data — always with
 > explicit human approval.
 
-Each Expert is bound to a domain (`general`, `ventas`, `finanzas`, `marketing`),
-and the system prevents an Expert from reading another Expert's data.
+Each Expert is bound to one or more domains (`ventas`, `finanzas`, `marketing`,
+`clientes`), and the system prevents it from reading data outside them.
 
 ## 2. Problem it solves
 

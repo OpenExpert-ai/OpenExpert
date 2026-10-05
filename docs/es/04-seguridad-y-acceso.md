@@ -14,13 +14,12 @@ cortafuegos o un proxy inverso.
 
 ## 2. Aislamiento entre Expertos
 
-Ningún Experto puede leer los datos de otro. Cada herramienta de lectura
-pertenece a un dominio (`ventas`, `finanzas`, `marketing`, `general`) y el
-servidor comprueba que el Experto activo coincida con el dominio (o sea
-`general`) antes de devolver datos. Las llamadas fuera de contexto devuelven un
-error explícito, sin datos. El acceso a Google Drive se decide por la columna
-`sources` del Experto, y el de archivos locales por el origen `local`,
-restringido a las carpetas autorizadas.
+Ningún Experto puede leer datos fuera de sus dominios. Cada herramienta de
+lectura pertenece a un dominio (`ventas`, `finanzas`, `marketing`, `clientes`) y
+el servidor comprueba que el Experto activo lo incluya antes de devolver datos.
+Las llamadas fuera de contexto devuelven un error explícito, sin datos. El acceso
+a Google Drive se decide por la columna `sources` del Experto, y el de archivos
+locales por el origen `local`, restringido a las carpetas autorizadas.
 
 ## 3. Garantías frente a uso indebido del asistente
 

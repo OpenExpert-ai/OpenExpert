@@ -13,12 +13,12 @@ port 3000; by default it binds all interfaces, so if you expose it beyond
 
 ## 2. Isolation between Experts
 
-No Expert can read another Expert's data. Each read tool belongs to a domain
-(`ventas`, `finanzas`, `marketing`, `general`) and the server checks that the
-active Expert matches the domain (or is `general`) before returning data.
-Out-of-context calls return an explicit error, not data. Google Drive access is
-decided by the Expert's `sources` column, and local folder access by the `local`
-source, restricted to the folders the user granted.
+No Expert can read data outside its domains. Each read tool belongs to a domain
+(`ventas`, `finanzas`, `marketing`, `clientes`) and the server checks that the
+active Expert lists that domain before returning data. Out-of-context calls
+return an explicit error, not data. Google Drive access is decided by the
+Expert's `sources` column, and local folder access by the `local` source,
+restricted to the folders the user granted.
 
 ## 3. Guarantees against assistant misuse
 

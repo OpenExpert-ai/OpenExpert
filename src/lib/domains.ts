@@ -8,7 +8,7 @@
 //   marketing -> campaigns
 //   general  -> accounts (churn) — kept as `general` for backward compatibility
 //               with the seeded data and the AI docs.
-export const EXPERT_DOMAINS = ["ventas", "finanzas", "marketing", "general"] as const;
+export const EXPERT_DOMAINS = ["ventas", "finanzas", "marketing", "clientes"] as const;
 
 export type ExpertDomain = (typeof EXPERT_DOMAINS)[number];
 
@@ -17,7 +17,7 @@ export const EXPERT_DOMAIN_LABELS: Record<ExpertDomain, string> = {
   ventas: "Ventas",
   finanzas: "Finanzas",
   marketing: "Marketing",
-  general: "Cuentas / churn",
+  clientes: "Cuentas / churn",
 };
 
 export function isExpertDomain(value: string): value is ExpertDomain {
