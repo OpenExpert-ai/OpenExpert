@@ -12,11 +12,11 @@ One SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db` (default
 (applied at startup by `src/lib/db.server.ts`). JSON columns are stored as
 `TEXT`.
 
-Tables: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
-`deals`, `invoices`, `campaigns`, `accounts`, `settings`.
+Tables: `experts`, `integrations`, `activity`, `chat_messages`, `deals`,
+`invoices`, `campaigns`, `accounts`, `settings`.
 
 On first run `src/lib/db.server.ts` seeds the **configuration** (Experts,
-processes, integrations). The business tables (`deals`, `invoices`, `campaigns`,
+integrations). The business tables (`deals`, `invoices`, `campaigns`,
 `accounts`) start **empty**: they are only filled by a real connector or an
 import. Business tools report whether a source is connected and never present
 local fixtures as real data. Delete the database file to re-seed the
@@ -34,19 +34,6 @@ configuration.
 | `sources`     | TEXT (JSON) | Authorised connectors, e.g. `["gdrive"]`                                                             |
 | `domains`     | TEXT (JSON) | Business domains it may read, e.g. `["ventas"]`; empty = no business data. Added by migration `0002` |
 | `created_at`  | TEXT        | ISO timestamp                                                                                        |
-
-### `processes` — autonomous processes
-
-| Column                           | Type        | Notes                         |
-| -------------------------------- | ----------- | ----------------------------- |
-| `id`                             | TEXT PK     | `p-` prefix + short name      |
-| `name`, `description`, `trigger` | TEXT        | `trigger` is descriptive text |
-| `stages`, `limits`               | TEXT (JSON) | String arrays                 |
-| `approval`                       | TEXT        | `Ninguna` or `Requerida`      |
-| `expert_id`                      | TEXT        | Owning Expert                 |
-| `active`                         | INTEGER     | 0/1                           |
-| `runs`                           | INTEGER     | Run counter                   |
-| `last_run`                       | TEXT        | ISO timestamp or null         |
 
 ### `integrations` — connector catalogue
 

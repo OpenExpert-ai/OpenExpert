@@ -27,7 +27,6 @@ describe("local SQLite database", () => {
     expect(experts.map((e) => e.id)).toEqual(
       expect.arrayContaining(["general", "ventas", "finanzas", "marketing"]),
     );
-    expect(orm.select().from(schema.processes).all().length).toBeGreaterThan(0);
     expect(orm.select().from(schema.integrations).all().length).toBe(9);
   });
 

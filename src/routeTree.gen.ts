@@ -19,7 +19,6 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as ApiBackupRouteImport } from './routes/api/backup'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedIntegrationsIndexRouteImport } from './routes/_authenticated/integrations.index'
-import { Route as AuthenticatedIntegrationsProcessesRouteImport } from './routes/_authenticated/integrations.processes'
 import { Route as AuthenticatedIntegrationsSourcesRouteImport } from './routes/_authenticated/integrations.sources'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsAboutRouteImport } from './routes/_authenticated/settings.about'
@@ -79,12 +78,6 @@ const AuthenticatedIntegrationsIndexRoute =
   AuthenticatedIntegrationsIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedIntegrationsRoute,
-  } as any)
-const AuthenticatedIntegrationsProcessesRoute =
-  AuthenticatedIntegrationsProcessesRouteImport.update({
-    id: '/processes',
-    path: '/processes',
     getParentRoute: () => AuthenticatedIntegrationsRoute,
   } as any)
 const AuthenticatedIntegrationsSourcesRoute =
@@ -149,7 +142,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/api/backup': typeof ApiBackupRoute
   '/api/chat': typeof ApiChatRoute
-  '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
   '/settings/about': typeof AuthenticatedSettingsAboutRoute
   '/settings/advanced': typeof AuthenticatedSettingsAdvancedRoute
@@ -168,7 +160,6 @@ export interface FileRoutesByTo {
   '/experts': typeof AuthenticatedExpertsRoute
   '/api/backup': typeof ApiBackupRoute
   '/api/chat': typeof ApiChatRoute
-  '/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
   '/settings/about': typeof AuthenticatedSettingsAboutRoute
   '/settings/advanced': typeof AuthenticatedSettingsAdvancedRoute
@@ -191,7 +182,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/api/backup': typeof ApiBackupRoute
   '/api/chat': typeof ApiChatRoute
-  '/_authenticated/integrations/processes': typeof AuthenticatedIntegrationsProcessesRoute
   '/_authenticated/integrations/sources': typeof AuthenticatedIntegrationsSourcesRoute
   '/_authenticated/settings/about': typeof AuthenticatedSettingsAboutRoute
   '/_authenticated/settings/advanced': typeof AuthenticatedSettingsAdvancedRoute
@@ -214,7 +204,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/backup'
     | '/api/chat'
-    | '/integrations/processes'
     | '/integrations/sources'
     | '/settings/about'
     | '/settings/advanced'
@@ -233,7 +222,6 @@ export interface FileRouteTypes {
     | '/experts'
     | '/api/backup'
     | '/api/chat'
-    | '/integrations/processes'
     | '/integrations/sources'
     | '/settings/about'
     | '/settings/advanced'
@@ -255,7 +243,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/api/backup'
     | '/api/chat'
-    | '/_authenticated/integrations/processes'
     | '/_authenticated/integrations/sources'
     | '/_authenticated/settings/about'
     | '/_authenticated/settings/advanced'
@@ -348,13 +335,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIntegrationsIndexRouteImport
       parentRoute: typeof AuthenticatedIntegrationsRoute
     }
-    '/_authenticated/integrations/processes': {
-      id: '/_authenticated/integrations/processes'
-      path: '/processes'
-      fullPath: '/integrations/processes'
-      preLoaderRoute: typeof AuthenticatedIntegrationsProcessesRouteImport
-      parentRoute: typeof AuthenticatedIntegrationsRoute
-    }
     '/_authenticated/integrations/sources': {
       id: '/_authenticated/integrations/sources'
       path: '/sources'
@@ -422,15 +402,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedIntegrationsRouteChildren {
-  AuthenticatedIntegrationsProcessesRoute: typeof AuthenticatedIntegrationsProcessesRoute
   AuthenticatedIntegrationsSourcesRoute: typeof AuthenticatedIntegrationsSourcesRoute
   AuthenticatedIntegrationsIndexRoute: typeof AuthenticatedIntegrationsIndexRoute
 }
 
 const AuthenticatedIntegrationsRouteChildren: AuthenticatedIntegrationsRouteChildren =
   {
-    AuthenticatedIntegrationsProcessesRoute:
-      AuthenticatedIntegrationsProcessesRoute,
     AuthenticatedIntegrationsSourcesRoute:
       AuthenticatedIntegrationsSourcesRoute,
     AuthenticatedIntegrationsIndexRoute: AuthenticatedIntegrationsIndexRoute,

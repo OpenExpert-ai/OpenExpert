@@ -29,8 +29,8 @@ restringido a las carpetas autorizadas.
    `denied`.
 2. **Comprobaciones en servidor.** El aislamiento por dominio se aplica en
    `chat.server.ts`, no por el modelo.
-3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`,
-   `request_process_run`); nada cambia hasta que apruebas la tarjeta.
+3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`);
+   nada cambia hasta que apruebas la tarjeta.
 4. **Endurecimiento del transporte.** Cada respuesta incluye
    `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y
    `Permissions-Policy`, además de una `Content-Security-Policy` en producción.
@@ -84,7 +84,7 @@ aporta tu disco, no la aplicación. Haz copia copiando `OPENEXPERT_DATA_DIR`.
 
 Cada cambio reversible guarda las filas previas en `snapshot.entries`; la
 pantalla de actividad puede reproducirlas. Reversibles: `experts`,
-`integrations`, `processes`, `invoices`, `campaigns`.
+`integrations`, `invoices`, `campaigns`.
 
 ## 7. Referencias
 

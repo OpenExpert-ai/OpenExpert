@@ -277,7 +277,7 @@ function ExpertsPage() {
             <AlertDialogTitle>{t("¿Eliminar este Experto?")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t(
-                "Se borrarán sus conversaciones y sus procesos pasarán a General. Podrás revertir el Experto desde el Registro, pero no las conversaciones.",
+                "Se borrarán sus conversaciones. Podrás revertir el Experto desde el Registro, pero no las conversaciones.",
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -26,8 +26,8 @@ source, restricted to the folders the user granted.
    before the model runs and logs the attempt with status `denied`.
 2. **Server-side checks.** Domain isolation is enforced in `chat.server.ts`, not
    by the model.
-3. **Human approval.** The assistant only _proposes_ actions (`propose_*`,
-   `request_process_run`); nothing changes until you approve the card.
+3. **Human approval.** The assistant only _proposes_ actions (`propose_*`);
+   nothing changes until you approve the card.
 4. **Transport hardening.** Every response carries `X-Content-Type-Options`,
    `Referrer-Policy`, `X-Frame-Options` and `Permissions-Policy`, plus a
    `Content-Security-Policy` in production. The `/api/*` routes (chat, backup)
@@ -76,7 +76,7 @@ disk, not by the app. Back it up by copying `OPENEXPERT_DATA_DIR`.
 
 Every revertible change stores the prior rows in `snapshot.entries`; the
 activity screen can replay them. Revertible: `experts`, `integrations`,
-`processes`, `invoices`, `campaigns`.
+`invoices`, `campaigns`.
 
 ## 7. References
 

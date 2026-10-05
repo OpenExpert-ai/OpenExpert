@@ -10,8 +10,8 @@
 **on your own machine**. Its core principle:
 
 > An **Expert** is a digital assistant with its own data context, its own chat
-> and its own domain, able to run operational processes — always with explicit
-> human approval.
+> and its own domain, able to read and act on its domain's data — always with
+> explicit human approval.
 
 Each Expert is bound to a domain (`general`, `ventas`, `finanzas`, `marketing`),
 and the system prevents an Expert from reading another Expert's data.
@@ -29,8 +29,6 @@ execution**: AI proposes, a person approves.
   `finanzas`, `marketing`.
 - **Chat with real data** through tools that query the local database. It does
   not invent numbers.
-- **Autonomous processes** with a trigger and an approval policy; actions are
-  proposed as confirmation cards.
 - **Governance:** an activity log of every relevant event and revert for
   revertible changes.
 - **Google Drive** (optional): read, create and edit documents from the chat.

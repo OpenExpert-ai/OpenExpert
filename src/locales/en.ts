@@ -8,7 +8,6 @@ export const en: Record<string, string> = {
   "Habla con tu empresa": "Talk to your company",
   Expert: "Expert",
   Experts: "Experts",
-  "Procesos e Integraciones": "Processes & Integrations",
   "Registro de Actividad": "Activity log",
   Configuración: "Settings",
   Local: "Local",
@@ -99,7 +98,6 @@ export const en: Record<string, string> = {
   "Retención (días)": "Retention (days)",
   "0 desactiva la purga automática.": "0 disables automatic pruning.",
   "Aprobación por defecto": "Default approval",
-  "Política aplicada a los procesos nuevos.": "Policy applied to new processes.",
   Requerida: "Required",
   Ninguna: "None",
   "Ajustes de chat guardados": "Chat settings saved",
@@ -108,7 +106,6 @@ export const en: Record<string, string> = {
   Estado: "Status",
   "Resumen de los datos que guarda tu instalación.": "Summary of the data your install holds.",
   "Base de datos": "Database",
-  Procesos: "Processes",
   Integraciones: "Integrations",
   Eventos: "Events",
   Mensajes: "Messages",
@@ -200,8 +197,8 @@ export const en: Record<string, string> = {
   "Editar Experto": "Edit Expert",
   "Eliminar Experto": "Delete Expert",
   "¿Eliminar este Experto?": "Delete this Expert?",
-  "Se borrarán sus conversaciones y sus procesos pasarán a General. Podrás revertir el Experto desde el Registro, pero no las conversaciones.":
-    "Its conversations will be deleted and its processes will move to General. You can revert the Expert from the Activity log, but not the conversations.",
+  "Se borrarán sus conversaciones. Podrás revertir el Experto desde el Registro, pero no las conversaciones.":
+    "Its conversations will be deleted. You can revert the Expert from the Activity log, but not the conversations.",
   Dominios: "Domains",
   "Dominios de datos": "Data domains",
   "Sin dominios": "No domains",
@@ -214,18 +211,7 @@ export const en: Record<string, string> = {
   Cancelar: "Cancel",
 
   // --- Integrations ----------------------------------------------------------
-  Procs: "Procs",
   "Fuentes de Datos": "Data sources",
-  "Procesos Autónomos": "Autonomous processes",
-  Arquitectura: "Architecture",
-  "Límites de seguridad": "Security limits",
-  "Aprobación: {v}": "Approval: {v}",
-  "Activar proceso": "Toggle process",
-  "Ejecutar ahora": "Run now",
-  "{n} ejecuciones · última {t}": "{n} runs · last {t}",
-  "Solicitud enviada: pendiente de aprobación en el Registro":
-    "Request sent: pending approval in the Activity log",
-  "{name} ejecutado": "{name} executed",
   Pendiente: "Pending",
   conectado: "connected",
   desconectado: "disconnected",
@@ -340,8 +326,6 @@ export const en: Record<string, string> = {
   "Configuración restaurada": "Configuration restored",
   "Cada consulta, acción y cambio de configuración queda trazado. Los ADMIN pueden revertir acciones con snapshot; las acciones pendientes se aprueban aquí o en el chat.":
     "Every query, action and configuration change is traced. ADMINs can revert actions with a snapshot; pending actions are approved here or in the chat.",
-  "Fuentes de datos sincronizadas y agentes autónomos gobernados por límites y aprobación humana.":
-    "Synced data sources and autonomous agents governed by limits and human approval.",
   Experto: "Expert",
   "1. Elige tu modelo con `openexpert init` (Ollama o Gemini).":
     "1. Choose your model with `openexpert init` (Ollama or Gemini).",
@@ -366,10 +350,8 @@ export const en: Record<string, string> = {
   "Sin fuentes de negocio conectadas. Los conectores reales están en la hoja de ruta; hasta entonces el asistente no tiene datos que consultar.":
     "No business sources are connected. Real connectors are on the roadmap; until then the assistant has no data to query.",
   "Evaluando riesgo de churn": "Assessing churn risk",
-  "Cargando catálogo de procesos": "Loading the process catalogue",
   "Preparando reclamaciones de cobro": "Preparing payment claims",
   "Preparando pausa de campañas": "Preparing to pause campaigns",
-  "Preparando ejecución de proceso": "Preparing process run",
   "Cargando plantilla de Experto": "Loading the Expert template",
   "Buscando en Google Drive": "Searching Google Drive",
   "Leyendo documento de Drive": "Reading a Drive document",
@@ -449,10 +431,10 @@ export const en: Record<string, string> = {
   "Escribir {word}": "Type {word}",
   "Se restaurarán los datos al estado anterior almacenado en el snapshot.":
     "Data will be restored to the previous state stored in the snapshot.",
-  "Cuando ejecutes procesos o converses con un Experto, aparecerán aquí.":
-    "When you run processes or chat with an Expert, they'll show up here.",
-  "Se eliminarán todos los mensajes guardados. No afecta a Experts ni a procesos.":
-    "All saved messages will be deleted. This doesn't affect Experts or processes.",
+  "Cuando converses con un Experto, aparecerá aquí.":
+    "When you chat with an Expert, it will show up here.",
+  "Se eliminarán todos los mensajes guardados. No afecta a tus Experts.":
+    "All saved messages will be deleted. This doesn't affect your Experts.",
   "Se quitará el fichero de configuración y se aplicarán los valores por defecto.":
     "The configuration file will be removed and the defaults applied.",
   "Acceso a Google Drive": "Google Drive access",

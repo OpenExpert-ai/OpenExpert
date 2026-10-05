@@ -146,7 +146,6 @@ export async function dataStats() {
   return {
     dbSize,
     experts: count(raw, "experts"),
-    processes: count(raw, "processes"),
     integrations: count(raw, "integrations"),
     activity: count(raw, "activity"),
     chatMessages: count(raw, "chat_messages"),

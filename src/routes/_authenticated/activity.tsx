@@ -214,7 +214,7 @@ function ActivityPage() {
             description={
               needle
                 ? t("Sin resultados para «{q}».", { q })
-                : t("Cuando ejecutes procesos o converses con un Experto, aparecerán aquí.")
+                : t("Cuando converses con un Experto, aparecerá aquí.")
             }
           />
         )}

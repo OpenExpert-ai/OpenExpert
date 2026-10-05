@@ -6,13 +6,13 @@ import { useT } from "@/lib/i18n";
 export const Route = createFileRoute("/_authenticated/integrations")({
   head: () => ({
     meta: [
-      { title: "Procesos e Integraciones — OpenExpert" },
+      { title: "Integraciones — OpenExpert" },
       {
         name: "description",
-        content: "Conecta fuentes de datos y gestiona procesos autónomos con límites de seguridad.",
+        content: "Conecta fuentes de datos a tus Expertos con límites de seguridad.",
       },
-      { property: "og:title", content: "Procesos e Integraciones — OpenExpert" },
-      { property: "og:description", content: "Conectores y agentes autónomos de tu empresa." },
+      { property: "og:title", content: "Integraciones — OpenExpert" },
+      { property: "og:description", content: "Conectores de tu empresa." },
     ],
   }),
   component: IntegrationsLayout,
@@ -23,19 +23,12 @@ function IntegrationsLayout() {
   return (
     <div>
       <PageHeader
-        eyebrow={t("Procs")}
-        title={t("Procesos e Integraciones")}
-        desc={t(
-          "Fuentes de datos sincronizadas y agentes autónomos gobernados por límites y aprobación humana.",
-        )}
+        eyebrow={t("Integraciones")}
+        title={t("Integraciones")}
+        desc={t("Fuentes de datos conectadas a tus Expertos.")}
       />
       <div className="flex gap-1 border-b border-border px-6">
-        {(
-          [
-            ["/integrations/sources", "Fuentes de Datos"],
-            ["/integrations/processes", "Procesos Autónomos"],
-          ] as const
-        ).map(([to, label]) => (
+        {([["/integrations/sources", "Fuentes de Datos"]] as const).map(([to, label]) => (
           <Link
             key={to}
             to={to}

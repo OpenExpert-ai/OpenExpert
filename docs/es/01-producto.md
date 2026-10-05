@@ -10,8 +10,8 @@
 ejecuta **en tu propio equipo**. Su principio central:
 
 > Un **Experto** es un asistente digital con su propio contexto de datos, su
-> propio chat y su propio dominio, capaz de ejecutar procesos operativos —
-> siempre con aprobación humana explícita.
+> propio chat y su propio dominio, capaz de leer y actuar sobre los datos de su
+> dominio — siempre con aprobación humana explícita.
 
 Cada Experto está vinculado a un dominio (`general`, `ventas`, `finanzas`,
 `marketing`), y el sistema impide que un Experto lea los datos de otro.
@@ -29,8 +29,6 @@ pero **no la ejecución**: la IA propone y la persona aprueba.
   `ventas`, `finanzas`, `marketing`.
 - **Chat con datos reales** mediante herramientas que consultan la base de datos
   local. No inventa cifras.
-- **Procesos autónomos** con disparador y política de aprobación; las acciones se
-  proponen como tarjetas de confirmación.
 - **Gobierno:** registro de actividad de cada evento relevante y reversión de los
   cambios reversibles.
 - **Google Drive** (opcional): leer, crear y editar documentos desde el chat.

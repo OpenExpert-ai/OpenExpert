@@ -27,8 +27,11 @@ Estado de los elementos implementados y pendientes.
       Analytics, Salesforce). OpenExpert se distribuye **sin datos de negocio**:
       las tablas están vacías hasta que un conector las rellene. Las herramientas
       de negocio ya indican la procedencia y avisan cuando no hay nada conectado.
-- [ ] **Disparadores efectivos de procesos.** El campo `trigger` es descriptivo;
-      no hay planificador todavía.
+- [ ] **Procesos autónomos (eliminados, por reconstruir).** El catálogo anterior
+      era andamiaje: "ejecutar" un proceso solo subía un contador, el disparador
+      era descriptivo (sin planificador) y las etapas nunca se ejecutaban. Se ha
+      eliminado hasta poder construirlo de verdad: ejecución real de etapas, un
+      planificador y, cuando haga falta, doble firma.
 - [ ] **Importación de datos reales** (CSV) como paso intermedio antes de los
       conectores.
 - [ ] **Asistente de copia de seguridad** de `OPENEXPERT_DATA_DIR`.

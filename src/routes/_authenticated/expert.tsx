@@ -539,10 +539,8 @@ const TOOL_LABEL: Record<string, string> = {
   list_overdue_invoices: "Leyendo facturas vencidas",
   get_campaign_performance: "Extrayendo métricas de campañas",
   get_churn_risk: "Evaluando riesgo de churn",
-  list_processes: "Cargando catálogo de procesos",
   propose_invoice_reminders: "Preparando reclamaciones de cobro",
   propose_pause_campaigns: "Preparando pausa de campañas",
-  request_process_run: "Preparando ejecución de proceso",
   open_expert_form: "Cargando plantilla de Experto",
   search_drive: "Buscando en Google Drive",
   read_drive_file: "Leyendo documento de Drive",
@@ -573,8 +571,6 @@ const SOURCE: Record<string, string> = {
   get_campaign_performance: "Publicidad",
   propose_pause_campaigns: "Publicidad",
   get_churn_risk: "Clientes",
-  list_processes: "Procesos",
-  request_process_run: "Procesos",
   search_drive: "Google Drive",
   read_drive_file: "Google Drive",
   create_drive_file: "Google Drive",
@@ -912,7 +908,7 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
       />
     );
   }
-  if (name.startsWith("propose_") || name === "request_process_run")
+  if (name.startsWith("propose_"))
     return (
       <ConfirmCard
         p={o as unknown as { eventId: string; title: string; risk: string; items: string[] }}

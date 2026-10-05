@@ -19,7 +19,6 @@ const OWNER_NAME = "Propietario local";
 export const getWorkspace = createServerFn({ method: "GET" }).handler(async () => {
   const { orm } = await getDb();
   const experts = orm.select().from(schema.experts).orderBy(schema.experts.createdAt).all();
-  const processes = orm.select().from(schema.processes).orderBy(schema.processes.id).all();
   const integrations = orm
     .select()
     .from(schema.integrations)
@@ -41,19 +40,6 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
       sources: e.sources,
       domains: e.domains,
       created_at: e.createdAt,
-    })),
-    processes: processes.map((p) => ({
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      trigger: p.trigger,
-      stages: p.stages,
-      limits: p.limits,
-      approval: p.approval,
-      expert_id: p.expertId,
-      active: p.active,
-      runs: p.runs,
-      last_run: p.lastRun,
     })),
     integrations: integrations.map((i) => ({
       id: i.id,
@@ -184,15 +170,8 @@ export const deleteExpert = createServerFn({ method: "POST" })
     const rows = await ee.fetchRows("experts", "id", [data.id]);
     const before = rows[0];
     ee.assert(before, "Experto no encontrado");
-    // Reassign its processes to General and drop its conversations. The Expert
-    // row and the process reassignment are snapshot-backed (revertible); the
-    // conversations are permanent, like clearing a chat.
-    const procs = await ee.fetchRows("processes", "expert_id", [data.id]);
-    orm
-      .update(schema.processes)
-      .set({ expertId: "general" })
-      .where(eq(schema.processes.expertId, data.id))
-      .run();
+    // Drop the Expert and its conversations. The Expert row is snapshot-backed
+    // (revertible); the conversations are permanent, like clearing a chat.
     orm.delete(schema.experts).where(eq(schema.experts.id, data.id)).run();
     orm.delete(schema.chatMessages).where(eq(schema.chatMessages.expertId, data.id)).run();
     await persist();
@@ -202,81 +181,10 @@ export const deleteExpert = createServerFn({ method: "POST" })
       type: "Configuración",
       expert_id: data.id,
       status: "ok",
-      summary:
-        `Eliminado Experto "${String(before["name"])}"` +
-        (procs.length ? ` · ${procs.length} proceso(s) reasignados a General` : ""),
-      snapshot: {
-        entries: [
-          ...ee.snapshotRows("experts", ["id"], rows),
-          ...ee.snapshotRows("processes", ["id"], procs),
-        ],
-      },
+      summary: `Eliminado Experto "${String(before["name"])}"`,
+      snapshot: { entries: ee.snapshotRows("experts", ["id"], rows) },
     });
     return { id: data.id };
-  });
-
-/* ----------------------------- Processes ----------------------------- */
-
-export const toggleProcess = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ id: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const { orm } = await getDb();
-    const p = orm.select().from(schema.processes).where(eq(schema.processes.id, data.id)).all()[0];
-    ee.assert(p, "No existe");
-    // Snapshot the full row so reverting only flips `active` and never drops
-    // the rest of the process metadata.
-    const snap = ee.snapshotRows(
-      "processes",
-      ["id"],
-      await ee.fetchRows("processes", "id", [p.id]),
-    );
-    orm
-      .update(schema.processes)
-      .set({ active: !p.active })
-      .where(eq(schema.processes.id, data.id))
-      .run();
-    await persist();
-    await ee.logActivity({
-      actor: "human",
-      actor_name: OWNER_NAME,
-      type: "Configuración",
-      expert_id: p.expertId,
-      status: "ok",
-      summary: `${p.active ? "Desactivado" : "Activado"} proceso ${p.name}`,
-      snapshot: { entries: snap },
-    });
-  });
-
-export const runProcess = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ id: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const { orm } = await getDb();
-    const p = orm.select().from(schema.processes).where(eq(schema.processes.id, data.id)).all()[0];
-    ee.assert(p && p.active, "Proceso no disponible");
-    if (p.approval !== "Ninguna") {
-      await ee.logActivity({
-        actor: "agent",
-        actor_name: `Proc · ${p.name}`,
-        type: "Ejecución de proceso",
-        expert_id: p.expertId,
-        status: "pending",
-        summary: `Ejecución solicitada — requiere aprobación (${p.approval})`,
-        snapshot: { pending: { kind: "run_process", ids: [data.id] } },
-      });
-      return { pending: true };
-    }
-    const r = await ee.executePending({ kind: "run_process", ids: [data.id] });
-    await ee.logActivity({
-      actor: "agent",
-      actor_name: `Proc · ${p.name}`,
-      type: "Ejecución de proceso",
-      expert_id: p.expertId,
-      status: "ok",
-      summary: r.summary,
-      duration_ms: 3000,
-      snapshot: { entries: r.snapshot },
-    });
-    return { pending: false };
   });
 
 /* --------------------------- Approvals ------------------------------ */

@@ -19,14 +19,14 @@ opt in to a cloud service, transmits.
 All the data below stays on your computer and never reaches OpenExpert or any
 third party unless you configure a cloud integration explicitly.
 
-| Data                                | Purpose                                                                                           | Lifetime                                                                  |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `openexpert.db` (SQLite)            | Your workspace, Experts, integrations, processes, invoices, campaigns, chat history, activity log | Until you delete it (`Configuración → Datos → Restaurar`)                 |
-| `openexpert.json`                   | Your non-secret preferences (model, sampling, chat limits, Google OAuth client id)                | Editable from the app or by hand                                          |
-| `secrets.json` (mode `0600`)        | API keys (Gemini, OpenAI-compatible, etc.)                                                        | Stored encrypted at rest, never sent by OpenExpert                        |
-| `credentials.json` (mode `0600`)    | Google Drive OAuth tokens                                                                         | Stored encrypted at rest, used only to call Google APIs with your consent |
-| `state-secret` (mode `0600`)        | HMAC key used to sign the OAuth `state` parameter                                                 | Generated once on your machine                                            |
-| Picker grants (`drive-grants.json`) | The list of files you chose to share with OpenExpert                                              | Until you revoke them (`Integraciones → Fuentes`)                         |
+| Data                                | Purpose                                                                                | Lifetime                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `openexpert.db` (SQLite)            | Your workspace, Experts, integrations, invoices, campaigns, chat history, activity log | Until you delete it (`Configuración → Datos → Restaurar`)                 |
+| `openexpert.json`                   | Your non-secret preferences (model, sampling, chat limits, Google OAuth client id)     | Editable from the app or by hand                                          |
+| `secrets.json` (mode `0600`)        | API keys (Gemini, OpenAI-compatible, etc.)                                             | Stored encrypted at rest, never sent by OpenExpert                        |
+| `credentials.json` (mode `0600`)    | Google Drive OAuth tokens                                                              | Stored encrypted at rest, used only to call Google APIs with your consent |
+| `state-secret` (mode `0600`)        | HMAC key used to sign the OAuth `state` parameter                                      | Generated once on your machine                                            |
+| Picker grants (`drive-grants.json`) | The list of files you chose to share with OpenExpert                                   | Until you revoke them (`Integraciones → Fuentes`)                         |
 
 ## 3. The AI model
 

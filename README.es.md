@@ -2,7 +2,7 @@
 
 Panel de operaciones con inteligencia artificial que funciona **enteramente en
 tu equipo**: Expertos con aislamiento de datos, integraciones, chat con
-herramientas, procesos con aprobación humana y registro auditable. **Sin nube,
+herramientas, acciones con aprobación humana y registro auditable. **Sin nube,
 sin cuentas y sin servidor de base de datos**: solo SQLite y tu propio modelo.
 
 El proyecto es **open source bajo licencia MIT**.

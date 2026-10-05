@@ -15,7 +15,8 @@ está declarada, su chat no habilita las herramientas correspondientes.
 
 **Proceso**
 : Secuencia automatizable con un disparador y una política de aprobación.
-Ejemplo: seguimiento de facturas vencidas.
+Concepto planificado: la versión anterior era un mock y se ha retirado hasta
+poder construirlo de verdad (ver la hoja de ruta).
 
 **Propuesta**
 : Acción sugerida por el asistente y pendiente de ejecución, mostrada como

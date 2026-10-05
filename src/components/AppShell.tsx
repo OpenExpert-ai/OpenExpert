@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const nav = [
   { to: "/expert", label: "Expert", icon: MessagesSquare },
   { to: "/experts", label: "Experts", icon: Network },
-  { to: "/integrations", label: "Procesos e Integraciones", icon: Plug },
+  { to: "/integrations", label: "Integraciones", icon: Plug },
   { to: "/activity", label: "Registro de Actividad", icon: ScrollText },
   { to: "/settings", label: "Configuración", icon: Settings },
 ] as const;

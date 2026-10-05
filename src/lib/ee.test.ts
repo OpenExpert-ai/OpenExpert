@@ -16,20 +16,6 @@ afterAll(() => {
   delete process.env["OPENEXPERT_DATA_DIR"];
 });
 
-const PROCESS_COLUMNS = [
-  "id",
-  "name",
-  "description",
-  "trigger",
-  "stages",
-  "limits",
-  "approval",
-  "expert_id",
-  "active",
-  "runs",
-  "last_run",
-];
-
 describe("revertSnapshot", () => {
   it("restores a partial snapshot without wiping untouched columns", async () => {
     const { getDb, persist } = await import("./db.server");
@@ -38,45 +24,26 @@ describe("revertSnapshot", () => {
     const { orm, raw } = await getDb();
 
     raw.run(
-      `INSERT OR REPLACE INTO processes (${PROCESS_COLUMNS.join(",")}) VALUES (${PROCESS_COLUMNS.map(() => "?").join(",")})`,
-      [
-        "p-revert",
-        "Proceso",
-        "desc",
-        "cron",
-        '["a"]',
-        '["l"]',
-        "Requerida",
-        "finanzas",
-        1,
-        5,
-        "2026-01-01",
-      ],
+      "INSERT OR REPLACE INTO experts (id,name,description,sources,domains,created_at) VALUES (?,?,?,?,?,?)",
+      ["e-partial", "Original", "desc", '["gdrive"]', '["ventas"]', "2026-01-01"],
     );
-    // Same shape the old process toggle used to record: only a subset of columns.
-    const entries = ee.snapshotRows(
-      "processes",
-      ["id"],
-      [{ id: "p-revert", active: 1, name: "Proceso", expert_id: "finanzas" }],
-    );
+    // Only a subset of columns is captured: reverting must not wipe the rest.
+    const entries = ee.snapshotRows("experts", ["id"], [{ id: "e-partial", name: "Original" }]);
 
-    raw.run("UPDATE processes SET active = 0 WHERE id = ?", ["p-revert"]);
+    raw.run("UPDATE experts SET name = 'Cambiado' WHERE id = ?", ["e-partial"]);
     await persist();
 
     await ee.revertSnapshot(entries);
 
     const row = orm
       .select()
-      .from(schema.processes)
+      .from(schema.experts)
       .all()
-      .find((p) => p.id === "p-revert");
-    expect(row?.active).toBe(true);
+      .find((e) => e.id === "e-partial");
+    expect(row?.name).toBe("Original");
     expect(row?.description).toBe("desc");
-    expect(row?.trigger).toBe("cron");
-    expect(row?.stages).toEqual(["a"]);
-    expect(row?.approval).toBe("Requerida");
-    expect(row?.runs).toBe(5);
-    expect(row?.lastRun).toBe("2026-01-01");
+    expect(row?.sources).toEqual(["gdrive"]);
+    expect(row?.domains).toEqual(["ventas"]);
   });
 
   it("recreates a row deleted after the snapshot", async () => {
@@ -86,26 +53,26 @@ describe("revertSnapshot", () => {
     const { orm, raw } = await getDb();
 
     raw.run(
-      `INSERT OR REPLACE INTO processes (${PROCESS_COLUMNS.join(",")}) VALUES (${PROCESS_COLUMNS.map(() => "?").join(",")})`,
-      ["p-gone", "Otro", "d2", "t2", '["b"]', "[]", "Ninguna", "ventas", 1, 1, null],
+      "INSERT OR REPLACE INTO experts (id,name,description,sources,domains,created_at) VALUES (?,?,?,?,?,?)",
+      ["e-gone", "Otro", "d2", '["gdrive"]', '["finanzas"]', "2026-01-02"],
     );
     const entries = ee.snapshotRows(
-      "processes",
+      "experts",
       ["id"],
-      await ee.fetchRows("processes", "id", ["p-gone"]),
+      await ee.fetchRows("experts", "id", ["e-gone"]),
     );
-    raw.run("DELETE FROM processes WHERE id = ?", ["p-gone"]);
+    raw.run("DELETE FROM experts WHERE id = ?", ["e-gone"]);
     await persist();
 
     await ee.revertSnapshot(entries);
 
     const row = orm
       .select()
-      .from(schema.processes)
+      .from(schema.experts)
       .all()
-      .find((p) => p.id === "p-gone");
+      .find((e) => e.id === "e-gone");
     expect(row?.name).toBe("Otro");
-    expect(row?.stages).toEqual(["b"]);
+    expect(row?.domains).toEqual(["finanzas"]);
   });
 
   it("deletes rows whose `before` is null (created since)", async () => {

@@ -2,7 +2,7 @@
 
 Operations dashboard with artificial intelligence that runs **entirely on your
 machine**: Experts with strict data isolation, integrations, a tool-using chat,
-human-approved processes, and a complete audit trail. **No cloud, no accounts,
+human-approved actions, and a complete audit trail. **No cloud, no accounts,
 no database server** — just SQLite and your own model.
 
 The project is **open source under the MIT license**.

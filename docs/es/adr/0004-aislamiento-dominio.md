@@ -21,6 +21,6 @@ devuelven un error explícito en vez de datos. Es el equivalente local de RLS.
 - El aislamiento se mantiene aunque se haga jailbreak; el prefiltro
   (`src/lib/ai/injection.ts`) es defensa en profundidad, no la garantía.
 - Las acciones destructivas nunca las ejecuta una herramienta: solo se _proponen_
-  y requieren aprobación humana (`propose_*`, `request_process_run`).
+  y requieren aprobación humana (`propose_*`).
 - Añadir una herramienta implica declarar su dominio y probar el camino de
   denegación.

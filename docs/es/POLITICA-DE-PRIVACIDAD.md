@@ -18,14 +18,14 @@ explica qué datos accede, almacena y, cuando tú lo activas expresamente, trans
 Todos los datos siguientes se quedan en tu equipo y nunca llegan a OpenExpert
 ni a un tercero a menos que tú configures una integración cloud expresamente.
 
-| Dato                                        | Para qué                                                                                              | Vigencia                                                                             |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `openexpert.db` (SQLite)                    | Tu espacio, Experts, integraciones, procesos, facturas, campañas, historial de chat, log de actividad | Hasta que la borres (`Configuración → Datos → Restaurar`)                            |
-| `openexpert.json`                           | Tus preferencias no secretas (modelo, sampling, límites de chat, client_id de Google OAuth)           | Editable desde la app o a mano                                                       |
-| `secrets.json` (modo `0600`)                | Claves de API (Gemini, OpenAI-compatible…)                                                            | Cifrado en reposo, nunca enviado por OpenExpert                                      |
-| `credentials.json` (modo `0600`)            | Tokens OAuth de Google Drive                                                                          | Cifrado en reposo, usado solo para llamar a las APIs de Google con tu consentimiento |
-| `state-secret` (modo `0600`)                | Clave HMAC que firma el `state` de OAuth                                                              | Generada una vez en tu máquina                                                       |
-| Concesiones de Picker (`drive-grants.json`) | Lista de archivos que tú elegiste compartir con OpenExpert                                            | Hasta que las revoques (`Integraciones → Fuentes`)                                   |
+| Dato                                        | Para qué                                                                                    | Vigencia                                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `openexpert.db` (SQLite)                    | Tu espacio, Experts, integraciones, facturas, campañas, historial de chat, log de actividad | Hasta que la borres (`Configuración → Datos → Restaurar`)                            |
+| `openexpert.json`                           | Tus preferencias no secretas (modelo, sampling, límites de chat, client_id de Google OAuth) | Editable desde la app o a mano                                                       |
+| `secrets.json` (modo `0600`)                | Claves de API (Gemini, OpenAI-compatible…)                                                  | Cifrado en reposo, nunca enviado por OpenExpert                                      |
+| `credentials.json` (modo `0600`)            | Tokens OAuth de Google Drive                                                                | Cifrado en reposo, usado solo para llamar a las APIs de Google con tu consentimiento |
+| `state-secret` (modo `0600`)                | Clave HMAC que firma el `state` de OAuth                                                    | Generada una vez en tu máquina                                                       |
+| Concesiones de Picker (`drive-grants.json`) | Lista de archivos que tú elegiste compartir con OpenExpert                                  | Hasta que las revoques (`Integraciones → Fuentes`)                                   |
 
 ## 3. El modelo de IA
 

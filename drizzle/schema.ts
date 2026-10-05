@@ -20,20 +20,6 @@ export const experts = sqliteTable("experts", {
   createdAt: text("created_at").notNull(),
 });
 
-export const processes = sqliteTable("processes", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull().default(""),
-  trigger: text("trigger").notNull().default(""),
-  stages: text("stages", { mode: "json" }).$type<string[]>().notNull().default([]),
-  limits: text("limits", { mode: "json" }).$type<string[]>().notNull().default([]),
-  approval: text("approval").notNull().default("Ninguna"),
-  expertId: text("expert_id").notNull().default("general"),
-  active: integer("active", { mode: "boolean" }).notNull().default(true),
-  runs: integer("runs").notNull().default(0),
-  lastRun: text("last_run"),
-});
-
 export const integrations = sqliteTable("integrations", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

@@ -16,7 +16,6 @@ export type SnapEntry = {
 const REVERTIBLE: Record<string, true> = {
   experts: true,
   integrations: true,
-  processes: true,
   invoices: true,
   campaigns: true,
 };
@@ -241,15 +240,12 @@ export async function churnRisk() {
 /* ---------- Pending actions ---------- */
 
 export type PendingAction =
-  | { kind: "invoice_reminders"; ids: string[] }
-  | { kind: "pause_campaigns"; ids: string[] }
-  | { kind: "run_process"; ids: string[] };
+  { kind: "invoice_reminders"; ids: string[] } | { kind: "pause_campaigns"; ids: string[] };
 
 /** Validates a pending action read back from an activity snapshot. */
 export const pendingActionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("invoice_reminders"), ids: z.array(z.string()).min(1) }),
   z.object({ kind: z.literal("pause_campaigns"), ids: z.array(z.string()).min(1) }),
-  z.object({ kind: z.literal("run_process"), ids: z.array(z.string()).min(1) }),
 ]);
 
 export async function executePending(
@@ -278,21 +274,6 @@ export async function executePending(
       snapshot: snap,
       summary: `Pausadas ${rows.length} campañas: ${rows.map((r) => r["name"]).join(", ")}`,
       sources: ["Meta Ads"],
-    };
-  }
-  if (action.kind === "run_process") {
-    const rows = await fetchRows("processes", "id", action.ids);
-    const snap = snapshotRows("processes", ["id"], rows);
-    for (const r of rows)
-      raw.run("UPDATE processes SET runs = runs + 1, last_run = ? WHERE id = ?", [
-        now(),
-        r["id"] as string,
-      ]);
-    await persist();
-    return {
-      snapshot: snap,
-      summary: `Ejecutado proceso ${rows.map((r) => r["name"]).join(", ")}`,
-      sources: [],
     };
   }
   const exhaustive: never = action;

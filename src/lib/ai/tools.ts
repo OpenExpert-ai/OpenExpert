@@ -3,7 +3,6 @@
 // isolation and human-approval helpers.
 
 import { tool } from "ai";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "../ee.server";
 import { getDb } from "@/lib/db.server";
@@ -134,30 +133,6 @@ export function createChatTools(ctx: ChatToolsContext) {
         return withSource({ accounts: await ee.churnRisk() }, src);
       },
     }),
-    list_processes: tool({
-      description:
-        "Catálogo de procesos autónomos con su disparador, nivel de aprobación y estado.",
-      inputSchema: z.object({}),
-      execute: async () => {
-        const { orm: db } = await getDb();
-        const processes = db
-          .select()
-          .from(schema.processes)
-          .all()
-          .filter((p) => allowed(p.expertId));
-        return {
-          processes: processes.map((p) => ({
-            id: p.id,
-            name: p.name,
-            trigger: p.trigger,
-            approval: p.approval,
-            expert_id: p.expertId,
-            active: p.active,
-            runs: p.runs,
-          })),
-        };
-      },
-    }),
     propose_invoice_reminders: tool({
       description:
         "Propone enviar reclamaciones de cobro por email para facturas vencidas concretas. NO las envía: crea una tarjeta de confirmación humana obligatoria.",
@@ -203,32 +178,6 @@ export function createChatTools(ctx: ChatToolsContext) {
               `${r.name} — CPA ${r.cpa}€ (${r.overTargetPct! > 0 ? "+" : ""}${r.overTargetPct}%)`,
           ),
           { kind: "pause_campaigns", ids: rows.map((r) => r.id) },
-        );
-      },
-    }),
-    request_process_run: tool({
-      description:
-        "Solicita ejecutar un proceso autónomo por su id. Si requiere aprobación, crea una tarjeta de confirmación.",
-      inputSchema: z.object({ processId: z.string() }),
-      execute: async ({ processId }) => {
-        const p = (await getDb()).orm
-          .select()
-          .from(schema.processes)
-          .where(eq(schema.processes.id, processId))
-          .all()[0];
-        if (!p) return { error: "Proceso no encontrado" };
-        if (!allowed(p.expertId)) return deny(p.expertId);
-        if (!p.active) return { error: "El proceso está desactivado" };
-        return proposePending(
-          p.expertId,
-          `Ejecutar proceso "${p.name}"`,
-          "Ejecución de proceso",
-          [
-            `Disparador: ${p.trigger}`,
-            `Aprobación: ${p.approval}`,
-            ...p.stages.map((s, i) => `${i + 1}. ${s}`),
-          ],
-          { kind: "run_process", ids: [processId] },
         );
       },
     }),

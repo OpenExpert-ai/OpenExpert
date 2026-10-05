@@ -12,11 +12,11 @@ Un fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db` (por defecto
 `drizzle/migrations/` (aplicadas al arrancar por `src/lib/db.server.ts`). Las
 columnas JSON se guardan como `TEXT`.
 
-Tablas: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
-`deals`, `invoices`, `campaigns`, `accounts`, `settings`.
+Tablas: `experts`, `integrations`, `activity`, `chat_messages`, `deals`,
+`invoices`, `campaigns`, `accounts`, `settings`.
 
 En el primer arranque `src/lib/db.server.ts` siembra la **configuración**
-(Expertos, procesos, integraciones). Las tablas de negocio (`deals`, `invoices`,
+(Expertos, integraciones). Las tablas de negocio (`deals`, `invoices`,
 `campaigns`, `accounts`) arrancan **vacías**: solo las rellena un conector real o
 una importación. Las herramientas de negocio indican si hay una fuente conectada
 y nunca presentan datos locales como reales. Borra el fichero de base de datos
@@ -34,19 +34,6 @@ para volver a sembrar la configuración.
 | `sources`     | TEXT (JSON) | Conectores autorizados, p. ej. `["gdrive"]`                                                                            |
 | `domains`     | TEXT (JSON) | Dominios de negocio que puede leer, p. ej. `["ventas"]`; vacío = sin datos de negocio. Añadido por la migración `0002` |
 | `created_at`  | TEXT        | Fecha ISO                                                                                                              |
-
-### `processes` — procesos autónomos
-
-| Columna                          | Tipo        | Notas                          |
-| -------------------------------- | ----------- | ------------------------------ |
-| `id`                             | TEXT PK     | Prefijo `p-` + nombre corto    |
-| `name`, `description`, `trigger` | TEXT        | `trigger` es texto descriptivo |
-| `stages`, `limits`               | TEXT (JSON) | Arrays de cadenas              |
-| `approval`                       | TEXT        | `Ninguna` o `Requerida`        |
-| `expert_id`                      | TEXT        | Experto al que pertenece       |
-| `active`                         | INTEGER     | 0/1                            |
-| `runs`                           | INTEGER     | Contador de ejecuciones        |
-| `last_run`                       | TEXT        | Fecha ISO o null               |
 
 ### `integrations` — catálogo de conectores
 

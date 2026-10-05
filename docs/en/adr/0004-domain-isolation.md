@@ -21,5 +21,5 @@ data. This is the local analogue of RLS.
 - Domain isolation holds even if the model is jailbroken; the pre-filter
   (`src/lib/ai/injection.ts`) is defence in depth, not the guarantee.
 - Destructive actions are never taken by a tool: they are only _proposed_ and
-  require human approval (`propose_*`, `request_process_run`).
+  require human approval (`propose_*`).
 - Adding a tool means declaring its domain and testing the denial path.

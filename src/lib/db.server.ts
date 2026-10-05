@@ -150,39 +150,6 @@ const DEFAULT_EXPERTS = [
   },
 ];
 
-const DEFAULT_PROCESSES = [
-  {
-    id: "p-overdue-invoices",
-    name: "Seguimiento de facturas vencidas",
-    description: "Detecta facturas vencidas y propone reclamaciones de cobro.",
-    trigger: "Evento · factura vence +7 días",
-    stages: ["Detectar", "Priorizar", "Proponer reclamación"],
-    limits: ["Requiere aprobación humana"],
-    approval: "Requerida",
-    expertId: "finanzas",
-  },
-  {
-    id: "p-campaign-efficiency",
-    name: "Eficiencia de campañas",
-    description: "Señala campañas que superan su CPA objetivo y propone pausarlas.",
-    trigger: "Umbral · CPA > objetivo +30 %",
-    stages: ["Medir CPA", "Comparar objetivo", "Proponer pausa"],
-    limits: ["Requiere aprobación humana"],
-    approval: "Requerida",
-    expertId: "marketing",
-  },
-  {
-    id: "p-pipeline-health",
-    name: "Salud del pipeline",
-    description: "Resumen semanal del pipeline y oportunidades estancadas.",
-    trigger: "Cron · viernes 17:00",
-    stages: ["Leer pipeline", "Detectar estancadas", "Resumir"],
-    limits: [],
-    approval: "Ninguna",
-    expertId: "ventas",
-  },
-];
-
 const DEFAULT_INTEGRATIONS = [
   { id: "gdrive", name: "Google Drive", category: "Productividad" },
   { id: "local", name: "Archivos locales", category: "Productividad" },
@@ -206,20 +173,6 @@ function seedIfEmpty(orm: Db): void {
     orm
       .insert(schema.experts)
       .values(DEFAULT_EXPERTS.map((e) => ({ ...e, createdAt: now() })))
-      .run();
-  }
-  const hasProcesses = orm.select().from(schema.processes).limit(1).all().length > 0;
-  if (!hasProcesses) {
-    orm
-      .insert(schema.processes)
-      .values(
-        DEFAULT_PROCESSES.map((p) => ({
-          ...p,
-          active: true,
-          runs: 0,
-          lastRun: null,
-        })),
-      )
       .run();
   }
   const existingIntegrationIds = new Set(

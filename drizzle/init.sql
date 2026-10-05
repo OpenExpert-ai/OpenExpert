@@ -12,20 +12,6 @@ CREATE TABLE IF NOT EXISTS experts (
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS processes (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT NOT NULL DEFAULT '',
-  trigger TEXT NOT NULL DEFAULT '',
-  stages TEXT NOT NULL DEFAULT '[]',
-  limits TEXT NOT NULL DEFAULT '[]',
-  approval TEXT NOT NULL DEFAULT 'Ninguna',
-  expert_id TEXT NOT NULL DEFAULT 'general',
-  active INTEGER NOT NULL DEFAULT 1,
-  runs INTEGER NOT NULL DEFAULT 0,
-  last_run TEXT
-);
-
 CREATE TABLE IF NOT EXISTS integrations (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,

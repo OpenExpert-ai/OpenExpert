@@ -27,7 +27,10 @@ Status of implemented and pending items.
       Analytics, Salesforce). OpenExpert ships **without business data**: the
       tables are empty until a connector fills them. The business tools already
       report provenance and say so when nothing is connected.
-- [ ] **Effective process triggers.** The `trigger` field is descriptive; there
-      is no scheduler yet.
+- [ ] **Autonomous processes (removed, to be rebuilt).** The old catalogue was
+      scaffolding: "running" a process only incremented a counter, the trigger
+      was descriptive (no scheduler) and the stages were never executed. It has
+      been removed until it can be built for real: actual stage execution, a
+      scheduler and, when needed, double-signature approval.
 - [ ] **Import of real data** (CSV) as an interim before the connectors.
 - [ ] **Backup helper** for `OPENEXPERT_DATA_DIR`.

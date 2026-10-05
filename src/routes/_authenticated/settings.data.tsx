@@ -117,7 +117,6 @@ function DataSettings() {
             {[
               [t("Base de datos"), formatBytes(data.dbSize)],
               [t("Experts"), String(data.experts)],
-              [t("Procesos"), String(data.processes)],
               [t("Integraciones"), String(data.integrations)],
               [t("Eventos"), String(data.activity)],
               [t("Mensajes"), String(data.chatMessages)],
@@ -235,7 +234,7 @@ function DataSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("¿Borrar todo el historial de conversaciones?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("Se eliminarán todos los mensajes guardados. No afecta a Experts ni a procesos.")}
+              {t("Se eliminarán todos los mensajes guardados. No afecta a tus Experts.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
