@@ -1,16 +1,15 @@
 name: Release
 
-# Triggered manually so a pending changeset does not fail every push.
-# Before using it, configure:
-#   1. Settings → Actions → General → Workflow permissions: enable
-#      "Allow GitHub Actions to create and approve pull requests"
-#      (otherwise changesets/action cannot open the version PR).
-#   2. Add an `NPM_TOKEN` secret (or configure npm Trusted Publishing).
+# Standard Changesets flow: a merge into `main` either opens/updates the
+# "version packages" PR or publishes the packages it just versioned.
 #
-# To restore automatic version PRs, add `push: { branches: [main] }` back
-# to the `on:` block below.
+# Publishing uses npm Trusted Publishing (OIDC) with provenance, so no
+# `NPM_TOKEN` is needed. Configure the trusted publisher for
+# `@openexpert/opencore` and `create-openexpert` on npmjs.com.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -37,6 +36,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
@@ -50,7 +50,6 @@ jobs:
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   docker:
     name: Build and publish Docker image

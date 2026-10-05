@@ -19,7 +19,6 @@
 *.svg             text
 
 # Generated files (hide from diff stats and code review)
-drizzle/migrations/meta/_journal.json linguist-generated=true
 src/routeTree.gen.ts                linguist-generated=true
 
 # Git LFS — none configured today

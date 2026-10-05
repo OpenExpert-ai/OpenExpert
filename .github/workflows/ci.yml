@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -29,6 +31,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Commit hygiene (DCO + Conventional Commits)
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-commits.mjs "origin/${{ github.base_ref }}..HEAD"
 
       - name: Lint
         run: npm run lint
@@ -43,10 +49,10 @@ jobs:
         run: npm run check:docs
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck && npm run typecheck --workspaces --if-present
 
-      - name: Test
-        run: npm run test:run
+      - name: Test with coverage
+        run: npm run test:coverage
 
       - name: Build OpenCore package
         run: npm run build --workspace @openexpert/opencore
@@ -64,6 +70,17 @@ jobs:
             dist
           if-no-files-found: ignore
           retention-days: 7
+
+  workflow-lint:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actionlint
+        run: |
+          bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+      - name: Run actionlint
+        run: ./actionlint -color
 
   secret-scan:
     name: Secret scan

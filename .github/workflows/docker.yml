@@ -51,6 +51,17 @@ jobs:
           docker run --rm -d --name openexpert-smoke -p 3000:3000 \
             -e OPENEXPERT_MODEL_PROVIDER=ollama \
             openexpert:ci-${{ github.sha }}
-          sleep 10
-          curl -fsS http://localhost:3000/ >/dev/null || true
-          docker stop openexpert-smoke || true
+          status=starting
+          for i in $(seq 1 24); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' openexpert-smoke 2>/dev/null || echo unknown)
+            [ "$status" = "healthy" ] && break
+            sleep 5
+          done
+          echo "health status: $status"
+          if [ "$status" != "healthy" ]; then
+            docker logs openexpert-smoke || true
+            docker stop openexpert-smoke || true
+            exit 1
+          fi
+          curl -fsS http://localhost:3000/ >/dev/null
+          docker stop openexpert-smoke

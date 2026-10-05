@@ -16,6 +16,12 @@ export default defineConfig({
       reporter: ["text", "html"],
       include: ["src/lib/**/*.ts"],
       exclude: ["src/lib/**/*.d.ts", "src/lib/opencore/**"],
+      thresholds: {
+        statements: 27,
+        branches: 18,
+        functions: 25,
+        lines: 27,
+      },
     },
   },
 });

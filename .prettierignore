@@ -5,6 +5,7 @@ dist
 .tanstack
 src-tauri/target
 src-tauri/gen
+coverage
 pnpm-lock.yaml
 package-lock.json
 bun.lock

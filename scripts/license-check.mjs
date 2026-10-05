@@ -8,17 +8,9 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const ALLOWED = new Set([
-  "MIT",
-  "Apache-2.0",
-  "ISC",
-  "BSD-2-Clause",
-  "BSD-3-Clause",
-  "CC0-1.0",
-  "MPL-2.0",
-  "0BSD",
-  "Unlicense",
-]);
+// First-party source must be MIT. Third-party licences are handled by the
+// dependency tree, not by files tracked here.
+const ALLOWED = new Set(["MIT"]);
 
 const EXCLUDE_TOP = new Set([
   "node_modules",

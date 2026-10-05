@@ -24,6 +24,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run test:run",
     "test:run": "vitest run && npm run test:run --workspaces --if-present",
+    "test:coverage": "vitest run --coverage && npm run test:coverage --workspaces --if-present",
     "opencore:doctor": "node ./packages/opencore/bin/opencore.js doctor",
     "opencore:serve": "node ./packages/opencore/bin/opencore.js serve",
     "desktop:dev": "tauri dev",
@@ -34,7 +35,8 @@
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish",
     "license:check": "node scripts/license-check.mjs",
-    "check:docs": "node scripts/check-docs.mjs"
+    "check:docs": "node scripts/check-docs.mjs",
+    "check:commits": "node scripts/check-commits.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -102,13 +104,13 @@
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.49.1",
     "@tauri-apps/cli": "^2.12.1",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^5.0.3",
     "drizzle-orm": "^0.45.3",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.1",
