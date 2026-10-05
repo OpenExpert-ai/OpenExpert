@@ -110,19 +110,24 @@ function SourcesPage() {
         toast.error(PICKER_KEY_HINT);
         return;
       }
-      const picked = await pickDriveFiles({
+      const outcome = await pickDriveFiles({
         accessToken: tokenAccess.accessToken,
         apiKey,
         appId:
           (window as unknown as { __OPENEXPERT_PICKER_APP_ID__?: string })
             .__OPENEXPERT_PICKER_APP_ID__ || "",
       });
-      if (!picked.length) return;
-      await setGrantedFiles({ data: { files: picked } });
+      if (!outcome.files.length) {
+        toast.info(
+          `No se seleccionó ningún archivo (acción del Picker: ${outcome.action || "desconocida"}).`,
+        );
+        return;
+      }
+      await setGrantedFiles({ data: { files: outcome.files } });
       await qc.invalidateQueries({ queryKey: ["drive-grants"] });
       await qc.invalidateQueries({ queryKey: ["drive-status"] });
       await qc.invalidateQueries({ queryKey: ["workspace"] });
-      toast.success(`${picked.length} archivo(s) añadido(s).`);
+      toast.success(`${outcome.files.length} archivo(s) añadido(s).`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

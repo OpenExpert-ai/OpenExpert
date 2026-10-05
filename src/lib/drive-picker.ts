@@ -7,6 +7,7 @@ type RawDoc = { id: string; name: string; mimeType: string };
 type PickerCallbackData = { action: string; docs?: RawDoc[] };
 
 export type PickerResult = { id: string; name: string; mimeType: string };
+export type PickerOutcome = { files: PickerResult[]; action: string };
 
 interface PickerBuilderAPI {
   addView: (v: unknown) => PickerBuilderAPI;
@@ -26,6 +27,7 @@ interface PickerNs {
   DocsView: new () => unknown;
   /** Enum values are lowercase strings (`PICKED` -> "picked"). */
   Action?: { PICKED?: string; CANCEL?: string };
+  Response?: { ACTION?: string; DOCUMENTS?: string };
 }
 
 declare global {
@@ -78,31 +80,43 @@ export async function pickDriveFiles(opts: {
   accessToken: string;
   apiKey: string;
   appId: string;
-}): Promise<PickerResult[]> {
+}): Promise<PickerOutcome> {
   await ensureLoaded();
   const w = window as Window & { google?: { picker: PickerNs } };
   const PickerBuilder = w.google?.picker.PickerBuilder;
   const DocsView = w.google?.picker.DocsView;
   if (!PickerBuilder || !DocsView) throw new Error("Google Picker no disponible.");
 
-  return new Promise<PickerResult[]>((resolve) => {
+  return new Promise<PickerOutcome>((resolve) => {
+    const picker = w.google?.picker;
     // `google.picker.Action.PICKED` is the lowercase string "picked". Comparing
     // to the uppercase name never matches, which silently dropped the selection.
-    const pickedAction = w.google?.picker.Action?.PICKED ?? "picked";
-    const builder = new PickerBuilder()
-      .setOAuthToken(opts.accessToken)
-      .setDeveloperKey(opts.apiKey)
-      .setAppId(opts.appId)
+    const pickedAction = picker?.Action?.PICKED ?? "picked";
+    const actionKey = picker?.Response?.ACTION ?? "action";
+    const docsKey = picker?.Response?.DOCUMENTS ?? "documents";
+
+    let builder = new PickerBuilder().setOAuthToken(opts.accessToken).setDeveloperKey(opts.apiKey);
+    // An empty appId can make the picker misbehave; only set it when present.
+    if (opts.appId) builder = builder.setAppId(opts.appId);
+    builder = builder
       .enableFeature("MULTISELECT_ENABLED")
       .addView(new DocsView())
       .setCallback((data) => {
-        if (data.action === pickedAction && data.docs?.length) {
-          resolve(data.docs.map((d) => ({ id: d.id, name: d.name, mimeType: d.mimeType })));
+        const rec = data as unknown as Record<string, unknown>;
+        const action = String(data.action ?? rec[actionKey] ?? "");
+        const docs = (data.docs ?? rec[docsKey]) as RawDoc[] | undefined;
+        // Visible in the browser console to diagnose picker issues.
+        console.debug("[drive-picker] callback", { action, count: docs?.length ?? 0, data });
+        if (action === pickedAction && docs?.length) {
+          resolve({
+            files: docs.map((d) => ({ id: d.id, name: d.name, mimeType: d.mimeType })),
+            action,
+          });
         } else {
-          resolve([]);
+          resolve({ files: [], action });
         }
       });
-    const picker = builder.build() as unknown as PickerInstance;
-    picker.setVisible(true);
+    const instance = builder.build() as unknown as PickerInstance;
+    instance.setVisible(true);
   });
 }
