@@ -234,12 +234,19 @@ Formato (adáptalo a la pregunta):
     sendReasoning: true,
     onError: (e) => {
       logger.error("chat.stream", e);
+      const msg = e instanceof Error ? e.message : String(e);
       const s = (e as { statusCode?: number })?.statusCode;
-      return s === 429
-        ? "Límite del proveedor alcanzado, espera unos segundos."
-        : s === 400 || s === 403
-          ? "La clave del modelo no es válida o no tiene permisos."
-          : "Error al generar la respuesta.";
+      if (
+        s === 429 ||
+        /quota|rate.?limit|resource[_ ]?exhausted|exceeded your current quota|too many requests/i.test(
+          msg,
+        )
+      ) {
+        return "Has agotado la cuota de tu proveedor de IA (por ejemplo, el límite gratuito de Gemini). Espera a que se restablezca o cambia a un modelo local (Ollama) en Ajustes → Modelo e IA.";
+      }
+      return s === 400 || s === 403
+        ? "La clave del modelo no es válida o no tiene permisos."
+        : "Error al generar la respuesta.";
     },
     onFinish: async ({ responseMessage }) => {
       // On an approval continuation the last incoming message is the assistant

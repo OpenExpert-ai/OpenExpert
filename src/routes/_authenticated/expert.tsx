@@ -159,14 +159,7 @@ function ChatWindow({
       // After the user approves/denies a Drive tool, continue the turn so the
       // model can answer with the tool result.
       sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-      onError: (e) =>
-        toast.error(
-          e.message?.includes("402")
-            ? t("Sin créditos de IA disponibles.")
-            : e.message?.includes("429")
-              ? t("Demasiadas peticiones, espera unos segundos.")
-              : t("No se pudo completar la respuesta."),
-        ),
+      onError: (e) => toast.error(e.message || t("No se pudo completar la respuesta.")),
       onFinish: () => {
         qc.invalidateQueries({ queryKey: workspaceKey });
         qc.invalidateQueries({ queryKey: ["convs", expertId] });
@@ -386,9 +379,9 @@ function ChatWindow({
               </div>
             )}
             {error && !busy && (
-              <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                {t("La respuesta falló. Puedes volver a intentarlo.")}
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{error.message || t("La respuesta falló. Puedes volver a intentarlo.")}</span>
               </div>
             )}
           </div>
