@@ -234,19 +234,16 @@ Formato (adáptalo a la pregunta):
     sendReasoning: true,
     onError: (e) => {
       logger.error("chat.stream", e);
-      const msg = e instanceof Error ? e.message : String(e);
-      const s = (e as { statusCode?: number })?.statusCode;
-      if (
-        s === 429 ||
-        /quota|rate.?limit|resource[_ ]?exhausted|exceeded your current quota|too many requests/i.test(
-          msg,
+      const raw = e instanceof Error ? e.message : String(e);
+      // Surface the provider's own message, unwrapped from the SDK's retry
+      // wrapper (e.g. "AI_RetryError: Failed after 3 attempts. Last error: ...").
+      const provider = raw
+        .replace(
+          /^AI_RetryError:\s*Failed after \d+ attempts?\.\s*Last error:\s*(AI_APICallError:\s*)?/i,
+          "",
         )
-      ) {
-        return "Has agotado la cuota de tu proveedor de IA (por ejemplo, el límite gratuito de Gemini). Espera a que se restablezca o cambia a un modelo local (Ollama) en Ajustes → Modelo e IA.";
-      }
-      return s === 400 || s === 403
-        ? "La clave del modelo no es válida o no tiene permisos."
-        : "Error al generar la respuesta.";
+        .trim();
+      return provider || "Error al generar la respuesta.";
     },
     onFinish: async ({ responseMessage }) => {
       // On an approval continuation the last incoming message is the assistant
