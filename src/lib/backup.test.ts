@@ -43,4 +43,30 @@ describe("backups", () => {
       restoreBackup(JSON.stringify({ format: "nope", version: 1, files: {} })),
     ).toThrow();
   });
+
+  it("clears chat history and reports the count", async () => {
+    const { getDb, persist } = await import("./db.server");
+    const { clearChatHistory, dataStats } = await import("./backup.server");
+    const schema = await import("../../drizzle/schema");
+    const { orm } = await getDb();
+    orm
+      .insert(schema.chatMessages)
+      .values({
+        id: "m1",
+        expertId: "general",
+        conversationId: "c1",
+        message: { role: "user" } as never,
+        createdAt: new Date().toISOString(),
+      })
+      .run();
+    await persist();
+    expect((await dataStats()).chatMessages).toBeGreaterThan(0);
+    expect(await clearChatHistory()).toBeGreaterThan(0);
+    expect((await dataStats()).chatMessages).toBe(0);
+  });
+
+  it("vacuum runs without throwing", async () => {
+    const { vacuumDb } = await import("./backup.server");
+    await expect(vacuumDb()).resolves.toBeUndefined();
+  });
 });
