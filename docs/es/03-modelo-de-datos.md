@@ -7,12 +7,18 @@
 ## 1. Resumen
 
 Un fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db` (por defecto
-`~/.openexpert/`). El esquema tipado es `drizzle/schema.ts`; el DDL es
-`drizzle/init.sql` (aplicado al arrancar por `src/lib/db.server.ts`). Las
+`~/.openexpert/`). El esquema tipado es `drizzle/schema.ts`; el DDL base es
+`drizzle/init.sql` y las migraciones incrementales viven en
+`drizzle/migrations/` (aplicadas al arrancar por `src/lib/db.server.ts`). Las
 columnas JSON se guardan como `TEXT`.
 
 Tablas: `experts`, `processes`, `integrations`, `activity`, `chat_messages`,
 `deals`, `invoices`, `campaigns`, `accounts`, `settings`.
+
+En el primer arranque `src/lib/db.server.ts` siembra Expertos, procesos,
+integraciones y datos de negocio de ejemplo (`deals`, `invoices`, `campaigns`,
+`accounts`) para que el asistente tenga con qué responder. Borra el fichero de
+base de datos para volver a sembrar.
 
 ## 2. Tablas
 

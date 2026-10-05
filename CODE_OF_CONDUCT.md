@@ -49,8 +49,9 @@ representing the project in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behaviour may
-be reported to the maintainers at `carlosemerito13@gmail.com`. All
-complaints will be reviewed and investigated promptly and fairly.
+be reported privately to the maintainers (see
+[`GOVERNANCE.md`](./GOVERNANCE.md)). All complaints will be reviewed and
+investigated promptly and fairly.
 
 ## Attribution
 

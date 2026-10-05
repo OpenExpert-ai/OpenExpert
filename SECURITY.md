@@ -18,9 +18,10 @@ your disk, and nothing is exposed beyond the port you bind.
 
 Please **do not** file a public issue for suspected vulnerabilities.
 
-- **GitHub Security Advisories:** open a private advisory at
+- **GitHub Security Advisories (preferred):** open a private advisory at
   `https://github.com/OpenExpert-ai/OpenExpert/security/advisories/new`.
-- **Email:** `carlosemerito13@gmail.com`.
+- If you cannot use advisories, contact a maintainer listed in
+  [`GOVERNANCE.md`](./GOVERNANCE.md) through a private channel.
 
 Include: reproduction steps, affected version/commit, impact, and any
 proof-of-concept. Encrypt sensitive details with the maintainers' PGP key
@@ -37,8 +38,9 @@ when one is published alongside this file.
 - `.env`, `openexpert.json`, `~/.openexpert/`, `credentials.json` and
   `secrets.json` are git-ignored and must never be committed.
 - `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY`, `GOOGLE_CLIENT_SECRET` and the
-  Google refresh tokens are server-side only and are never sent to the
-  browser bundle.
+  Google refresh tokens are server-side only; they are never part of the client
+  bundle. The local settings panel can reveal a stored key on demand (the
+  browser is a trusted environment in the single-owner edition).
 - The Google Drive OAuth `state` is HMAC-signed and verified in constant time.
 - All writes go through server functions; the database is a local SQLite file
   that never leaves your machine.

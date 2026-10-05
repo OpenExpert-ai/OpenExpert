@@ -23,7 +23,9 @@ variable de entorno manda).
 ```
 
 Ollama escucha en `http://localhost:11434`; OpenExpert usa su endpoint
-OpenAI-compatible (`/v1`). Ningún dato sale de tu equipo.
+OpenAI-compatible (`/v1`). `OLLAMA_BASE_URL` acepta tanto la raíz nativa
+(`http://localhost:11434`) como la URL `/v1`, y la normaliza para el modelo de
+chat y para listar modelos. Ningún dato sale de tu equipo.
 
 ## 2. Google Gemini (clave gratuita)
 

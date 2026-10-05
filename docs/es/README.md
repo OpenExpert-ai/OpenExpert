@@ -22,6 +22,7 @@ este contenido lo refleja.
 | 12  | [Modelo de licencia](./12-licencia.md)                     | Ambos                | MIT y obligaciones              |
 | 13  | [Proveedores de IA](./13-proveedores-ia.md)                | Ambos                | Ollama, Gemini, BYOK            |
 | —   | [Hoja de ruta](./roadmap.md)                               | Ambos                | Estado y planificación          |
+| —   | [Decisiones de arquitectura](./adr/README.md)              | Ingeniería           | ADR (por qué es como es)        |
 
 ## Convenciones
 

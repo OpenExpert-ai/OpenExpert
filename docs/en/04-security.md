@@ -27,6 +27,11 @@ decided by the Expert's `sources` column.
    by the model.
 3. **Human approval.** The assistant only _proposes_ actions (`propose_*`,
    `request_process_run`); nothing changes until you approve the card.
+4. **Transport hardening.** Every response carries `X-Content-Type-Options`,
+   `Referrer-Policy`, `X-Frame-Options` and `Permissions-Policy`, plus a
+   `Content-Security-Policy` in production. The `/api/*` routes (chat, backup)
+   reject cross-origin requests; server functions are protected by the CSRF
+   middleware in `src/start.ts`.
 
 ## 4. Secret management
 
@@ -40,7 +45,12 @@ Rules:
 
 - `.env`, `openexpert.json`, `~/.openexpert/` are git-ignored and never
   committed.
-- Secrets are server-side only; they are never sent to the browser.
+- Secrets are stored server-side and are not part of the normal data flow. The
+  local settings panel can **reveal** a stored key on demand (the "Revelar"
+  button), so treat the browser as trusted and do not expose the port.
+- Backups (`GET /api/backup`) embed `secrets.json` and `credentials.json`.
+  Cross-origin downloads are rejected; still, download backups only on a
+  trusted machine and store them safely.
 - The Drive OAuth `state` is HMAC-signed and compared in constant time.
 
 ## 5. Data at rest

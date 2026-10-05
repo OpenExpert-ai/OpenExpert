@@ -9,8 +9,9 @@ body:
       label: Edition
       description: Where did you observe the bug?
       options:
-        - Cloud (hosted)
-        - OpenCore (local)
+        - Application (local)
+        - OpenCore package / CLI
+        - Desktop app (Linux)
         - Documentation
         - Other / not sure
     validations:
@@ -45,12 +46,12 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: OS, Node version, mode (cloud/local), provider.
+      description: OS, Node version, provider.
       placeholder: |
         - OS: macOS 14
-        - Node: 20.18.0
-        - Mode: cloud
-        - Provider: google / ollama / openai-compatible / openexpert
+        - Node: 24.0.0
+        - Provider: google / ollama / openai-compatible
+        - Version: output of `npx @openexpert/opencore version`
   - type: textarea
     id: logs
     attributes:

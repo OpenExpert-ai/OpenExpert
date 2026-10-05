@@ -30,6 +30,11 @@ error explícito, sin datos. El acceso a Google Drive se decide por la columna
    `chat.server.ts`, no por el modelo.
 3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`,
    `request_process_run`); nada cambia hasta que apruebas la tarjeta.
+4. **Endurecimiento del transporte.** Cada respuesta incluye
+   `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y
+   `Permissions-Policy`, además de una `Content-Security-Policy` en producción.
+   Las rutas `/api/*` (chat, copia) rechazan peticiones entre orígenes; las
+   server functions quedan protegidas por el middleware CSRF de `src/start.ts`.
 
 ## 4. Gestión de secretos
 
@@ -43,7 +48,13 @@ Reglas:
 
 - `.env`, `openexpert.json` y `~/.openexpert/` están en `.gitignore` y nunca se
   versionan.
-- Los secretos son solo de servidor; nunca se envían al navegador.
+- Los secretos se guardan en el servidor y no forman parte del flujo normal de
+  datos. El panel de ajustes local puede **revelar** una clave guardada a
+  petición (botón "Revelar"), así que considera el navegador como entorno de
+  confianza y no expongas el puerto.
+- Las copias de seguridad (`GET /api/backup`) incluyen `secrets.json` y
+  `credentials.json`. Se rechazan las descargas entre orígenes; aun así,
+  descarga copias solo en un equipo de confianza y guárdalas con cuidado.
 - El `state` del OAuth de Drive va firmado con HMAC y se compara en tiempo constante.
 
 ## 5. Datos en reposo

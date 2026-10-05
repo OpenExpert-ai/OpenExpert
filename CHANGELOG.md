@@ -16,75 +16,48 @@ to read every changeset.
 - Removed multi-user features: `profiles`, `user_roles`, `expert_access`,
   `invitations`, the users screen and the login routes.
 - Model providers are `ollama`, `google` and `openai-compatible`; the
-  `openexpert` gateway provider is gone. New AI providers guide (EN/ES).
+  `openexpert` gateway provider is gone.
 - Nitro preset is always `node-server`; run locally or with Docker.
 - `@openexpert/opencore` simplified to match (no mode/gateway/auth modules).
 - Documentation and `AGENTS.md` rewritten for the local edition.
 
-Initial open-source release of OpenExpert under the MIT license.
-
 ### Added
 
-- **MIT license for the entire repository.** The codebase, including the
-  cloud application, is distributed under the MIT license. Monetisation is
-  the hosted service and the OpenExpert model gateway.
-- **Real `@openexpert/opencore` package** with a build step (`tsup`),
-  generated types, a JSON schema for `openexpert.json`, a CLI that
-  actually boots the local edition (`opencore serve`), and an expanded
-  `doctor` command.
-- **OpenExpert model gateway** as a fourth model provider
-  (`OPENEXPERT_MODEL_PROVIDER=openexpert`). The MIT client points at the
-  gateway; the gateway itself is hosted separately.
-- **Continuous integration** (`.github/workflows/ci.yml`) running lint,
-  typecheck, tests, and build on every pull request.
-- **Release automation** via Changesets and npm Trusted Publishing.
-- **Docker images** published to GitHub Container Registry for the local
-  edition.
+- **MIT license for the entire repository**: code, docs and the OpenCore
+  engine.
+- **`@openexpert/opencore`** with a build step (`tsup`), generated types, a
+  JSON schema for `openexpert.json`, and a CLI (`init`, `doctor`, `fix`,
+  `models`, `serve`, `update`).
+- **`create-openexpert`** (`npm create openexpert`) to scaffold a project.
+- **Desktop app (Linux)** via Tauri: the `openexpert` command starts the local
+  server and opens a native window.
+- **Settings panel** (`/settings`): model & AI, chat, data & backups,
+  appearance and advanced options, in Spanish or English.
+- **Example business data** seeded on first run (`deals`, `invoices`,
+  `campaigns`, `accounts`) so the assistant has something to answer with.
 - **Bilingual documentation** in `docs/en/` (primary) and `docs/es/`.
-- **Governance documents:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
-  `GOVERNANCE.md`, and a private reporting channel in `SECURITY.md`.
-
-- **One-command local usage.** The `opencore` CLI is now an interactive
-  setup wizard (`npx @openexpert/opencore`) with `doctor`, `fix`,
-  `models`, `serve`, and `update`. `serve` boots the local edition from a
-  source checkout or from a downloaded server build.
-- **Local mode works end-to-end.** The UI no longer requires Supabase in
-  `OPENEXPERT_MODE=local`: it seeds example Experts, processes and
-  integrations, and shows a first-run checklist.
-- **`create-openexpert`** (`npm create openexpert`) scaffolds a local
-  project.
-- **Zero-config Docker Compose** (app + Ollama) and a 5-minute quickstart
-  in `docs/en/00-quickstart.md` and `docs/es/00-inicio-rapido.md`.
+- **Continuous integration** (lint, format, licence headers, documentation
+  links, typecheck, tests, build) and Docker images on GHCR.
+- **Zero-config Docker Compose** (app + Ollama) and a five-minute quickstart.
 
 ### Changed
 
-- `package.json` declares `workspaces`, `engines`, and `packageManager`.
-- `getLanguageModel()` returns a properly typed `LanguageModel` instead of
-  `any`.
-- The production Supabase project reference is no longer hard-coded in
-  public documentation.
-
-### Security
-
-- Removed the hard-coded owner email from migrations `0002`, `0006` and
-  `0010`: the `handle_new_user` trigger now reads it from the Postgres
-  setting `app.owner_email` (fallback `owner@example.com`), so no personal
-  address is committed. Existing deployments must re-baseline the stored
-  migration hashes.
-- Removed the production Supabase project reference from
-  `supabase/config.toml`.
-- Made the client-side error reporter pluggable through
-  `window.__OPENEXPERT_ERROR_REPORTER__` instead of a vendor global.
+- `package.json` declares `workspaces`, `engines` and `packageManager`.
+- The chat settings no longer expose the unused "default approval" option.
 
 ### Fixed
 
-- CodeQL workflow referenced the non-existent `codeql-action/analyse`
-  step (now `analyze`).
-- Release workflow read a non-existent Changesets action output
-  (`publish` → `published`) and passed an unused build secret.
-- Moved the Docker ignore file to the repository root so the build
-  context honours it.
-- Corrected broken relative links in the English documentation
-  (`12-licensing`, `roadmap`) and the Docker Compose volume path.
-- Added SPDX headers across first-party sources and wired
-  `license:check` into CI.
+- Reverting a process no longer drops its metadata: a snapshot now restores
+  only the captured columns instead of replacing the whole row.
+- `OLLAMA_BASE_URL` accepts either the native root (`http://localhost:11434`)
+  or the `/v1` endpoint for both chat and model listing.
+- Docker healthchecks point at `/` and no longer rely on `wget`, which the
+  runtime image does not ship.
+- Backup downloads reject cross-origin requests.
+
+### Security
+
+- `.env`, `openexpert.json`, `~/.openexpert/`, `credentials.json` and
+  `secrets.json` remain git-ignored and are never committed.
+- `GET /api/backup` embeds credentials, so it now rejects cross-origin
+  requests; the security guide documents this and the on-demand key reveal.

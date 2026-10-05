@@ -75,6 +75,9 @@ in `src/locales/en.ts` (Spanish is the source language).
 | `npm run opencore:doctor`         | CLI diagnostics                        |
 | `npm run opencore:serve`          | Boot the app through the CLI           |
 | `npm run license:check`           | Verify SPDX headers                    |
+| `npm run test:coverage`           | Tests with coverage thresholds         |
+| `npm run check:docs`              | Documentation links                    |
+| `npm run check:commits`           | DCO + Conventional Commits (CI)        |
 
 ### Port 3000
 
@@ -83,12 +86,17 @@ redirect URI depends on it. The Nitro preset is always `node-server`.
 
 ## 5. Database
 
-The schema is `drizzle/schema.ts` (Drizzle) plus `drizzle/init.sql` (the DDL).
-`src/lib/db.server.ts` opens the SQLite file and applies the DDL at startup, then
-seeds example data. **Keep the two schema files in sync.** There is no migration
-runner: to change the schema, edit both and (if needed) handle existing files.
+The schema is `drizzle/schema.ts` (Drizzle) plus `drizzle/init.sql` (the baseline
+DDL). `src/lib/db.server.ts` opens the SQLite file, applies the baseline DDL,
+runs pending migrations and seeds example data.
 
-After any write, call `await persist()` so the file on disk is updated.
+**Schema changes:** keep `schema.ts` and `init.sql` in sync for fresh installs
+and add a numbered file under `drizzle/migrations/` (e.g. `0002_add_x.sql`) for
+existing databases. The runner applies them in order using `PRAGMA
+user_version`, so an old database is upgraded at startup.
+
+After any write, call `await persist()`: it writes the file atomically
+(`.tmp` + `rename`).
 
 ## 6. Code conventions
 
