@@ -9,17 +9,17 @@ There is no cloud, no database server and no login.
 
 ## 1. Stack
 
-| Layer          | Technology                                                  | Function                                           |
-| -------------- | ----------------------------------------------------------- | -------------------------------------------------- |
-| Application    | TanStack Start (React 19, file routes, SSR)                 | Rendering, navigation, server functions            |
-| Build          | Vite                                                        | Dev environment and build                          |
-| Styling        | Tailwind CSS 4 + shadcn/ui                                  | Visual system                                      |
-| Server         | Nitro (`node-server`)                                       | Runtime for the built server                       |
-| Database       | SQLite via `sql.js`                                         | Single file at `OPENEXPERT_DATA_DIR/openexpert.db` |
-| ORM            | Drizzle ORM (`sql-js`)                                      | Typed queries; schema in `drizzle/schema.ts`       |
-| AI             | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai`  | Chat, tools, streaming                             |
-| Model          | Ollama (default), Gemini, or any OpenAI-compatible endpoint | Reasoning and answers                              |
-| Document store | Google Drive API (optional)                                 | Read/write the owner's files                       |
+| Layer       | Technology                                                  | Function                                           |
+| ----------- | ----------------------------------------------------------- | -------------------------------------------------- |
+| Application | TanStack Start (React 19, file routes, SSR)                 | Rendering, navigation, server functions            |
+| Build       | Vite                                                        | Dev environment and build                          |
+| Styling     | Tailwind CSS 4 + shadcn/ui                                  | Visual system                                      |
+| Server      | Nitro (`node-server`)                                       | Runtime for the built server                       |
+| Database    | SQLite via `sql.js`                                         | Single file at `OPENEXPERT_DATA_DIR/openexpert.db` |
+| ORM         | Drizzle ORM (`sql-js`)                                      | Typed queries; schema in `drizzle/schema.ts`       |
+| AI          | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai`  | Chat, tools, streaming                             |
+| Model       | Ollama (default), Gemini, or any OpenAI-compatible endpoint | Reasoning and answers                              |
+| Sources     | Google Drive API, local folders, Notion (optional)          | Read/write the owner's content                     |
 
 ## 2. Layers and dependency direction
 
@@ -32,6 +32,8 @@ graph TD
     CHAT[Chat<br/>ai/chat.server.ts]
     MODEL[Model provider<br/>opencore/model-provider.server.ts]
     DRV[Google Drive<br/>drive.server.ts]
+    NOT[Notion<br/>notion.server.ts]
+    LOC[Local folders<br/>local-fs.server.ts]
     FILE[(openexpert.db)]
 
     UI -->|reads + mutations| SF
@@ -42,6 +44,8 @@ graph TD
     CHAT --> DB
     CHAT --> MODEL
     CHAT --> DRV
+    CHAT --> NOT
+    CHAT --> LOC
     EE --> DB
     DB --> FILE
 ```
@@ -57,6 +61,7 @@ src/
 │   ├── __root.tsx              App shell
 │   ├── index.tsx               / → redirect to /expert
 │   ├── auth.google.callback.ts Drive OAuth return
+│   ├── auth.notion.callback.ts Notion OAuth return
 │   ├── api/chat.ts             Chat streaming endpoint
 │   └── _authenticated/         Layout group (no auth guard)
 ├── lib/
@@ -66,10 +71,15 @@ src/
 │   ├── ai/chat.server.ts       Chat: tools, injection guard, streaming
 │   ├── drive.server.ts         Google Drive API client
 │   ├── drive-tokens.server.ts  Drive OAuth and token lifecycle
+│   ├── local-fs.server.ts      Granted local folders (read + approved writes)
+│   ├── notion.server.ts        Notion API client
+│   ├── notion-tokens.server.ts Notion OAuth and token lifecycle
+│   ├── office.server.ts        Text/PDF/Office extraction (Drive + local)
 │   └── opencore/               Model provider + local credentials
 ├── components/                 AppShell and shadcn/ui
 drizzle/
 ├── schema.ts                   Typed SQLite schema (Drizzle)
+├── migrations/                 Incremental DDL (PRAGMA user_version)
 └── init.sql                    DDL applied at startup
 packages/opencore/              MIT engine + CLI
 ```

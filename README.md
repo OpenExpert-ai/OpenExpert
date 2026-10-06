@@ -11,7 +11,7 @@ The project is **open source under the MIT license**.
 > [`README.es.md`](./README.es.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%E2%89%A520-339933)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/node-%E2%89%A524-339933)](https://nodejs.org)
 [![CodeQL](https://github.com/OpenExpert-ai/OpenExpert/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
 [![Scorecard](https://img.shields.io/openssf-scorecard/github/OpenExpert-ai/OpenExpert)](https://scorecard.dev/viewer/?uri=github.com/OpenExpert-ai/OpenExpert)
 
@@ -72,8 +72,8 @@ See [Deployment](./docs/en/08-deployment.md).
 - **AI** is configuration: [Ollama](https://ollama.com) (default, no keys),
   Google Gemini (free API key) or any OpenAI-compatible endpoint. See
   [docs/en/13-ai-providers.md](./docs/en/13-ai-providers.md).
-- **Google Drive** is an optional integration, connected with your own account;
-  tokens are stored locally with mode `0600`.
+- **Sources** (optional): Google Drive, local folders and Notion, connected with
+  your own account; tokens and grants are stored locally with mode `0600`.
 - **Governance**: every revertible change is logged with a snapshot and can be
   reverted from the activity screen. AI actions are only _proposed_ and need
   human approval.
@@ -94,7 +94,7 @@ Spanish).
 | [Data model](./docs/en/03-data-model.md)     | SQLite tables                          |
 | [Security](./docs/en/04-security.md)         | Access and protections                 |
 | [AI](./docs/en/05-ai.md)                     | Assistant tools and limits             |
-| [Integrations](./docs/en/06-integrations.md) | Google Drive and how to add connectors |
+| [Integrations](./docs/en/06-integrations.md) | Google Drive, local folders and Notion |
 | [Development](./docs/en/07-development.md)   | Environment, scripts, conventions      |
 | [Deployment](./docs/en/08-deployment.md)     | Running locally and with Docker        |
 | [Operation](./docs/en/09-operation.md)       | Recurring tasks and diagnosis          |
@@ -122,6 +122,10 @@ src/
     ai/chat.server.ts        Chat with tools and injection guard
     drive.server.ts          Google Drive API client
     drive-tokens.server.ts   Drive OAuth and token lifecycle
+    local-fs.server.ts       Granted local folders (read + approved writes)
+    notion.server.ts         Notion API client
+    notion-tokens.server.ts  Notion OAuth and token lifecycle
+    office.server.ts         Text/PDF/Office extraction (Drive + local)
     opencore/                Model provider + local credential custody
 drizzle/schema.ts             Typed SQLite schema
 drizzle/init.sql              SQLite DDL (applied at startup)

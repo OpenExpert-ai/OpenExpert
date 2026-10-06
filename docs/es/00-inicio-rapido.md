@@ -76,12 +76,12 @@ El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
 
 ## Dónde vive cada cosa
 
-| Elemento        | Ubicación                                                          |
-| --------------- | ------------------------------------------------------------------ |
-| Configuración   | `openexpert.json` (en el directorio de trabajo)                    |
-| Base de datos   | `OPENEXPERT_DATA_DIR/openexpert.db` (por defecto `~/.openexpert/`) |
-| Secretos        | `~/.openexpert/secrets.json` (`0600`)                              |
-| Tokens de Drive | `~/.openexpert/credentials.json` (`0600`)                          |
+| Elemento          | Ubicación                                                                                             |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| Configuración     | `openexpert.json` (en el directorio de trabajo)                                                       |
+| Base de datos     | `OPENEXPERT_DATA_DIR/openexpert.db` (por defecto `~/.openexpert/`)                                    |
+| Secretos          | `~/.openexpert/secrets.json` (`0600`)                                                                 |
+| Tokens de fuentes | `~/.openexpert/` (`credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`; `0600`) |
 
 ## Diagnóstico
 

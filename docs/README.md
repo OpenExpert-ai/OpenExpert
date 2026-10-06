@@ -7,23 +7,24 @@ OpenExpert is documented in two languages. Pick yours:
 
 ## Top-level documents
 
-| N.º | English                                     | Español                                                       | Audience               |
-| --- | ------------------------------------------- | ------------------------------------------------------------- | ---------------------- |
-| 00  | [Quickstart](./en/00-quickstart.md)         | [Inicio rápido](./es/00-inicio-rapido.md)                     | All                    |
-| 01  | [Product](./en/01-product.md)               | [Producto](./es/01-producto.md)                               | Business               |
-| 02  | [Architecture](./en/02-architecture.md)     | [Arquitectura](./es/02-arquitectura.md)                       | Engineering            |
-| 03  | [Data model](./en/03-data-model.md)         | [Modelo de datos](./es/03-modelo-de-datos.md)                 | Engineering + Business |
-| 04  | [Security & access](./en/04-security.md)    | [Seguridad y acceso](./es/04-seguridad-y-acceso.md)           | Both                   |
-| 05  | [AI](./en/05-ai.md)                         | [Inteligencia artificial](./es/05-inteligencia-artificial.md) | Both                   |
-| 06  | [Integrations](./en/06-integrations.md)     | [Integraciones](./es/06-integraciones.md)                     | Both                   |
-| 07  | [Development](./en/07-development.md)       | [Desarrollo](./es/07-desarrollo.md)                           | Engineering            |
-| 08  | [Deployment](./en/08-deployment.md)         | [Despliegue](./es/08-despliegue.md)                           | Engineering            |
-| 09  | [Operation & support](./en/09-operation.md) | [Operación y soporte](./es/09-operacion-y-soporte.md)         | Both                   |
-| 10  | [Glossary](./en/10-glossary.md)             | [Glosario](./es/10-glosario.md)                               | Business               |
-| 11  | [OpenCore](./en/11-opencore.md)             | [OpenCore](./es/11-opencore.md)                               | All                    |
-| 12  | [Licensing model](./en/12-licensing.md)     | [Modelo de licencia](./es/12-licencia.md)                     | Both                   |
-| 13  | [AI providers](./en/13-ai-providers.md)     | [Proveedores de IA](./es/13-proveedores-ia.md)                | Both                   |
-| —   | [Roadmap](./en/roadmap.md)                  | [Hoja de ruta](./es/roadmap.md)                               | Both                   |
+| N.º | English                                      | Español                                                       | Audience               |
+| --- | -------------------------------------------- | ------------------------------------------------------------- | ---------------------- |
+| 00  | [Quickstart](./en/00-quickstart.md)          | [Inicio rápido](./es/00-inicio-rapido.md)                     | All                    |
+| 01  | [Product](./en/01-product.md)                | [Producto](./es/01-producto.md)                               | Business               |
+| 02  | [Architecture](./en/02-architecture.md)      | [Arquitectura](./es/02-arquitectura.md)                       | Engineering            |
+| 03  | [Data model](./en/03-data-model.md)          | [Modelo de datos](./es/03-modelo-de-datos.md)                 | Engineering + Business |
+| 04  | [Security & access](./en/04-security.md)     | [Seguridad y acceso](./es/04-seguridad-y-acceso.md)           | Both                   |
+| 05  | [AI](./en/05-ai.md)                          | [Inteligencia artificial](./es/05-inteligencia-artificial.md) | Both                   |
+| 06  | [Integrations](./en/06-integrations.md)      | [Integraciones](./es/06-integraciones.md)                     | Both                   |
+| 07  | [Development](./en/07-development.md)        | [Desarrollo](./es/07-desarrollo.md)                           | Engineering            |
+| 08  | [Deployment](./en/08-deployment.md)          | [Despliegue](./es/08-despliegue.md)                           | Engineering            |
+| 09  | [Operation & support](./en/09-operation.md)  | [Operación y soporte](./es/09-operacion-y-soporte.md)         | Both                   |
+| 10  | [Glossary](./en/10-glossary.md)              | [Glosario](./es/10-glosario.md)                               | Business               |
+| 11  | [OpenCore](./en/11-opencore.md)              | [OpenCore](./es/11-opencore.md)                               | All                    |
+| 12  | [Licensing model](./en/12-licensing.md)      | [Modelo de licencia](./es/12-licencia.md)                     | Both                   |
+| 13  | [AI providers](./en/13-ai-providers.md)      | [Proveedores de IA](./es/13-proveedores-ia.md)                | Both                   |
+| —   | [Roadmap](./en/roadmap.md)                   | [Hoja de ruta](./es/roadmap.md)                               | Both                   |
+| —   | [Architecture decisions](./en/adr/README.md) | [Decisiones de arquitectura](./es/adr/README.md)              | Engineering            |
 
 ## Companion files
 

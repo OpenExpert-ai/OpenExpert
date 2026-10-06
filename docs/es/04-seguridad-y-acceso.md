@@ -75,7 +75,6 @@ Reglas:
   (chat, lista de fuentes, auditoría). No entrenamos modelos no
   personalizados. No vendemos ni cedemos los datos a terceros. Ver
   [`PRIVACY.md`](../../PRIVACY.md).
-- El `state` del OAuth de Drive va firmado con HMAC y se compara en tiempo constante.
 
 ## 5. Datos en reposo
 

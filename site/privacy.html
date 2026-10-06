@@ -6,7 +6,7 @@
     <title>Privacy Policy — OpenExpert</title>
     <meta
       name="description"
-      content="OpenExpert privacy policy: local-first, no telemetry, and only the Google Drive files you choose."
+      content="OpenExpert privacy policy: local-first, no telemetry, and only the files and pages you choose."
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -60,6 +60,14 @@
           at rest. Remove them any time from Integrations → Sources.
         </li>
         <li>
+          <strong>local-roots.json</strong> — the local folders you granted OpenExpert access to,
+          encrypted at rest. Remove them any time from Integrations → Sources.
+        </li>
+        <li>
+          <strong>notion.json</strong> — the Notion OAuth token, encrypted at rest and used only to
+          call the Notion API with your consent.
+        </li>
+        <li>
           <strong>state-secret</strong> and <strong>secret.key</strong> (mode <code>0600</code>) —
           local keys used to sign the OAuth state and to encrypt the files above.
         </li>
@@ -70,13 +78,14 @@
       <ul>
         <li>
           <strong>Default and recommended: Ollama.</strong> Runs locally. Your prompts and the
-          content of files you choose from Google Drive never leave your machine.
+          content of files you choose from Google Drive, local folders and Notion never leave your
+          machine.
         </li>
         <li>
           <strong>Optional: Google Gemini or any OpenAI-compatible endpoint.</strong> You provide
           your own key. In that case, the text of the conversation and the content of the files you
-          chose from Google Drive are sent to that provider so it can respond. OpenExpert is not
-          party to those exchanges.
+          chose from Google Drive, local folders and Notion are sent to that provider so it can
+          respond. OpenExpert is not party to those exchanges.
         </li>
       </ul>
       <p>
@@ -102,8 +111,7 @@
         </li>
         <li>
           <strong>Human approval.</strong> Every write is proposed by the assistant and shown as a
-          confirmation card. Nothing changes until you approve it. Every read of a Drive file is
-          confirmed by you before it runs.
+          confirmation card. Nothing changes until you approve it.
         </li>
         <li>
           <strong>How to disconnect.</strong> Integrations → Sources → Disconnect. The refresh token
@@ -134,14 +142,6 @@
           consent for the specific file.
         </li>
       </ul>
-
-      <h3>The OAuth client</h3>
-      <p>
-        When you install OpenExpert you may be authorising against a shared OAuth client owned by
-        the distributor of your build. That client only requests the <code>drive.file</code> scope
-        and a localhost redirect URI. You always authorise with your own Google account; your tokens
-        stay on your machine.
-      </p>
 
       <h2>5. Backups</h2>
       <p>

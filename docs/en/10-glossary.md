@@ -14,8 +14,9 @@ Expert cannot read another Expert's data. Initial Experts: `general`, `ventas`,
 declared, its chat does not enable the corresponding tools.
 
 **Process**
-: Automatable sequence with a trigger and an approval policy. Example: overdue
-invoice follow-up.
+: Planned concept: an automatable sequence with a trigger and an approval
+policy. The previous version was a mock and has been withdrawn until it can be
+built for real (see the roadmap).
 
 **Proposal**
 : Action suggested by the assistant and pending execution, shown as a card. AI
@@ -50,8 +51,8 @@ not an error.
 : "Bring your own key": use your own API key for a remote provider.
 
 **Scope**
-: Permission requested from Google during authorisation. Drive requests
-`drive.readonly` and `drive.file`.
+: Permission requested from Google during authorisation. Drive requests only
+`drive.file`.
 
 ## References
 

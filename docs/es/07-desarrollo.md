@@ -88,7 +88,7 @@ OAuth de Drive depende de él. El preset de Nitro es siempre `node-server`.
 
 El esquema es `drizzle/schema.ts` (Drizzle) más `drizzle/init.sql` (DDL base).
 `src/lib/db.server.ts` abre el fichero SQLite, aplica el DDL base, ejecuta las
-migraciones pendientes y siembra datos de ejemplo.
+migraciones pendientes y siembra la configuración (Expertos e integraciones).
 
 **Cambios de esquema:** mantén `schema.ts` e `init.sql` en sync para las
 instalaciones nuevas y añade un fichero numerado en `drizzle/migrations/`

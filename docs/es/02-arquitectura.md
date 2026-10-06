@@ -19,7 +19,7 @@ hay nube, ni servidor de base de datos, ni inicio de sesión.
 | ORM           | Drizzle ORM (`sql-js`)                                     | Consultas tipadas; esquema en `drizzle/schema.ts`    |
 | IA            | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai` | Chat, herramientas, streaming                        |
 | Modelo        | Ollama (defecto), Gemini o endpoint OpenAI-compatible      | Razonamiento y respuestas                            |
-| Documentos    | API de Google Drive (opcional)                             | Lectura/escritura de ficheros del propietario        |
+| Fuentes       | API de Google Drive, carpetas locales, Notion (opcional)   | Lectura/escritura del contenido del propietario      |
 
 ## 2. Capas y dirección de dependencia
 
@@ -32,6 +32,8 @@ graph TD
     CHAT[Chat<br/>ai/chat.server.ts]
     MODEL[Proveedor de modelo<br/>opencore/model-provider.server.ts]
     DRV[Google Drive<br/>drive.server.ts]
+    NOT[Notion<br/>notion.server.ts]
+    LOC[Carpetas locales<br/>local-fs.server.ts]
     FILE[(openexpert.db)]
 
     UI -->|lecturas + mutaciones| SF
@@ -42,6 +44,8 @@ graph TD
     CHAT --> DB
     CHAT --> MODEL
     CHAT --> DRV
+    CHAT --> NOT
+    CHAT --> LOC
     EE --> DB
     DB --> FILE
 ```
@@ -58,6 +62,7 @@ src/
 │   ├── __root.tsx              Armazón
 │   ├── index.tsx               / → redirige a /expert
 │   ├── auth.google.callback.ts Retorno OAuth de Drive
+│   ├── auth.notion.callback.ts Retorno OAuth de Notion
 │   ├── api/chat.ts             Endpoint de streaming del chat
 │   └── _authenticated/         Grupo de layout (sin guardia de sesión)
 ├── lib/
@@ -67,10 +72,15 @@ src/
 │   ├── ai/chat.server.ts       Chat: herramientas, anti-inyección, streaming
 │   ├── drive.server.ts         Cliente de Google Drive API
 │   ├── drive-tokens.server.ts  OAuth de Drive y ciclo de tokens
+│   ├── local-fs.server.ts      Carpetas locales autorizadas (lectura + escritura aprobada)
+│   ├── notion.server.ts        Cliente de la API de Notion
+│   ├── notion-tokens.server.ts OAuth de Notion y ciclo de tokens
+│   ├── office.server.ts        Extracción de texto/PDF/Office (Drive + local)
 │   └── opencore/               Proveedor de modelo + credenciales locales
 ├── components/                 AppShell y shadcn/ui
 drizzle/
 ├── schema.ts                   Esquema SQLite tipado (Drizzle)
+├── migrations/                 DDL incremental (PRAGMA user_version)
 └── init.sql                    DDL aplicado al arrancar
 packages/opencore/              Motor MIT + CLI
 ```

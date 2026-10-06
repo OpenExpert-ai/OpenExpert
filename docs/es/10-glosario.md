@@ -52,8 +52,8 @@ actividad.
 : «Bring your own key»: usar tu propia clave de API para un proveedor remoto.
 
 **Scope**
-: Permiso solicitado a Google durante la autorización. Drive solicita
-`drive.readonly` y `drive.file`.
+: Permiso solicitado a Google durante la autorización. Drive solicita solo
+`drive.file`.
 
 ## Referencias
 

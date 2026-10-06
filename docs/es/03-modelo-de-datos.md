@@ -37,13 +37,13 @@ para volver a sembrar la configuración.
 
 ### `integrations` — catálogo de conectores
 
-| Columna            | Tipo        | Notas                                           |
-| ------------------ | ----------- | ----------------------------------------------- |
-| `id`               | TEXT PK     | `gdrive`, `pipedrive`, …                        |
-| `name`, `category` | TEXT        | —                                               |
-| `connected`        | INTEGER     | 0/1; hoy solo `gdrive` puede conectarse         |
-| `entities`         | TEXT (JSON) | `[{ name, count }]` de la última sincronización |
-| `last_sync`        | TEXT        | Fecha ISO o null                                |
+| Columna            | Tipo        | Notas                                                   |
+| ------------------ | ----------- | ------------------------------------------------------- |
+| `id`               | TEXT PK     | `gdrive`, `pipedrive`, …                                |
+| `name`, `category` | TEXT        | —                                                       |
+| `connected`        | INTEGER     | 0/1; hoy pueden conectarse `gdrive`, `local` y `notion` |
+| `entities`         | TEXT (JSON) | `[{ name, count }]` de la última sincronización         |
+| `last_sync`        | TEXT        | Fecha ISO o null                                        |
 
 ### `activity` — registro de actividad
 

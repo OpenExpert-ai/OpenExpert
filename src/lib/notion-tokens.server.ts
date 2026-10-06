@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Notion OAuth (public connection) for the single local owner.
 //
-// The `client_id`/`client_secret` are the distributor's **app identity**, baked
-// once. Each end user authorizes it with `owner=user` in THEIR OWN Notion
-// workspace; the resulting access token is per-user and stored locally. There is
-// no distributor server and no shared data token: the distributor never sees a
+// The `client_id`/`client_secret` identify the app. Each user authorizes it with
+// `owner=user` in THEIR OWN Notion workspace; the resulting access token is
+// per-user and stored locally. There is no shared data token: no one else sees a
 // user's token or content. The token lives encrypted in
 // ~/.openexpert/notion.json (0600).
 

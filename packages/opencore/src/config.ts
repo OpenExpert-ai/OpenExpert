@@ -25,15 +25,13 @@ export type OpenExpertConfig = {
   ollamaBaseUrl: string;
   dataDir: string;
   /**
-   * Google OAuth client ID for the shared, distributor-baked client. Non-secret
-   * (public identifier); the secret lives in env or ~/.openexpert/secrets.json.
-   * End users never edit this.
+   * Google OAuth client ID (non-secret public identifier) for the Drive
+   * integration. The secret lives in env or ~/.openexpert/secrets.json.
    */
   googleClientId: string;
   /**
-   * Notion OAuth client ID for the shared, distributor-baked public connection.
-   * Non-secret (public identifier); the secret lives in env or
-   * ~/.openexpert/secrets.json. End users never edit this.
+   * Notion OAuth client ID (non-secret public identifier) for the Notion
+   * connection. The secret lives in env or ~/.openexpert/secrets.json.
    */
   notionClientId: string;
   ai: AiConfig;

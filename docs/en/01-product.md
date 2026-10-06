@@ -31,7 +31,8 @@ execution**: AI proposes, a person approves.
   not invent numbers.
 - **Governance:** an activity log of every relevant event and revert for
   revertible changes.
-- **Google Drive** (optional): read, create and edit documents from the chat.
+- **Sources** (optional): Google Drive, local folders and Notion — read, create
+  and edit files and documents from the chat.
 - **Configuration panel** (`/settings`): model & AI, chat & agents, data and
   backups, appearance and advanced options (diagnostics and editing
   `openexpert.json`). Changes take effect without restarting.
@@ -50,7 +51,7 @@ recommendations.
 | ----------------------------------------------------------------------- | -------- |
 | Local, single-owner edition                                             | Active   |
 | Chat with tools and streaming                                           | Active   |
-| Google Drive read/write                                                 | Optional |
+| Google Drive, local folders and Notion (read; approved writes)          | Optional |
 | Audit log and revert                                                    | Active   |
 | Pipedrive, Holded, Salesforce, Meta Ads, Gmail, Slack, Google Analytics | Pending  |
 | Automatic trigger scheduler                                             | Pending  |

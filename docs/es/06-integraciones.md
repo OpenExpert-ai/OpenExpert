@@ -25,7 +25,8 @@ pendientes de credenciales.
 
 ## 2. Google Drive
 
-El cliente OAuth va **embebido en el build** (cliente único propiedad del proyecto). **El usuario final no entra en Google Cloud.**
+Conecta tu propia cuenta de Google desde **Integraciones → Fuentes**; no
+necesitas entrar en Google Cloud.
 
 ### 2.1 Flujo
 
@@ -47,36 +48,17 @@ El cliente OAuth va **embebido en el build** (cliente único propiedad del proye
 | ------------ | ----------------------------------------------------------------------------------- |
 | `drive.file` | Acceso por archivo (no sensible). No requiere CASA. El usuario elige con el Picker. |
 
-### 2.3 Claves (las pone el distribuidor, nunca el usuario)
+### 2.3 Privacidad
 
-| Variable / secret                                  | Finalidad                                                  | Dónde vive                                        |
-| -------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------- |
-| `OPENEXPERT_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` | Client_id de OAuth (público)                               | env, `openexpert.json` o `secrets.json`           |
-| `GOOGLE_CLIENT_SECRET`                             | Secret del cliente OAuth                                   | env o `secrets.json` (`0600`)                     |
-| `GOOGLE_PICKER_API_KEY`                            | API key del Picker (restringir por referrer localhost)     | env o `secrets.json`                              |
-| `GOOGLE_PICKER_APP_ID`                             | Número de proyecto de Cloud (público)                      | env                                               |
-| `OPENEXPERT_PRIVACY_URL`                           | URL de la política de privacidad que se muestra al activar | env (por defecto, apunta a `PRIVACY.md` del repo) |
-
-### 2.4 Pantalla de consentimiento
-
-Publica la pantalla de consentimiento en producción para que los refresh
-tokens no caduquen a los 7 días. Consulta la
-[FAQ de verificación OAuth](https://support.google.com/cloud/answer/9110914).
-`drive.file` es **no sensible** → no se requiere auditoría CASA.
-
-### 2.5 Consentimiento, privacidad y Limited Use
-
-Antes de conectar se muestra una explicación en la propia app. La frase
-obligatoria de Limited Use está en [`PRIVACY.md`](../../PRIVACY.md) (inglés) y
-[`POLITICA-DE-PRIVACIDAD.md`](./POLITICA-DE-PRIVACIDAD.md) (español), y un
-extracto aparece en el diálogo de conectar. La URL es configurable vía
-`OPENEXPERT_PRIVACY_URL`.
+El consentimiento se muestra en la app antes de conectar. La política está en
+[`PRIVACY.md`](../../PRIVACY.md) (inglés) y
+[`POLITICA-DE-PRIVACIDAD.md`](./POLITICA-DE-PRIVACIDAD.md) (español).
 
 ## 3. Notion
 
-Notion usa una **conexión pública (OAuth 2.0)**. El distribuidor embebe un
-cliente compartido, así que el usuario final solo pulsa `Conectar Notion` y elige
-las páginas en el selector de Notion — sin configurar claves.
+Notion se conecta con OAuth 2.0. En **Integraciones → Fuentes → Notion**, pulsa
+`Conectar Notion` y elige en el selector del propio Notion a qué páginas y bases
+da acceso OpenExpert — sin configurar claves.
 
 1. **Integraciones → Fuentes → Notion** → `Conectar Notion`.
 2. Notion muestra las capacidades de la conexión y su selector de páginas; el
@@ -86,33 +68,11 @@ las páginas en el selector de Notion — sin configurar claves.
    (`POST /v1/oauth/token`, HTTP Basic) y guarda el token **de larga duración**
    cifrado en `~/.openexpert/notion.json` (`0600`). Notion no usa refresh token.
 
-### 3.1 Configuración del distribuidor (una vez)
-
-1. En el [portal de desarrolladores de Notion](https://www.notion.so/profile/integrations),
-   crea una **conexión pública** (ver la
-   [guía de conexiones públicas](https://developers.notion.com/guides/get-started/public-connections)).
-2. Redirect URI: `http://localhost:3000/auth/notion/callback`.
-3. [Capacidades](https://developers.notion.com/reference/capabilities): leer
-   contenido, insertar contenido, actualizar contenido, leer usuario sin email.
-4. Installation scope: _Any workspace_ (para distribuir) o _Selected workspaces_
-   (para probar).
-5. Copia el **client ID** y el **client secret** desde la pestaña Configuration.
-6. Pon el client ID en `openexpert.json` (`notionClientId`) y el secreto en
-   `~/.openexpert/secrets.json` como `NOTION_CLIENT_SECRET` (`0600`) — o ambos
-   como variables de entorno. Después, el usuario final solo pulsa
-   `Conectar Notion`.
-
-Cada usuario final autoriza la conexión **en su propio workspace**
-(`owner=user`) y obtiene su propio token, guardado en local. El cliente del
-distribuidor es solo la **identidad de la app**: no hay servidor del distribuidor
-ni token compartido, así que el distribuidor nunca ve el token ni el contenido
-del usuario. El installation scope debe ser _Any workspace_ para que cualquiera
-pueda instalarla.
-
-La versión de la API va fijada con la cabecera `Notion-Version` (`2026-03-11`);
-el límite es ~3 peticiones/segundo y se respeta `Retry-After`. La revisión de
-seguridad de Notion solo hace falta para listarse en el Marketplace — **no**
-para usar la conexión.
+Cada usuario autoriza la conexión **en su propio workspace** (`owner=user`) y
+obtiene su propio token, guardado en local. No hay token compartido, así que
+nadie más ve tu token ni tu contenido. La versión de la API va fijada con la
+cabecera `Notion-Version` (`2026-03-11`); el límite es ~3 peticiones/segundo y se
+respeta `Retry-After`.
 
 ## 4. Carpetas locales
 
@@ -137,17 +97,17 @@ absoluta. Las concesiones se guardan cifradas en
 
 ## 5. Herramientas de IA
 
-| Herramienta                                                          | Comportamiento                                   |
-| -------------------------------------------------------------------- | ------------------------------------------------ |
-| `search_drive`                                                       | Busca **solo** dentro de los archivos concedidos |
-| `read_drive_file`                                                    | Lee solo dentro de las concesiones               |
-| `create_drive_file`                                                  | Crea un nuevo archivo propiedad de la app        |
-| `update_drive_file`                                                  | Edita un archivo concedido o creado por la app   |
-| `list_local_files` / `search_local_files`                            | Lista/busca en las carpetas locales autorizadas  |
-| `read_local_file`                                                    | Lee un archivo local autorizado                  |
-| `create_local_file` / `update_local_file`                            | Escribe un archivo local, con aprobación humana  |
-| `search_notion` / `query_notion_database` / `read_notion_page`       | Lee el contenido compartido de Notion            |
-| `create_notion_page` / `update_notion_page` / `append_notion_blocks` | Escribe en Notion, con aprobación humana         |
+| Herramienta                                                                                    | Comportamiento                                   |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `search_drive`                                                                                 | Busca **solo** dentro de los archivos concedidos |
+| `read_drive_file`                                                                              | Lee solo dentro de las concesiones               |
+| `create_drive_file`                                                                            | Crea un nuevo archivo propiedad de la app        |
+| `update_drive_file`                                                                            | Edita un archivo concedido o creado por la app   |
+| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas  |
+| `read_local_file`                                                                              | Lee un archivo local autorizado                  |
+| `create_local_file` / `update_local_file`                                                      | Escribe un archivo local, con aprobación humana  |
+| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Lee el contenido compartido de Notion            |
+| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Escribe en Notion, con aprobación humana         |
 
 Las lecturas de Drive requieren `gdrive` en `sources` del Experto; las locales
 requieren `local`; las de Notion, `notion`. Todas las escrituras requieren
@@ -167,17 +127,7 @@ aprobación humana.
 - El navegador se considera de confianza en la edición local
   monopropietario (ver [`04-seguridad-y-acceso.md`](./04-seguridad-y-acceso.md)).
 
-## 7. Añadir una integración
-
-1. **Credenciales.** Documenta el flujo OAuth o los requisitos de plan.
-2. **Tokens.** Reutiliza el patrón de Drive (fichero local cifrado, `0600`).
-3. **Cliente de API.** Módulo de servidor con las credenciales del propietario.
-4. **Sincronización.** Función que rellena la tabla destino y actualiza estado.
-5. **Herramientas de IA.** Funciones de lectura con comprobación de dominio,
-   de scope y registro de fuente. Incluye siempre un disclosure en producto si
-   los datos se envían a un modelo.
-
-## 8. Referencias
+## 7. Referencias
 
 - [Arquitectura](./02-arquitectura.md) — capas.
 - [IA](./05-inteligencia-artificial.md) — catálogo de herramientas.

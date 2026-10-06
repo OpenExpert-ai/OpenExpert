@@ -60,9 +60,8 @@ en Google Drive.
 | `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | `notion` en `sources`                     |
 | `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | `notion` en `sources` + aprobación humana |
 
-Notion se conecta con OAuth 2.0 (cliente compartido embebido por el
-distribuidor); el usuario elige qué páginas/bases comparte en el selector de
-Notion.
+Notion se conecta con OAuth 2.0; el usuario elige qué páginas/bases comparte en
+el selector de Notion.
 
 ### Propuestas (no ejecutan)
 
@@ -89,15 +88,15 @@ contra esa lista antes de devolver datos; si no, devuelve un error explícito
 `sources` del Experto; el acceso a archivos locales se decide por el origen
 `local` y queda además restringido a las carpetas autorizadas. Los dominios se
 eligen al crear o editar un Experto; un Experto sin dominios puede chatear y usar
-Drive, pero no lee datos de negocio.
+las fuentes, pero no lee datos de negocio.
 
 ## 4. Límites
 
-| Límite                 | Valor                              |
-| ---------------------- | ---------------------------------- |
-| Pasos por turno        | 50                                 |
-| Retención de historial | 30 días                            |
-| Coste                  | El del proveedor; Ollama es gratis |
+| Límite                 | Valor                                                    |
+| ---------------------- | -------------------------------------------------------- |
+| Pasos por turno        | 50                                                       |
+| Retención de historial | Configurable (`chat.retentionDays`), 30 días por defecto |
+| Coste                  | El del proveedor; Ollama es gratis                       |
 
 ## 5. Referencias
 

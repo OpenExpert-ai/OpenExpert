@@ -11,12 +11,11 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 
 ## 2. Recurring tasks
 
-| Task                                 | Frequency |
-| ------------------------------------ | --------- |
-| Review the activity log              | Weekly    |
-| Back up `OPENEXPERT_DATA_DIR`        | Monthly   |
-| Update dependencies (`npm outdated`) | Quarterly |
-| Review Drive authorisation           | Monthly   |
+| Task                          | Frequency |
+| ----------------------------- | --------- |
+| Review the activity log       | Weekly    |
+| Back up `OPENEXPERT_DATA_DIR` | Monthly   |
+| Review source authorisations  | Monthly   |
 
 ## 3. Automatic maintenance
 

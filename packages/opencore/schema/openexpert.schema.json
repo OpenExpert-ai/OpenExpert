@@ -29,12 +29,12 @@
     "googleClientId": {
       "type": "string",
       "minLength": 1,
-      "description": "Google OAuth client ID baked by the distributor (shared client model). End users do not edit this. OpenExpert ships with drive.file scope and a localhost redirect URI."
+      "description": "Google OAuth client ID (public identifier) used for the Drive integration. The matching client secret lives in secrets.json."
     },
     "notionClientId": {
       "type": "string",
       "minLength": 1,
-      "description": "Notion OAuth client ID baked by the distributor (shared public connection). End users do not edit this. The matching client secret lives in secrets.json."
+      "description": "Notion OAuth client ID (public identifier) used to connect Notion. The matching client secret lives in secrets.json."
     },
     "ai": {
       "type": "object",

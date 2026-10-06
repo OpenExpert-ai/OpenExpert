@@ -31,7 +31,8 @@ pero **no la ejecución**: la IA propone y la persona aprueba.
   local. No inventa cifras.
 - **Gobierno:** registro de actividad de cada evento relevante y reversión de los
   cambios reversibles.
-- **Google Drive** (opcional): leer, crear y editar documentos desde el chat.
+- **Fuentes** (opcional): Google Drive, carpetas locales y Notion — leer, crear
+  y editar archivos y documentos desde el chat.
 - **Panel de configuración** (`/settings`): modelo e IA, chat y agentes, datos y
   copias de seguridad, apariencia y opciones avanzadas (diagnóstico y edición de
   `openexpert.json`). Los cambios surten efecto sin reiniciar.
@@ -46,14 +47,14 @@ una tabla y recomendaciones.
 
 ## 5. Alcance
 
-| Capacidad                                                               | Estado    |
-| ----------------------------------------------------------------------- | --------- |
-| Edición local, propietario único                                        | Activo    |
-| Chat con herramientas y streaming                                       | Activo    |
-| Lectura/escritura en Google Drive                                       | Opcional  |
-| Registro de actividad y reversión                                       | Activo    |
-| Pipedrive, Holded, Salesforce, Meta Ads, Gmail, Slack, Google Analytics | Pendiente |
-| Planificador automático de disparadores                                 | Pendiente |
+| Capacidad                                                                   | Estado    |
+| --------------------------------------------------------------------------- | --------- |
+| Edición local, propietario único                                            | Activo    |
+| Chat con herramientas y streaming                                           | Activo    |
+| Google Drive, carpetas locales y Notion (lectura; escritura con aprobación) | Opcional  |
+| Registro de actividad y reversión                                           | Activo    |
+| Pipedrive, Holded, Salesforce, Meta Ads, Gmail, Slack, Google Analytics     | Pendiente |
+| Planificador automático de disparadores                                     | Pendiente |
 
 ## 6. Edición
 

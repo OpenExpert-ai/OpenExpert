@@ -10,7 +10,7 @@ El proyecto es **open source bajo licencia MIT**.
 > The English version of this document is [`README.md`](./README.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%E2%89%A520-339933)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/node-%E2%89%A524-339933)](https://nodejs.org)
 
 ## Arranque rápido
 
@@ -70,8 +70,9 @@ Ver [Despliegue](./docs/es/08-despliegue.md).
 - **IA** como configuración: [Ollama](https://ollama.com) (por defecto, sin
   claves), Google Gemini (clave gratuita) o cualquier endpoint
   OpenAI-compatible. Ver [docs/es/13-proveedores-ia.md](./docs/es/13-proveedores-ia.md).
-- **Google Drive** es una integración opcional con tu propia cuenta; los tokens
-  se guardan en local con permisos `0600`.
+- **Fuentes** (opcional): Google Drive, carpetas locales y Notion, conectadas con
+  tu propia cuenta; los tokens y las concesiones se guardan en local con permisos
+  `0600`.
 - **Gobierno**: cada cambio reversible se registra con snapshot y puede
   revertirse desde la pantalla de actividad. La IA solo _propone_ acciones y
   requieren aprobación humana.
@@ -83,23 +84,23 @@ Ver [Despliegue](./docs/es/08-despliegue.md).
 
 Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y español).
 
-| Documento                                           | Contenido                             |
-| --------------------------------------------------- | ------------------------------------- |
-| [Inicio rápido](./docs/es/00-inicio-rapido.md)      | De cero a chatear en 5 minutos        |
-| [Producto](./docs/es/01-producto.md)                | Qué hace la plataforma                |
-| [Arquitectura](./docs/es/02-arquitectura.md)        | Capas y flujo de datos                |
-| [Modelo de datos](./docs/es/03-modelo-de-datos.md)  | Tablas SQLite                         |
-| [Seguridad](./docs/es/04-seguridad-y-acceso.md)     | Acceso y protecciones                 |
-| [IA](./docs/es/05-inteligencia-artificial.md)       | Herramientas y límites                |
-| [Integraciones](./docs/es/06-integraciones.md)      | Google Drive y cómo añadir conectores |
-| [Desarrollo](./docs/es/07-desarrollo.md)            | Entorno, scripts, convenciones        |
-| [Despliegue](./docs/es/08-despliegue.md)            | Ejecución local y Docker              |
-| [Operación](./docs/es/09-operacion-y-soporte.md)    | Tareas periódicas y diagnóstico       |
-| [Glosario](./docs/es/10-glosario.md)                | Vocabulario                           |
-| [OpenCore](./docs/es/11-opencore.md)                | El motor y CLI MIT                    |
-| [Modelo de licencia](./docs/es/12-licencia.md)      | MIT, obligaciones, monetización       |
-| [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                 |
-| [Hoja de ruta](./docs/es/roadmap.md)                | Estado y planificación                |
+| Documento                                           | Contenido                               |
+| --------------------------------------------------- | --------------------------------------- |
+| [Inicio rápido](./docs/es/00-inicio-rapido.md)      | De cero a chatear en 5 minutos          |
+| [Producto](./docs/es/01-producto.md)                | Qué hace la plataforma                  |
+| [Arquitectura](./docs/es/02-arquitectura.md)        | Capas y flujo de datos                  |
+| [Modelo de datos](./docs/es/03-modelo-de-datos.md)  | Tablas SQLite                           |
+| [Seguridad](./docs/es/04-seguridad-y-acceso.md)     | Acceso y protecciones                   |
+| [IA](./docs/es/05-inteligencia-artificial.md)       | Herramientas y límites                  |
+| [Integraciones](./docs/es/06-integraciones.md)      | Google Drive, carpetas locales y Notion |
+| [Desarrollo](./docs/es/07-desarrollo.md)            | Entorno, scripts, convenciones          |
+| [Despliegue](./docs/es/08-despliegue.md)            | Ejecución local y Docker                |
+| [Operación](./docs/es/09-operacion-y-soporte.md)    | Tareas periódicas y diagnóstico         |
+| [Glosario](./docs/es/10-glosario.md)                | Vocabulario                             |
+| [OpenCore](./docs/es/11-opencore.md)                | El motor y CLI MIT                      |
+| [Modelo de licencia](./docs/es/12-licencia.md)      | MIT, obligaciones, monetización         |
+| [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                   |
+| [Hoja de ruta](./docs/es/roadmap.md)                | Estado y planificación                  |
 
 ## Requisitos
 
@@ -119,6 +120,10 @@ src/
     ai/chat.server.ts        Chat con herramientas y control anti-inyección
     drive.server.ts          Cliente de Google Drive API
     drive-tokens.server.ts   OAuth de Drive y ciclo de vida de tokens
+    local-fs.server.ts       Carpetas locales autorizadas (lectura + escritura aprobada)
+    notion.server.ts         Cliente de la API de Notion
+    notion-tokens.server.ts  OAuth de Notion y ciclo de vida de tokens
+    office.server.ts         Extracción de texto/PDF/Office (Drive + local)
     opencore/                Proveedor de modelo + custodia local de credenciales
 drizzle/schema.ts             Esquema SQLite tipado
 drizzle/init.sql              DDL SQLite (aplicado al arrancar)

@@ -14,7 +14,7 @@ change to `../es/`.
 | 03  | [Data model](./03-data-model.md)          | Engineering + Business | SQLite tables                          |
 | 04  | [Security & access](./04-security.md)     | Both                   | Access, isolation, secrets             |
 | 05  | [AI](./05-ai.md)                          | Both                   | Assistant tools and limits             |
-| 06  | [Integrations](./06-integrations.md)      | Both                   | Google Drive and connectors            |
+| 06  | [Integrations](./06-integrations.md)      | Both                   | Google Drive, local folders and Notion |
 | 07  | [Development](./07-development.md)        | Engineering            | Environment, scripts, conventions      |
 | 08  | [Deployment](./08-deployment.md)          | Engineering            | Local run and Docker                   |
 | 09  | [Operation & support](./09-operation.md)  | Both                   | Tasks, diagnosis, backups              |

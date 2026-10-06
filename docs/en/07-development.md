@@ -88,7 +88,7 @@ redirect URI depends on it. The Nitro preset is always `node-server`.
 
 The schema is `drizzle/schema.ts` (Drizzle) plus `drizzle/init.sql` (the baseline
 DDL). `src/lib/db.server.ts` opens the SQLite file, applies the baseline DDL,
-runs pending migrations and seeds example data.
+runs pending migrations and seeds the configuration (Experts and integrations).
 
 **Schema changes:** keep `schema.ts` and `init.sql` in sync for fresh installs
 and add a numbered file under `drizzle/migrations/` (e.g. `0002_add_x.sql`) for

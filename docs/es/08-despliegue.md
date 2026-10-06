@@ -41,8 +41,8 @@ Basta con un cliente OAuth. Registra la URI de redirección:
 
 Define `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` (en `.env` o el entorno).
 Deja la pantalla de consentimiento **In production** para que el refresh token
-no caduque a los 7 días. Ver
-[Integraciones](./06-integraciones.md).
+no caduque a los 7 días; consulta la
+[FAQ de verificación OAuth](https://support.google.com/cloud/answer/9110914).
 
 ## 4. Copias de seguridad
 

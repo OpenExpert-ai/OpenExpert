@@ -18,21 +18,23 @@ explica qué datos accede, almacena y, cuando tú lo activas expresamente, trans
 Todos los datos siguientes se quedan en tu equipo y nunca llegan a OpenExpert
 ni a un tercero a menos que tú configures una integración cloud expresamente.
 
-| Dato                                        | Para qué                                                                                    | Vigencia                                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `openexpert.db` (SQLite)                    | Tu espacio, Experts, integraciones, facturas, campañas, historial de chat, log de actividad | Hasta que la borres (`Configuración → Datos → Restaurar`)                            |
-| `openexpert.json`                           | Tus preferencias no secretas (modelo, sampling, límites de chat, client_id de Google OAuth) | Editable desde la app o a mano                                                       |
-| `secrets.json` (modo `0600`)                | Claves de API (Gemini, OpenAI-compatible…)                                                  | Cifrado en reposo, nunca enviado por OpenExpert                                      |
-| `credentials.json` (modo `0600`)            | Tokens OAuth de Google Drive                                                                | Cifrado en reposo, usado solo para llamar a las APIs de Google con tu consentimiento |
-| `state-secret` (modo `0600`)                | Clave HMAC que firma el `state` de OAuth                                                    | Generada una vez en tu máquina                                                       |
-| Concesiones de Picker (`drive-grants.json`) | Lista de archivos que tú elegiste compartir con OpenExpert                                  | Hasta que las revoques (`Integraciones → Fuentes`)                                   |
+| Dato                                                 | Para qué                                                                                    | Vigencia                                                                             |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `openexpert.db` (SQLite)                             | Tu espacio, Experts, integraciones, facturas, campañas, historial de chat, log de actividad | Hasta que la borres (`Configuración → Datos → Restaurar`)                            |
+| `openexpert.json`                                    | Tus preferencias no secretas (modelo, sampling, límites de chat, client_id de Google OAuth) | Editable desde la app o a mano                                                       |
+| `secrets.json` (modo `0600`)                         | Claves de API (Gemini, OpenAI-compatible…)                                                  | Cifrado en reposo, nunca enviado por OpenExpert                                      |
+| `credentials.json` (modo `0600`)                     | Tokens OAuth de Google Drive                                                                | Cifrado en reposo, usado solo para llamar a las APIs de Google con tu consentimiento |
+| `state-secret` (modo `0600`)                         | Clave HMAC que firma el `state` de OAuth                                                    | Generada una vez en tu máquina                                                       |
+| Concesiones de Picker (`drive-grants.json`)          | Lista de archivos que tú elegiste compartir con OpenExpert                                  | Hasta que las revoques (`Integraciones → Fuentes`)                                   |
+| Concesiones de carpetas locales (`local-roots.json`) | Carpetas a las que diste acceso a OpenExpert                                                | Hasta que las revoques (`Integraciones → Fuentes`)                                   |
+| Token de Notion (`notion.json`)                      | Token OAuth de Notion                                                                       | Cifrado en reposo, usado solo para llamar a la API de Notion con tu consentimiento   |
 
 ## 3. El modelo de IA
 
 OpenExpert te permite elegir el proveedor de modelo.
 
-- **Por defecto y recomendado: Ollama.** Corre en local. **Tus prompts y el contenido de los archivos que elijas de Drive no salen de tu máquina.**
-- **Opcional: Google Gemini o cualquier endpoint OpenAI-compatible.** Tú pones tu propia clave. En ese caso, **el texto de la conversación y el contenido de los archivos elegidos de Drive se envían a ese proveedor** para que responda. OpenExpert no es parte de esos intercambios.
+- **Por defecto y recomendado: Ollama.** Corre en local. **Tus prompts y el contenido de los archivos que elijas de Google Drive, carpetas locales y Notion no salen de tu máquina.**
+- **Opcional: Google Gemini o cualquier endpoint OpenAI-compatible.** Tú pones tu propia clave. En ese caso, **el texto de la conversación y el contenido de los archivos elegidos de Google Drive, carpetas locales y Notion se envían a ese proveedor** para que responda. OpenExpert no es parte de esos intercambios.
 
 OpenExpert **no** usa estos datos para entrenar, ajustar o mejorar un modelo. Los proveedores tienen los suyos propios
 ([Términos de la API de Gemini](https://ai.google.dev/terms),
@@ -58,10 +60,6 @@ En concreto:
 - Los datos se usan solo para las funciones visibles en OpenExpert (chat, lista de fuentes, registro de auditoría).
 - No se transfieren a plataformas publicitarias, ni se venden, ni se usan para scoring crediticio ni para entrenar modelos no personalizados.
 - Nadie lee tus archivos, salvo que pidas ayuda y concedas consentimiento explícito para el archivo concreto.
-
-### El cliente OAuth va embebido en el build
-
-OpenExpert se distribuye con un **cliente OAuth compartido** mantenido por los mantenedores del proyecto (no por ti). Solo pide `drive.file` y una URI de redirección a localhost. Los mantenedores publican esta política y la mantienen alcanzable. Si haces un fork y redistribuyes, debes aportar tu propia política y tu propio cliente OAuth (o quitar Drive).
 
 ## 5. Copias de seguridad
 

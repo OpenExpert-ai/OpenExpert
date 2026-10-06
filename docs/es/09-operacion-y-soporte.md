@@ -12,12 +12,11 @@ gratis.
 
 ## 2. Tareas periódicas
 
-| Tarea                                    | Frecuencia |
-| ---------------------------------------- | ---------- |
-| Revisar el registro de actividad         | Semanal    |
-| Copiar `OPENEXPERT_DATA_DIR`             | Mensual    |
-| Actualizar dependencias (`npm outdated`) | Trimestral |
-| Revisar la autorización de Drive         | Mensual    |
+| Tarea                                 | Frecuencia |
+| ------------------------------------- | ---------- |
+| Revisar el registro de actividad      | Semanal    |
+| Copiar `OPENEXPERT_DATA_DIR`          | Mensual    |
+| Revisar las autorizaciones de fuentes | Mensual    |
 
 ## 3. Mantenimiento automático
 

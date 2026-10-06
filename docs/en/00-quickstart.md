@@ -76,12 +76,12 @@ in the repository.
 
 ## Where things live
 
-| Thing         | Location                                                       |
-| ------------- | -------------------------------------------------------------- |
-| Configuration | `openexpert.json` (in the working directory)                   |
-| Database      | `OPENEXPERT_DATA_DIR/openexpert.db` (default `~/.openexpert/`) |
-| Secrets       | `~/.openexpert/secrets.json` (`0600`)                          |
-| Drive tokens  | `~/.openexpert/credentials.json` (`0600`)                      |
+| Thing         | Location                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| Configuration | `openexpert.json` (in the working directory)                                                          |
+| Database      | `OPENEXPERT_DATA_DIR/openexpert.db` (default `~/.openexpert/`)                                        |
+| Secrets       | `~/.openexpert/secrets.json` (`0600`)                                                                 |
+| Source tokens | `~/.openexpert/` (`credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`; `0600`) |
 
 ## Troubleshooting
 
