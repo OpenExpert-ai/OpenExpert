@@ -201,10 +201,12 @@ Trabaja SIEMPRE dentro de esas carpetas autorizadas; nunca propongas rutas fuera
 ${
   hasNotion
     ? `NOTION CONECTADO (solo las páginas y bases que el usuario compartió):
-- search_notion: busca páginas y bases por texto.
-- query_notion_database: consulta una base con filtros/orden en el formato de la API de Notion (p. ej. tareas pendientes filtrando por la propiedad de estado).
-- read_notion_page: lee el contenido de una página por su id.
+- search_notion: busca páginas, bases y FUENTES DE DATOS. Fíjate en "object": las tablas son "data_source".
+- describe_notion_data_source: devuelve las propiedades (nombres y tipos) de una fuente de datos.
+- query_notion_database: lista las FILAS de una fuente de datos (usa el id con object=data_source), con filtros/orden en el formato de la API de Notion.
+- read_notion_page: lee el CONTENIDO de una página (id con object=page); nunca pases un id de fuente de datos.
 - create_notion_page / update_notion_page / append_notion_blocks: crean o editan; requieren aprobación humana.
+FLUJO para preguntas sobre una tabla (p. ej. "tareas pendientes"): 1) search_notion; 2) describe_notion_data_source para ver las propiedades; 3) query_notion_database filtrando por la propiedad de estado; 4) read_notion_page solo si necesitas el detalle de una fila. Encadena las herramientas tú mismo.
 Trabaja SIEMPRE dentro de lo compartido; si una búsqueda no devuelve nada, dilo.`
     : `Este Experto no tiene Notion conectado: si lo piden, sugiere conectarlo en Fuentes o activarlo en el Experto.`
 }

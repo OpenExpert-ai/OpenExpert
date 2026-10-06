@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Notion API client. Reads and writes only within what the user shared with the
 // OpenExpert connection (Notion's own page picker enforces that). Server-only.
+//
+// Since API version 2025-09-03 a database is a container of one or more
+// "data sources" (the actual tables). Search returns `data_source` objects and
+// their rows are queried with `POST /v1/data_sources/{id}/query`; pages are the
+// rows. This client accepts either a data source id or a database id.
 
 import { getNotionToken, NOTION_VERSION } from "./notion-tokens.server";
 import { logger } from "./logger.server";
@@ -9,7 +14,11 @@ const API = "https://api.notion.com/v1";
 
 type Json = Record<string, unknown>;
 
-async function call(path: string, init: RequestInit = {}): Promise<Json> {
+async function call(
+  path: string,
+  init: RequestInit = {},
+  opts: { optional?: boolean } = {},
+): Promise<Json> {
   const token = getNotionToken();
   const res = await fetch(`${API}${path}`, {
     ...init,
@@ -22,7 +31,8 @@ async function call(path: string, init: RequestInit = {}): Promise<Json> {
   });
   if (!res.ok) {
     const body = await res.text();
-    logger.warn("notion.request_failed", { status: res.status, body: body.slice(0, 500) });
+    if (!opts.optional)
+      logger.warn("notion.request_failed", { status: res.status, body: body.slice(0, 500) });
     if (res.status === 429)
       throw new Error(
         "Notion ha limitado las peticiones; espera unos segundos e inténtalo de nuevo.",
@@ -44,9 +54,10 @@ function plainText(rich: unknown): string {
     .trim();
 }
 
-/** Title of a Notion page or database object. */
+/** Title of a Notion page, database or data source object. */
 export function notionTitle(obj: Json): string {
-  if (obj["object"] === "database") return plainText(obj["title"]);
+  if (obj["object"] === "data_source" || obj["object"] === "database")
+    return plainText(obj["title"]);
   const props = obj["properties"] as Json | undefined;
   if (props) {
     for (const value of Object.values(props)) {
@@ -86,27 +97,68 @@ function blockText(block: Json): string {
   return text;
 }
 
+/** Whether `id` is a data source (as opposed to a database container). */
+async function isDataSource(id: string): Promise<boolean> {
+  try {
+    await call(`/data_sources/${encodeURIComponent(id)}`, {}, { optional: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve any id (data source or database container) to a data source id. */
+async function resolveDataSource(id: string): Promise<string> {
+  if (await isDataSource(id)) return id;
+  const db = await call(`/databases/${encodeURIComponent(id)}`);
+  const sources = (db["data_sources"] ?? []) as { id?: string }[];
+  const first = sources.find((s) => typeof s.id === "string")?.id;
+  if (!first) throw new Error("Esa base de Notion no tiene ninguna fuente de datos accesible.");
+  return first;
+}
+
 /* -------------------------------- reads --------------------------------- */
 
-export async function search(query: string, type?: "page" | "database"): Promise<NotionItem[]> {
+export async function search(query: string, type?: "page" | "data_source"): Promise<NotionItem[]> {
   const body: Json = { query, page_size: 25 };
   if (type) body["filter"] = { property: "object", value: type };
   const data = await call("/search", { method: "POST", body: JSON.stringify(body) });
   return ((data["results"] ?? []) as Json[]).map(toItem);
 }
 
-export async function queryDatabase(
-  databaseId: string,
+/** Rows (pages) of a data source. Accepts a data source or database id. */
+export async function queryDataSource(
+  id: string,
   opts: { filter?: unknown; sorts?: unknown; pageSize?: number } = {},
 ): Promise<NotionItem[]> {
+  const dsId = await resolveDataSource(id);
   const body: Json = { page_size: Math.min(opts.pageSize ?? 50, 100) };
   if (opts.filter) body["filter"] = opts.filter;
   if (opts.sorts) body["sorts"] = opts.sorts;
-  const data = await call(`/databases/${encodeURIComponent(databaseId)}/query`, {
+  const data = await call(`/data_sources/${encodeURIComponent(dsId)}/query`, {
     method: "POST",
     body: JSON.stringify(body),
   });
   return ((data["results"] ?? []) as Json[]).map(toItem);
+}
+
+/** Property schema of a data source, so filters can use real property names. */
+export async function describeDataSource(id: string): Promise<{
+  id: string;
+  title: string;
+  properties: { name: string; type: string }[];
+}> {
+  const dsId = await resolveDataSource(id);
+  const data = await call(`/data_sources/${encodeURIComponent(dsId)}`);
+  const props = data["properties"] as Record<string, { type?: string }> | undefined;
+  return {
+    id: dsId,
+    title: plainText(data["title"]) || "(sin título)",
+    properties: Object.entries(props ?? {}).map(([name, p]) => ({
+      name,
+      type: p?.type ?? "",
+    })),
+  };
 }
 
 /** Read a page's text, following one level of nested blocks, bounded. */
@@ -139,10 +191,14 @@ export async function readPage(pageId: string, maxBlocks = 300): Promise<string>
 
 /* -------------------------------- writes -------------------------------- */
 
-export async function createPage(databaseId: string, properties: Json): Promise<NotionItem> {
+/** Create a page in a data source (or a database container). */
+export async function createPage(parentId: string, properties: Json): Promise<NotionItem> {
+  const parent: Json = (await isDataSource(parentId))
+    ? { type: "data_source_id", data_source_id: parentId }
+    : { database_id: parentId };
   const data = await call("/pages", {
     method: "POST",
-    body: JSON.stringify({ parent: { database_id: databaseId }, properties }),
+    body: JSON.stringify({ parent, properties }),
   });
   return toItem(data);
 }

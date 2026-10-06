@@ -272,6 +272,7 @@ export const en: Record<string, string> = {
     "Connect your Notion: when you authorize, you choose which pages and databases it shares with OpenExpert. The assistant can search, query and edit them (with your approval).",
   "Buscando en Notion": "Searching Notion",
   "Consultando base de Notion": "Querying a Notion database",
+  "Consultando esquema de Notion": "Querying the Notion schema",
   "Leyendo página de Notion": "Reading a Notion page",
   "Creando página en Notion": "Creating a Notion page",
   "Actualizando página de Notion": "Updating a Notion page",

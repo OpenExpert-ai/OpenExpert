@@ -31,7 +31,11 @@ describe("notion oauth state", () => {
   });
 
   it("asks to authorize in the user's own workspace", async () => {
-    process.env["NOTION_CLIENT_ID"] = "cid";
+    const prevO = process.env["OPENEXPERT_NOTION_CLIENT_ID"];
+    const prev = process.env["NOTION_CLIENT_ID"];
+    const prevS = process.env["NOTION_CLIENT_SECRET"];
+    process.env["OPENEXPERT_NOTION_CLIENT_ID"] = "cid";
+    delete process.env["NOTION_CLIENT_ID"];
     process.env["NOTION_CLIENT_SECRET"] = "sec";
     try {
       const { authorizationUrl } = await import("./notion-tokens.server");
@@ -42,8 +46,12 @@ describe("notion oauth state", () => {
         "http://localhost:3000/auth/notion/callback",
       );
     } finally {
-      delete process.env["NOTION_CLIENT_ID"];
-      delete process.env["NOTION_CLIENT_SECRET"];
+      if (prevO === undefined) delete process.env["OPENEXPERT_NOTION_CLIENT_ID"];
+      else process.env["OPENEXPERT_NOTION_CLIENT_ID"] = prevO;
+      if (prev === undefined) delete process.env["NOTION_CLIENT_ID"];
+      else process.env["NOTION_CLIENT_ID"] = prev;
+      if (prevS === undefined) delete process.env["NOTION_CLIENT_SECRET"];
+      else process.env["NOTION_CLIENT_SECRET"] = prevS;
     }
   });
 });

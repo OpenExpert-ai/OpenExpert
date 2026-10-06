@@ -416,8 +416,11 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_notion: tool({
       description:
-        "Busca páginas y bases de datos en el Notion del usuario (solo lo que compartió con OpenExpert). Devuelve [{id, object, title, url}].",
-      inputSchema: z.object({ query: z.string(), type: z.enum(["page", "database"]).nullish() }),
+        "Busca en el Notion del usuario (solo lo que compartió con OpenExpert): páginas, bases de datos y fuentes de datos. Devuelve [{id, object, title, url}]; fíjate en `object` (page / database / data_source).",
+      inputSchema: z.object({
+        query: z.string(),
+        type: z.enum(["page", "data_source"]).nullish(),
+      }),
       execute: async ({ query, type }) => {
         if (!expert.sources.includes("notion")) return deny("con Notion");
         used.add("Notion");
@@ -431,7 +434,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     query_notion_database: tool({
       description:
-        "Consulta una base de datos de Notion por su id. Acepta filter/sorts en el formato de la API de Notion (p. ej. tareas pendientes: filtrar por la propiedad de estado). Devuelve [{id, title, url}].",
+        "Lista las filas (páginas) de una fuente de datos de Notion por su id (el id que devuelve search_notion con object=data_source). Acepta filter/sorts en el formato de la API de Notion. Para 'tareas pendientes', usa antes describe_notion_data_source y filtra por la propiedad de estado. Devuelve [{id, title, url}].",
       inputSchema: z.object({
         databaseId: z.string(),
         filter: z.unknown().optional(),
@@ -447,7 +450,22 @@ export function createChatTools(ctx: ChatToolsContext) {
           if (filter !== undefined) opts.filter = filter;
           if (sorts !== undefined) opts.sorts = sorts;
           if (pageSize !== undefined) opts.pageSize = pageSize;
-          return { results: await n.queryDatabase(databaseId, opts) };
+          return { results: await n.queryDataSource(databaseId, opts) };
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    describe_notion_data_source: tool({
+      description:
+        "Devuelve el esquema de una fuente de datos de Notion (nombres y tipos de sus propiedades). Úsalo para saber por qué propiedad filtrar antes de query_notion_database.",
+      inputSchema: z.object({ dataSourceId: z.string() }),
+      execute: async ({ dataSourceId }) => {
+        if (!expert.sources.includes("notion")) return deny("con Notion");
+        used.add("Notion");
+        try {
+          const n = await import("../notion.server");
+          return await n.describeDataSource(dataSourceId);
         } catch (e) {
           return { error: (e as Error).message };
         }
@@ -455,7 +473,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_notion_page: tool({
       description:
-        "Lee el texto de una página de Notion por su id (incluye bloques anidados). Úsala tras search_notion o query_notion_database.",
+        "Lee el texto de una PÁGINA de Notion por su id (incluye bloques anidados). El id debe ser una página (una fila devuelta por query_notion_database, object=page); no pases un id de fuente de datos.",
       inputSchema: z.object({ pageId: z.string() }),
       execute: async ({ pageId }) => {
         if (!expert.sources.includes("notion")) return deny("con Notion");
