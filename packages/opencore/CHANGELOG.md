@@ -1,5 +1,17 @@
 # @openexpert/opencore
 
+## 0.3.0
+
+### Minor Changes
+
+- 096d377: Raise the default sampling `ai.temperature` from 0.2 to 0.5.
+- 214e8a6: Add `notionClientId` to `openexpert.json` (the non-secret Notion OAuth client ID),
+  mirroring `googleClientId`. The client secret stays in `secrets.json` /
+  environment.
+- d13e226: Remove the autonomous-process tools (`list_processes`, `request_process_run`) and
+  the `processes` table name from the storage interface. The feature was a mock and
+  has been removed from the app; see the roadmap to rebuild it for real.
+
 ## 0.2.1
 
 ### Patch Changes
