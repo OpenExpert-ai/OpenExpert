@@ -114,7 +114,40 @@ npm run test:run
 npm run build
 ```
 
-## 8. References
+## 8. Continuous integration and releases
+
+Every change reaches `main` through a pull request: the branch is protected by a
+ruleset (no direct pushes, no force pushes, no deletions).
+
+| Workflow             | Runs on                                         | What it does                                               |
+| -------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| `ci.yml`             | push / PR to `main`                             | lint, format, licenses, doc links, typecheck, tests, build |
+| `codeql.yml`         | push / PR to `main`, weekly                     | CodeQL analysis                                            |
+| `scorecard.yml`      | push to `main`, weekly, manual                  | OpenSSF Scorecard                                          |
+| `docker.yml`         | PRs touching the app or `docker/`, push, manual | builds the image and smoke-tests the container             |
+| `pages.yml`          | changes under `site/`, manual                   | deploys the static site to GitHub Pages                    |
+| `release.yml`        | push to `main`, manual                          | Changesets: opens/updates the version PR or publishes      |
+| `server-release.yml` | a published release, manual                     | attaches the standalone server bundle to the release       |
+
+Rules that keep CI trustworthy:
+
+- Every `uses:` is pinned to a full commit SHA with the version in a trailing
+  comment; Dependabot updates both. Never replace a SHA with a moving tag.
+- Tools downloaded at run time (`actionlint`, `gitleaks`) are fetched at a fixed
+  version and checked against the `*_checksums.txt` published with that release
+  before they are executed.
+- Top-level `permissions:` is read-only everywhere and each job asks for the
+  write scope it needs. A job-level `permissions:` block **replaces** the
+  workflow one, so a job that uses `actions/checkout` must repeat
+  `contents: read`.
+
+**Releases.** Merging the `chore(release): version packages` pull request
+publishes to npm (OIDC trusted publishing, no `NPM_TOKEN`) and builds the Docker
+image. That PR is opened by `changesets/action` with the default `GITHUB_TOKEN`,
+so its workflows arrive as **"action_required"** and must be approved (Actions →
+the run → _Approve and run_) before its checks mean anything.
+
+## 9. References
 
 - [Architecture](./02-architecture.md) — code map.
 - [Data model](./03-data-model.md) — tables.

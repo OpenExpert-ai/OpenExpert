@@ -172,6 +172,15 @@ Drive and local folders in `src/lib/office.server.ts`.
   `npm run test:run`, `npm run build`.
 - Releases are managed with Changesets (`.changeset/`); add a short note
   describing user-visible changes.
+- Every change reaches `main` through a pull request (a ruleset blocks direct
+  pushes, force pushes and deletion). Workflows are covered in
+  `docs/en/07-development.md`: actions pinned to a commit SHA, downloaded tools
+  verified against their published checksums, read-only top-level permissions
+  (a job-level `permissions:` block replaces the workflow one, so repeat
+  `contents: read` where checkout is used).
+- The `chore(release): version packages` pull request is opened by
+  `changesets/action` with `GITHUB_TOKEN`, so its workflows start as
+  **"action_required"**: approve them before trusting the PR's checks.
 
 ## 9. Never commit secrets
 
