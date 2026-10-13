@@ -10,7 +10,7 @@
 # when it moves.
 
 # --- builder -------------------------------------------------------------
-FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS builder
+FROM node:26-bookworm-slim@sha256:86f07bc9c5dce4578cf37e5a418b7bfc7f817cda25cde66e2b66e95ed86c4567 AS builder
 
 WORKDIR /app
 
@@ -48,7 +48,7 @@ RUN npm run build --workspace @openexpert/opencore \
 RUN npm prune --omit=dev --ignore-scripts
 
 # --- runtime -------------------------------------------------------------
-FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS runtime
+FROM node:26-bookworm-slim@sha256:86f07bc9c5dce4578cf37e5a418b7bfc7f817cda25cde66e2b66e95ed86c4567 AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production \
