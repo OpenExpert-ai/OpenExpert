@@ -45,9 +45,20 @@ export function selectModel(env: NodeJS.ProcessEnv = process.env): ModelSelectio
  * Ollama exposes two surfaces: the native API at the server root (`/api/*`)
  * and an OpenAI-compatible API under `/v1`. Callers may configure either
  * shape, so normalise before using it.
+ *
+ * Trailing slashes are removed with a loop, not with `/\/+$/`: a regex has to
+ * retry at every position of a long run of slashes, which is what CodeQL
+ * reports as a polynomial ReDoS on `baseUrl`.
  */
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end -= 1;
+  return value.slice(0, end);
+}
+
 export function ollamaApiBaseUrl(baseUrl: string): string {
-  return baseUrl.trim().replace(/\/+$/, "").replace(/\/v1$/, "");
+  const base = stripTrailingSlashes(baseUrl.trim());
+  return base.endsWith("/v1") ? base.slice(0, -3) : base;
 }
 
 export function ollamaChatBaseUrl(baseUrl: string): string {
