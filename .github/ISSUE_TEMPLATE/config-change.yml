@@ -1,5 +1,5 @@
 name: Configuration / deployment help
-description: Help with environment variables, OAuth clients, the gateway, or deployment.
+description: Help with environment variables, OAuth clients, model providers, or deployment.
 title: "[help] "
 labels: ["question", "needs-triage"]
 body:
