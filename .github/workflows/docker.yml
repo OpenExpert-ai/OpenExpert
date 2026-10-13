@@ -12,6 +12,10 @@ on:
       - "vite.config.ts"
   push:
     branches: [main]
+  # Manual trigger: the image smoke test is the only way to catch a broken
+  # Dockerfile, and without this it can only run when one of the paths above
+  # happens to change.
+  workflow_dispatch:
 
 # This workflow only builds and smoke-tests the image: it never pushes to a
 # registry, so read-only access is all it needs. The image that is published
