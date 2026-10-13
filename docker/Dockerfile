@@ -3,10 +3,14 @@
 # Stage 1: install dependencies and build the app and the OpenCore package.
 # Stage 2: minimal runtime image running Nitro's node-server preset.
 
-ARG NODE_VERSION=24
+# Base image pinned by digest, on purpose and in both stages: the tag alone can
+# move under the build and pull a different image. The digest below is the
+# multi-arch manifest list that `24-bookworm-slim` resolves to (checked against
+# the registry and pulled locally); Dependabot's docker ecosystem opens a PR
+# when it moves.
 
 # --- builder -------------------------------------------------------------
-FROM node:${NODE_VERSION}-bookworm-slim AS builder
+FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS builder
 
 WORKDIR /app
 
@@ -44,7 +48,7 @@ RUN npm run build --workspace @openexpert/opencore \
 RUN npm prune --omit=dev --ignore-scripts
 
 # --- runtime -------------------------------------------------------------
-FROM node:${NODE_VERSION}-bookworm-slim AS runtime
+FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production \
