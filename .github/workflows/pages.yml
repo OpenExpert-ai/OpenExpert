@@ -13,10 +13,10 @@ on:
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
+# Least privilege at the top level; the deploy job asks for the two write
+# scopes the Pages deployment needs.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages-${{ github.workflow }}-${{ github.ref }}
@@ -27,20 +27,26 @@ jobs:
     name: Deploy site
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      # Job-level permissions replace the workflow ones, so `contents: read`
+      # has to be repeated here: actions/checkout needs it.
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
