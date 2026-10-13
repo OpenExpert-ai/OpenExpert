@@ -1,7 +1,7 @@
 {
   "name": "@openexpert/opencore",
   "version": "0.2.1",
-  "description": "OpenCore — open-source engine of OpenExpert (MIT). Mode, config, model provider selector (Google / Ollama / OpenAI-compatible / OpenExpert gateway), storage and secrets interfaces, tool catalog, and CLI.",
+  "description": "OpenCore — open-source engine of OpenExpert (MIT). Config, model provider selector (Google / Ollama / OpenAI-compatible), storage and secrets interfaces, tool catalog, and CLI.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -56,7 +56,7 @@
     "agents",
     "mit",
     "oss",
-    "model-gateway"
+    "local-first"
   ],
   "repository": {
     "type": "git",
