@@ -9,17 +9,21 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Least privilege at the top level; attaching assets to a release is the only
+# thing that needs write access.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   bundle:
     name: Build and attach server bundle
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: npm
@@ -45,7 +49,7 @@ jobs:
           sha256sum "openexpert-server-${VERSION}.tar.gz" > "openexpert-server-${VERSION}.tar.gz.sha256"
 
       - name: Attach to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             openexpert-server-*.tar.gz
