@@ -115,6 +115,33 @@ function decodeEntities(s: string): string {
     .replace(/&amp;/g, "&");
 }
 
+/**
+ * Plain text of an XML fragment: markup (inline `<text:span>`, `<text:a>`…) and
+ * any partial tag left behind by malformed or truncated markup are dropped, so
+ * no fragment of a tag reaches the caller.
+ *
+ * A character scan rather than a `/<[^>]*>/g` replace on purpose: this is a text
+ * extractor, not an HTML sanitiser, and a regex replace of tags is exactly the
+ * shape that scanners report as incomplete sanitisation. Entities are decoded
+ * **after** the scan, so a legitimate `&lt;` in the document survives as text.
+ */
+function plainText(fragment: string): string {
+  // A `<` only opens a tag when something closes it; every `<` past the last
+  // `>` in the fragment is a stray character and is dropped as such.
+  const lastClose = fragment.lastIndexOf(">");
+  let text = "";
+  let i = 0;
+  while (i < fragment.length) {
+    if (fragment[i] === "<") {
+      i = i < lastClose ? fragment.indexOf(">", i + 1) + 1 : i + 1;
+      continue;
+    }
+    text += fragment[i];
+    i += 1;
+  }
+  return decodeEntities(text);
+}
+
 function pptxText(buf: Uint8Array): string {
   const { unzipSync, strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
   const files = unzipSync(buf);
@@ -132,8 +159,5 @@ function odfText(buf: Uint8Array): string {
   const content = files["content.xml"];
   if (!content) return "";
   const xml = strFromU8(content);
-  return collect(xml, "text:p")
-    .concat(collect(xml, "text:h"))
-    .map((p) => decodeEntities(p.replace(/<[^>]+>/g, "")))
-    .join("\n");
+  return collect(xml, "text:p").concat(collect(xml, "text:h")).map(plainText).join("\n");
 }

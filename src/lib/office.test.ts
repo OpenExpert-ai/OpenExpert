@@ -55,6 +55,20 @@ describe("extractOfficeText", () => {
     expect(out.text).toContain("Segundo párrafo");
   });
 
+  it("keeps a stray `<` from malformed markup out of the text", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { extractOfficeText } = await import("./office.server");
+    // The second paragraph proves entities are decoded *after* the markup is
+    // dropped: `&lt;` must survive as text, a raw `<` must not.
+    const xml =
+      '<?xml version="1.0" encoding="UTF-8"?><office:document-content>' +
+      "<text:p>a <b c</text:p><text:p>5 &lt; 10</text:p></office:document-content>";
+    const out = await extractOfficeText(zipSync({ "content.xml": strToU8(xml) }), ".odt");
+    expect(out.text).toContain("a b c");
+    expect(out.text).not.toContain("a <b c");
+    expect(out.text).toContain("5 < 10");
+  });
+
   it("reports a broken Office file instead of throwing", async () => {
     const { extractOfficeText } = await import("./office.server");
     const out = await extractOfficeText(new Uint8Array([1, 2, 3]), ".docx");
