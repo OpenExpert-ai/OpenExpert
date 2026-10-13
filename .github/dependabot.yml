@@ -17,9 +17,18 @@ updates:
       - "dependencies"
     ignore:
       - dependency-name: "@openexpert/*"
+      # A TypeScript major cannot install: the toolchain it feeds
+      # (typescript-eslint, currently peer `>=4.8.4 <6.1.0`) does not accept it
+      # yet, so the whole group PR fails at `npm ci`. Bumping the compiler is a
+      # deliberate job for a human, not an automatic PR. The group PR that
+      # triggered this (#9) tried 7.0.2 against that range.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    # Actions are pinned to a full commit SHA with the version in a trailing
+    # comment; Dependabot updates both.
     schedule:
       interval: "weekly"
     commit-message:
