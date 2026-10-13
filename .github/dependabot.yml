@@ -46,3 +46,9 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    ignore:
+      # The published image must run the runtime CI actually tests (Node 24)
+      # and the engines floor (`>=24`). A Node major in the base image is a
+      # deliberate move — CI, engines and the image together — not a weekly PR.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
