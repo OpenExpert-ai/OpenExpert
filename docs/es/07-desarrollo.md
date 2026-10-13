@@ -115,7 +115,42 @@ npm run test:run
 npm run build
 ```
 
-## 8. Referencias
+## 8. Integración continua y publicaciones
+
+Todo cambio llega a `main` a través de una pull request: la rama está protegida
+por un ruleset (sin escrituras directas, sin force-push, sin borrado).
+
+| Workflow             | Se ejecuta con                                 | Qué hace                                               |
+| -------------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| `ci.yml`             | push / PR a `main`                             | lint, formato, licencias, enlaces, tipos, tests, build |
+| `codeql.yml`         | push / PR a `main`, semanal                    | análisis de CodeQL                                     |
+| `scorecard.yml`      | push a `main`, semanal, manual                 | OpenSSF Scorecard                                      |
+| `docker.yml`         | PRs que tocan la app o `docker/`, push, manual | construye la imagen y prueba el contenedor             |
+| `pages.yml`          | cambios en `site/`, manual                     | despliega el sitio estático en GitHub Pages            |
+| `release.yml`        | push a `main`, manual                          | Changesets: abre/actualiza la PR de versión o publica  |
+| `server-release.yml` | una release publicada, manual                  | adjunta el paquete de servidor autónomo a la release   |
+
+Reglas que mantienen la CI fiable:
+
+- Cada `uses:` está fijado a un SHA de commit completo con la versión en un
+  comentario final; Dependabot actualiza ambos. No sustituyas un SHA por una
+  etiqueta móvil.
+- Las herramientas que se descargan en tiempo de ejecución (`actionlint`,
+  `gitleaks`) se bajan en una versión fija y se comprueban contra el
+  `*_checksums.txt` publicado con esa release antes de ejecutarlas.
+- El `permissions:` de nivel superior es de solo lectura en todos los workflows y
+  cada job pide el permiso de escritura que necesita. Un `permissions:` a nivel
+  de job **sustituye** el del workflow, así que un job que usa
+  `actions/checkout` debe repetir `contents: read`.
+
+**Publicaciones.** Al mergear la pull request `chore(release): version packages`
+se publica en npm (OIDC trusted publishing, sin `NPM_TOKEN`) y se construye la
+imagen de Docker. Esa PR la abre `changesets/action` con el `GITHUB_TOKEN` por
+defecto, así que sus workflows llegan como **"action_required"** y hay que
+aprobarlos (Actions → la ejecución → _Approve and run_) para que sus
+comprobaciones signifiquen algo.
+
+## 9. Referencias
 
 - [Arquitectura](./02-arquitectura.md) — mapa del código.
 - [Modelo de datos](./03-modelo-de-datos.md) — tablas.
