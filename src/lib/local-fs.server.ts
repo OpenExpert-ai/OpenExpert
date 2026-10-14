@@ -29,7 +29,6 @@ const IGNORED = new Set([
   ".svn",
   ".hg",
   ".cache",
-  ".local/share/Trash",
   "secret.key",
   "credentials.json",
   "drive-grants.json",
@@ -37,6 +36,16 @@ const IGNORED = new Set([
   "secrets.json",
   "openexpert.db",
 ]);
+
+/**
+ * The XDG trash lives at `~/.local/share/Trash`, so it is skipped by its
+ * *location*, not by name: a folder called `Trash` anywhere else is legitimate
+ * and must stay visible. (Matching the whole `".local/share/Trash"` string
+ * against a single directory name never matched anything.)
+ */
+function isXdgTrash(parent: string, name: string): boolean {
+  return name === "Trash" && parent.endsWith(join(".local", "share"));
+}
 
 const MAX_READ_BYTES = 25 * 1024 * 1024; // 25 MB per file
 const MAX_CHARS = 200_000; // returned to the model, then truncated
@@ -93,7 +102,7 @@ export function browseDirectory(path?: string | null): {
   if (!statSync(real).isDirectory()) throw new Error("Eso no es una carpeta.");
   const entries: DirEntry[] = [];
   for (const e of readdirSync(real, { withFileTypes: true })) {
-    if (IGNORED.has(e.name)) continue;
+    if (IGNORED.has(e.name) || isXdgTrash(real, e.name)) continue;
     let isDirectory = e.isDirectory();
     // Follow symlinks to folders so navigation is intuitive; escape is still
     // blocked when reading, because resolveWithinRoots re-resolves the target.
@@ -134,7 +143,7 @@ export function listLocalFiles(roots: string[]): ListedFile[] {
     }
     for (const e of entries) {
       if (out.length >= MAX_WALK_FILES) return;
-      if (IGNORED.has(e.name) || e.name.startsWith(".")) continue;
+      if (IGNORED.has(e.name) || isXdgTrash(dir, e.name) || e.name.startsWith(".")) continue;
       const full = join(dir, e.name);
       let target = full;
       let isDir = e.isDirectory();

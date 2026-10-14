@@ -21,6 +21,12 @@ beforeAll(() => {
   writeFileSync(join(root, "sub", "b.md"), "# b");
   writeFileSync(join(outside, "secret.txt"), "secreto");
   symlinkSync(outside, join(root, "link"));
+  // XDG trash (skipped by location) and a legitimate folder that simply is
+  // called "Trash" (must stay visible).
+  mkdirSync(join(root, ".local", "share", "Trash", "files"), { recursive: true });
+  writeFileSync(join(root, ".local", "share", "Trash", "files", "deleted.txt"), "no");
+  mkdirSync(join(root, "Trash"), { recursive: true });
+  writeFileSync(join(root, "Trash", "keep.txt"), "sí");
 });
 
 afterAll(() => {
@@ -92,5 +98,23 @@ describe("browseDirectory", () => {
     const view = fs.browseDirectory(root);
     expect(view.path).toBe(root);
     expect(view.entries.some((e) => e.name === "sub" && e.isDirectory)).toBe(true);
+  });
+
+  it("hides the XDG trash but keeps a folder that is merely called Trash", async () => {
+    const fs = await import("./local-fs.server");
+    const atRoot = fs.browseDirectory(root);
+    expect(atRoot.entries.map((e) => e.name)).toContain("Trash");
+
+    const xdgData = fs.browseDirectory(join(root, ".local", "share"));
+    expect(xdgData.entries.map((e) => e.name)).not.toContain("Trash");
+  });
+});
+
+describe("XDG trash", () => {
+  it("does not walk the trash but walks other Trash folders", async () => {
+    const fs = await import("./local-fs.server");
+    const names = fs.listLocalFiles([root]).map((f) => f.name);
+    expect(names).not.toContain("deleted.txt");
+    expect(names).toContain("keep.txt");
   });
 });
