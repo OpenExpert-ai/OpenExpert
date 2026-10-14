@@ -112,6 +112,11 @@ AppRun). Estos paquetes llevan **solo la ventana** y su entrada de menú ejecuta
 (`npm run opencore:serve`). Para el comportamiento "arranca el servidor y abre
 la ventana", usa el lanzador por usuario (`npm run desktop:install`).
 
+Sirven para distribuir la aplicación, no para instalarla en una máquina: la
+instalación soportada en Linux es el lanzador por usuario, o `install.sh` en la
+raíz del repositorio, que además es lo que instala el comando `openexpert`, la
+entrada de menú y el icono.
+
 ## Referencias
 
 - [Desarrollo](./07-desarrollo.md) — scripts.
