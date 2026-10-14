@@ -52,3 +52,21 @@ when one is published alongside this file.
 There are no production endpoints or cloud credentials. Everything runs
 locally; the only secrets are your model key and your Google Drive tokens,
 which stay on your machine.
+
+## Known advisories
+
+- **`mammoth` → `argparse@~1.0.3`** (moderate; `sprintf-js` prototype pollution
+  reachable through `argparse`). `mammoth` is used to read `.docx` text, and
+  `1.13.0` — the current release — still pins that range. The affected code sits
+  in `mammoth`'s command line interface, which the app never runs: only
+  `mammoth.extractRawText()` is imported, as a library. Accepted on that
+  reasoning until `mammoth` relaxes the range; `npm audit fix --force` would only
+  hide the report by downgrading `mammoth`.
+
+## Network exposure
+
+The local server binds to `127.0.0.1` and has no authentication, so only
+processes on the same machine can reach the dashboard and the folders its owner
+granted. Setting `OPENEXPERT_HOST` (or `HOST`) to another interface publishes it
+to that network; the Docker image binds every interface by design. See
+`docs/en/08-deployment.md`.
