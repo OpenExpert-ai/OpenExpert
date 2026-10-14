@@ -44,6 +44,12 @@ coverage
 db/
 *.zip
 
+# Server bundle produced by scripts/build-server-bundle.sh (CI uploads it to the
+# release instead)
+openexpert-server-*.tar.gz
+openexpert-server-*.tar.gz.sha256
+pkg/
+
 # OpenCore local — nunca se sube a Git
 openexpert.json
 .openexpert/

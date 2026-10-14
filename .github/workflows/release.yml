@@ -52,6 +52,53 @@ jobs:
           pr-title: "chore(release): version packages"
           create-github-releases: "true"
 
+  # The bundle `npx @openexpert/opencore serve` downloads. It cannot live in its
+  # own release-triggered workflow: releases created here carry this run's
+  # GITHUB_TOKEN, and GitHub does not start workflows from events that token
+  # creates — 0.2.1 and 0.3.0 shipped with no assets because of exactly that.
+  server-asset:
+    name: Attach the standalone server bundle
+    needs: version
+    if: needs.version.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Changesets names the release after the package it published.
+      - name: Resolve the target tag
+        id: tag
+        run: |
+          set -euo pipefail
+          tag="@openexpert/opencore@$(node -p "require('./packages/opencore/package.json').version")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Attaching the bundle to $tag"
+
+      - name: Build
+        run: |
+          npm run build --workspace @openexpert/opencore
+          npm run build
+
+      - name: Package
+        run: scripts/build-server-bundle.sh
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          overwrite_files: true
+          files: |
+            openexpert-server-*.tar.gz
+            openexpert-server-*.tar.gz.sha256
+
   docker:
     name: Build and publish Docker image
     needs: version
