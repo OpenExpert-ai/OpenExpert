@@ -124,6 +124,19 @@ export function secretsAsEnv(cwd = process.cwd()): Record<string, string> {
   return out;
 }
 
+/**
+ * Environment for the local server child process.
+ *
+ * The bundled server (Nitro) reads `NITRO_HOST`/`HOST` and defaults to every
+ * interface, which would publish the dashboard — no authentication, read and
+ * write access to the folders the owner granted — to whoever shares the
+ * network. Bind loopback unless the operator asks for something else through
+ * `OPENEXPERT_HOST` (or a `HOST` of their own).
+ */
+export function localServerEnv(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  return { HOST: env["OPENEXPERT_HOST"] || env["HOST"] || "127.0.0.1" };
+}
+
 export async function httpGetJson<T>(
   url: string,
   opts: { headers?: Record<string, string>; timeoutMs?: number } = {},

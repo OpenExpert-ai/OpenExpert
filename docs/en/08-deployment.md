@@ -14,7 +14,14 @@
 | CLI              | `npx @openexpert/opencore serve`                                                          |
 | Desktop (Linux)  | `npm run desktop:install` then `openexpert`                                               |
 
-The app listens on port 3000. The Nitro preset is `node-server`.
+The app listens on port 3000, on the **loopback interface only** (`127.0.0.1`).
+The dashboard has no authentication: whoever reaches the port can read and write
+the folders its owner granted. To expose it to a network on purpose, set
+`OPENEXPERT_HOST` (or `HOST`) — for example
+`OPENEXPERT_HOST=0.0.0.0 npx @openexpert/opencore serve` — after thinking about
+who shares that network. The Docker image keeps binding every interface, because
+the published port is the point of the container. The Nitro preset is
+`node-server`.
 
 ## 2. Docker
 

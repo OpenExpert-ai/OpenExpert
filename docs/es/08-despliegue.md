@@ -14,7 +14,14 @@
 | CLI                 | `npx @openexpert/opencore serve`                                                          |
 | Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                            |
 
-La aplicación escucha en el puerto 3000. El preset de Nitro es `node-server`.
+La aplicación escucha en el puerto 3000 y **solo en la interfaz de bucle local**
+(`127.0.0.1`). El panel no tiene autenticación: quien alcance el puerto puede
+leer y escribir las carpetas que su dueño haya autorizado. Para exponerlo a una
+red a propósito, define `OPENEXPERT_HOST` (o `HOST`) — por ejemplo
+`OPENEXPERT_HOST=0.0.0.0 npx @openexpert/opencore serve` — y piensa antes quién
+comparte esa red. La imagen Docker sigue escuchando en todas las interfaces,
+porque el puerto publicado es la razón del contenedor. El preset de Nitro es
+`node-server`.
 
 ## 2. Docker
 

@@ -13,6 +13,7 @@ import { join } from "node:path";
 import {
   ensureStandaloneApp,
   findRepoRoot,
+  localServerEnv,
   packageRoot,
   packageVersion,
   secretsAsEnv,
@@ -110,7 +111,7 @@ async function spawnServer(cwd: string, env: NodeJS.ProcessEnv): Promise<ChildPr
     if (existsSync(built) && buildIsFresh(repo)) {
       return spawn(process.execPath, [built], {
         cwd: repo,
-        env: { ...env, NODE_ENV: "production", PORT: port() },
+        env: { ...env, ...localServerEnv(), NODE_ENV: "production", PORT: port() },
         stdio: "inherit",
       });
     }
@@ -119,14 +120,18 @@ async function spawnServer(cwd: string, env: NodeJS.ProcessEnv): Promise<ChildPr
         ? "La build está desactualizada; arrancando en modo desarrollo…"
         : "Arrancando el servidor en modo desarrollo (no hay build)…",
     );
-    return spawn("npm", ["run", "dev"], { cwd: repo, env, stdio: "inherit" });
+    return spawn("npm", ["run", "dev"], {
+      cwd: repo,
+      env: { ...env, ...localServerEnv() },
+      stdio: "inherit",
+    });
   }
 
   const app = await ensureStandaloneApp(packageVersion(), { log: (m) => console.log(`  ${m}`) });
   if (!app) return null;
   return spawn(process.execPath, [join(app, ".output", "server", "index.mjs")], {
     cwd: app,
-    env: { ...env, NODE_ENV: "production", PORT: port() },
+    env: { ...env, ...localServerEnv(), NODE_ENV: "production", PORT: port() },
     stdio: "inherit",
   });
 }
