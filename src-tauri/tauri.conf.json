@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "identifier": "ai.openexpert.desktop",
   "build": {
-    "frontendDist": "dist",
+    "frontendDist": "../.output/public",
     "devUrl": "http://localhost:3000"
   },
   "app": {
