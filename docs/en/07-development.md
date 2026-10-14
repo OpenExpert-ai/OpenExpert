@@ -119,15 +119,15 @@ npm run build
 Every change reaches `main` through a pull request: the branch is protected by a
 ruleset (no direct pushes, no force pushes, no deletions).
 
-| Workflow             | Runs on                                         | What it does                                               |
-| -------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| `ci.yml`             | push / PR to `main`                             | lint, format, licenses, doc links, typecheck, tests, build |
-| `codeql.yml`         | push / PR to `main`, weekly                     | CodeQL analysis                                            |
-| `scorecard.yml`      | push to `main`, weekly, manual                  | OpenSSF Scorecard                                          |
-| `docker.yml`         | PRs touching the app or `docker/`, push, manual | builds the image and smoke-tests the container             |
-| `pages.yml`          | changes under `site/`, manual                   | deploys the static site to GitHub Pages                    |
-| `release.yml`        | push to `main`, manual                          | Changesets: opens/updates the version PR or publishes      |
-| `server-release.yml` | a published release, manual                     | attaches the standalone server bundle to the release       |
+| Workflow             | Runs on                                         | What it does                                                               |
+| -------------------- | ----------------------------------------------- | -------------------------------------------------------------------------- |
+| `ci.yml`             | push / PR to `main`                             | lint, format, licenses, doc links, typecheck, tests, build, desktop window |
+| `codeql.yml`         | push / PR to `main`, weekly                     | CodeQL analysis                                                            |
+| `scorecard.yml`      | push to `main`, weekly, manual                  | OpenSSF Scorecard                                                          |
+| `docker.yml`         | PRs touching the app or `docker/`, push, manual | builds the image and smoke-tests the container                             |
+| `pages.yml`          | changes under `site/`, manual                   | deploys the static site to GitHub Pages                                    |
+| `release.yml`        | push to `main`, manual                          | Changesets: opens/updates the version PR or publishes                      |
+| `server-release.yml` | a published release, manual                     | attaches the standalone server bundle to the release                       |
 
 Rules that keep CI trustworthy:
 

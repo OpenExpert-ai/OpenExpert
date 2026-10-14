@@ -79,6 +79,58 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # The window is the only artefact a user gets from a source checkout, and the
+  # app build above does not cover it: a wrong frontendDist, a missing Tauri CLI
+  # or a broken bundle only shows up here. The Ubuntu runner already ships a
+  # Rust toolchain, so this job needs no extra action.
+  desktop-window:
+    name: Desktop window (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install WebKitGTK build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev librsvg2-dev libssl-dev
+
+      - name: Rust toolchain
+        run: rustc --version && cargo --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the app
+        run: |
+          npm run build --workspace @openexpert/opencore
+          npm run build
+
+      - name: Build the desktop window
+        run: node_modules/.bin/tauri build --no-bundle
+
+      - name: Package a .deb
+        run: node_modules/.bin/tauri build --bundles deb
+
+      - name: Check the artefacts
+        run: |
+          set -euo pipefail
+          test -x src-tauri/target/release/openexpert-desktop
+          deb="$(find src-tauri/target/release/bundle/deb -name '*.deb' | head -1)"
+          test -n "$deb"
+          dpkg-deb -c "$deb" | grep -q 'usr/bin/openexpert-desktop'
+          dpkg-deb -c "$deb" | grep -q 'usr/share/applications/OpenExpert.desktop'
+          ls -lh "$deb"
+
   workflow-lint:
     name: Workflow lint
     runs-on: ubuntu-latest
