@@ -59,7 +59,17 @@ if (!skipBuild) {
   console.log("· Building the web app…");
   sh("npm", ["run", "build"]);
   console.log("· Building the desktop window (Rust)…");
-  sh("npx", ["tauri", "build"]);
+  // The local CLI, not `npx tauri`: with an incomplete node_modules npx answers
+  // "could not determine executable to run" and hides the real cause.
+  const tauriBin = join(repo, "node_modules", ".bin", "tauri");
+  if (!existsSync(tauriBin)) {
+    console.error(
+      `Missing the Tauri CLI at ${tauriBin}.\n` +
+        "node_modules looks incomplete: run `npm ci` and try again.",
+    );
+    process.exit(1);
+  }
+  sh(tauriBin, ["build"]);
 }
 
 const binary = [
@@ -68,7 +78,7 @@ const binary = [
 ].find((p) => existsSync(p));
 
 if (!binary) {
-  console.error("No desktop binary found. Run `npx tauri build` first (or drop --skip-build).");
+  console.error("No desktop binary found. Build the window first (drop --skip-build).");
   process.exit(1);
 }
 
