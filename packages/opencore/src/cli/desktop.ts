@@ -26,19 +26,36 @@ function appUrl(): string {
   return `http://localhost:${port()}`;
 }
 
-async function isServerUp(timeoutMs = 1500): Promise<boolean> {
+/**
+ * Does this HTTP response come from the OpenExpert server? Every response
+ * carries `x-request-id` (src/server.ts) and the security headers
+ * (src/lib/http.server.ts). Any other app squatting the port (an unrelated
+ * Express service, a dev server…) must NOT be reused: the window always points
+ * at http://localhost:3000 and would show that other app instead ("Cannot GET /").
+ */
+export function looksLikeOpenExpert(status: number, headers: Headers): boolean {
+  return status < 500 && headers.has("x-request-id") && headers.has("x-frame-options");
+}
+
+type ServerProbe = "openexpert" | "other" | "none";
+
+/** Classify whatever is listening on the app port (if anything). */
+async function probeServer(timeoutMs = 1500): Promise<ServerProbe> {
   try {
-    const res = await fetch(appUrl(), { signal: AbortSignal.timeout(timeoutMs) });
-    return res.status < 500;
+    const res = await fetch(appUrl(), {
+      signal: AbortSignal.timeout(timeoutMs),
+      redirect: "manual",
+    });
+    return looksLikeOpenExpert(res.status, res.headers) ? "openexpert" : "other";
   } catch {
-    return false;
+    return "none";
   }
 }
 
 async function waitForServer(timeoutMs = 120_000): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    if (await isServerUp()) return true;
+    if ((await probeServer()) === "openexpert") return true;
     await new Promise((r) => setTimeout(r, 400));
   }
   return false;
@@ -144,8 +161,17 @@ export async function cmdDesktop(cwd = process.cwd()): Promise<number> {
   let server: ChildProcess | null = null;
   let startedServer = false;
 
-  if (await isServerUp()) {
+  const probe = await probeServer();
+  if (probe === "openexpert") {
     console.log(`• Usando el servidor ya activo en ${appUrl()}`);
+  } else if (probe === "other") {
+    console.error(
+      `El puerto ${port()} está ocupado por otra aplicación, no por OpenExpert.\n` +
+        `La ventana apunta siempre a ${appUrl()}, así que mostraría esa otra aplicación.\n` +
+        `Mira quién lo ocupa, libéralo (o cambia el puerto de ese programa) y vuelve a intentarlo:\n` +
+        `  ss -ltnp | grep :${port()}     # o: lsof -i :${port()}\n`,
+    );
+    return 1;
   } else {
     console.log("Arrancando el servidor local…");
     server = await spawnServer(cwd, env);
