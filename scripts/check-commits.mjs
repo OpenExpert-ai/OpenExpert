@@ -32,6 +32,10 @@ function git(args) {
 const range = process.argv[2];
 const logArgs = ["log", `--format=%H${SEP}%s${SEP}%an${SEP}%ae${SEP}%B${RECORD}`];
 if (range) logArgs.push(range);
+// No range: the last commit only, which is what the comment above promises.
+// Without this, `npm run check:commits` walked the whole history and reported
+// commits that predate the rule.
+else logArgs.push("-n", "1");
 
 const raw = git(logArgs);
 const commits = raw
