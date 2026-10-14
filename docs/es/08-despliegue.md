@@ -90,6 +90,21 @@ Qué instala:
 `npm run desktop:uninstall` los elimina. Si la ventana sale en blanco en
 Wayland, lánzala con `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
+### Paquetes distribuibles (deb, rpm, AppImage)
+
+El lanzador por usuario de arriba es la vía recomendada en Linux. Para generar
+paquetes:
+
+```sh
+npx tauri build --bundles deb,rpm,appimage   # -> src-tauri/target/release/bundle/
+```
+
+La primera ejecución descarga las utilidades de empaquetado de Tauri (linuxdeploy,
+AppRun). Estos paquetes llevan **solo la ventana** y su entrada de menú ejecuta
+`openexpert-desktop`, así que el servidor local tiene que estar ya en marcha
+(`npm run opencore:serve`). Para el comportamiento "arranca el servidor y abre
+la ventana", usa el lanzador por usuario (`npm run desktop:install`).
+
 ## Referencias
 
 - [Desarrollo](./07-desarrollo.md) — scripts.
