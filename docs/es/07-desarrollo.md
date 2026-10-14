@@ -120,15 +120,15 @@ npm run build
 Todo cambio llega a `main` a través de una pull request: la rama está protegida
 por un ruleset (sin escrituras directas, sin force-push, sin borrado).
 
-| Workflow             | Se ejecuta con                                 | Qué hace                                                                      |
-| -------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| `ci.yml`             | push / PR a `main`                             | lint, formato, licencias, enlaces, tipos, tests, build, ventana de escritorio |
-| `codeql.yml`         | push / PR a `main`, semanal                    | análisis de CodeQL                                                            |
-| `scorecard.yml`      | push a `main`, semanal, manual                 | OpenSSF Scorecard                                                             |
-| `docker.yml`         | PRs que tocan la app o `docker/`, push, manual | construye la imagen y prueba el contenedor                                    |
-| `pages.yml`          | cambios en `site/`, manual                     | despliega el sitio estático en GitHub Pages                                   |
-| `release.yml`        | push a `main`, manual                          | Changesets: abre/actualiza la PR de versión o publica                         |
-| `server-release.yml` | una release publicada, manual                  | adjunta el paquete de servidor autónomo a la release                          |
+| Workflow             | Se ejecuta con                                 | Qué hace                                                                              |
+| -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `ci.yml`             | push / PR a `main`                             | lint, formato, licencias, enlaces, tipos, tests, build, ventana de escritorio         |
+| `codeql.yml`         | push / PR a `main`, semanal                    | análisis de CodeQL                                                                    |
+| `scorecard.yml`      | push a `main`, semanal, manual                 | OpenSSF Scorecard                                                                     |
+| `docker.yml`         | PRs que tocan la app o `docker/`, push, manual | construye la imagen y prueba el contenedor                                            |
+| `pages.yml`          | cambios en `site/`, manual                     | despliega el sitio estático en GitHub Pages                                           |
+| `release.yml`        | push a `main`, manual                          | versiona/publica con Changesets, adjunta el bundle del servidor y construye la imagen |
+| `server-release.yml` | una release publicada, manual                  | adjunta el bundle del servidor a una release (relleno: `-f tag=<tag>`)                |
 
 Reglas que mantienen la CI fiable:
 
