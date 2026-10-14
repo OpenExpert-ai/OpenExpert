@@ -7,6 +7,6 @@ Comment=Local-first operations dashboard with AI
 Exec=openexpert
 Icon=openexpert
 Terminal=false
-Categories=Office;Utility;
+Categories=Office;
 StartupNotify=true
 StartupWMClass=openexpert-desktop
