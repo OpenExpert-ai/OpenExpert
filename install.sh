@@ -6,7 +6,7 @@
 # Deja el sistema así:
 #   ~/.local/bin/openexpert                          comando en PATH
 #   ~/.local/bin/openexpert-desktop                  binario de la ventana (Tauri)
-#   ~/.local/share/applications/openexpert.desktop   entrada de menú (rofi drun)
+#   ~/.local/share/applications/openexpert.desktop   entrada de menú (rofi, wofi, fuzzel, GNOME, KDE…)
 #   ~/.local/share/icons/hicolor/512x512/apps/openexpert.png
 #
 # Uso:
@@ -424,10 +424,14 @@ if [ -f "$ICON_FILE" ]; then ok "icono: $ICON_FILE"; else warn "falta el icono $
 if have update-desktop-database; then update-desktop-database "$APPS_DIR" 2>/dev/null && ok "caché de menús actualizada" || warn "update-desktop-database devolvió un error"; fi
 if have gtk-update-icon-cache; then gtk-update-icon-cache -f -t "$HICOLOR_DIR" >/dev/null 2>&1 && ok "caché de iconos actualizada" || warn "gtk-update-icon-cache devolvió un error"; fi
 
-# 6.7 rofi: drun lee ~/.local/share/applications y oculta entradas cuyo TryExec no exista
-step "rofi"
+# 6.7 lanzadores: cualquier menú (rofi, wofi, fuzzel, GNOME, KDE…) lee
+# ~/.local/share/applications, así que la entrada sirve en todos; aquí se
+# comprueba el que tengas y se refresca su caché si hace falta.
+step "Lanzadores de aplicaciones"
+LAUNCHERS=0
 if have rofi; then
-  ok "rofi instalado ($(command -v rofi))"
+  LAUNCHERS=$((LAUNCHERS + 1))
+  ok "rofi ($(command -v rofi))"
   if [ -f "$ROFI_CONF" ]; then
     if grep -q 'drun' "$ROFI_CONF"; then
       ok "tu config ya incluye el modo drun ($ROFI_CONF)"
@@ -445,12 +449,25 @@ if have rofi; then
   else
     ok "sin config propia: rofi usa drun por defecto"
   fi
-  info "prueba: rofi -show drun   → busca \"OpenExpert\""
+  info "abrir el menú: rofi -show drun   → busca \"OpenExpert\""
   if [ -n "${XDG_DATA_DIRS:-}" ] && ! printf '%s' "$XDG_DATA_DIRS" | grep -q "local/share"; then
     info "rofi incluye \$HOME/.local/share de serie; si no apareciera: XDG_DATA_DIRS=\"\$HOME/.local/share:\$XDG_DATA_DIRS\" rofi -show drun"
   fi
-else
-  warn "rofi no está instalado en esta máquina; la entrada .desktop queda lista para cualquier lanzador (rofi, wofi, fuzzel, menú de apps)"
+fi
+if have wofi; then LAUNCHERS=$((LAUNCHERS + 1)); ok "wofi ($(command -v wofi))"; info "abrir el menú: wofi --show drun"; fi
+if have fuzzel; then LAUNCHERS=$((LAUNCHERS + 1)); ok "fuzzel ($(command -v fuzzel))"; info "abrir el menú: fuzzel (escribe \"OpenExpert\")"; fi
+if have tofi; then LAUNCHERS=$((LAUNCHERS + 1)); ok "tofi ($(command -v tofi))"; info "abrir el menú: tofi-drun"; fi
+
+# Cachés que algunos entornos necesitan para ver la entrada nueva.
+IS_KDE=0
+case ":${XDG_CURRENT_DESKTOP:-}:${KDE_FULL_SESSION:-}" in *KDE*|*kde*) IS_KDE=1 ;; esac
+if [ "$IS_KDE" = 1 ] && have kbuildsycoca6; then
+  kbuildsycoca6 --noincremental >/dev/null 2>&1 && ok "caché de menús de KDE recargada" || warn "kbuildsycoca6 devolvió un error"
+fi
+if have gio; then info "GNOME/GTK: aparece en el menú de aplicaciones y buscando en \"Actividades\""; fi
+
+if [ "$LAUNCHERS" = 0 ]; then
+  warn "sin rofi/wofi/fuzzel/tofi en esta máquina; la entrada .desktop igualmente sale en el menú de tu escritorio (GNOME, KDE, XFCE…)"
 fi
 
 # ── resumen ──────────────────────────────────────────────────────────────────
