@@ -11,6 +11,7 @@ import {
   ensureStandaloneApp,
   findRepoRoot,
   httpGetJson,
+  localServerEnv,
   packageVersion,
   readConfig,
   readSecrets,
@@ -173,10 +174,21 @@ export async function cmdServe(cwd = process.cwd()): Promise<number> {
     );
     return 1;
   }
-  console.log("Arrancando OpenExpert en http://localhost:3000 …");
+  const serverEnv: Record<string, string> = {
+    ...(env as Record<string, string>),
+    ...localServerEnv(),
+    PORT: process.env["PORT"] || "3000",
+  };
+  // Print constants, never values read from the environment: CodeQL flags an
+  // environment value written to a log as clear-text logging of sensitive data.
+  const customEndpoint = serverEnv["HOST"] !== "127.0.0.1" || serverEnv["PORT"] !== "3000";
+  console.log(
+    "Arrancando OpenExpert en http://127.0.0.1:3000 …" +
+      (customEndpoint ? " (host o puerto personalizados: mira OPENEXPERT_HOST y PORT)" : ""),
+  );
   return run(process.execPath, [join(app, ".output", "server", "index.mjs")], {
     cwd: app,
-    env: { ...env, PORT: process.env["PORT"] || "3000" },
+    env: serverEnv,
   });
 }
 
