@@ -110,6 +110,11 @@ packages ship the **window only** and their menu entry runs
 (`npm run opencore:serve`). For the "start the server and open the window"
 behaviour, use the per-user launcher (`npm run desktop:install`).
 
+They are for distributing the app, not for installing it on a machine: the
+supported Linux installation is the per-user launcher, or `install.sh` at the
+repository root, which is also what installs the `openexpert` command, the menu
+entry and the icon.
+
 ## References
 
 - [Development](./07-development.md) — scripts.
