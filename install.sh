@@ -230,14 +230,27 @@ if [ "$SKIP_BUILD" = 0 ] && [ "$LIBS_OK" = 0 ]; then
 fi
 
 # ── 2. dependencias de Node ──────────────────────────────────────────────────
+# Un node_modules a medias (install interrumpido, --omit=dev, sync parcial) hace
+# que "npx tauri" muera con "could not determine executable to run", así que no
+# basta con que el directorio exista: comprobamos los binarios que se usan.
+MISSING_DEPS=""
+for f in node_modules/.package-lock.json node_modules/.bin/tauri node_modules/.bin/vite node_modules/.bin/tsup; do
+  [ -e "$REPO/$f" ] || MISSING_DEPS="$MISSING_DEPS $f"
+done
+
 if [ "$SKIP_BUILD" = 0 ] && [ "$DOCTOR" = 0 ]; then
   step "Dependencias de Node"
-  if [ -d "$REPO/node_modules" ] && [ "$FORCE_INSTALL" = 0 ]; then
-    ok "node_modules ya existe (usa --reinstall para forzar npm ci)"
+  if [ -z "$MISSING_DEPS" ] && [ "$FORCE_INSTALL" = 0 ]; then
+    ok "node_modules completo (usa --reinstall para forzar npm ci)"
   else
-    ( cd "$REPO" && npm ci ) || die "npm ci ha fallado"
+    [ -n "$MISSING_DEPS" ] && info "falta:$MISSING_DEPS"
+    ( cd "$REPO" && npm ci ) || die "npm ci ha fallado (revisa la red y vuelve a intentarlo)"
     ok "npm ci completado"
   fi
+elif [ "$DOCTOR" = 1 ] && [ -n "$MISSING_DEPS" ]; then
+  fail "node_modules incompleto; falta:$MISSING_DEPS — ejecuta ./install.sh sin --skip-build (o npm ci)"
+elif [ -n "$MISSING_DEPS" ]; then
+  warn "node_modules incompleto; falta:$MISSING_DEPS (con --skip-build no se compila, así que no afecta)"
 fi
 
 # ── 3. compilación ───────────────────────────────────────────────────────────
@@ -248,13 +261,19 @@ if [ "$SKIP_BUILD" = 0 ] && [ "$DOCTOR" = 0 ]; then
   ok "CLI OpenCore"
   ( cd "$REPO" && npm run build ) || die "falló la build de la interfaz web (vite)"
   ok "interfaz web (.output)"
-  ( cd "$REPO" && npx tauri build --no-bundle ) || die "falló la build de la ventana (tauri). Revisa que rustc y webkit2gtk-4.1 estén instalados."
+
+  # Usamos el binario local, no "npx tauri": si node_modules está a medias, npx
+  # responde "could not determine executable to run" y se pierde la causa real.
+  TAURI_BIN="$REPO/node_modules/.bin/tauri"
+  [ -x "$TAURI_BIN" ] || die "no existe $TAURI_BIN. Ejecuta: (cd $REPO && npm ci) y vuelve a intentarlo."
+  ( cd "$REPO" && "$TAURI_BIN" build --no-bundle ) \
+    || die "falló la build de la ventana (Tauri). Causas típicas: falta rustc/cargo o las librerías de webkit2gtk-4.1 (míralo con: npm run opencore:doctor) o falta el CLI en node_modules (reintenta con --reinstall)."
   ok "ventana de escritorio (--no-bundle: no genera .deb/.rpm/AppImage, no hacen falta)"
 
   if [ "$BUNDLE" = 1 ]; then
     step "Empaquetando (.deb, .rpm, AppImage)"
     info "la primera vez descarga utilidades de empaquetado (linuxdeploy)…"
-    ( cd "$REPO" && npx tauri build --bundles deb,rpm,appimage ) \
+    ( cd "$REPO" && "$TAURI_BIN" build --bundles deb,rpm,appimage ) \
       || warn "el empaquetado ha fallado; el lanzador de usuario ya funciona igual"
     BUNDLE_FILES="$(find "$REPO/src-tauri/target/release/bundle" -maxdepth 2 -type f \
       \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \) 2>/dev/null | sort)"
