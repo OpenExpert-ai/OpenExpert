@@ -9,7 +9,8 @@ name: Server release asset
 # not start workflows from events that token creates — which is why 0.2.1 and
 # 0.3.0 shipped with no assets at all. `release.yml` now builds and attaches the
 # bundle in the same run; this one stays for human-created releases and for
-# backfilling a tag by hand (`gh workflow run server-release.yml -f tag=<tag>`).
+# repairing a release by hand (`gh workflow run server-release.yml -f tag=<tag>`,
+# which attaches the bundle built from the default branch to the tag you name).
 
 on:
   release:
@@ -33,9 +34,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The default branch, deliberately: the packaging script lives here, while
+      # an older tag predates it. A release that shipped without assets is
+      # repaired with the bundle for the version this branch builds; an older
+      # version is better repaired by cutting a patch release, which attaches its
+      # own bundle automatically.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ inputs.tag || github.event.release.tag_name || github.ref }}
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
