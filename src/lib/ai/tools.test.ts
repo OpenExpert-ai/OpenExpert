@@ -350,6 +350,29 @@ describe("propose_pause_campaigns", () => {
     expect((out["items"] as string[])[0]).toContain("Verano");
     expect((out["items"] as string[])[0]).toContain("CPA 20€");
   });
+
+  it("says a campaign has no conversions instead of printing a null CPA", async () => {
+    const { getDb, persist } = await import("../db.server");
+    const { raw } = await getDb();
+    raw.run(
+      "INSERT OR REPLACE INTO integrations (id,name,category,connected,entities) VALUES (?,?,?,?,?)",
+      ["meta", "Meta", "marketing", 1, "[]"],
+    );
+    raw.run(
+      "INSERT OR REPLACE INTO campaigns (id,name,channel,status,spend_7d,conversions_7d,cpa_target,daily_budget) VALUES (?,?,?,?,?,?,?,?)",
+      ["c-0", "Marca", "meta", "active", 500, 0, 10, 20],
+    );
+    await persist();
+
+    const { tools, proposals } = await buildExpert(["marketing"]);
+    const out = await exec(tools.propose_pause_campaigns)({ campaignIds: ["c-0"] });
+    expect(out["status"]).toBe("pending");
+    const item = (out["items"] as string[])[0] ?? "";
+    expect(item).toContain("Marca");
+    expect(item).toContain("sin conversiones");
+    expect(item).not.toContain("null");
+    expect(proposals).toHaveLength(1);
+  });
 });
 
 describe("Google Drive tools", () => {
