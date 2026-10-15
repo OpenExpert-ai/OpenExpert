@@ -27,14 +27,17 @@ export function cmdVersion(): number {
   return 0;
 }
 
-function configuredProvider(): Provider {
-  const raw = process.env["OPENEXPERT_MODEL_PROVIDER"] || readConfig().modelProvider;
+// Takes the directory the command was given: reading the config from
+// process.cwd() made `doctor` and `models` ignore an `openexpert.json` in the
+// directory they were pointed at, while everything around them honoured it.
+function configuredProvider(cwd = process.cwd()): Provider {
+  const raw = process.env["OPENEXPERT_MODEL_PROVIDER"] || readConfig(cwd).modelProvider;
   if (raw === "ollama" || raw === "openai-compatible") return raw;
   return "google";
 }
 
 export function cmdDoctor(cwd = process.cwd()): number {
-  const provider = configuredProvider();
+  const provider = configuredProvider(cwd);
   const dataDir = resolvedDataDir(cwd);
   const secrets = readSecrets(cwd);
 
@@ -110,7 +113,7 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
 }
 
 export async function cmdModels(cwd = process.cwd()): Promise<number> {
-  const provider = configuredProvider();
+  const provider = configuredProvider(cwd);
   const secrets = readSecrets(cwd);
   const cfg = readConfig(cwd);
 
