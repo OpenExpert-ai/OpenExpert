@@ -103,6 +103,14 @@ describe("cmdDoctor", () => {
     expect(logs.join("\n")).toContain("sin Google OAuth el chat funciona");
   });
 
+  it("reads the provider from the directory it was given, not from the process cwd", () => {
+    // No env override: the answer can only come from cwd/openexpert.json.
+    writeFileSync(join(cwd, "openexpert.json"), JSON.stringify({ modelProvider: "ollama" }));
+    expect(cmdDoctor(cwd)).toBe(0);
+    expect(logs.join("\n")).toContain("provider: ollama");
+    expect(logs.join("\n")).not.toContain("provider: google");
+  });
+
   it("requires key and base url for openai-compatible", () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "openai-compatible");
     expect(cmdDoctor(cwd)).toBe(1);

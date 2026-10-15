@@ -173,9 +173,12 @@ export function createChatTools(ctx: ChatToolsContext) {
           "marketing",
           `Pausar ${rows.length} campañas`,
           "Cambio en campañas",
-          rows.map(
-            (r) =>
-              `${r.name} — CPA ${r.cpa}€ (${r.overTargetPct! > 0 ? "+" : ""}${r.overTargetPct}%)`,
+          rows.map((r) =>
+            // A campaign with no conversions has no CPA: the old text rendered
+            // "CPA null€ (null%)" in the human approval card.
+            r.cpa === null || r.overTargetPct === null
+              ? `${r.name} — sin conversiones en 7 días (gasto ${r.spend7d.toLocaleString("es-ES")}€)`
+              : `${r.name} — CPA ${r.cpa}€ (${r.overTargetPct > 0 ? "+" : ""}${r.overTargetPct}%)`,
           ),
           { kind: "pause_campaigns", ids: rows.map((r) => r.id) },
         );
