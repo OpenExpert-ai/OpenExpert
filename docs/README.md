@@ -23,7 +23,7 @@ OpenExpert is documented in two languages. Pick yours:
 | 11  | [OpenCore](./en/11-opencore.md)              | [OpenCore](./es/11-opencore.md)                               | All                    |
 | 12  | [Licensing model](./en/12-licensing.md)      | [Modelo de licencia](./es/12-licencia.md)                     | Both                   |
 | 13  | [AI providers](./en/13-ai-providers.md)      | [Proveedores de IA](./es/13-proveedores-ia.md)                | Both                   |
-| —   | [Roadmap](./en/roadmap.md)                   | [Hoja de ruta](./es/roadmap.md)                               | Both                   |
+| 14  | [Roadmap](./en/roadmap.md)                   | [Hoja de ruta](./es/14-roadmap.md)                            | Both                   |
 | —   | [Architecture decisions](./en/adr/README.md) | [Decisiones de arquitectura](./es/adr/README.md)              | Engineering            |
 
 ## Companion files

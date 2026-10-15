@@ -100,7 +100,7 @@ Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y españ
 | [OpenCore](./docs/es/11-opencore.md)                | El motor y CLI MIT                      |
 | [Modelo de licencia](./docs/es/12-licencia.md)      | MIT, obligaciones, monetización         |
 | [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                   |
-| [Hoja de ruta](./docs/es/roadmap.md)                | Estado y planificación                  |
+| [Hoja de ruta](./docs/es/14-roadmap.md)             | Estado y planificación                  |
 
 ## Requisitos
 
