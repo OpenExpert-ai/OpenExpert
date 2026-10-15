@@ -18,7 +18,7 @@ This guide keeps the docs consistent and verifiable. The English docs under
 - Numbered docs: `NN-slug.md` (`00-quickstart.md`, `13-ai-providers.md`).
 - The Spanish mirror keeps the same number and a Spanish slug
   (`00-inicio-rapido.md`).
-- Non-numbered: `README.md`, `roadmap.md`, `STYLE.md`.
+- Non-numbered: `README.md`, `STYLE.md`.
 
 ## Structure
 

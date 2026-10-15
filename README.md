@@ -102,7 +102,7 @@ Spanish).
 | [OpenCore](./docs/en/11-opencore.md)         | The MIT engine and CLI                 |
 | [Licensing model](./docs/en/12-licensing.md) | MIT, obligations, monetisation         |
 | [AI providers](./docs/en/13-ai-providers.md) | Ollama, Gemini and BYOK                |
-| [Roadmap](./docs/en/roadmap.md)              | Status and planning                    |
+| [Roadmap](./docs/en/14-roadmap.md)           | Status and planning                    |
 
 ## Requirements
 

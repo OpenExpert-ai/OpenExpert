@@ -22,7 +22,7 @@ change to `../es/`.
 | 11  | [OpenCore](./11-opencore.md)              | All                    | The MIT engine and CLI                 |
 | 12  | [Licensing model](./12-licensing.md)      | Both                   | MIT and obligations                    |
 | 13  | [AI providers](./13-ai-providers.md)      | Both                   | Ollama, Gemini, BYOK                   |
-| —   | [Roadmap](./roadmap.md)                   | Both                   | Status and planning                    |
+| 14  | [Roadmap](./14-roadmap.md)                | Both                   | Status and planning                    |
 | —   | [Architecture decisions](./adr/README.md) | Engineering            | ADRs (why things are the way they are) |
 
 ## Conventions
