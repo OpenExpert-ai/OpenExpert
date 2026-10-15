@@ -18,7 +18,7 @@ project evolves.
 - **Day-to-day:** maintainers decide on the scope of a pull request within
   its review.
 - **Roadmap and breaking changes** are tracked in
-  [`docs/en/roadmap.md`](./docs/en/roadmap.md). A change is considered
+  [`docs/en/14-roadmap.md`](./docs/en/14-roadmap.md). A change is considered
   breaking when it alters a public API, a persisted schema, or a
   documented behaviour. Breaking changes ship in a minor or major version
   bump and are announced in the release notes.

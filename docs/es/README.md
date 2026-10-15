@@ -21,7 +21,7 @@ este contenido lo refleja.
 | 11  | [OpenCore](./11-opencore.md)                               | Todos                | El motor y CLI MIT                      |
 | 12  | [Modelo de licencia](./12-licencia.md)                     | Ambos                | MIT y obligaciones                      |
 | 13  | [Proveedores de IA](./13-proveedores-ia.md)                | Ambos                | Ollama, Gemini, BYOK                    |
-| 14  | [Hoja de ruta](./14-roadmap.md)                            | Ambos                | Estado y planificación                  |
+| 14  | [Hoja de ruta](./14-hoja-de-ruta.md)                       | Ambos                | Estado y planificación                  |
 | —   | [Decisiones de arquitectura](./adr/README.md)              | Ingeniería           | ADR (por qué es como es)                |
 
 ## Convenciones
