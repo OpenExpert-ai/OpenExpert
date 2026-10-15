@@ -23,6 +23,10 @@ to read every changeset.
 
 ### Added
 
+- **`install.sh`**: one-command Linux installation — checks the system
+  dependencies, builds the app and the desktop window, puts `openexpert` on the
+  PATH and publishes the desktop entry that rofi, wofi, fuzzel, GNOME and KDE
+  read.
 - **MIT license for the entire repository**: code, docs and the OpenCore
   engine.
 - **`@openexpert/opencore`** with a build step (`tsup`), generated types, a
@@ -42,11 +46,23 @@ to read every changeset.
 
 ### Changed
 
+- The local server listens on `127.0.0.1` instead of every interface, so the
+  dashboard is not reachable from whatever network the machine is joined to;
+  `OPENEXPERT_HOST` (or `HOST`) exposes it on purpose.
 - `package.json` declares `workspaces`, `engines` and `packageManager`.
 - The chat settings no longer expose the unused "default approval" option.
 
 ### Fixed
 
+- `@openexpert/opencore` no longer reuses a port owned by another application for
+  `serve`/`desktop`, and `doctor`/`models` read the provider from the directory
+  they were given.
+- A folder literally named `Trash` outside the XDG trash is no longer hidden in
+  the file browser.
+- `propose_pause_campaigns` no longer prints `CPA null€ (null%)` for a campaign
+  with no conversions.
+- `install.sh` no longer blames the Rust toolchain when `node_modules` is
+  incomplete: it says what is actually missing.
 - Reverting a process no longer drops its metadata: a snapshot now restores
   only the captured columns instead of replacing the whole row.
 - `OLLAMA_BASE_URL` accepts either the native root (`http://localhost:11434`)
@@ -57,6 +73,10 @@ to read every changeset.
 
 ### Security
 
+- The local server binds the loopback interface by default, so the dashboard,
+  the chat and the file access are not on the network; the Docker image still
+  binds every interface, which is why the published port is the point of the
+  container.
 - `.env`, `openexpert.json`, `~/.openexpert/`, `credentials.json` and
   `secrets.json` remain git-ignored and are never committed.
 - `GET /api/backup` embeds credentials, so it now rejects cross-origin
