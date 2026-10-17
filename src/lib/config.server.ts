@@ -22,6 +22,13 @@ import { dirname, join } from "node:path";
 import { z } from "zod";
 import { loadConfig } from "@openexpert/opencore/config";
 import type { AiConfig, ChatConfig, OpenExpertConfig } from "@openexpert/opencore/config";
+import {
+  providerCatalogue,
+  PROVIDER_IDS,
+  PROVIDER_KEY_VARS,
+  providerDef,
+  type ProviderKeyVar,
+} from "@openexpert/opencore/model-provider";
 import { patternsAreValid } from "./ai/injection";
 import { configPath, dataDir, dbPath, secretsPath } from "./paths.server";
 
@@ -65,13 +72,19 @@ loadDotEnv();
 /** Environment variables that existed before we loaded openexpert.json/secrets. */
 const envAtBoot = new Set(Object.keys(process.env));
 
+/**
+ * Every secret the panel can read or write. The provider keys are **derived
+ * from the catalogue** (`ProviderKeyVar`), so a provider added there is a secret
+ * this panel already knows how to store — and there is no second list of key
+ * names to keep in step with it.
+ */
 export type SecretName =
-  | "GOOGLE_API_KEY"
+  | ProviderKeyVar
   | "GOOGLE_CLIENT_ID"
   | "GOOGLE_CLIENT_SECRET"
   | "GOOGLE_PICKER_API_KEY"
-  | "OPENEXPERT_MODEL_KEY"
-  | "OPENEXPERT_BASE_URL";
+  | "OPENEXPERT_BASE_URL"
+  | "NOTION_CLIENT_SECRET";
 
 /* ------------------------------ raw files ------------------------------ */
 
@@ -180,10 +193,21 @@ function fileHas(key: keyof RawFileConfig, cwd: string): boolean {
   return raw[key] !== undefined && raw[key] !== null && raw[key] !== "";
 }
 
+/**
+ * Where the value the app is using comes from. A real environment variable
+ * wins over the stored file — that is what `revealSecretValue` returns — so the
+ * label follows the same order, or the panel would say "saved in secrets.json"
+ * while the process was using something else. A variable that exists in the
+ * environment with **exactly** the stored value is the copy the app itself
+ * loaded from the file (`loadSecretsIntoEnv`), and calling that "environment"
+ * would send the owner looking for a variable that is not there.
+ */
 function secretSource(name: SecretName): ConfigSource {
-  if (readSecrets()[name]) return "secrets";
-  if (envAtBoot.has(name)) return "env";
-  if (process.env[name]) return "env";
+  const stored = readSecrets()[name];
+  const live = process.env[name];
+  if (envAtBoot.has(name) && live !== stored) return "env";
+  if (stored) return "secrets";
+  if (live) return "env";
   return "default";
 }
 
@@ -246,18 +270,103 @@ export function paths() {
   };
 }
 
+/**
+ * Store the endpoint a provider's owner typed. The local server's URL is
+ * configuration — it lives in `openexpert.json`, mapped to its variable by
+ * `applyFileConfigToEnv` — while any other user-supplied endpoint is a secret
+ * and goes to `secrets.json`. One place decides that, and it is this one.
+ */
+export function writeProviderEndpoint(variable: string, value: string): void {
+  if (variable === "OLLAMA_BASE_URL") {
+    writeFileConfig({ ollamaBaseUrl: value });
+    return;
+  }
+  writeSecret(variable, value === "" ? null : value);
+}
+
+/* ------------------------------ provider view ---------------------------- */
+
+export type ProviderEndpointView = {
+  /** The address the record brings, when it has its own. */
+  fixed: string | null;
+  /** Variable the owner writes it to, when the endpoint is theirs. */
+  env: string | null;
+  /** What is stored right now (what the panel edits). */
+  value: string;
+  /** What the model layer will use. */
+  inUse: string;
+  /** The record's default, when the variable is empty. */
+  fallback: string | null;
+};
+
+export type ProviderView = {
+  id: string;
+  name: string;
+  adapter: string;
+  note: string | null;
+  keyUrl: string | null;
+  baseUrlHint: string | null;
+  /** null when the provider needs no key (a local model). */
+  key: { name: ProviderKeyVar; set: boolean; source: ConfigSource } | null;
+  endpoint: ProviderEndpointView;
+  /** Headers the service requires; shown so the user knows what travels. */
+  sessionHeader: string | null;
+  /** Ids the catalogue already knows, to seed the model picker. */
+  models: string[];
+};
+
+/**
+ * What the settings panel renders, one entry per catalogue record. Built here,
+ * next to the files it reads, so the interface holds no provider list and no
+ * second idea of where a key or an endpoint lives.
+ */
+export function providerViews(cwd: string = process.cwd()): ProviderView[] {
+  const cfg = effectiveConfig(cwd);
+  const secrets = readSecrets();
+  return providerCatalogue().map((def) => {
+    const endpointEnv = def.baseUrlEnv;
+    const envValue = endpointEnv ? process.env[endpointEnv] : undefined;
+    // Ollama's endpoint is configuration, not a secret, so the panel edits the
+    // value in openexpert.json; every other user-supplied endpoint is stored as
+    // a secret. Either way the panel is told what is in use.
+    const stored =
+      def.id === "ollama"
+        ? (envValue ?? cfg.ollamaBaseUrl ?? "")
+        : (envValue ?? (endpointEnv ? secrets[endpointEnv] : undefined) ?? "");
+    const key = def.env ? { name: def.env, ...secretStatus(def.env) } : null;
+    return {
+      id: def.id,
+      name: def.name,
+      adapter: def.adapter,
+      note: def.note ?? null,
+      keyUrl: def.keyUrl ?? null,
+      baseUrlHint: def.baseUrlHint ?? null,
+      key,
+      endpoint: {
+        fixed: def.baseUrl ?? null,
+        env: endpointEnv ?? null,
+        value: stored,
+        inUse: def.baseUrl ?? envValue ?? (endpointEnv ? stored || def.baseUrlDefault || "" : ""),
+        fallback: def.baseUrlDefault ?? null,
+      },
+      sessionHeader: def.sessionHeader ?? null,
+      models: def.models.map((m) => m.id),
+    };
+  });
+}
+
 /* --------------------------- advanced / diagnostics ---------------------- */
 
-const ENV_KEYS = [
+const ENV_KEYS: readonly string[] = [
   "OPENEXPERT_MODEL_PROVIDER",
   "OPENEXPERT_MODEL_ID",
   "OLLAMA_BASE_URL",
   "OPENEXPERT_BASE_URL",
   "OPENEXPERT_DATA_DIR",
-  "OPENEXPERT_MODEL_KEY",
+  // One variable per provider, read off the catalogue (it holds its uniqueness).
+  ...PROVIDER_KEY_VARS,
   "OPENEXPERT_GOOGLE_CLIENT_ID",
   "OPENEXPERT_PRIVACY_URL",
-  "GOOGLE_API_KEY",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "GOOGLE_PICKER_API_KEY",
@@ -352,7 +461,7 @@ export function rawConfigText(cwd: string = process.cwd()): string {
 
 export const fileConfigSchema = z.object({
   $schema: z.string().optional(),
-  modelProvider: z.enum(["google", "ollama", "openai-compatible"]).optional(),
+  modelProvider: z.enum(PROVIDER_IDS).optional(),
   modelId: z.string().min(1).optional(),
   ollamaBaseUrl: z.string().optional(),
   dataDir: z.string().min(1).optional(),
@@ -421,16 +530,28 @@ const urlOrEmpty = z
   .refine((v) => v === "" || /^https?:\/\/\S+$/.test(v), { message: "URL no válida" });
 
 export const aiUpdateSchema = z.object({
-  provider: z.enum(["google", "ollama", "openai-compatible"]),
+  // The list of providers is the catalogue's, not a copy: choosing any record
+  // from the panel saves, and one no record claims is rejected.
+  provider: z.enum(PROVIDER_IDS),
   modelId: z.string().trim().min(1).max(120),
-  ollamaBaseUrl: urlOrEmpty,
-  baseUrl: urlOrEmpty,
+  /** Endpoint of the selected provider, when its record says the user sets it. */
+  endpoint: urlOrEmpty,
   temperature: z.number().min(0).max(2),
   topP: z.number().min(0).max(1),
   maxOutputTokens: z.number().int().min(1).max(200_000),
-  // `undefined` leaves the stored key untouched; `""` clears it.
-  googleApiKey: z.string().optional(),
-  modelKey: z.string().optional(),
+  /**
+   * Keys to write, **by provider id**: each one lands in the variable that
+   * provider's record declares, so saving the key of one provider never touches
+   * another's. Older than the provider map is not: a request naming a provider
+   * the catalogue does not know, or one that keeps no key, is rejected instead
+   * of silently dropped.
+   */
+  providerKeys: z
+    .record(z.string(), z.string().max(4096))
+    .refine((keys) => Object.keys(keys).every((id) => Boolean(providerDef(id)?.env)), {
+      message: "Ese proveedor no guarda ninguna clave",
+    })
+    .optional(),
 });
 
 export type AiUpdateInput = z.infer<typeof aiUpdateSchema>;

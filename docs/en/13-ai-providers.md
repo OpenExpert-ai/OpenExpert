@@ -6,11 +6,20 @@ OpenExpert does not require any AI account. You choose the provider; the
 selection lives in `openexpert.json` or the `OPENEXPERT_*` environment
 variables (env wins).
 
-| Provider            | Key                    | Cost      | Data leaves your machine |
-| ------------------- | ---------------------- | --------- | ------------------------ |
-| `ollama`            | none                   | free      | no                       |
-| `google`            | `GOOGLE_API_KEY`       | free tier | yes (to Google)          |
-| `openai-compatible` | `OPENEXPERT_MODEL_KEY` | depends   | yes                      |
+| Provider            | Key                    | Endpoint                      | Cost         | Data leaves your machine |
+| ------------------- | ---------------------- | ----------------------------- | ------------ | ------------------------ |
+| `ollama`            | none                   | yours (`OLLAMA_BASE_URL`)     | free         | no                       |
+| `google`            | `GOOGLE_API_KEY`       | the provider's                | free tier    | yes (to Google)          |
+| `anthropic`         | `ANTHROPIC_API_KEY`    | the provider's                | paid         | yes (to Anthropic)       |
+| `openai-compatible` | `OPENEXPERT_MODEL_KEY` | yours (`OPENEXPERT_BASE_URL`) | depends      | yes                      |
+| `opencode-go`       | `OPENCODE_GO_API_KEY`  | the provider's                | subscription | yes                      |
+
+**One key per provider.** Every record in the catalogue names the variable that
+holds its key, and no two records share one: saving a provider's key never
+touches what another provider stored. The settings panel reads that variable off
+the catalogue, so it asks for, stores and labels each key in its own place.
+Nothing falls back to another provider's key either — a missing key is reported
+by naming the variable that is missing, not by trying somebody else's.
 
 ## 1. Ollama (recommended, fully local)
 
@@ -41,7 +50,24 @@ export GOOGLE_API_KEY=your-key
 
 With Google, the assistant shows its reasoning (thinking) in the interface.
 
-## 3. Any OpenAI-compatible endpoint (BYOK)
+## 3. Anthropic (Claude)
+
+1. Create a key in the **Anthropic console**
+   (<https://console.anthropic.com/settings/keys>).
+2. Configure:
+
+```sh
+export OPENEXPERT_MODEL_PROVIDER=anthropic
+export OPENEXPERT_MODEL_ID=claude-sonnet-4-5
+export ANTHROPIC_API_KEY=your-key
+```
+
+Its endpoint is the one in the catalogue (`https://api.anthropic.com/v1`), so
+there is nothing else to point anywhere. **List** in the settings panel asks the
+provider which models that key can use and offers what it answers, next to the
+ids the catalogue already knows.
+
+## 4. Any OpenAI-compatible endpoint (BYOK)
 
 ```sh
 export OPENEXPERT_MODEL_PROVIDER=openai-compatible
@@ -50,7 +76,22 @@ export OPENEXPERT_MODEL_KEY=your-key
 export OPENEXPERT_MODEL_ID=gpt-4o-mini
 ```
 
-## 4. Using the CLI
+This is the only provider whose endpoint the owner provides, so it is the only
+one that asks for it.
+
+## 5. OpenCode Go
+
+```sh
+export OPENEXPERT_MODEL_PROVIDER=opencode-go
+export OPENEXPERT_MODEL_ID=deepseek-v4.1-flash
+export OPENCODE_GO_API_KEY=your-key
+```
+
+Its service routes per conversation and asks for the session header its record
+declares in the catalogue (`x-opencode-session`), which travels only with the
+conversation id and only for this provider.
+
+## 6. Using the CLI
 
 ```sh
 npx @openexpert/opencore        # interactive wizard
@@ -58,8 +99,9 @@ npx @openexpert/opencore models # list models for the current provider
 npx @openexpert/opencore doctor # check the configuration
 ```
 
-The wizard stores secrets in `~/.openexpert/secrets.json` (mode `0600`), never
-in the repository.
+The wizard and the panel store secrets in `~/.openexpert/secrets.json` (mode
+`0600`), never in the repository. `doctor` checks the key of the provider you
+have selected and names the variable that is missing when one is.
 
 ## References
 

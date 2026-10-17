@@ -8,7 +8,12 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ollamaApiBaseUrl } from "@openexpert/opencore/model-provider";
+import { listProviderModels } from "@openexpert/opencore/provider-models";
+import {
+  endpointSourceOf,
+  providerKeyEnvOf,
+  PROVIDER_KEY_VARS,
+} from "@openexpert/opencore/model-provider";
 import * as ee from "./ee.server";
 import * as backup from "./backup.server";
 import { getDb, now, persist } from "@/lib/db.server";
@@ -21,14 +26,16 @@ import {
   diagnostics,
   envReport,
   paths,
+  providerViews,
   rawConfigText,
   resetFileConfig,
   revealSecretValue,
-  secretStatus,
   setRuntimeEnv,
   writeFileConfig,
+  writeProviderEndpoint,
   writeRawConfig,
   writeSecret,
+  type SecretName,
 } from "./config.server";
 
 const OWNER_NAME = "Propietario local";
@@ -39,11 +46,9 @@ export const getSettings = createServerFn({ method: "GET" }).handler(async () =>
   const ai = aiSettings();
   return {
     ai,
-    secrets: {
-      googleApiKey: secretStatus("GOOGLE_API_KEY"),
-      modelKey: secretStatus("OPENEXPERT_MODEL_KEY"),
-      baseUrl: secretStatus("OPENEXPERT_BASE_URL"),
-    },
+    // One entry per catalogue record, with the state of its key, its endpoint
+    // and the models it knows: the panel renders this and nothing of its own.
+    providers: providerViews(),
     paths: paths(),
     runtime: runtimeInfo(),
   };
@@ -55,7 +60,6 @@ export const updateAiSettings = createServerFn({ method: "POST" })
     writeFileConfig({
       modelProvider: data.provider,
       modelId: data.modelId,
-      ollamaBaseUrl: data.ollamaBaseUrl,
       ai: {
         temperature: data.temperature,
         topP: data.topP,
@@ -63,25 +67,28 @@ export const updateAiSettings = createServerFn({ method: "POST" })
       },
     });
 
-    writeSecret("OPENEXPERT_BASE_URL", data.baseUrl === "" ? null : data.baseUrl);
-    if (data.googleApiKey !== undefined) {
-      writeSecret("GOOGLE_API_KEY", data.googleApiKey === "" ? null : data.googleApiKey);
-    }
-    if (data.modelKey !== undefined) {
-      writeSecret("OPENEXPERT_MODEL_KEY", data.modelKey === "" ? null : data.modelKey);
+    // The endpoint belongs to the selected provider: it is written where that
+    // record says (`writeProviderEndpoint`), never to another provider's slot.
+    // `endpointSourceOf` gives the **variable**; `endpointOf` would give the
+    // address itself, and using it here writes the URL as if it were a name.
+    const endpointEnv = endpointSourceOf(data.provider);
+    if (endpointEnv) writeProviderEndpoint(endpointEnv, data.endpoint);
+
+    // One key per provider, each in its own variable: writing the key of one
+    // never touches what another provider stored.
+    const written: string[] = [];
+    for (const [id, value] of Object.entries(data.providerKeys ?? {})) {
+      const env = providerKeyEnvOf(id);
+      if (!env) continue;
+      writeSecret(env, value === "" ? null : value);
+      setRuntimeEnv(env, value === "" ? null : value);
+      written.push(env);
     }
 
     // Mirror into the running process so no restart is needed.
     setRuntimeEnv("OPENEXPERT_MODEL_PROVIDER", data.provider);
     setRuntimeEnv("OPENEXPERT_MODEL_ID", data.modelId);
-    setRuntimeEnv("OLLAMA_BASE_URL", data.ollamaBaseUrl === "" ? null : data.ollamaBaseUrl);
-    setRuntimeEnv("OPENEXPERT_BASE_URL", data.baseUrl === "" ? null : data.baseUrl);
-    if (data.googleApiKey !== undefined) {
-      setRuntimeEnv("GOOGLE_API_KEY", data.googleApiKey === "" ? null : data.googleApiKey);
-    }
-    if (data.modelKey !== undefined) {
-      setRuntimeEnv("OPENEXPERT_MODEL_KEY", data.modelKey === "" ? null : data.modelKey);
-    }
+    if (endpointEnv) setRuntimeEnv(endpointEnv, data.endpoint === "" ? null : data.endpoint);
 
     await ee.logActivity({
       actor: "human",
@@ -89,46 +96,27 @@ export const updateAiSettings = createServerFn({ method: "POST" })
       type: "Configuración",
       expert_id: "general",
       status: "ok",
-      summary: `Modelo actualizado: ${data.provider}:${data.modelId}`,
+      summary: `Modelo actualizado: ${data.provider}:${data.modelId}${
+        written.length ? ` (claves: ${written.join(", ")})` : ""
+      }`,
       sources: ["Configuración"],
     });
     return { ok: true };
   });
 
+/**
+ * Which models the active provider serves. The work is the engine's
+ * (`listProviderModels`), so the panel, the CLI and the doctor ask the same
+ * question the same way — including the provider's own way of taking the key.
+ */
 async function fetchModels(): Promise<{ ok: boolean; models: string[]; error?: string }> {
   const cfg = aiSettings();
-  try {
-    if (cfg.provider === "ollama") {
-      const base = ollamaApiBaseUrl(cfg.ollamaBaseUrl);
-      const r = await fetch(`${base}/api/tags`, { signal: AbortSignal.timeout(4000) });
-      if (!r.ok) return { ok: false, models: [], error: `Ollama respondió ${r.status}` };
-      const j = (await r.json()) as { models?: { name: string }[] };
-      return { ok: true, models: (j.models ?? []).map((m) => m.name) };
-    }
-    if (cfg.provider === "openai-compatible") {
-      const base = cfg.baseUrl.replace(/\/+$/, "");
-      if (!base) return { ok: false, models: [], error: "Falta la base URL del endpoint." };
-      const key = revealSecretValue("OPENEXPERT_MODEL_KEY") ?? "";
-      const r = await fetch(`${base}/models`, {
-        headers: { Authorization: `Bearer ${key}` },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (!r.ok) return { ok: false, models: [], error: `El endpoint respondió ${r.status}` };
-      const j = (await r.json()) as { data?: { id: string }[] };
-      return { ok: true, models: (j.data ?? []).map((m) => m.id) };
-    }
-    const key = revealSecretValue("GOOGLE_API_KEY");
-    if (!key) return { ok: false, models: [], error: "Falta GOOGLE_API_KEY." };
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
-      { signal: AbortSignal.timeout(6000) },
-    );
-    if (!r.ok) return { ok: false, models: [], error: `Google respondió ${r.status}` };
-    const j = (await r.json()) as { models?: { name: string }[] };
-    return { ok: true, models: (j.models ?? []).map((m) => m.name.replace(/^models\//, "")) };
-  } catch (e) {
-    return { ok: false, models: [], error: (e as Error).message };
-  }
+  const listed = await listProviderModels(cfg.provider);
+  return {
+    ok: listed.ok,
+    models: listed.models,
+    ...(listed.error ? { error: listed.error } : {}),
+  };
 }
 
 export const listModels = createServerFn({ method: "GET" }).handler(async () => fetchModels());
@@ -143,21 +131,29 @@ export const testProvider = createServerFn({ method: "GET" }).handler(async () =
  * This is intentional in the single-owner edition: the browser is trusted and
  * the server must not be exposed beyond `localhost`. See docs/en/04-security.md.
  */
+/**
+ * Secrets the panel may read on demand: every provider key the catalogue
+ * declares, plus the identifiers it also edits. The allow-list is built from
+ * the catalogue, so a provider added there is readable without touching this.
+ */
+const REVEALABLE: ReadonlySet<string> = new Set<string>([
+  ...PROVIDER_KEY_VARS,
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "OPENEXPERT_BASE_URL",
+]);
+
 export const revealSecret = createServerFn({ method: "POST" })
   .validator((d) =>
     z
       .object({
-        name: z.enum([
-          "GOOGLE_API_KEY",
-          "GOOGLE_CLIENT_ID",
-          "GOOGLE_CLIENT_SECRET",
-          "OPENEXPERT_MODEL_KEY",
-          "OPENEXPERT_BASE_URL",
-        ]),
+        name: z.string().refine((n) => REVEALABLE.has(n), { message: "Secreto no válido" }),
       })
       .parse(d),
   )
-  .handler(async ({ data }) => ({ value: revealSecretValue(data.name) }));
+  // The allow-list above is what makes this safe to widen; the cast only tells
+  // the type system what the refinement already proved.
+  .handler(async ({ data }) => ({ value: revealSecretValue(data.name as SecretName) }));
 
 /* ------------------------------ chat / agents ---------------------------- */
 

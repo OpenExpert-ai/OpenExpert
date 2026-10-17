@@ -44,6 +44,8 @@ beforeEach(() => {
     "OPENEXPERT_MODEL_PROVIDER",
     "OPENEXPERT_MODEL_KEY",
     "OPENEXPERT_BASE_URL",
+    "OPENCODE_GO_API_KEY",
+    "ANTHROPIC_API_KEY",
     "GOOGLE_API_KEY",
     "GOOGLE_CLIENT_ID",
     "OPENEXPERT_GOOGLE_CLIENT_ID",
@@ -127,11 +129,45 @@ describe("cmdDoctor", () => {
     expect(logs.join("\n")).toContain("OK: listo para arrancar.");
   });
 
+  it("avisa cuando el directorio de datos no se puede crear", () => {
+    // El doctor es lo que se mira cuando algo no arranca: si el directorio no se
+    // puede escribir, eso es un problema, no un detalle.
+    vi.stubEnv("OPENEXPERT_DATA_DIR", "/proc/version/imposible");
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
+    vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
+    expect(cmdDoctor(cwd)).toBe(1);
+    expect(logs.join("\n")).toMatch(/No se puede escribir en/);
+  });
+
+  it("un proveedor con clave propia no se conforma con la clave de otro", () => {
+    // Compartir la variable era el fallo: la clave del endpoint genérico no
+    // autentica contra Anthropic, y el doctor tiene que decirlo.
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "anthropic");
+    vi.stubEnv("OPENEXPERT_MODEL_KEY", "sk-de-otro-proveedor");
+    expect(cmdDoctor(cwd)).toBe(1);
+    expect(logs.join("\n")).toContain("provider: anthropic (Anthropic (Claude))");
+    expect(logs.join("\n")).toMatch(/Falta ANTHROPIC_API_KEY/);
+  });
+
+  it("está listo con la clave de Anthropic puesta", () => {
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "anthropic");
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant");
+    vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
+    expect(cmdDoctor(cwd)).toBe(0);
+    expect(logs.join("\n")).toContain("OK: listo para arrancar.");
+  });
+
+  it("lee el proveedor de la carpeta que se le da, aunque sea nuevo", () => {
+    writeFileSync(join(cwd, "openexpert.json"), JSON.stringify({ modelProvider: "anthropic" }));
+    expect(cmdDoctor(cwd)).toBe(1);
+    expect(logs.join("\n")).toMatch(/Falta ANTHROPIC_API_KEY/);
+  });
+
   it("reports the ollama endpoint and never blocks", () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
     expect(cmdDoctor(cwd)).toBe(0);
-    expect(logs.join("\n")).toContain("ollama:   http://localhost:11434");
+    expect(logs.join("\n")).toContain("endpoint: http://localhost:11434");
   });
 });
 
@@ -194,7 +230,7 @@ describe("cmdModels", () => {
       ),
     );
     expect(await cmdModels(cwd)).toBe(0);
-    expect(logs.join("\n")).toContain("Modelos en Ollama (http://localhost:11434):");
+    expect(logs.join("\n")).toContain("Modelos en Ollama (local):");
     expect(logs.join("\n")).toMatch(/\* qwen2\.5/);
     expect(logs.join("\n")).toMatch(/llama3\.1/);
   });
@@ -206,7 +242,7 @@ describe("cmdModels", () => {
       vi.fn(async () => Promise.reject(new Error("offline"))),
     );
     expect(await cmdModels(cwd)).toBe(1);
-    expect(logs.join("\n")).toContain("No se puede contactar con Ollama");
+    expect(logs.join("\n")).toContain("No se pudo contactar con Ollama");
     expect(logs.join("\n")).toContain("ollama.com/install.sh");
   });
 
@@ -230,7 +266,7 @@ describe("cmdModels", () => {
   it("asks for configuration when the openai-compatible endpoint is incomplete", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "openai-compatible");
     expect(await cmdModels(cwd)).toBe(1);
-    expect(logs.join("\n")).toContain("Configura OPENEXPERT_BASE_URL y OPENEXPERT_MODEL_KEY");
+    expect(logs.join("\n")).toMatch(/Falta OPENEXPERT_MODEL_KEY/);
   });
 
   it("returns 1 when the endpoint does not answer", async () => {
@@ -242,13 +278,31 @@ describe("cmdModels", () => {
       vi.fn(async () => Promise.reject(new Error("down"))),
     );
     expect(await cmdModels(cwd)).toBe(1);
-    expect(logs.join("\n")).toContain("No se pudo listar modelos");
+    expect(logs.join("\n")).toContain("No se pudo preguntar a Compatible con OpenAI");
   });
 
-  it("points google users at AI Studio", async () => {
+  it("le pide a Google su clave en vez de inventarse una lista", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "google");
+    expect(await cmdModels(cwd)).toBe(1);
+    expect(logs.join("\n")).toMatch(/Falta GOOGLE_API_KEY/);
+  });
+
+  it("pregunta a Anthropic con su propia clave y su cabecera de versión", async () => {
+    // El proveedor que motivó todo esto: sin rama propia en el CLI, la lista de
+    // modelos tiene que salir de su endpoint y con su forma de autenticar.
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "anthropic");
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant");
+    const fetchMock = vi.fn(
+      async (_url: string, _init?: RequestInit) =>
+        new Response(JSON.stringify({ data: [{ id: "claude-sonnet-4-5" }] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
     expect(await cmdModels(cwd)).toBe(0);
-    expect(logs.join("\n")).toContain("Proveedor google");
+    expect(fetchMock.mock.calls[0]![0]).toBe("https://api.anthropic.com/v1/models?limit=100");
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Record<string, string>;
+    expect(headers["x-api-key"]).toBe("sk-ant");
+    expect(headers["anthropic-version"]).toBe("2023-06-01");
+    expect(logs.join("\n")).toContain("claude-sonnet-4-5");
   });
 });
 

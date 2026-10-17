@@ -4,7 +4,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ModelProviderId } from "./model-provider.js";
+import { defaultModelOf, isProviderId, type ModelProviderId } from "./providers.js";
 
 export type AiConfig = {
   temperature: number;
@@ -82,21 +82,23 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
     }
   }
   const env = process.env;
+  // The provider is validated against the catalogue on both paths: an id that
+  // no record claims (a typo, or a service that was removed) must fall back to
+  // the default instead of travelling on as if it were usable.
   const providerEnv = env["OPENEXPERT_MODEL_PROVIDER"];
-  const providerFromEnv: ModelProviderId | undefined =
-    providerEnv === "google" ||
-    providerEnv === "ollama" ||
-    providerEnv === "openai-compatible" ||
-    providerEnv === "opencode-go"
-      ? providerEnv
-      : undefined;
+  const provider: ModelProviderId = isProviderId(providerEnv)
+    ? providerEnv
+    : isProviderId(file.modelProvider)
+      ? file.modelProvider
+      : DEFAULTS.modelProvider;
 
   const fileAi: Partial<AiConfig> = file.ai ?? {};
   const fileChat: Partial<ChatConfig> = file.chat ?? {};
 
   return {
-    modelProvider: providerFromEnv ?? file.modelProvider ?? DEFAULTS.modelProvider,
-    modelId: env["OPENEXPERT_MODEL_ID"] ?? file.modelId ?? DEFAULTS.modelId,
+    modelProvider: provider,
+    modelId:
+      env["OPENEXPERT_MODEL_ID"] ?? file.modelId ?? (defaultModelOf(provider) || DEFAULTS.modelId),
     ollamaBaseUrl: env["OLLAMA_BASE_URL"] ?? file.ollamaBaseUrl ?? DEFAULTS.ollamaBaseUrl,
     dataDir: expandHome(env["OPENEXPERT_DATA_DIR"] ?? file.dataDir ?? DEFAULTS.dataDir),
     googleClientId:

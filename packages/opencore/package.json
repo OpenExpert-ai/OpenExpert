@@ -20,6 +20,10 @@
       "types": "./dist/model-provider.d.ts",
       "default": "./dist/model-provider.js"
     },
+    "./provider-models": {
+      "types": "./dist/provider-models.d.ts",
+      "default": "./dist/provider-models.js"
+    },
     "./storage": {
       "types": "./dist/storage.d.ts",
       "default": "./dist/storage.js"

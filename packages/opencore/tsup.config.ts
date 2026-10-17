@@ -9,6 +9,7 @@ export default defineConfig({
     index: "src/index.ts",
     config: "src/config.ts",
     "model-provider": "src/model-provider.ts",
+    "provider-models": "src/provider-models.ts",
     storage: "src/storage.ts",
     secrets: "src/secrets.ts",
     tools: "src/tools.ts",

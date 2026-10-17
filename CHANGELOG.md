@@ -7,6 +7,26 @@ to read every changeset.
 
 ## Unreleased
 
+### One key per provider
+
+- **A provider's key is its own.** No two records in the catalogue may declare the same
+  variable: instead of sharing the generic slot, OpenCode Go has `OPENCODE_GO_API_KEY`, and a
+  test fails if a future record shares one. Saving a key could previously overwrite another
+  provider's and the failure only appeared later, as a 401 from the provider that lost it.
+- **Anthropic can be configured again.** Choosing it in the panel failed validation —the panel
+  kept its own list of three providers— and there was no field for its key. Every record in
+  the catalogue can now be selected, and each one shows its own key field, named after the
+  variable where it is stored.
+- Asking a provider which models it serves is one code path (`listProviderModels`), shared by
+  the panel, the CLI and `doctor`. Anthropic and OpenCode Go used to be answered with Google's
+  model list.
+- The settings screen was rebuilt around the catalogue: the provider list, the key field, the
+  endpoint and the model picker are rendered from the record, so nothing about a provider is
+  written by hand in the interface and a missing key is reported by name.
+- A missing key is no longer substituted by another provider's, and the label that says where
+  a key lives now distinguishes a real environment variable from the copy the app loads out of
+  `secrets.json`.
+
 ### Providers are data, not branches
 
 - The model-provider configuration was rewritten around a catalogue: adapter, endpoint,

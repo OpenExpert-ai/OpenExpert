@@ -26,17 +26,17 @@ script), so the CLI is ready.
 
 Documented in `.env.example`. The essentials:
 
-| Variable                                            | Function                                           |
-| --------------------------------------------------- | -------------------------------------------------- |
-| `OPENEXPERT_MODEL_PROVIDER`                         | `ollama` \| `google` \| `openai-compatible`        |
-| `OPENEXPERT_MODEL_ID`                               | Model identifier                                   |
-| `GOOGLE_API_KEY`                                    | Gemini key (`google`)                              |
-| `OPENEXPERT_BASE_URL` / `OPENEXPERT_MODEL_KEY`      | `openai-compatible` endpoint                       |
-| `OLLAMA_BASE_URL`                                   | Ollama endpoint                                    |
-| `OPENEXPERT_DATA_DIR`                               | Data directory (default `~/.openexpert/`)          |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`         | Drive OAuth (optional)                             |
-| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET` | Drive OAuth (optional)                             |
-| `PUBLIC_APP_URL`                                    | Public origin used to build the Drive redirect URI |
+| Variable                                                                                | Function                                                                    |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go` |
+| `OPENEXPERT_MODEL_ID`                                                                   | Model identifier                                                            |
+| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | One key per provider: Gemini, Claude, OpenCode Go and your own endpoint     |
+| `OPENEXPERT_BASE_URL`                                                                   | Endpoint of `openai-compatible`, which is the only one you provide          |
+| `OLLAMA_BASE_URL`                                                                       | Ollama endpoint                                                             |
+| `OPENEXPERT_DATA_DIR`                                                                   | Data directory (default `~/.openexpert/`)                                   |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                                             | Drive OAuth (optional)                                                      |
+| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET`                                     | Drive OAuth (optional)                                                      |
+| `PUBLIC_APP_URL`                                                                        | Public origin used to build the Drive redirect URI                          |
 
 `.env` is git-ignored. The CLI wizard stores secrets in
 `~/.openexpert/secrets.json`, which the server loads into the environment at

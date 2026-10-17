@@ -3,16 +3,36 @@
 //
 // Providers:
 import {
-  BYOK_PROVIDERS,
   defaultModelOf,
+  isProviderId,
   keySourceOf,
-  PROVIDERS,
   providerDef,
   type ModelProviderId,
+  type ProviderDef,
 } from "./providers.js";
 
-export { BYOK_PROVIDERS, PROVIDERS, providerDef };
-export type { ModelProviderId };
+export {
+  BYOK_PROVIDERS,
+  defaultModelOf,
+  endpointOf,
+  endpointSourceOf,
+  isProviderId,
+  keySourceOf,
+  providerCatalogue,
+  providerKeyEnvOf,
+  PROVIDER_IDS,
+  PROVIDER_KEY_VARS,
+  PROVIDERS,
+  providerDef,
+} from "./providers.js";
+export type {
+  CatalogueRecord,
+  ModelDef,
+  ModelProviderId,
+  ProviderAdapter,
+  ProviderDef,
+  ProviderKeyVar,
+} from "./providers.js";
 
 export type ModelSelection = {
   provider: ModelProviderId;
@@ -23,8 +43,7 @@ export type ModelSelection = {
 
 export function selectModel(env: NodeJS.ProcessEnv = process.env): ModelSelection {
   const raw = env["OPENEXPERT_MODEL_PROVIDER"];
-  const known = PROVIDERS.some((p) => p.id === raw);
-  const provider = (known ? raw : "google") as ModelProviderId;
+  const provider: ModelProviderId = isProviderId(raw) ? raw : "google";
   return {
     provider,
     modelId: env["OPENEXPERT_MODEL_ID"] || defaultModelOf(provider),
@@ -33,15 +52,12 @@ export function selectModel(env: NodeJS.ProcessEnv = process.env): ModelSelectio
 }
 
 /**
- * Ollama exposes two surfaces: the native API at the server root (`/api/*`)
- * and an OpenAI-compatible API under `/v1`. Callers may configure either
- * shape, so normalise before using it.
- *
- * Trailing slashes are removed with a loop, not with `/\/+$/`: a regex has to
- * retry at every position of a long run of slashes, which is what CodeQL
- * reports as a polynomial ReDoS on `baseUrl`.
+ * Remove trailing slashes from a URL an owner typed. A loop, not `/\/+$/`: a
+ * regex has to retry at every position of a long run of slashes, which is what
+ * CodeQL reports as a polynomial ReDoS on a value that comes from the outside.
+ * Exported because every adapter that builds a path from a URL needs it.
  */
-function stripTrailingSlashes(value: string): string {
+export function stripTrailingSlashes(value: string): string {
   let end = value.length;
   while (end > 0 && value[end - 1] === "/") end -= 1;
   return value.slice(0, end);
@@ -56,16 +72,23 @@ export function ollamaChatBaseUrl(baseUrl: string): string {
   return `${ollamaApiBaseUrl(baseUrl)}/v1`;
 }
 
+/**
+ * The message for a provider whose key is not set, or null when nothing is
+ * missing. Read off the catalogue: whichever variable a record declares is the
+ * one that has to carry a value, so a new provider needs no new branch here.
+ */
+export function providerKeyMessage(
+  def: ProviderDef,
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  if (!def.env) return null;
+  return env[def.env] ? null : `Falta ${def.env} para ${def.name}.`;
+}
+
 export function missingKeyHint(
   sel: ModelSelection,
   env: NodeJS.ProcessEnv = process.env,
 ): string | null {
-  if (sel.provider === "ollama") return null;
-  if (sel.provider === "google" && !env["GOOGLE_API_KEY"]) {
-    return "Falta GOOGLE_API_KEY (o usa OPENEXPERT_MODEL_PROVIDER=ollama para modelo local).";
-  }
-  if (sel.provider === "openai-compatible" && !env["OPENEXPERT_MODEL_KEY"]) {
-    return "Falta OPENEXPERT_MODEL_KEY para tu endpoint OpenAI-compatible.";
-  }
-  return null;
+  const def = providerDef(sel.provider);
+  return def ? providerKeyMessage(def, env) : null;
 }

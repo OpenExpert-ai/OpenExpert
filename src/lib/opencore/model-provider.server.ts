@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: MIT
 // Server-side model provider selection, built on @openexpert/opencore.
-// Providers: google (Gemini free key), ollama (local), openai-compatible (BYOK).
+//
+// One branch per adapter, and the catalogue record decides which one runs,
+// where the key lives and which endpoint to use. A provider whose key is
+// missing says so naming **its own** variable: borrowing another provider's key
+// looks like a working configuration right up to the first 401.
 
 import type { LanguageModel } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  endpointOf,
   missingKeyHint,
   ollamaChatBaseUrl,
+  providerCatalogue,
   providerDef,
   selectModel,
   type ModelProviderId,
+  type ProviderDef,
 } from "@openexpert/opencore/model-provider";
 
 export type { ModelProviderId };
@@ -29,63 +36,68 @@ export function modelKeyError(): string | null {
 }
 
 /**
- * Name of the session header some OpenAI-compatible gateways require to route a
- * conversation. It is a protocol name, not a product opinion: it goes in exactly
- * one place, here, so it is easy to audit.
+ * Headers a session-aware provider asks for, read off its record. A gateway
+ * that routes per conversation refuses a request without a session id — it
+ * answers 400 and says so — so the header travels with the provider that
+ * declares it and with no other.
  */
-const SESSION_HEADER = "x-opencode-session";
-
-/**
- * Headers this gateway asks for, and only this one. It routes by client and
- * refuses a request that carries no session id — it answers 400 and says so —
- * so both travel together and nowhere else. An endpoint that asks for neither
- * never sees them: this is the provider that needs them, not the generic one.
- */
-export function opencodeGoHeaders(sessionId?: string): Record<string, string> {
+export function providerHeaders(def: ProviderDef, sessionId?: string): Record<string, string> {
   const headers: Record<string, string> = {
     "user-agent": `OpenExpert/${process.env["npm_package_version"] || "dev"}`,
   };
-  if (sessionId) headers[SESSION_HEADER] = sessionId;
+  if (sessionId && def.sessionHeader) headers[def.sessionHeader] = sessionId;
   return headers;
+}
+
+/** The record for the active provider, falling back to the first one. */
+function activeDef(): ProviderDef {
+  return providerDef(selectModel().provider) ?? providerCatalogue()[0]!;
+}
+
+/** A provider's own key, or the reason it cannot be used. */
+function keyOf(def: ProviderDef): string {
+  const value = def.env ? process.env[def.env] : undefined;
+  if (!value) throw new Error(`Falta ${def.env ?? "la clave"} para ${def.name}.`);
+  return value;
 }
 
 export function getLanguageModel(sessionId?: string): LanguageModel {
   const sel = selectModel();
   const id = sel.modelId;
-  const def = providerDef(sel.provider);
-  if (sel.provider === "ollama") {
-    const baseURL = ollamaChatBaseUrl(process.env["OLLAMA_BASE_URL"] || "http://localhost:11434");
-    return createOpenAI({ apiKey: "ollama", baseURL })(id);
+  const def = activeDef();
+
+  if (def.adapter === "google") {
+    return createGoogleGenerativeAI({ apiKey: keyOf(def) })(id);
   }
-  if (sel.provider === "openai-compatible") {
-    const baseURL = process.env["OPENEXPERT_BASE_URL"];
-    if (!baseURL) throw new Error("Falta OPENEXPERT_BASE_URL");
-    return createOpenAI({ apiKey: process.env["OPENEXPERT_API_KEY"] ?? "", baseURL })(id);
-  }
-  if (def?.adapter === "anthropic") {
-    const apiKey = process.env[def.env ?? ""] || process.env["OPENEXPERT_MODEL_KEY"];
-    if (!apiKey) throw new Error(`Falta configurar la clave de ${def.name}.`);
-    if (!def.baseUrl) throw new Error(`El proveedor ${def.name} no tiene dirección configurada.`);
-    return createAnthropic({ apiKey, baseURL: def.baseUrl })(id);
-  }
-  if (sel.provider === "opencode-go") {
-    const apiKey = process.env["OPENEXPERT_MODEL_KEY"];
-    if (!apiKey)
-      throw new Error("Falta configurar la clave de OpenCode Go (el campo de clave BYOK).");
-    return createOpenAI({
-      apiKey,
-      baseURL:
-        process.env["OPENCODE_GO_BASE_URL"] || def?.baseUrl || "https://opencode.ai/zen/go/v1",
-      fetch: async (input, init) => {
-        const headers = new Headers(init?.headers);
-        for (const [k, v] of Object.entries(opencodeGoHeaders(sessionId))) headers.set(k, v);
-        return fetch(input, { ...init, headers });
-      },
+
+  if (def.adapter === "anthropic") {
+    // The record's own endpoint, with the protocol version pinned by its adapter.
+    return createAnthropic({
+      apiKey: keyOf(def),
+      ...(def.baseUrl ? { baseURL: def.baseUrl } : {}),
+      ...(def.headers ? { headers: def.headers } : {}),
     })(id);
   }
-  const apiKey = process.env["GOOGLE_API_KEY"];
-  if (!apiKey) throw new Error("Falta configurar la clave de Gemini (GOOGLE_API_KEY).");
-  return createGoogleGenerativeAI({ apiKey })(id);
+
+  // OpenAI-compatible: local (Ollama) or remote. The endpoint is the record's
+  // own or the one its owner stored; a local server needs no key.
+  const endpoint = endpointOf(sel.provider);
+  if (!endpoint) throw new Error(`Falta ${def.baseUrlEnv ?? "la dirección"} para ${def.name}.`);
+
+  if (sel.provider === "ollama") {
+    return createOpenAI({ apiKey: "ollama", baseURL: ollamaChatBaseUrl(endpoint) })(id);
+  }
+
+  const headers = providerHeaders(def, sessionId);
+  return createOpenAI({
+    apiKey: keyOf(def),
+    baseURL: endpoint,
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const merged = new Headers(init?.headers);
+      for (const [name, value] of Object.entries(headers)) merged.set(name, value);
+      return fetch(input, { ...init, headers: merged });
+    },
+  })(id);
 }
 
 export function modelLabel(): string {

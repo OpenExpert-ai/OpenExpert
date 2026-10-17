@@ -6,11 +6,20 @@ OpenExpert no requiere ninguna cuenta de IA. Tú eliges el proveedor; la
 selección vive en `openexpert.json` o en las variables `OPENEXPERT_*` (la
 variable de entorno manda).
 
-| Proveedor           | Clave                  | Coste           | Los datos salen de tu equipo |
-| ------------------- | ---------------------- | --------------- | ---------------------------- |
-| `ollama`            | ninguna                | gratis          | no                           |
-| `google`            | `GOOGLE_API_KEY`       | nivel gratuito  | sí (a Google)                |
-| `openai-compatible` | `OPENEXPERT_MODEL_KEY` | según proveedor | sí                           |
+| Proveedor           | Clave                  | Endpoint                        | Coste          | Los datos salen de tu equipo |
+| ------------------- | ---------------------- | ------------------------------- | -------------- | ---------------------------- |
+| `ollama`            | ninguna                | el tuyo (`OLLAMA_BASE_URL`)     | gratis         | no                           |
+| `google`            | `GOOGLE_API_KEY`       | el del proveedor                | nivel gratuito | sí (a Google)                |
+| `anthropic`         | `ANTHROPIC_API_KEY`    | el del proveedor                | de pago        | sí (a Anthropic)             |
+| `openai-compatible` | `OPENEXPERT_MODEL_KEY` | el tuyo (`OPENEXPERT_BASE_URL`) | según servicio | sí                           |
+| `opencode-go`       | `OPENCODE_GO_API_KEY`  | el del proveedor                | suscripción    | sí                           |
+
+**Una clave por proveedor.** Cada ficha del catálogo nombra la variable que
+guarda su clave, y ninguna la comparte con otra: guardar la clave de un
+proveedor no toca lo que guardó otro. El panel lee esa variable del catálogo, así
+que pide, guarda y etiqueta la clave de cada uno en su sitio. Tampoco se
+sustituye por la de otro: cuando falta una clave se dice **cuál** falta, en vez
+de probar con la ajena.
 
 ## 1. Ollama (recomendado, 100 % local)
 
@@ -41,7 +50,24 @@ export GOOGLE_API_KEY=tu-clave
 
 Con Google, el asistente muestra su razonamiento (thinking) en la interfaz.
 
-## 3. Cualquier endpoint OpenAI-compatible (BYOK)
+## 3. Anthropic (Claude)
+
+1. Crea una clave en la **consola de Anthropic**
+   (<https://console.anthropic.com/settings/keys>).
+2. Configura:
+
+```sh
+export OPENEXPERT_MODEL_PROVIDER=anthropic
+export OPENEXPERT_MODEL_ID=claude-sonnet-4-5
+export ANTHROPIC_API_KEY=tu-clave
+```
+
+Su dirección es la de su ficha del catálogo (`https://api.anthropic.com/v1`), así
+que no hay nada más que apuntar. **Listar**, en el panel, le pregunta al
+proveedor qué modelos admite esa clave y ofrece lo que responde, junto a los
+identificadores que el catálogo ya conoce.
+
+## 4. Cualquier endpoint OpenAI-compatible (BYOK)
 
 ```sh
 export OPENEXPERT_MODEL_PROVIDER=openai-compatible
@@ -50,7 +76,22 @@ export OPENEXPERT_MODEL_KEY=tu-clave
 export OPENEXPERT_MODEL_ID=gpt-4o-mini
 ```
 
-## 4. Con el CLI
+Es el único proveedor cuya dirección la pones tú, así que es el único al que se
+le pide.
+
+## 5. OpenCode Go
+
+```sh
+export OPENEXPERT_MODEL_PROVIDER=opencode-go
+export OPENEXPERT_MODEL_ID=deepseek-v4.1-flash
+export OPENCODE_GO_API_KEY=tu-clave
+```
+
+Su servicio enruta por conversación y pide la cabecera de sesión que declara su
+ficha en el catálogo (`x-opencode-session`), que viaja solo con el identificador
+de la conversación y solo para este proveedor.
+
+## 6. Con el CLI
 
 ```sh
 npx @openexpert/opencore        # asistente interactivo
@@ -58,8 +99,9 @@ npx @openexpert/opencore models # listar modelos del proveedor actual
 npx @openexpert/opencore doctor # revisar la configuración
 ```
 
-El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
-`0600`), nunca en el repositorio.
+El asistente y el panel guardan los secretos en `~/.openexpert/secrets.json`
+(permisos `0600`), nunca en el repositorio. `doctor` revisa la clave del proveedor
+que tengas elegido y dice qué variable falta cuando falta alguna.
 
 ## Referencias
 

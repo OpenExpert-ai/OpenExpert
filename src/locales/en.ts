@@ -26,12 +26,37 @@ export const en: Record<string, string> = {
 
   // --- Settings: model & AI --------------------------------------------------
   "Proveedor de IA": "AI provider",
-  "Elige dónde se ejecuta el modelo. Ollama es local y no necesita claves.":
-    "Choose where the model runs. Ollama is local and needs no keys.",
+  "Elige dónde se ejecuta el modelo. Cada proveedor guarda su propia clave: cambiar de uno a otro no borra la del anterior.":
+    "Choose where the model runs. Each provider keeps its own key: switching from one to another does not erase the previous one.",
   Proveedor: "Provider",
   "Ollama (local)": "Ollama (local)",
   "Google Gemini": "Google Gemini",
+  "Anthropic (Claude)": "Anthropic (Claude)",
   "OpenAI-compatible (BYOK)": "OpenAI-compatible (BYOK)",
+  "OpenCode Go": "OpenCode Go",
+  "Local y sin claves: nada sale de tu equipo.": "Local and keyless: nothing leaves your machine.",
+  "Clave gratuita de AI Studio. Los datos salen a Google.":
+    "Free key from AI Studio. Data leaves for Google.",
+  "Modelos Claude. Su clave es independiente de la de los demás.":
+    "Claude models. Its key is independent from the others.",
+  "Tu propio endpoint. Los datos salen a donde apuntes.":
+    "Your own endpoint. Data leaves for wherever you point it.",
+  "Solo este proveedor manda la cabecera de sesión que su servicio pide.":
+    "Only this provider sends the session header its service asks for.",
+  "Acepta la raíz nativa o la URL /v1: se normaliza.":
+    "Accepts the native root or the /v1 URL: it is normalised.",
+  "Endpoint compatible con OpenAI, con /v1 al final.":
+    "OpenAI-compatible endpoint, with /v1 at the end.",
+  "Sin clave (local)": "No key (local)",
+  "Elegido: {a}. Su clave se guarda como {b}.": "Selected: {a}. Its key is stored as {b}.",
+  "ninguna (no usa)": "none (it uses no key)",
+  variable: "variable",
+  Endpoint: "Endpoint",
+  "En uso": "In use",
+  "Obtener una clave": "Get a key",
+  "Endpoint del proveedor:": "Provider endpoint:",
+  "Este proveedor pide la cabecera {h} en cada petición.":
+    "This provider asks for the {h} header on every request.",
   Modelo: "Model",
   "Identificador del modelo tal y como lo conoce el proveedor.":
     "The model identifier as the provider knows it.",

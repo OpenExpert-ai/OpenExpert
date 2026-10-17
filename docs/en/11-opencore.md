@@ -38,14 +38,14 @@ checksum-verified server build.
 
 ## 4. Configuration
 
-| Variable                                       | Purpose                                     |
-| ---------------------------------------------- | ------------------------------------------- |
-| `OPENEXPERT_MODEL_PROVIDER`                    | `google` \| `ollama` \| `openai-compatible` |
-| `OPENEXPERT_MODEL_ID`                          | Model identifier                            |
-| `GOOGLE_API_KEY`                               | Gemini key                                  |
-| `OPENEXPERT_MODEL_KEY` / `OPENEXPERT_BASE_URL` | OpenAI-compatible endpoint                  |
-| `OLLAMA_BASE_URL`                              | Ollama endpoint                             |
-| `OPENEXPERT_DATA_DIR`                          | Data directory (default `~/.openexpert/`)   |
+| Variable                                                                                | Purpose                                                                     |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go` |
+| `OPENEXPERT_MODEL_ID`                                                                   | Model identifier                                                            |
+| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | One key per provider                                                        |
+| `OPENEXPERT_BASE_URL`                                                                   | Endpoint of the generic `openai-compatible` provider                        |
+| `OLLAMA_BASE_URL`                                                                       | Ollama endpoint                                                             |
+| `OPENEXPERT_DATA_DIR`                                                                   | Data directory (default `~/.openexpert/`)                                   |
 
 Neither `openexpert.json` nor `~/.openexpert/` is committed.
 

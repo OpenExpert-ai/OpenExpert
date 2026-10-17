@@ -8,7 +8,7 @@
   "properties": {
     "modelProvider": {
       "type": "string",
-      "enum": ["google", "ollama", "openai-compatible"],
+      "enum": ["ollama", "google", "anthropic", "openai-compatible", "opencode-go"],
       "description": "Which model provider the chat should use."
     },
     "modelId": {

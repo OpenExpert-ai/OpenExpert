@@ -74,13 +74,21 @@ disagree, the code is right and the docs are the bug.
 
 ## 5. Model provider: configuration, not code
 
+- The catalogue is `packages/opencore/src/providers.ts`: a provider is a record
+  (adapter, endpoint, key variable, headers, models) and the provider id is
+  derived from it. **No two records may share a key variable** and a test
+  enforces it, because a shared one means saving a key silently overwrites
+  another provider's and the failure only shows up later as a 401.
 - Selection lives in `src/lib/opencore/model-provider.server.ts` and the shared
-  `@openexpert/opencore` engine (`selectModel` / `missingKeyHint`).
-- Providers: `ollama` (default, local), `google` (Gemini free key),
-  `openai-compatible` (BYOK).
+  `@openexpert/opencore` engine (`selectModel` / `missingKeyHint`). Asking a
+  provider which models it serves is `listProviderModels`, used by the panel, the
+  CLI and `doctor`, so none of them keeps its own version of the question.
+- Providers: `ollama` (local), `google` (Gemini free key), `anthropic`,
+  `openai-compatible` (BYOK) and `opencode-go`.
 - Environment variables: `OPENEXPERT_MODEL_PROVIDER`, `OPENEXPERT_MODEL_ID`,
-  `GOOGLE_API_KEY`, `OLLAMA_BASE_URL`, `OPENEXPERT_BASE_URL` +
-  `OPENEXPERT_MODEL_KEY`.
+  `OLLAMA_BASE_URL`, `OPENEXPERT_BASE_URL` (the generic endpoint) and **one key
+  per provider**: `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `OPENEXPERT_MODEL_KEY`,
+  `OPENCODE_GO_API_KEY`.
 - Configuration sources: `openexpert.json` (provider, model, `ai`/`chat`
   options) plus `~/.openexpert/secrets.json` (`0600`, API keys) plus env vars
   plus the `settings` table for UI preferences. **Precedence: real env >
