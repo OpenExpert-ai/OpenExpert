@@ -52,15 +52,12 @@ export function selectModel(env: NodeJS.ProcessEnv = process.env): ModelSelectio
 }
 
 /**
- * Ollama exposes two surfaces: the native API at the server root (`/api/*`)
- * and an OpenAI-compatible API under `/v1`. Callers may configure either
- * shape, so normalise before using it.
- *
- * Trailing slashes are removed with a loop, not with `/\/+$/`: a regex has to
- * retry at every position of a long run of slashes, which is what CodeQL
- * reports as a polynomial ReDoS on `baseUrl`.
+ * Remove trailing slashes from a URL an owner typed. A loop, not `/\/+$/`: a
+ * regex has to retry at every position of a long run of slashes, which is what
+ * CodeQL reports as a polynomial ReDoS on a value that comes from the outside.
+ * Exported because every adapter that builds a path from a URL needs it.
  */
-function stripTrailingSlashes(value: string): string {
+export function stripTrailingSlashes(value: string): string {
   let end = value.length;
   while (end > 0 && value[end - 1] === "/") end -= 1;
   return value.slice(0, end);

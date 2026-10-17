@@ -10,7 +10,7 @@
 // carries the models the catalogue already knows plus the reason, so the caller
 // can keep offering a choice and say what went wrong.
 
-import { ollamaApiBaseUrl, providerKeyMessage } from "./model-provider.js";
+import { ollamaApiBaseUrl, providerKeyMessage, stripTrailingSlashes } from "./model-provider.js";
 import { endpointOf, providerDef, type ModelProviderId, type ProviderDef } from "./providers.js";
 
 export type ModelList = {
@@ -64,7 +64,7 @@ async function anthropicModels(
   baseUrl: string,
   o: Required<ListOptions>,
 ): Promise<ModelList> {
-  const res = await o.fetchImpl(`${baseUrl.replace(/\/+$/, "")}/models?limit=100`, {
+  const res = await o.fetchImpl(`${stripTrailingSlashes(baseUrl)}/models?limit=100`, {
     headers: { "x-api-key": key, "anthropic-version": ANTHROPIC_VERSION },
     signal: AbortSignal.timeout(o.timeoutMs),
   });
@@ -84,7 +84,7 @@ async function openAiModels(
   baseUrl: string,
   o: Required<ListOptions>,
 ): Promise<ModelList> {
-  const res = await o.fetchImpl(`${baseUrl.replace(/\/+$/, "")}/models`, {
+  const res = await o.fetchImpl(`${stripTrailingSlashes(baseUrl)}/models`, {
     headers: { Authorization: `Bearer ${key}` },
     signal: AbortSignal.timeout(o.timeoutMs),
   });
@@ -112,6 +112,8 @@ async function ollamaModels(baseUrl: string, o: Required<ListOptions>): Promise<
 /**
  * Which models the provider serves. `endpoint` overrides the stored URL, so the
  * settings panel can ask about an endpoint the user has typed but not yet saved.
+ * Trailing slashes are trimmed with the shared helper: the URL comes from the
+ * owner, and a regex on the outside's data is a CodeQL finding waiting to happen.
  */
 export async function listProviderModels(
   id: ModelProviderId,
