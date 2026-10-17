@@ -120,6 +120,12 @@ script corre en un directorio temporal propio, sin acceso a la red ni a las vari
 la aplicación, con un límite de tiempo y la salida recortada. Solo cuenta con la biblioteca estándar
 de Python, y queda en el registro de actividad con el script que se ejecutó.
 
+Un **PDF escaneado** no tiene capa de texto: es la foto de una página. Si el ajuste
+«Leer PDF escaneados con el modelo» está activado —viene **apagado**—, se transcribe con
+el modelo activo, que tiene que poder ver documentos. Se hace **solo al leer un archivo a
+propósito**, nunca mientras una búsqueda recorre una carpeta, y la transcripción es literal
+(no un resumen), porque alimenta la búsqueda y la lectura por partes.
+
 ## 6. Notas de seguridad
 
 - Los **tokens** y la **lista de concesiones** están cifrados con **AES-256-GCM**

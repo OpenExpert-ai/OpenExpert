@@ -15,6 +15,8 @@ export type AiConfig = {
 export type ChatConfig = {
   maxSteps: number;
   injectionGuard: boolean;
+  /** Read a scanned PDF with the model. Off by default: it sends the document to the provider. */
+  visionPdf: boolean;
   injectionExtraPatterns: string[];
   retentionDays: number;
 };
@@ -49,6 +51,7 @@ export const DEFAULTS: OpenExpertConfig = {
   chat: {
     maxSteps: 50,
     injectionGuard: true,
+    visionPdf: false,
     injectionExtraPatterns: [],
     retentionDays: 30,
   },
@@ -105,6 +108,7 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
     chat: {
       maxSteps: num(fileChat.maxSteps, DEFAULTS.chat.maxSteps),
       injectionGuard: fileChat.injectionGuard ?? DEFAULTS.chat.injectionGuard,
+      visionPdf: fileChat.visionPdf ?? DEFAULTS.chat.visionPdf,
       injectionExtraPatterns: Array.isArray(fileChat.injectionExtraPatterns)
         ? fileChat.injectionExtraPatterns.filter((p): p is string => typeof p === "string")
         : DEFAULTS.chat.injectionExtraPatterns,

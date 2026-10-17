@@ -369,6 +369,7 @@ export const fileConfigSchema = z.object({
     .object({
       maxSteps: z.number().int().min(1).optional(),
       injectionGuard: z.boolean().optional(),
+      visionPdf: z.boolean().optional(),
       injectionExtraPatterns: z
         .array(z.string())
         .refine(patternsAreValid, { message: "Patrón regular inválido" })
@@ -400,6 +401,9 @@ export function resetFileConfig(cwd: string = process.cwd()): void {
 export const chatUpdateSchema = z.object({
   maxSteps: z.number().int().min(1).max(200),
   injectionGuard: z.boolean(),
+  // Off by default: a scanned PDF read with a model means the document leaves the machine, and
+  // that is a decision for its owner, not a default.
+  visionPdf: z.boolean().default(false),
   injectionExtraPatterns: z
     .array(z.string())
     .max(50)
