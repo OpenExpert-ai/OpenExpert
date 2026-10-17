@@ -7,9 +7,11 @@
 ## 1. Modelo y proveedor
 
 El modelo es configuración (ver [Proveedores de IA](./13-proveedores-ia.md)):
-`ollama` (defecto, local), `google` (clave gratuita de Gemini) o
-`openai-compatible` (BYOK). El asistente responde siempre en español, muestra su
-razonamiento y transmite token a token (hasta 50 pasos por turno).
+`ollama` (local), `google` (clave gratuita de Gemini), `anthropic` (Claude),
+`openai-compatible` (BYOK) u `opencode-go`. Cada proveedor guarda **su** clave, en
+su propia variable, y cambiar de proveedor no borra la del anterior. El asistente
+responde siempre en español, muestra su razonamiento y transmite token a token
+(hasta 50 pasos por turno).
 
 ## 2. Catálogo de herramientas
 

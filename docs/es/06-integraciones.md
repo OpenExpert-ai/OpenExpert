@@ -134,6 +134,12 @@ ficha lleva su adaptador (`google`, `openai-compatible`, `anthropic`), su direcc
 **cabecera que debe llevar el id de la conversación**. El identificador de proveedor se
 **deriva del catálogo**, así que añadir uno es añadir un registro, no tocar tres ficheros.
 
+**Dos fichas no pueden compartir esa variable.** Es lo que hace independiente la clave de cada
+proveedor: compartiéndola, guardar una clave pisa la de otro y el fallo no se ve hasta que ese
+otro deja de autenticar. Un test lo impone. El panel, el CLI y `doctor` leen del registro la
+variable de la clave, la dirección y los modelos, así que ninguno se queda con una lista de
+proveedores propia.
+
 Los modelos también son registros —nombre, coste, contexto, llamada a herramientas y
 razonamiento—, y un modelo sin cifras apuntadas es uno cuyas cifras **no se han
 comprobado**, no uno gratuito. La pantalla de ajustes construye su lista de opciones

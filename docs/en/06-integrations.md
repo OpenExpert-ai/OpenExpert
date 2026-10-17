@@ -129,6 +129,12 @@ carries its adapter (`google`, `openai-compatible`, `anthropic`), its endpoint, 
 the **header that must carry the conversation id**. The provider identifier is **derived from
 the catalogue**, so adding one is adding a record, not editing three files.
 
+**No two records may share that variable.** It is what makes each provider's key independent:
+with a shared one, saving a key silently overwrites another provider's, and the failure stays
+hidden until that provider stops authenticating. A test enforces the uniqueness. The panel,
+the CLI and `doctor` read the key's variable, the endpoint and the models off the record, so
+none of them keeps a provider list of its own.
+
 Models are records too —name, cost, context, tool calling, reasoning— and a model with no
 figures recorded is one whose figures **have not been checked**, not one that is free. The
 settings screen builds its option list by walking the catalogue: none is written by hand.

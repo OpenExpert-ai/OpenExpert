@@ -37,16 +37,16 @@ restricted to the pages shared in Notion's picker.
 
 ## 4. Secret management
 
-| Secret                                          | Where                                                                            |
-| ----------------------------------------------- | -------------------------------------------------------------------------------- |
-| `GOOGLE_API_KEY`, `OPENEXPERT_MODEL_KEY`        | `.env` or `~/.openexpert/secrets.json` (`0600`)                                  |
-| `GOOGLE_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY` | env or `~/.openexpert/secrets.json` (`0600`)                                     |
-| Google Drive tokens                             | `~/.openexpert/credentials.json` (`0600`, AES-256-GCM encrypted)                 |
-| Picker grants (the files you picked)            | `~/.openexpert/drive-grants.json` (`0600`, AES-256-GCM encrypted)                |
-| Local folder grants                             | `~/.openexpert/local-roots.json` (`0600`, AES-256-GCM encrypted)                 |
-| Notion OAuth token                              | `~/.openexpert/notion.json` (`0600`, AES-256-GCM encrypted)                      |
-| OAuth `state` signing key                       | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`) |
-| Encryption key file                             | `~/.openexpert/secret.key` (`0600`, generated on first run)                      |
+| Secret                                                                                                    | Where                                                                                   |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Model provider keys: `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `OPENEXPERT_MODEL_KEY`, `OPENCODE_GO_API_KEY` | `.env` or `~/.openexpert/secrets.json` (`0600`); one variable per provider, none shared |
+| `GOOGLE_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY`                                                           | env or `~/.openexpert/secrets.json` (`0600`)                                            |
+| Google Drive tokens                                                                                       | `~/.openexpert/credentials.json` (`0600`, AES-256-GCM encrypted)                        |
+| Picker grants (the files you picked)                                                                      | `~/.openexpert/drive-grants.json` (`0600`, AES-256-GCM encrypted)                       |
+| Local folder grants                                                                                       | `~/.openexpert/local-roots.json` (`0600`, AES-256-GCM encrypted)                        |
+| Notion OAuth token                                                                                        | `~/.openexpert/notion.json` (`0600`, AES-256-GCM encrypted)                             |
+| OAuth `state` signing key                                                                                 | `GOOGLE_OAUTH_STATE_SECRET` or a generated `~/.openexpert/state-secret` (`0600`)        |
+| Encryption key file                                                                                       | `~/.openexpert/secret.key` (`0600`, generated on first run)                             |
 
 Rules:
 

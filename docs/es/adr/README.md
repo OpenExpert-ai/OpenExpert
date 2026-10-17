@@ -11,6 +11,7 @@ colabora no tenga que deducirlas del código.
 | 003 | [El proveedor de modelo es configuración](./0003-proveedor-configuracion.md)    |
 | 004 | [Aislamiento de dominio por Experto en servidor](./0004-aislamiento-dominio.md) |
 | 005 | [Migraciones con `PRAGMA user_version`](./0005-migraciones.md)                  |
+| 006 | [Una clave por proveedor](./0006-una-clave-por-proveedor.md)                    |
 
 Los ADR son solo de adición: para cambiar una decisión se añade un registro
 nuevo que sustituye al anterior en lugar de editarlo.

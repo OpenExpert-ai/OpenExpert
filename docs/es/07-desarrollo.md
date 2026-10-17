@@ -26,17 +26,17 @@ En un clon nuevo, `npm ci` también construye `packages/opencore` (su script
 
 Documentadas en `.env.example`. Lo esencial:
 
-| Variable                                            | Función                                            |
-| --------------------------------------------------- | -------------------------------------------------- |
-| `OPENEXPERT_MODEL_PROVIDER`                         | `ollama` \| `google` \| `openai-compatible`        |
-| `OPENEXPERT_MODEL_ID`                               | Identificador del modelo                           |
-| `GOOGLE_API_KEY`                                    | Clave de Gemini (`google`)                         |
-| `OPENEXPERT_BASE_URL` / `OPENEXPERT_MODEL_KEY`      | Endpoint `openai-compatible`                       |
-| `OLLAMA_BASE_URL`                                   | Endpoint de Ollama                                 |
-| `OPENEXPERT_DATA_DIR`                               | Directorio de datos (por defecto `~/.openexpert/`) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`         | OAuth de Drive (opcional)                          |
-| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET` | OAuth de Drive (opcional)                          |
-| `PUBLIC_APP_URL`                                    | Origen público para la URI de redirección de Drive |
+| Variable                                                                                | Función                                                                     |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go` |
+| `OPENEXPERT_MODEL_ID`                                                                   | Identificador del modelo                                                    |
+| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | Una clave por proveedor: Gemini, Claude, OpenCode Go y tu propio endpoint   |
+| `OPENEXPERT_BASE_URL`                                                                   | Endpoint de `openai-compatible`, el único que pones tú                      |
+| `OLLAMA_BASE_URL`                                                                       | Endpoint de Ollama                                                          |
+| `OPENEXPERT_DATA_DIR`                                                                   | Directorio de datos (por defecto `~/.openexpert/`)                          |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                                             | OAuth de Drive (opcional)                                                   |
+| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET`                                     | OAuth de Drive (opcional)                                                   |
+| `PUBLIC_APP_URL`                                                                        | Origen público para la URI de redirección de Drive                          |
 
 `.env` está en `.gitignore`. El asistente del CLI guarda los secretos en
 `~/.openexpert/secrets.json`, que el servidor carga en el entorno al arrancar

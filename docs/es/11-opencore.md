@@ -38,14 +38,14 @@ verificado por checksum.
 
 ## 4. Configuración
 
-| Variable                                       | Finalidad                                          |
-| ---------------------------------------------- | -------------------------------------------------- |
-| `OPENEXPERT_MODEL_PROVIDER`                    | `google` \| `ollama` \| `openai-compatible`        |
-| `OPENEXPERT_MODEL_ID`                          | Identificador del modelo                           |
-| `GOOGLE_API_KEY`                               | Clave de Gemini                                    |
-| `OPENEXPERT_MODEL_KEY` / `OPENEXPERT_BASE_URL` | Endpoint OpenAI-compatible                         |
-| `OLLAMA_BASE_URL`                              | Endpoint de Ollama                                 |
-| `OPENEXPERT_DATA_DIR`                          | Directorio de datos (por defecto `~/.openexpert/`) |
+| Variable                                                                                | Finalidad                                                                   |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go` |
+| `OPENEXPERT_MODEL_ID`                                                                   | Identificador del modelo                                                    |
+| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | Una clave por proveedor                                                     |
+| `OPENEXPERT_BASE_URL`                                                                   | Endpoint del proveedor genérico `openai-compatible`                         |
+| `OLLAMA_BASE_URL`                                                                       | Endpoint de Ollama                                                          |
+| `OPENEXPERT_DATA_DIR`                                                                   | Directorio de datos (por defecto `~/.openexpert/`)                          |
 
 Ni `openexpert.json` ni `~/.openexpert/` se versionan.
 
