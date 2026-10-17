@@ -154,6 +154,9 @@ const DEFAULT_INTEGRATIONS = [
   { id: "gdrive", name: "Google Drive", category: "Productividad" },
   { id: "local", name: "Archivos locales", category: "Productividad" },
   { id: "notion", name: "Notion", category: "Productividad" },
+  // Ejecutar código escrito por el modelo es una capacidad, no un conector: se activa a conciencia
+  // por Experto, y hasta que no se activa la herramienta ni existe.
+  { id: "python", name: "Python", category: "Productividad" },
   { id: "pipedrive", name: "Pipedrive", category: "CRM" },
   { id: "salesforce", name: "Salesforce", category: "CRM" },
   { id: "holded", name: "Holded", category: "ERP / Finanzas" },

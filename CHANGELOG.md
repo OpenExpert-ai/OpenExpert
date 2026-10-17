@@ -23,6 +23,11 @@ to read every changeset.
 
 ### Added
 
+- **`run_python`: calculations done by code, not by eye.** A short Python script, run in a private
+  temporary directory with a scrubbed environment, a hard timeout and capped output, and kept in the
+  activity trail with the script that ran. It is a **capability**, off until enabled per Expert,
+  because it means running code a model wrote. Standard library only.
+
 - **Reading local files, upgraded**: `read_local_file` now returns the file in
   **windows of lines** (`offset`/`limit`, with `hasMore`/`nextOffset`) instead of one
   slab that silently dropped everything past the character cap. A new

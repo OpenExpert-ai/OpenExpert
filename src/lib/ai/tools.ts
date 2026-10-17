@@ -371,6 +371,42 @@ export function createChatTools(ctx: ChatToolsContext) {
         }
       },
     }),
+    run_python: tool({
+      description:
+        "Ejecuta un script corto de Python y devuelve lo que imprime. Úsalo para **calcular**: sumar una columna, agrupar por meses, sacar un porcentaje o un total. " +
+        "Lee los datos con read_local_file y deja que el cálculo lo haga el script: sumar a ojo sobre cientos de filas sale mal, y sale mal con seguridad. " +
+        "El script corre en un directorio temporal propio, sin acceso a la red ni a las variables de entorno de la aplicación, con un límite de 30 segundos (hasta 120). " +
+        "Cuenta solo con la biblioteca estándar de Python: no des por hecho pandas ni nada que haya que instalar.",
+      inputSchema: z.object({
+        code: z.string().min(1).max(20000),
+        timeoutMs: z.number().int().min(1000).max(120000).optional(),
+      }),
+      execute: async ({ code, timeoutMs }) => {
+        if (!expert.sources.includes("python")) return deny("con Python");
+        used.add("Python");
+        try {
+          const py = await import("../python.server");
+          const run = py.runPython(code, { timeoutMs });
+          // The script itself goes to the activity trail: running code is the one action where the
+          // audit record is not a nicety but the way to answer "what did it actually run?".
+          await ee
+            .logActivity({
+              actor: "agent",
+              actor_name: "OpenExpert",
+              type: "Python · ejecución",
+              expert_id: expertId,
+              status: run.ok ? "ok" : "failed",
+              summary: `Script de Python (${run.durationMs} ms, salida ${run.exit ?? "-"})`,
+              sources: ["Python"],
+              snapshot: { script: code.slice(0, 4000) },
+            })
+            .catch(() => {});
+          return run;
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
     read_local_file: tool({
       description:
         "Lee el contenido de un archivo local autorizado (texto, PDF, Word, Excel y PowerPoint). Pasa la ruta que devuelve list_local_files o search_local_files. " +

@@ -97,22 +97,28 @@ absoluta. Las concesiones se guardan cifradas en
 
 ## 5. Herramientas de IA
 
-| Herramienta                                                                                    | Comportamiento                                                               |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `search_drive`                                                                                 | Busca **solo** dentro de los archivos concedidos                             |
-| `read_drive_file`                                                                              | Lee solo dentro de las concesiones                                           |
-| `create_drive_file`                                                                            | Crea un nuevo archivo propiedad de la app                                    |
-| `update_drive_file`                                                                            | Edita un archivo concedido o creado por la app                               |
-| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas                              |
-| `search_inside_files`                                                                          | Busca texto **dentro** del contenido, sin mayúsculas ni tildes               |
-| `read_local_file`                                                                              | Lee un archivo local; lo devuelve por ventanas de líneas y describe la tabla |
-| `create_local_file` / `update_local_file`                                                      | Escribe un archivo local, con aprobación humana                              |
-| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Lee el contenido compartido de Notion                                        |
-| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Escribe en Notion, con aprobación humana                                     |
+| Herramienta                                                                                    | Comportamiento                                                                 |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `search_drive`                                                                                 | Busca **solo** dentro de los archivos concedidos                               |
+| `read_drive_file`                                                                              | Lee solo dentro de las concesiones                                             |
+| `create_drive_file`                                                                            | Crea un nuevo archivo propiedad de la app                                      |
+| `update_drive_file`                                                                            | Edita un archivo concedido o creado por la app                                 |
+| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas                                |
+| `search_inside_files`                                                                          | Busca texto **dentro** del contenido, sin mayúsculas ni tildes                 |
+| `read_local_file`                                                                              | Lee un archivo local; lo devuelve por ventanas de líneas y describe la tabla   |
+| `create_local_file` / `update_local_file`                                                      | Escribe un archivo local, con aprobación humana                                |
+| `run_python`                                                                                   | Ejecuta un script corto de Python para **cálculos**, en un directorio temporal |
+| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Lee el contenido compartido de Notion                                          |
+| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Escribe en Notion, con aprobación humana                                       |
 
 Las lecturas de Drive requieren `gdrive` en `sources` del Experto; las locales
-requieren `local`; las de Notion, `notion`. Todas las escrituras requieren
-aprobación humana.
+requieren `local`; las de Notion, `notion`; y ejecutar código, `python`. Todas las
+escrituras requieren aprobación humana.
+
+`run_python` no es un conector, es una capacidad: está apagada hasta que se activa por Experto. El
+script corre en un directorio temporal propio, sin acceso a la red ni a las variables de entorno de
+la aplicación, con un límite de tiempo y la salida recortada. Solo cuenta con la biblioteca estándar
+de Python, y queda en el registro de actividad con el script que se ejecutó.
 
 ## 6. Notas de seguridad
 

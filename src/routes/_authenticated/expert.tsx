@@ -585,6 +585,7 @@ const SOURCE: Record<string, string> = {
   list_local_files: "Archivos locales",
   search_local_files: "Archivos locales",
   read_local_file: "Archivos locales",
+  run_python: "Python",
   create_local_file: "Archivos locales",
   update_local_file: "Archivos locales",
   search_notion: "Notion",

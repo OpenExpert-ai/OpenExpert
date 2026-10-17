@@ -102,11 +102,18 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 | `search_inside_files`                                                                          | Finds text **inside** file contents, ignoring case and accents                 |
 | `read_local_file`                                                                              | Reads a granted local file; returns it in line windows and describes the table |
 | `create_local_file` / `update_local_file`                                                      | Writes a local file, with human approval                                       |
+| `run_python`                                                                                   | Runs a short Python script for **calculations**, in a temporary directory      |
 | `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Reads the shared Notion content                                                |
 | `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Writes to Notion, with human approval                                          |
 
 Drive reads require `gdrive` in the Expert's `sources`; local reads require
-`local`; Notion reads require `notion`. All writes go through human approval.
+`local`; Notion reads require `notion`; and running code, `python`. All writes go through human
+approval.
+
+`run_python` is not a connector but a capability: it stays off until it is enabled per Expert. The
+script runs in its own temporary directory, with no network access and none of the application's
+environment, under a time limit and with capped output. It can only rely on Python's standard
+library, and the script that ran is kept in the activity trail.
 
 ## 6. Security notes
 

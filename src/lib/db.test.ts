@@ -27,7 +27,8 @@ describe("local SQLite database", () => {
     expect(experts.map((e) => e.id)).toEqual(
       expect.arrayContaining(["general", "ventas", "finanzas", "marketing"]),
     );
-    expect(orm.select().from(schema.integrations).all().length).toBe(10);
+    // Once per capability in `DEFAULT_INTEGRATIONS`: each new source is a deliberate addition here.
+    expect(orm.select().from(schema.integrations).all().length).toBe(11);
   });
 
   it("does not seed example business data", async () => {
