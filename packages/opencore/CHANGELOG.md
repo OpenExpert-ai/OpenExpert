@@ -1,5 +1,16 @@
 # @openexpert/opencore
 
+## 0.4.0
+
+### Minor Changes
+
+- a000fc1: Una clave por proveedor: dos fichas del catálogo ya no pueden declarar la misma
+  variable de clave, así que guardar la de un proveedor nunca pisa la de otro.
+  OpenCode Go pasa a tener `OPENCODE_GO_API_KEY` en vez de compartir la ranura
+  genérica. Preguntar a un proveedor qué modelos sirve pasa a ser un único camino
+  de código (`listProviderModels`), que usan la aplicación y el CLI, y cubre el
+  adaptador de Anthropic además de los endpoints compatibles.
+
 ## 0.3.1
 
 ### Patch Changes
