@@ -126,6 +126,24 @@ el modelo activo, que tiene que poder ver documentos. Se hace **solo al leer un 
 propósito**, nunca mientras una búsqueda recorre una carpeta, y la transcripción es literal
 (no un resumen), porque alimenta la búsqueda y la lectura por partes.
 
+### 5.1 Proveedores de modelo
+
+Los proveedores son **datos**: `packages/opencore/src/providers.ts` es un catálogo, y cada
+ficha lleva su adaptador (`google`, `openai-compatible`, `anthropic`), su dirección, la
+**variable de entorno** que guarda su clave, sus cabeceras y, si el servicio lo pide, la
+**cabecera que debe llevar el id de la conversación**. El identificador de proveedor se
+**deriva del catálogo**, así que añadir uno es añadir un registro, no tocar tres ficheros.
+
+Los modelos también son registros —nombre, coste, contexto, llamada a herramientas y
+razonamiento—, y un modelo sin cifras apuntadas es uno cuyas cifras **no se han
+comprobado**, no uno gratuito. La pantalla de ajustes construye su lista de opciones
+recorriendo el catálogo: ninguna está escrita a mano.
+
+**Dos proveedores están fuera a propósito.** _Copilot_, porque sus términos prestan el
+servicio desde sus propias extensiones y usarlo desde otro sitio es muy probablemente una
+infracción. Y el _portal de Nous_, cuyo acceso es una cuenta OAuth y no una clave de API.
+El motivo vive junto al catálogo, para que nadie lo reintente sin saberlo.
+
 ## 6. Notas de seguridad
 
 - Los **tokens** y la **lista de concesiones** están cifrados con **AES-256-GCM**

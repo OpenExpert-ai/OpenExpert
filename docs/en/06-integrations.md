@@ -121,6 +121,23 @@ active model, which has to be able to see documents. That happens **only on an e
 of a file**, never while a search walks a folder, and the transcription is literal rather
 than a summary, because it feeds the search and the windowed read.
 
+### 5.1 Model providers
+
+Providers are **data**: `packages/opencore/src/providers.ts` is a catalogue, and every record
+carries its adapter (`google`, `openai-compatible`, `anthropic`), its endpoint, the
+**environment variable** holding its key, its headers and — when the service asks for it —
+the **header that must carry the conversation id**. The provider identifier is **derived from
+the catalogue**, so adding one is adding a record, not editing three files.
+
+Models are records too —name, cost, context, tool calling, reasoning— and a model with no
+figures recorded is one whose figures **have not been checked**, not one that is free. The
+settings screen builds its option list by walking the catalogue: none is written by hand.
+
+**Two providers are left out on purpose.** _Copilot_, because its terms provide the service
+through its own extensions and using it elsewhere is very likely a breach. And the _Nous
+portal_, whose access is an OAuth account rather than an API key. The reason lives next to
+the catalogue so nobody retries it unaware.
+
 ## 6. Security notes
 
 - Tokens and grants are **AES-256-GCM encrypted** with a key file generated

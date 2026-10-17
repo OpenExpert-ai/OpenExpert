@@ -7,6 +7,18 @@ to read every changeset.
 
 ## Unreleased
 
+### Providers are data, not branches
+
+- The model-provider configuration was rewritten around a catalogue: adapter, endpoint,
+  key variable, headers, an optional **session header**, and models as records with cost,
+  context, tool calling and reasoning. The provider identifier is derived from the
+  catalogue, so a new provider is one record instead of three edits across a type, a
+  validation and a factory. Keys are per provider rather than a shared slot.
+- **Anthropic** joins as a provider, through its own adapter.
+- **Copilot and the Nous portal are deliberately absent**, each with its reason written
+  next to the catalogue: the first lends its service through its own extensions, the
+  second is an OAuth account rather than an API key.
+
 ### Local-first rewrite (breaking)
 
 - Removed **Supabase** (database and authentication) and **Vercel** entirely.
