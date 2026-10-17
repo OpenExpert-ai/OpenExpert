@@ -15,12 +15,13 @@ import {
   testProvider,
   updateAiSettings,
 } from "@/lib/settings.functions";
+import { PROVIDERS, type ModelProviderId } from "@openexpert/opencore/model-provider";
 
 export const Route = createFileRoute("/_authenticated/settings/ai")({
   component: AiSettings,
 });
 
-type Provider = "google" | "ollama" | "openai-compatible";
+type Provider = ModelProviderId;
 
 const SOURCE_LABEL: Record<string, string> = {
   env: "variable de entorno",
@@ -155,9 +156,11 @@ function AiSettings() {
             onChange={(e) => setProvider(e.target.value as Provider)}
             className={inputCls}
           >
-            <option value="ollama">{t("Ollama (local)")}</option>
-            <option value="google">{t("Google Gemini")}</option>
-            <option value="openai-compatible">{t("OpenAI-compatible (BYOK)")}</option>
+            {PROVIDERS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {t(p.name)}
+              </option>
+            ))}
           </select>
           <span className="block text-xs text-muted-foreground">
             {t("Origen actual:")}{" "}
@@ -209,19 +212,28 @@ function AiSettings() {
           </Field>
         )}
 
-        {provider === "openai-compatible" && (
+        {(provider === "openai-compatible" || provider === "opencode-go") && (
           <>
-            <Field
-              label={t("Base URL")}
-              hint={t("Endpoint compatible con OpenAI (con /v1 al final).")}
-            >
-              <input
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                className={inputCls}
-                placeholder="https://api.ejemplo.com/v1"
-              />
-            </Field>
+            {provider === "openai-compatible" && (
+              <Field
+                label={t("Base URL")}
+                hint={t("Endpoint compatible con OpenAI (con /v1 al final).")}
+              >
+                <input
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  className={inputCls}
+                  placeholder="https://api.ejemplo.com/v1"
+                />
+              </Field>
+            )}
+            {provider === "opencode-go" && (
+              <span className="block text-xs text-muted-foreground">
+                {t(
+                  "Usa la dirección de la suscripción. Solo este proveedor manda la cabecera de sesión que su servicio pide.",
+                )}
+              </span>
+            )}
             <Field label={t("API key")} hint={keyStatus(data.secrets.modelKey)}>
               <div className="flex gap-2">
                 <input

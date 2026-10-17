@@ -2,42 +2,33 @@
 // OpenCore — which model to use. The harness is stable; the model is configuration.
 //
 // Providers:
-//   - google:            Gemini via GOOGLE_API_KEY (free API key).
-//   - ollama:            Local model via Ollama's OpenAI-compatible endpoint.
-//   - openai-compatible: Any OpenAI-compatible endpoint with your own key.
+import {
+  BYOK_PROVIDERS,
+  defaultModelOf,
+  keySourceOf,
+  PROVIDERS,
+  providerDef,
+  type ModelProviderId,
+} from "./providers.js";
 
-export type ModelProviderId = "google" | "ollama" | "openai-compatible";
+export { BYOK_PROVIDERS, PROVIDERS, providerDef };
+export type { ModelProviderId };
 
 export type ModelSelection = {
   provider: ModelProviderId;
   modelId: string;
-  /** Where the key comes from, without exposing the value. */
-  keySource: "GOOGLE_API_KEY" | "OPENEXPERT_MODEL_KEY" | "none (local)";
+  /** Where the key comes from, read off the catalogue, without exposing it. */
+  keySource: string;
 };
 
 export function selectModel(env: NodeJS.ProcessEnv = process.env): ModelSelection {
   const raw = env["OPENEXPERT_MODEL_PROVIDER"];
-  const provider: ModelProviderId =
-    raw === "ollama" || raw === "openai-compatible" ? raw : "google";
-
-  if (provider === "ollama") {
-    return {
-      provider,
-      modelId: env["OPENEXPERT_MODEL_ID"] || "llama3.1",
-      keySource: "none (local)",
-    };
-  }
-  if (provider === "openai-compatible") {
-    return {
-      provider,
-      modelId: env["OPENEXPERT_MODEL_ID"] || "gpt-4o-mini",
-      keySource: "OPENEXPERT_MODEL_KEY",
-    };
-  }
+  const known = PROVIDERS.some((p) => p.id === raw);
+  const provider = (known ? raw : "google") as ModelProviderId;
   return {
-    provider: "google",
-    modelId: env["OPENEXPERT_MODEL_ID"] || "gemini-2.5-flash",
-    keySource: "GOOGLE_API_KEY",
+    provider,
+    modelId: env["OPENEXPERT_MODEL_ID"] || defaultModelOf(provider),
+    keySource: keySourceOf(provider),
   };
 }
 
