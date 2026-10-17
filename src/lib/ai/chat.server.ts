@@ -174,6 +174,7 @@ export async function handleChat(request: Request) {
 
   const hasDrive = expert.sources.includes("gdrive");
   const hasLocal = expert.sources.includes("local");
+  const hasPython = expert.sources.includes("python");
   const hasNotion = expert.sources.includes("notion");
   const system = `Eres OpenExpert, el sistema operativo de IA de la empresa del usuario. Respondes SIEMPRE en español, con tono directo, claro y útil. Usa markdown (listas, negritas, tablas pequeñas) y cifras en formato español (1.234 €).
 Contexto activo: Experto "${expert.name}" — ${expert.description}. Fuentes: ${expert.sources.join(", ")}.
@@ -197,7 +198,13 @@ ${
 - create_local_file / update_local_file: crean o reescriben un archivo; requieren aprobación humana.
 Trabaja SIEMPRE dentro de esas carpetas autorizadas; nunca propongas rutas fuera de ellas.`
     : `Este Experto no tiene acceso a archivos locales: si lo piden, sugiere activarlo en el Experto.`
-}
+}${
+    hasPython
+      ? `PYTHON DISPONIBLE (ejecutas código para calcular):
+- run_python: escribe un script corto y devuelve lo que imprime; corre en un directorio temporal, sin red.
+REGLA DE LAS CUENTAS: si la respuesta depende de una cuenta —un total, un porcentaje, agrupar por meses, comparar dos columnas— hazla con un script y no a ojo. Con pocas filas acertarás igual; con cientos te equivocarás y no te darás cuenta, y un número mal en un panel de negocio es peor que un error. Lee los datos con read_local_file y deja que el script sume.`
+      : `Este Experto no puede ejecutar código: si la pregunta pide una cuenta sobre muchas filas, dilo antes de dar una cifra aproximada.`
+  }
 ${
   hasNotion
     ? `NOTION CONECTADO (solo las páginas y bases que el usuario compartió):

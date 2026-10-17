@@ -23,6 +23,11 @@ to read every changeset.
 
 ### Added
 
+- **Scanned PDFs can be read with a model.** When a PDF has no text layer, the active
+  provider transcribes it — literally, not as a summary, because the text feeds the content
+  search and the windowed read. It is a **cloud call carrying the document**, so it ships
+  **off** and happens only on an explicit read, never while a search walks a folder.
+
 - **`run_python`: calculations done by code, not by eye.** A short Python script, run in a private
   temporary directory with a scrubbed environment, a hard timeout and capped output, and kept in the
   activity trail with the script that ran. It is a **capability**, off until enabled per Expert,

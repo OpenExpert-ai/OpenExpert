@@ -416,17 +416,31 @@ export function createChatTools(ctx: ChatToolsContext) {
         path: z.string(),
         offset: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).max(20000).optional(),
+        onVision: z
+          .boolean()
+          .optional()
+          .describe("Marcar sólo cuando haga falta leer un PDF escaneado: mándalo al modelo."),
       }),
-      execute: async ({ path, offset, limit }) => {
+      execute: async ({ path, offset, limit, onVision }) => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
           const local = await import("../opencore/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
+          // The setting is read here, in the tool layer, so the filesystem module never has to know
+          // about configuration: a read that wants vision says so.
+          const vision = onVision
+            ? (await import("../config.server")).chatSettings().visionPdf
+            : false;
+          const window =
+            offset === undefined && limit === undefined
+              ? vision
+                ? { vision }
+                : null
+              : { offset, limit, ...(vision ? { vision } : {}) };
           // A plain read keeps calling with two arguments: the window is an addition, not a
           // different way of reading.
-          const window = offset === undefined && limit === undefined ? null : { offset, limit };
           return window
             ? await fs.readLocalFile(path, roots, window)
             : await fs.readLocalFile(path, roots);

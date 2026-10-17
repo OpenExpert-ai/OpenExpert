@@ -115,6 +115,12 @@ script runs in its own temporary directory, with no network access and none of t
 environment, under a time limit and with capped output. It can only rely on Python's standard
 library, and the script that ran is kept in the activity trail.
 
+A **scanned PDF** has no text layer: it is a photograph of a page. When the setting "Read
+scanned PDFs with the model" is on —it ships **off**—, the document is transcribed by the
+active model, which has to be able to see documents. That happens **only on an explicit read
+of a file**, never while a search walks a folder, and the transcription is literal rather
+than a summary, because it feeds the search and the windowed read.
+
 ## 6. Security notes
 
 - Tokens and grants are **AES-256-GCM encrypted** with a key file generated

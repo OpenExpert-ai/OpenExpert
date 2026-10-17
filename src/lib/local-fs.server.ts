@@ -263,6 +263,7 @@ function csvStructure(text: string, name: string, delimiter: string): SheetInfo 
 
 async function extractText(
   abs: string,
+  opts: { vision?: boolean } = {},
 ): Promise<{ text: string | null; note?: string; sheets?: SheetInfo[] }> {
   const size = statSync(abs).size;
   if (size > MAX_READ_BYTES)
@@ -277,7 +278,18 @@ async function extractText(
     const text = String(out.text ?? "")
       .replace(/\s+\n/g, "\n")
       .trim();
-    if (!text) return { text: null, note: "PDF escaneado sin texto seleccionable." };
+    if (!text) {
+      // A scanned PDF has no text layer: the pages are a photograph. Reading it with a model is a
+      // cloud call carrying the document, so it happens **only** for an explicit read — never while
+      // a bulk search walks a folder — and only when the owner turned it on.
+      if (opts.vision) {
+        const vision = await import("./vision-pdf.server");
+        const seen = await vision.pdfTextWithVision(new Uint8Array(buf));
+        if (seen.text) return { text: seen.text };
+        if (seen.note) return { text: null, note: seen.note };
+      }
+      return { text: null, note: "PDF escaneado sin texto seleccionable." };
+    }
     return { text };
   }
   if (!TEXT_EXT.has(ext) && buf.subarray(0, 8000).includes(0))
@@ -300,7 +312,12 @@ const DEFAULT_READ_LINES = 2_000;
  * A read window. The properties admit an explicit `undefined` because the tool layer forwards its
  * optional arguments as-is, and this project type-checks with `exactOptionalPropertyTypes`.
  */
-export type ReadOptions = { offset?: number | undefined; limit?: number | undefined };
+export type ReadOptions = {
+  offset?: number | undefined;
+  limit?: number | undefined;
+  /** Allow a scanned PDF to be read with a model. The caller decides: it is a cloud call. */
+  vision?: boolean | undefined;
+};
 
 export async function readLocalFile(
   target: string,
@@ -310,7 +327,7 @@ export async function readLocalFile(
   const abs = resolveWithinRoots(target, roots);
   const st = statSync(abs);
   if (!st.isFile()) throw new Error("Eso no es un archivo.");
-  const { text, note, sheets } = await extractText(abs);
+  const { text, note, sheets } = await extractText(abs, { vision: opts.vision === true });
   const base: LocalRead = {
     path: abs,
     name: basename(abs),

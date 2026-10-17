@@ -23,6 +23,7 @@ function ChatSettings() {
 
   const [maxSteps, setMaxSteps] = useState(50);
   const [injectionGuard, setInjectionGuard] = useState(true);
+  const [visionPdf, setVisionPdf] = useState(false);
   const [extraPatterns, setExtraPatterns] = useState("");
   const [retentionDays, setRetentionDays] = useState(30);
   const [busy, setBusy] = useState(false);
@@ -33,6 +34,7 @@ function ChatSettings() {
     loaded.current = true;
     setMaxSteps(data.maxSteps);
     setInjectionGuard(data.injectionGuard);
+    setVisionPdf(data.visionPdf ?? false);
     setExtraPatterns(data.injectionExtraPatterns.join("\n"));
     setRetentionDays(data.retentionDays);
   }, [data]);
@@ -52,6 +54,7 @@ function ChatSettings() {
         data: {
           maxSteps,
           injectionGuard,
+          visionPdf,
           injectionExtraPatterns: extraPatterns
             .split("\n")
             .map((p) => p.trim())
@@ -76,6 +79,25 @@ function ChatSettings() {
         title={t("Seguridad del chat")}
         desc={t("La puerta de inyección bloquea intentos de evasión antes de llamar al modelo.")}
       >
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={visionPdf}
+            onChange={(e) => setVisionPdf(e.target.checked)}
+            className="mt-1 h-4 w-4 accent-[var(--primary)]"
+          />
+          <span>
+            <span className="block text-sm font-medium">
+              {t("Leer PDF escaneados con el modelo")}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              {t(
+                "Cuando un PDF no tiene texto (es la foto de una página), se transcribe con el modelo activo. Eso manda el documento al proveedor: actívalo solo si eso te parece bien. Necesita un proveedor que vea documentos.",
+              )}
+            </span>
+          </span>
+        </label>
+
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
