@@ -234,7 +234,7 @@ Formato (adáptalo a la pregunta):
   if (keyErr) return json(500, keyErr);
   let model;
   try {
-    model = getLanguageModel();
+    model = getLanguageModel(conversationId);
   } catch (e) {
     return json(500, (e as Error).message);
   }
