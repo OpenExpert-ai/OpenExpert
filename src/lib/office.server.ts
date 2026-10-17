@@ -17,6 +17,13 @@ const nodeRequire = createRequire(import.meta.url);
 
 export const OFFICE_EXT = new Set([".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp"]);
 
+/**
+ * Shape of a spreadsheet, so a caller can describe a table to the model instead
+ * of handing it a wall of text. `columns` comes from the first non-empty row,
+ * which is what a CSV export calls the header.
+ */
+export type SheetInfo = { name: string; rows: number; columns: string[] };
+
 const FILE_TYPE: Record<string, "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp"> = {
   ".docx": "docx",
   ".xlsx": "xlsx",
@@ -36,20 +43,30 @@ export const OFFICE_MIME: Record<string, string> = {
   "application/vnd.oasis.opendocument.presentation": ".odp",
 };
 
-export type OfficeText = { text: string | null; note?: string };
+export type OfficeText = {
+  text: string | null;
+  note?: string;
+  /**
+   * For spreadsheets: what the table actually is (sheets, data rows, header). Without this the
+   * model receives a wall of comma-separated text and has to guess where the rows end, which is
+   * how you get a plausible wrong total instead of an error.
+   */
+  sheets?: SheetInfo[];
+};
 
 export async function extractOfficeText(buf: Uint8Array, ext: string): Promise<OfficeText> {
   const fileType = FILE_TYPE[ext.toLowerCase()];
   if (!fileType) return { text: null, note: "Formato Office no soportado." };
   try {
     let text: string;
+    let sheets: SheetInfo[] | undefined;
     if (fileType === "docx") text = await docxText(buf);
-    else if (fileType === "xlsx") text = await xlsxText(buf);
-    else if (fileType === "pptx") text = pptxText(buf);
-    else text = odfText(buf);
+    else if (fileType === "xlsx") ({ text, sheets } = await xlsxText(buf));
+    else if (fileType === "pptx") text = await pptxText(buf);
+    else text = await odfText(buf);
     const trimmed = text.trim();
     if (!trimmed) return { text: null, note: "El documento no contiene texto extraíble." };
-    return { text: trimmed };
+    return { text: trimmed, ...(sheets?.length ? { sheets } : {}) };
   } catch (e) {
     return { text: null, note: `No se pudo leer el documento (${(e as Error).message}).` };
   }
@@ -82,21 +99,32 @@ function cellText(v: unknown): string {
   return String(v);
 }
 
-async function xlsxText(buf: Uint8Array): Promise<string> {
+async function xlsxText(buf: Uint8Array): Promise<{ text: string; sheets: SheetInfo[] }> {
   const ExcelJS = nodeRequire("exceljs") as typeof import("exceljs");
   const wb = new ExcelJS.Workbook();
   // exceljs bundles an older Buffer type; cast to its exact parameter type.
   await wb.xlsx.load(Buffer.from(buf) as unknown as Parameters<typeof wb.xlsx.load>[0]);
   const lines: string[] = [];
+  const sheets: SheetInfo[] = [];
   wb.eachSheet((ws) => {
-    lines.push(`# ${ws.name}`);
+    const sheetLines: string[] = [`# ${ws.name}`];
+    let header: string[] | null = null;
     ws.eachRow({ includeEmpty: false }, (row) => {
       const cells: string[] = [];
       row.eachCell({ includeEmpty: true }, (cell) => cells.push(csvCell(cellText(cell.value))));
-      lines.push(cells.join(","));
+      if (!header) header = cells;
+      sheetLines.push(cells.join(","));
+    });
+    lines.push(...sheetLines);
+    // The header row is not a data row. Counting it as one would inflate every table by one,
+    // and the model would report a row count that does not match what the user sees in Excel.
+    sheets.push({
+      name: ws.name,
+      rows: Math.max(0, sheetLines.length - 1),
+      columns: header ?? [],
     });
   });
-  return lines.join("\n");
+  return { text: lines.join("\n"), sheets };
 }
 
 /* --------------------------- zip-based (pptx/odf) ----------------------- */

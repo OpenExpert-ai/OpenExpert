@@ -23,6 +23,14 @@ to read every changeset.
 
 ### Added
 
+- **Reading local files, upgraded**: `read_local_file` now returns the file in
+  **windows of lines** (`offset`/`limit`, with `hasMore`/`nextOffset`) instead of one
+  slab that silently dropped everything past the character cap. A new
+  **`search_inside_files`** tool finds text _inside_ the contents — ignoring case and
+  accents, and reporting the line — which the name-based search never could.
+  Spreadsheets and CSV report **what the table is** (sheets, data rows, header
+  columns), and `list_local_files` returns the first 200 files plus the total, so a
+  big folder no longer floods the context.
 - **`install.sh`**: one-command Linux installation — checks the system
   dependencies, builds the app and the desktop window, puts `openexpert` on the
   PATH and publishes the desktop entry that rofi, wofi, fuzzel, GNOME and KDE

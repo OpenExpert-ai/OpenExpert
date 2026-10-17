@@ -97,17 +97,18 @@ absoluta. Las concesiones se guardan cifradas en
 
 ## 5. Herramientas de IA
 
-| Herramienta                                                                                    | Comportamiento                                   |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `search_drive`                                                                                 | Busca **solo** dentro de los archivos concedidos |
-| `read_drive_file`                                                                              | Lee solo dentro de las concesiones               |
-| `create_drive_file`                                                                            | Crea un nuevo archivo propiedad de la app        |
-| `update_drive_file`                                                                            | Edita un archivo concedido o creado por la app   |
-| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas  |
-| `read_local_file`                                                                              | Lee un archivo local autorizado                  |
-| `create_local_file` / `update_local_file`                                                      | Escribe un archivo local, con aprobación humana  |
-| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Lee el contenido compartido de Notion            |
-| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Escribe en Notion, con aprobación humana         |
+| Herramienta                                                                                    | Comportamiento                                                               |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `search_drive`                                                                                 | Busca **solo** dentro de los archivos concedidos                             |
+| `read_drive_file`                                                                              | Lee solo dentro de las concesiones                                           |
+| `create_drive_file`                                                                            | Crea un nuevo archivo propiedad de la app                                    |
+| `update_drive_file`                                                                            | Edita un archivo concedido o creado por la app                               |
+| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas                              |
+| `search_inside_files`                                                                          | Busca texto **dentro** del contenido, sin mayúsculas ni tildes               |
+| `read_local_file`                                                                              | Lee un archivo local; lo devuelve por ventanas de líneas y describe la tabla |
+| `create_local_file` / `update_local_file`                                                      | Escribe un archivo local, con aprobación humana                              |
+| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Lee el contenido compartido de Notion                                        |
+| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Escribe en Notion, con aprobación humana                                     |
 
 Las lecturas de Drive requieren `gdrive` en `sources` del Experto; las locales
 requieren `local`; las de Notion, `notion`. Todas las escrituras requieren

@@ -46,6 +46,7 @@ reales.
 | Herramienta                               | Requiere                                 |
 | ----------------------------------------- | ---------------------------------------- |
 | `list_local_files` / `search_local_files` | `local` en `sources`                     |
+| `search_inside_files`                     | `local` en `sources`                     |
 | `read_local_file`                         | `local` en `sources`                     |
 | `create_local_file` / `update_local_file` | `local` en `sources` + aprobación humana |
 

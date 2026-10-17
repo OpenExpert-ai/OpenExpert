@@ -118,3 +118,66 @@ describe("XDG trash", () => {
     expect(names).toContain("keep.txt");
   });
 });
+
+describe("windowed reads", () => {
+  it("returns the file in lines and says whether there is more", async () => {
+    const fs = await import("./local-fs.server");
+    const big = join(root, "big.txt");
+    writeFileSync(big, Array.from({ length: 250 }, (_, i) => `line ${i + 1}`).join("\n"));
+
+    const first = await fs.readLocalFile(big, [root], { limit: 100 });
+    expect(first.totalLines).toBe(250);
+    expect(first.content?.split("\n")).toHaveLength(100);
+    expect(first.content?.startsWith("line 1\n")).toBe(true);
+    expect(first.hasMore).toBe(true);
+    expect(first.nextOffset).toBe(101);
+
+    const next = await fs.readLocalFile(big, [root], {
+      offset: first.nextOffset,
+      limit: 100,
+    });
+    expect(next.content?.startsWith("line 101")).toBe(true);
+
+    // The tail used to be out of reach entirely: past the character cap, nothing said so.
+    const last = await fs.readLocalFile(big, [root], { offset: 201, limit: 100 });
+    expect(last.hasMore).toBeUndefined();
+    expect(last.content?.trim().endsWith("line 250")).toBe(true);
+  });
+
+  it("describes a CSV as a table, without counting the header as a data row", async () => {
+    const fs = await import("./local-fs.server");
+    const csv = join(root, "invoices.csv");
+    writeFileSync(csv, "date,client,total\n2026-01-01,ACME,100\n2026-02-01,ACME,250\n");
+    const r = await fs.readLocalFile(csv, [root]);
+    expect(r.sheets?.[0]?.columns).toEqual(["date", "client", "total"]);
+    expect(r.sheets?.[0]?.rows).toBe(2);
+  });
+});
+
+describe("searchLocalContent", () => {
+  it("finds text inside files, ignoring case and accents", async () => {
+    const fs = await import("./local-fs.server");
+    writeFileSync(join(root, "clients.md"), "first line\nthe client is ACME, S.L.\n");
+    const lower = await fs.searchLocalContent([root], "acme");
+    expect(lower.hits.some((h) => h.name === "clients.md" && h.line === 2)).toBe(true);
+
+    writeFileSync(join(root, "annual.md"), "FACTURACIÓN anual\n");
+    const accented = await fs.searchLocalContent([root], "facturacion");
+    expect(accented.hits.some((h) => h.name === "annual.md")).toBe(true);
+  });
+
+  it("stays inside the granted roots and bounds the work", async () => {
+    const fs = await import("./local-fs.server");
+    const outsideHit = await fs.searchLocalContent([root], "secreto");
+    expect(outsideHit.hits).toHaveLength(0);
+
+    const empty = await fs.searchLocalContent([root], "   ");
+    expect(empty.hits).toHaveLength(0);
+    expect(empty.note).toBeDefined();
+
+    writeFileSync(join(root, "many.txt"), Array.from({ length: 20 }, () => "needle").join("\n"));
+    const capped = await fs.searchLocalContent([root], "needle", { maxHits: 3 });
+    expect(capped.hits).toHaveLength(3);
+    expect(capped.hasMore).toBe(true);
+  });
+});
