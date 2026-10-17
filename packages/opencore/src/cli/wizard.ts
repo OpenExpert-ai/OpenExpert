@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Interactive setup wizard: pick a model provider, write config + secrets.
+//
+// The menu is the catalogue. Each record says whether it needs a key, where it
+// is written, whether its endpoint is the owner's to provide and which models it
+// knows, so a new provider appears here without touching this file.
 
 import * as p from "@clack/prompts";
+import { DEFAULT_OLLAMA_URL, defaultModelOf, providerDef, PROVIDERS } from "../providers.js";
+import { listProviderModels } from "../provider-models.js";
 import {
-  DEFAULT_OLLAMA_URL,
-  detectOllama,
+  DEFAULT_DATA_DIR,
   readConfig,
   writeConfig,
   writeSecrets,
@@ -34,12 +39,12 @@ export async function runWizard(
   const nonInteractive = opts.assumeYes || !process.stdin.isTTY;
 
   if (nonInteractive) {
-    const ollama = await detectOllama();
+    const local = await listProviderModels("ollama");
     const config: FileConfig = {
       modelProvider: "ollama",
-      modelId: ollama.models[0] ?? "llama3.1",
+      modelId: local.models[0] ?? defaultModelOf("ollama"),
       ollamaBaseUrl: DEFAULT_OLLAMA_URL,
-      dataDir: "~/.openexpert",
+      dataDir: DEFAULT_DATA_DIR,
     };
     writeConfig(config, cwd);
     return { config, secrets: {}, provider: "ollama", modelId: config.modelId!, started: false };
@@ -49,28 +54,29 @@ export async function runWizard(
 
   const spin = p.spinner();
   spin.start("Buscando Ollama local…");
-  const ollama = await detectOllama();
+  const local = await listProviderModels("ollama");
   spin.stop(
-    ollama.up
-      ? `Ollama detectado (${ollama.models.length} modelo(s))`
-      : "No se ha detectado Ollama",
+    local.ok ? `Ollama detectado (${local.models.length} modelo(s))` : "No se ha detectado Ollama",
   );
 
   const choice = await p.select({
     message: "¿Qué modelo quieres usar?",
     options: [
-      ...(ollama.up
+      ...(local.ok
         ? [
             {
-              value: "ollama" as const,
-              label: "Modelo local (Ollama)",
+              value: "ollama" as Provider,
+              label: providerDef("ollama")?.name ?? "Ollama",
               hint: "sin claves, datos en tu equipo",
             },
           ]
         : []),
-      { value: "google" as const, label: "Google Gemini (clave gratuita)", hint: "AI Studio" },
-      { value: "openai-compatible" as const, label: "Otro endpoint compatible", hint: "BYOK" },
-      ...(!ollama.up
+      ...PROVIDERS.filter((prov) => prov.id !== "ollama").map((prov) => ({
+        value: prov.id,
+        label: prov.name,
+        hint: prov.note,
+      })),
+      ...(!local.ok
         ? [{ value: "install-ollama" as const, label: "Instalar Ollama", hint: "te muestro cómo" }]
         : []),
     ],
@@ -89,49 +95,50 @@ export async function runWizard(
     process.exit(0);
   }
 
-  const config: FileConfig = { dataDir: "~/.openexpert" };
+  const def = providerDef(choice);
+  if (!def) bail();
+
+  const config: FileConfig = { dataDir: DEFAULT_DATA_DIR, modelProvider: choice };
   const secrets: Secrets = {};
-  let modelId = "llama3.1";
 
   if (choice === "ollama") {
-    const models = ollama.models.length ? ollama.models : ["llama3.1"];
+    const models = local.models.length ? local.models : [defaultModelOf("ollama")];
     const picked = await p.select({
       message: "Modelo de Ollama",
       options: models.map((m) => ({ value: m, label: m })),
     });
     if (p.isCancel(picked)) bail();
-    modelId = String(picked);
-    config.modelProvider = "ollama";
-    config.modelId = modelId;
+    config.modelId = String(picked);
     config.ollamaBaseUrl = DEFAULT_OLLAMA_URL;
-  } else if (choice === "google") {
-    const apiKey = await p.password({ message: "GOOGLE_API_KEY (AI Studio)" });
-    if (p.isCancel(apiKey)) bail();
-    const id = await p.text({ message: "Modelo", initialValue: "gemini-2.5-flash" });
+  } else {
+    // The owner's endpoint, when the record says the endpoint is theirs.
+    if (def.baseUrlEnv && !def.baseUrl) {
+      const baseURL = await p.text({
+        message: `${def.baseUrlEnv} — ${def.baseUrlHint ?? "dirección del servicio"}`,
+        initialValue: def.baseUrlDefault ?? "",
+      });
+      if (p.isCancel(baseURL)) bail();
+      if (String(baseURL)) secrets[def.baseUrlEnv] = String(baseURL);
+    }
+    // Its own key, under its own variable: never shared with another provider.
+    if (def.env) {
+      const apiKey = await p.password({
+        message: `${def.env}${def.keyUrl ? ` (${def.keyUrl})` : ""}`,
+      });
+      if (p.isCancel(apiKey)) bail();
+      if (String(apiKey)) secrets[def.env] = String(apiKey);
+    }
+    const suggested = defaultModelOf(choice);
+    const id = await p.text({ message: "Modelo", initialValue: suggested });
     if (p.isCancel(id)) bail();
-    modelId = String(id) || "gemini-2.5-flash";
-    config.modelProvider = "google";
-    config.modelId = modelId;
-    secrets.GOOGLE_API_KEY = String(apiKey);
-  } else if (choice === "openai-compatible") {
-    const baseURL = await p.text({ message: "Base URL (…/v1)", initialValue: "" });
-    if (p.isCancel(baseURL)) bail();
-    const apiKey = await p.password({ message: "API key" });
-    if (p.isCancel(apiKey)) bail();
-    const id = await p.text({ message: "Modelo", initialValue: "gpt-4o-mini" });
-    if (p.isCancel(id)) bail();
-    modelId = String(id) || "gpt-4o-mini";
-    config.modelProvider = "openai-compatible";
-    config.modelId = modelId;
-    secrets.OPENEXPERT_BASE_URL = String(baseURL);
-    secrets.OPENEXPERT_MODEL_KEY = String(apiKey);
+    config.modelId = String(id) || suggested;
   }
 
   writeConfig({ ...existing, ...config }, cwd);
-  if (Object.keys(secrets).length) writeSecrets({ ...secrets }, cwd);
+  if (Object.keys(secrets).length) writeSecrets(secrets, cwd);
 
   p.outro(
-    `Configuración guardada en openexpert.json (modelo: ${config.modelProvider}:${modelId}).`,
+    `Configuración guardada en openexpert.json (modelo: ${config.modelProvider}:${config.modelId}).`,
   );
 
   const go = await p.confirm({ message: "¿Arrancar ahora?", initialValue: true });
@@ -140,8 +147,8 @@ export async function runWizard(
   return {
     config: { ...existing, ...config },
     secrets,
-    provider: config.modelProvider as Provider,
-    modelId,
+    provider: choice,
+    modelId: config.modelId ?? "",
     started: Boolean(go),
   };
 }

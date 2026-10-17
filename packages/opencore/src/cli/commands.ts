@@ -3,14 +3,14 @@
 
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ollamaApiBaseUrl } from "../model-provider.js";
+import { DEFAULT_OLLAMA_URL, endpointOf, isProviderId, providerDef } from "../providers.js";
+import { providerKeyMessage } from "../model-provider.js";
+import { listProviderModels } from "../provider-models.js";
 import {
-  DEFAULT_OLLAMA_URL,
+  DEFAULT_DATA_DIR,
   appCacheDir,
-  detectOllama,
   ensureStandaloneApp,
   findRepoRoot,
-  httpGetJson,
   localServerEnv,
   packageVersion,
   readConfig,
@@ -32,34 +32,43 @@ export function cmdVersion(): number {
 // directory they were pointed at, while everything around them honoured it.
 function configuredProvider(cwd = process.cwd()): Provider {
   const raw = process.env["OPENEXPERT_MODEL_PROVIDER"] || readConfig(cwd).modelProvider;
-  if (raw === "ollama" || raw === "openai-compatible") return raw;
-  return "google";
+  // The catalogue is the list: an id no record claims is not a provider.
+  return isProviderId(raw) ? raw : "google";
+}
+
+/** The environment the model layer will see: real variables win over secrets. */
+function effectiveEnv(cwd = process.cwd()): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...readSecrets(cwd), ...process.env };
+  // The CLI has no bridge from openexpert.json into the environment (the server
+  // builds its own), so the endpoint written in the file has to be honoured here
+  // or `models` would talk to the default port while the app talks elsewhere.
+  const fromFile = readConfig(cwd).ollamaBaseUrl;
+  if (fromFile && !process.env["OLLAMA_BASE_URL"]) env["OLLAMA_BASE_URL"] = fromFile;
+  return env;
 }
 
 export function cmdDoctor(cwd = process.cwd()): number {
   const provider = configuredProvider(cwd);
+  const def = providerDef(provider);
   const dataDir = resolvedDataDir(cwd);
   const secrets = readSecrets(cwd);
+  const env = effectiveEnv(cwd);
 
   console.log("OpenExpert doctor");
-  console.log(`  provider: ${provider}`);
+  console.log(`  provider: ${provider}${def ? ` (${def.name})` : ""}`);
   console.log(`  data dir: ${dataDir}`);
 
   const problems: string[] = [];
 
-  if (provider === "google" && !process.env["GOOGLE_API_KEY"] && !secrets.GOOGLE_API_KEY) {
-    problems.push("Falta GOOGLE_API_KEY. Ejecuta `openexpert init` o usa Ollama.");
-  }
-  if (provider === "openai-compatible") {
-    if (!process.env["OPENEXPERT_MODEL_KEY"] && !secrets.OPENEXPERT_MODEL_KEY) {
-      problems.push("Falta OPENEXPERT_MODEL_KEY.");
-    }
-    if (!process.env["OPENEXPERT_BASE_URL"] && !secrets.OPENEXPERT_BASE_URL) {
-      problems.push("Falta OPENEXPERT_BASE_URL.");
-    }
-  }
-  if (provider === "ollama") {
-    console.log(`  ollama:   ${process.env["OLLAMA_BASE_URL"] || DEFAULT_OLLAMA_URL}`);
+  // One check for every provider: the catalogue says which variable holds its
+  // key, so a record added tomorrow is covered without touching this function.
+  const missing = def ? providerKeyMessage(def, env) : null;
+  if (missing) problems.push(`${missing} Ejecuta \`openexpert init\` o escríbela en secrets.json.`);
+
+  if (def?.baseUrlEnv && !endpointOf(provider, env)) {
+    problems.push(`Falta ${def.baseUrlEnv}.`);
+  } else if (def?.baseUrlEnv) {
+    console.log(`  endpoint: ${endpointOf(provider, env)}`);
   }
   if (!process.env["GOOGLE_CLIENT_ID"] && !secrets.GOOGLE_CLIENT_ID) {
     console.log("  note:     sin Google OAuth el chat funciona; Drive queda desconectado.");
@@ -84,13 +93,13 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
   mkdirSync(dataDir, { recursive: true });
 
   if (!existsSync(join(cwd, "openexpert.json"))) {
-    const ollama = await detectOllama();
+    const local = await listProviderModels("ollama", { env: effectiveEnv(cwd) });
     writeConfig(
       {
         modelProvider: "ollama",
-        modelId: ollama.models[0] ?? "llama3.1",
+        modelId: local.models[0] ?? "llama3.1",
         ollamaBaseUrl: DEFAULT_OLLAMA_URL,
-        dataDir: "~/.openexpert",
+        dataDir: DEFAULT_DATA_DIR,
       },
       cwd,
     );
@@ -114,46 +123,29 @@ export async function cmdFix(cwd = process.cwd()): Promise<number> {
 
 export async function cmdModels(cwd = process.cwd()): Promise<number> {
   const provider = configuredProvider(cwd);
-  const secrets = readSecrets(cwd);
+  const def = providerDef(provider);
   const cfg = readConfig(cwd);
+  const env = effectiveEnv(cwd);
 
-  if (provider === "ollama") {
-    const base = ollamaApiBaseUrl(
-      process.env["OLLAMA_BASE_URL"] || cfg.ollamaBaseUrl || DEFAULT_OLLAMA_URL,
-    );
-    const { up, models } = await detectOllama(base);
-    if (!up) {
-      console.log(`No se puede contactar con Ollama en ${base}.`);
+  // Any provider the catalogue knows is asked the same way; the record says
+  // where its endpoint and its key live.
+  const listed = await listProviderModels(provider, { env });
+
+  if (!listed.ok) {
+    console.log(listed.error ?? `No se pudieron listar los modelos de ${provider}.`);
+    if (provider === "ollama") {
       console.log("Instálalo con: curl -fsSL https://ollama.com/install.sh | sh");
-      return 1;
     }
-    console.log(`Modelos en Ollama (${base}):`);
-    for (const m of models) console.log(`  ${m === cfg.modelId ? "*" : " "} ${m}`);
-    if (!models.length) console.log("  (ninguno; prueba `ollama pull llama3.1`)");
-    return 0;
+    if (listed.models.length) {
+      console.log(`Modelos conocidos para ${def?.name ?? provider}:`);
+      for (const m of listed.models) console.log(`  ${m === cfg.modelId ? "*" : " "} ${m}`);
+    }
+    return 1;
   }
 
-  if (provider === "openai-compatible") {
-    const base = process.env["OPENEXPERT_BASE_URL"] || secrets.OPENEXPERT_BASE_URL;
-    const key = process.env["OPENEXPERT_MODEL_KEY"] || secrets.OPENEXPERT_MODEL_KEY;
-    if (!base || !key) {
-      console.log("Configura OPENEXPERT_BASE_URL y OPENEXPERT_MODEL_KEY (openexpert init).");
-      return 1;
-    }
-    const data = await httpGetJson<{ data?: { id: string }[] }>(
-      `${base.replace(/\/+$/, "")}/models`,
-      { headers: { Authorization: `Bearer ${key}` } },
-    );
-    if (!data) {
-      console.log("No se pudo listar modelos del endpoint.");
-      return 1;
-    }
-    console.log("Modelos disponibles:");
-    for (const m of data.data ?? []) console.log(`  ${m.id === cfg.modelId ? "*" : " "} ${m.id}`);
-    return 0;
-  }
-
-  console.log("Proveedor google: usa `gemini-2.5-flash` o consulta Google AI Studio.");
+  console.log(`Modelos en ${def?.name ?? provider}:`);
+  for (const m of listed.models) console.log(`  ${m === cfg.modelId ? "*" : " "} ${m}`);
+  if (!listed.models.length) console.log("  (ninguno; prueba `ollama pull llama3.1`)");
   return 0;
 }
 

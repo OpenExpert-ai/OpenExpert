@@ -9,8 +9,12 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ollamaApiBaseUrl } from "../model-provider.js";
+import { DEFAULT_OLLAMA_URL, type ModelProviderId } from "../providers.js";
 
-export type Provider = "google" | "ollama" | "openai-compatible";
+export { DEFAULT_OLLAMA_URL };
+
+/** Providers come from the catalogue: this is the same union the app uses. */
+export type Provider = ModelProviderId;
 
 export type FileConfig = {
   modelProvider?: Provider;
@@ -19,15 +23,13 @@ export type FileConfig = {
   dataDir?: string;
 };
 
-export type Secrets = {
-  GOOGLE_API_KEY?: string;
-  GOOGLE_CLIENT_ID?: string;
-  GOOGLE_CLIENT_SECRET?: string;
-  OPENEXPERT_MODEL_KEY?: string;
-  OPENEXPERT_BASE_URL?: string;
-};
+/**
+ * Secrets are stored by environment-variable name. Which names hold a provider
+ * key is the catalogue's business (`PROVIDER_KEY_VARS`), so adding a provider
+ * needs no change here.
+ */
+export type Secrets = Record<string, string | undefined>;
 
-export const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 export const DEFAULT_DATA_DIR = "~/.openexpert";
 
 export function expandHome(p: string): string {

@@ -167,9 +167,29 @@ describe("runWizard (interactive)", () => {
     );
     vi.mocked(p.select).mockResolvedValueOnce(Symbol("cancel") as never);
     vi.mocked(p.isCancel).mockReturnValue(true);
-    await runWizard({ cwd });
+    // Un `exit` de verdad no vuelve: simulándolo se comprueba que nada sigue
+    // ejecutándose con una elección que no existe.
+    exitMock.mockImplementation(((code: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    await expect(runWizard({ cwd })).rejects.toThrow("exit:1");
     expect(p.cancel).toHaveBeenCalled();
-    expect(exitMock).toHaveBeenCalledWith(1);
+  });
+
+  it("configura Anthropic con su propia clave, sin pedir dirección", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Promise.reject(new Error("offline"))),
+    );
+    vi.mocked(p.select).mockResolvedValueOnce("anthropic");
+    vi.mocked(p.password).mockResolvedValue("sk-ant");
+    vi.mocked(p.text).mockResolvedValue("claude-sonnet-4-5");
+    vi.mocked(p.confirm).mockResolvedValue(false);
+    const res = await runWizard({ cwd });
+    expect(res).toMatchObject({ provider: "anthropic", modelId: "claude-sonnet-4-5" });
+    expect(res.secrets).toEqual({ ANTHROPIC_API_KEY: "sk-ant" });
+    // La dirección la trae la ficha: no se le pregunta al usuario.
+    expect(vi.mocked(p.text).mock.calls.map((c) => c[0].message)).toEqual(["Modelo"]);
   });
 
   it("bails out when the local model choice is cancelled", async () => {
@@ -183,6 +203,22 @@ describe("runWizard (interactive)", () => {
     vi.mocked(p.select)
       .mockResolvedValueOnce("ollama")
       .mockResolvedValueOnce(Symbol("cancel") as never);
+    vi.mocked(p.isCancel).mockReturnValueOnce(false).mockReturnValueOnce(true);
+    exitMock.mockImplementation(((code: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    await expect(runWizard({ cwd })).rejects.toThrow("exit:1");
+    expect(p.cancel).toHaveBeenCalled();
+  });
+
+  it("bails out when the model prompt is cancelled", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Promise.reject(new Error("offline"))),
+    );
+    vi.mocked(p.select).mockResolvedValueOnce("anthropic");
+    vi.mocked(p.password).mockResolvedValue("sk-ant");
+    vi.mocked(p.text).mockResolvedValue(Symbol("cancel") as never);
     vi.mocked(p.isCancel).mockReturnValueOnce(false).mockReturnValueOnce(true);
     exitMock.mockImplementation(((code: number) => {
       throw new Error(`exit:${code}`);
@@ -237,5 +273,51 @@ describe("runWizard (interactive)", () => {
     const cfg = JSON.parse(readFileSync(join(cwd, "openexpert.json"), "utf8"));
     expect(cfg.modelProvider).toBe("google");
     expect(cfg.modelId).toBe("gemini-2.5-flash");
+  });
+
+  it("guarda el proveedor aunque no se escriba clave ni modelo", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Promise.reject(new Error("offline"))),
+    );
+    vi.mocked(p.select).mockResolvedValueOnce("opencode-go");
+    vi.mocked(p.password).mockResolvedValue("");
+    vi.mocked(p.text).mockResolvedValue("");
+    vi.mocked(p.confirm).mockResolvedValue(false);
+    const res = await runWizard({ cwd });
+    // Sin clave no hay fichero de secretos, y el modelo cae al de su ficha.
+    expect(res.secrets).toEqual({});
+    expect(res).toMatchObject({ provider: "opencode-go", modelId: "deepseek-v4.1-flash" });
+    expect(existsSync(join(home, "data", "secrets.json"))).toBe(false);
+    // A quien trae su dirección en la ficha no se le pregunta por ella.
+    expect(vi.mocked(p.text).mock.calls.map((c) => c[0].message)).toEqual(["Modelo"]);
+  });
+
+  it("usa el modelo de la ficha de Ollama cuando no hay ninguno instalado", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ models: [] }), { status: 200 })),
+    );
+    vi.mocked(p.select).mockResolvedValueOnce("ollama").mockResolvedValueOnce("llama3.1");
+    vi.mocked(p.confirm).mockResolvedValue(false);
+    const res = await runWizard({ cwd });
+    expect(res).toMatchObject({ provider: "ollama", modelId: "llama3.1" });
+  });
+
+  it("bails out when the start confirmation is cancelled", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Promise.reject(new Error("offline"))),
+    );
+    vi.mocked(p.select).mockResolvedValueOnce("google");
+    vi.mocked(p.password).mockResolvedValue("k");
+    vi.mocked(p.text).mockResolvedValue("gemini-2.5-flash");
+    vi.mocked(p.confirm).mockResolvedValue(Symbol("cancel") as never);
+    vi.mocked(p.isCancel).mockReturnValueOnce(false).mockReturnValueOnce(true);
+    exitMock.mockImplementation(((code: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    await expect(runWizard({ cwd })).rejects.toThrow("exit:1");
+    expect(p.cancel).toHaveBeenCalled();
   });
 });
