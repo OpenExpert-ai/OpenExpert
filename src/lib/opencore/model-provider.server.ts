@@ -3,11 +3,13 @@
 // Providers: google (Gemini free key), ollama (local), openai-compatible (BYOK).
 
 import type { LanguageModel } from "ai";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
   missingKeyHint,
   ollamaChatBaseUrl,
+  providerDef,
   selectModel,
   type ModelProviderId,
 } from "@openexpert/opencore/model-provider";
@@ -34,15 +36,12 @@ export function modelKeyError(): string | null {
 const SESSION_HEADER = "x-opencode-session";
 
 /**
- * Headers sent with every request to a self-hosted or BYOK endpoint.
- *
- * Two reasons, both practical. Gateways that route by client want the app to
- * identify itself instead of arriving as a bare SDK, and some refuse a request
- * that carries no session id — one such gateway answers 400 without it. Both
- * headers are additive: an endpoint that does not ask for them ignores them, and
- * nothing is sent when there is no session to name.
+ * Headers this gateway asks for, and only this one. It routes by client and
+ * refuses a request that carries no session id — it answers 400 and says so —
+ * so both travel together and nowhere else. An endpoint that asks for neither
+ * never sees them: this is the provider that needs them, not the generic one.
  */
-export function gatewayHeaders(sessionId?: string): Record<string, string> {
+export function opencodeGoHeaders(sessionId?: string): Record<string, string> {
   const headers: Record<string, string> = {
     "user-agent": `OpenExpert/${process.env["npm_package_version"] || "dev"}`,
   };
@@ -53,6 +52,7 @@ export function gatewayHeaders(sessionId?: string): Record<string, string> {
 export function getLanguageModel(sessionId?: string): LanguageModel {
   const sel = selectModel();
   const id = sel.modelId;
+  const def = providerDef(sel.provider);
   if (sel.provider === "ollama") {
     const baseURL = ollamaChatBaseUrl(process.env["OLLAMA_BASE_URL"] || "http://localhost:11434");
     return createOpenAI({ apiKey: "ollama", baseURL })(id);
@@ -60,12 +60,24 @@ export function getLanguageModel(sessionId?: string): LanguageModel {
   if (sel.provider === "openai-compatible") {
     const baseURL = process.env["OPENEXPERT_BASE_URL"];
     if (!baseURL) throw new Error("Falta OPENEXPERT_BASE_URL");
+    return createOpenAI({ apiKey: process.env["OPENEXPERT_API_KEY"] ?? "", baseURL })(id);
+  }
+  if (def?.adapter === "anthropic") {
+    const apiKey = process.env[def.env ?? ""] || process.env["OPENEXPERT_MODEL_KEY"];
+    if (!apiKey) throw new Error(`Falta configurar la clave de ${def.name}.`);
+    if (!def.baseUrl) throw new Error(`El proveedor ${def.name} no tiene dirección configurada.`);
+    return createAnthropic({ apiKey, baseURL: def.baseUrl })(id);
+  }
+  if (sel.provider === "opencode-go") {
+    const apiKey = process.env["OPENEXPERT_MODEL_KEY"];
+    if (!apiKey)
+      throw new Error("Falta configurar la clave de OpenCode Go (el campo de clave BYOK).");
     return createOpenAI({
-      apiKey: process.env["OPENEXPERT_API_KEY"] ?? "",
+      apiKey,
       baseURL,
       fetch: async (input, init) => {
         const headers = new Headers(init?.headers);
-        for (const [k, v] of Object.entries(gatewayHeaders(sessionId))) headers.set(k, v);
+        for (const [k, v] of Object.entries(opencodeGoHeaders(sessionId))) headers.set(k, v);
         return fetch(input, { ...init, headers });
       },
     })(id);

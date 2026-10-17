@@ -84,7 +84,10 @@ export function loadConfig(cwd: string = process.cwd()): OpenExpertConfig {
   const env = process.env;
   const providerEnv = env["OPENEXPERT_MODEL_PROVIDER"];
   const providerFromEnv: ModelProviderId | undefined =
-    providerEnv === "google" || providerEnv === "ollama" || providerEnv === "openai-compatible"
+    providerEnv === "google" ||
+    providerEnv === "ollama" ||
+    providerEnv === "openai-compatible" ||
+    providerEnv === "opencode-go"
       ? providerEnv
       : undefined;
 
