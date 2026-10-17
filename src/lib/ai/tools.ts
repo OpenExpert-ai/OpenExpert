@@ -300,17 +300,31 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     list_local_files: tool({
       description:
-        "Lista los archivos de las carpetas locales que el usuario autorizó (ruta, nombre y tamaño). Úsalo antes de leer para localizar el archivo.",
+        "Lista los archivos de las carpetas locales que el usuario autorizó (ruta, nombre y tamaño). Devuelve los primeros 200 y el total; si hay más, acota con search_local_files.",
       inputSchema: z.object({}),
       execute: async () => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
+          const MAX_LISTED = 200;
           const local = await import("../opencore/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
-          const files = fs.listLocalFiles(roots);
-          return { roots, files };
+          const all = fs.listLocalFiles(roots);
+          // A folder with thousands of files used to dump every entry into the context, where it
+          // costs tokens and buries the one file the question is about. The total still travels, so
+          // nothing is hidden — only paged.
+          const files = all.slice(0, MAX_LISTED);
+          return {
+            roots,
+            total: all.length,
+            files,
+            ...(all.length > files.length
+              ? {
+                  note: `Se listan ${files.length} de ${all.length} archivos. Acota con search_local_files.`,
+                }
+              : {}),
+          };
         } catch (e) {
           return { error: (e as Error).message };
         }
@@ -338,18 +352,48 @@ export function createChatTools(ctx: ChatToolsContext) {
         }
       },
     }),
-    read_local_file: tool({
+    search_inside_files: tool({
       description:
-        "Lee el contenido de texto de un archivo local autorizado (texto, PDF, Word, Excel y PowerPoint). Pasa la ruta devuelta por list_local_files o search_local_files.",
-      inputSchema: z.object({ path: z.string() }),
-      execute: async ({ path }) => {
+        "Busca un texto DENTRO del contenido de los archivos locales autorizados (por contenido, no por nombre: para el nombre está search_local_files). " +
+        "Devuelve [{path, name, line, text}] con la línea exacta donde aparece, sin distinguir mayúsculas ni tildes. " +
+        "Úsalo para saber dónde se menciona un cliente, una factura o un importe, y después lee esas líneas con read_local_file usando `offset`.",
+      inputSchema: z.object({ query: z.string().min(2) }),
+      execute: async ({ query }) => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
           const local = await import("../opencore/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
-          return await fs.readLocalFile(path, roots);
+          return await fs.searchLocalContent(roots, query);
+        } catch (e) {
+          return { error: (e as Error).message };
+        }
+      },
+    }),
+    read_local_file: tool({
+      description:
+        "Lee el contenido de un archivo local autorizado (texto, PDF, Word, Excel y PowerPoint). Pasa la ruta que devuelve list_local_files o search_local_files. " +
+        "Devuelve el archivo en ventanas de 2000 líneas: si la respuesta trae `hasMore`, vuelve a llamar con `offset: nextOffset` para seguir por donde iba. " +
+        "En hojas de cálculo y CSV devuelve además `sheets`, con el nombre de cada hoja, cuántas filas tiene y cómo se llaman sus columnas.",
+      inputSchema: z.object({
+        path: z.string(),
+        offset: z.number().int().min(1).optional(),
+        limit: z.number().int().min(1).max(20000).optional(),
+      }),
+      execute: async ({ path, offset, limit }) => {
+        if (!expert.sources.includes("local")) return deny("con archivos locales");
+        used.add("Archivos locales");
+        try {
+          const local = await import("../opencore/local-secrets.server");
+          const fs = await import("../local-fs.server");
+          const roots = local.loadLocalRoots().map((r) => r.path);
+          // A plain read keeps calling with two arguments: the window is an addition, not a
+          // different way of reading.
+          const window = offset === undefined && limit === undefined ? null : { offset, limit };
+          return window
+            ? await fs.readLocalFile(path, roots, window)
+            : await fs.readLocalFile(path, roots);
         } catch (e) {
           return { error: (e as Error).message };
         }

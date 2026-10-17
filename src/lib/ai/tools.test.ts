@@ -193,6 +193,15 @@ const svc = vi.hoisted(() => ({
   loadLocalRoots: vi.fn(() => [] as { path: string; name: string }[]),
   listLocalFiles: vi.fn(() => [] as { path: string; name: string; size: number }[]),
   readLocalFile: vi.fn(),
+  searchLocalContent: vi.fn(
+    () =>
+      ({ hits: [], scanned: 0, skipped: 0, hasMore: false }) as {
+        hits: { path: string; name: string; line: number; text: string }[];
+        scanned: number;
+        skipped: number;
+        hasMore: boolean;
+      },
+  ),
   createLocalFile: vi.fn(),
   writeLocalFile: vi.fn(),
 }));
@@ -218,6 +227,7 @@ vi.mock("../opencore/local-secrets.server", () => ({
 vi.mock("../local-fs.server", () => ({
   listLocalFiles: svc.listLocalFiles,
   readLocalFile: svc.readLocalFile,
+  searchLocalContent: svc.searchLocalContent,
   createLocalFile: svc.createLocalFile,
   writeLocalFile: svc.writeLocalFile,
 }));
@@ -817,5 +827,54 @@ describe("propose_invoice_reminders guard rails", () => {
     const out = await exec(tools.propose_invoice_reminders)({ invoiceIds: ["no-such-id"] });
     expect(String(out["error"])).toMatch(/Ninguna de esas facturas/);
     expect(proposals).toHaveLength(0);
+  });
+});
+
+describe("file content tools", () => {
+  it("list_local_files caps the listing and still reports the total", async () => {
+    svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
+    svc.listLocalFiles.mockReturnValue(
+      Array.from({ length: 250 }, (_, i) => ({ path: `/r/f${i}.txt`, name: `f${i}.txt`, size: 1 })),
+    );
+    const { tools } = await buildExpert([], ["local"]);
+    const out = await exec(tools.list_local_files)({});
+    expect(out["total"]).toBe(250);
+    expect((out["files"] as unknown[]).length).toBe(200);
+    expect(String(out["note"])).toContain("200 de 250");
+  });
+
+  it("read_local_file forwards the window and returns the table shape", async () => {
+    svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
+    svc.readLocalFile.mockResolvedValue({
+      path: "/r/i.csv",
+      name: "i.csv",
+      size: 40,
+      modifiedTime: "2026-01-01T00:00:00.000Z",
+      content: "a,b",
+      totalLines: 3,
+      hasMore: true,
+      nextOffset: 3,
+      sheets: [{ name: "i.csv", rows: 2, columns: ["a", "b"] }],
+    });
+    const { tools } = await buildExpert([], ["local"]);
+    const out = await exec(tools.read_local_file)({ path: "/r/i.csv", offset: 1, limit: 2 });
+    expect(svc.readLocalFile).toHaveBeenCalledWith("/r/i.csv", ["/r"], { offset: 1, limit: 2 });
+    expect(out["hasMore"]).toBe(true);
+    expect((out["sheets"] as { rows: number }[])[0]?.rows).toBe(2);
+  });
+
+  it("search_inside_files returns the lines where the text appears", async () => {
+    svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
+    svc.searchLocalContent.mockResolvedValue({
+      hits: [{ path: "/r/i.csv", name: "i.csv", line: 2, text: "2026-01-01,ACME,100" }],
+      scanned: 1,
+      skipped: 0,
+      hasMore: false,
+    });
+    const { tools, used } = await buildExpert([], ["local"]);
+    const out = await exec(tools.search_inside_files)({ query: "acme" });
+    expect(svc.searchLocalContent).toHaveBeenCalledWith(["/r"], "acme");
+    expect((out["hits"] as { line: number }[])[0]?.line).toBe(2);
+    expect(used.has("Archivos locales")).toBe(true);
   });
 });
