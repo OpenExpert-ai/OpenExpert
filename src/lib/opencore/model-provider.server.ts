@@ -74,7 +74,8 @@ export function getLanguageModel(sessionId?: string): LanguageModel {
       throw new Error("Falta configurar la clave de OpenCode Go (el campo de clave BYOK).");
     return createOpenAI({
       apiKey,
-      baseURL,
+      baseURL:
+        process.env["OPENCODE_GO_BASE_URL"] || def?.baseUrl || "https://opencode.ai/zen/go/v1",
       fetch: async (input, init) => {
         const headers = new Headers(init?.headers);
         for (const [k, v] of Object.entries(opencodeGoHeaders(sessionId))) headers.set(k, v);
