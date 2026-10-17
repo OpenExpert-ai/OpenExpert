@@ -16,9 +16,14 @@ describe("el catálogo de proveedores", () => {
       expect(p.id).toBeTruthy();
       expect(p.name).toBeTruthy();
       expect(p.adapter).toBeTruthy();
-      // Ollama es local y el genérico lo apunta el usuario: esos no traen dirección.
-      const loApuntaElUsuario = p.id === "ollama" || p.id === "openai-compatible";
-      if (!loApuntaElUsuario) expect("baseUrl" in p ? p.baseUrl : undefined).toBeTruthy();
+      // No toda ficha declara dirección, y es correcto: Ollama es local, el genérico lo
+      // apunta el usuario, y Google usa la del adaptador. Declararla es para los que
+      // tienen endpoint propio, y esos sí la llevan.
+      const usaLaDelAdaptador =
+        p.id === "ollama" || p.id === "openai-compatible" || p.id === "google";
+      if (!usaLaDelAdaptador) {
+        expect("baseUrl" in p ? p.baseUrl : undefined).toBeTruthy();
+      }
     }
   });
 
