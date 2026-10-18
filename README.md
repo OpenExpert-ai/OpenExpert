@@ -31,8 +31,8 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ### With Node
 
 ```sh
-npx @openexpert/opencore          # interactive setup, then starts
-npx @openexpert/opencore serve    # start directly
+npx @openexpert/openexpert          # interactive setup, then starts
+npx @openexpert/openexpert serve    # start directly
 ```
 
 Scaffold a project:
@@ -86,23 +86,23 @@ See [Deployment](./docs/en/08-deployment.md).
 The full documentation lives in **[`docs/`](./docs/README.md)** (English and
 Spanish).
 
-| Document                                     | Content                                |
-| -------------------------------------------- | -------------------------------------- |
-| [Quickstart](./docs/en/00-quickstart.md)     | From zero to chatting in 5 minutes     |
-| [Product](./docs/en/01-product.md)           | What the platform does                 |
-| [Architecture](./docs/en/02-architecture.md) | Layers and data flow                   |
-| [Data model](./docs/en/03-data-model.md)     | SQLite tables                          |
-| [Security](./docs/en/04-security.md)         | Access and protections                 |
-| [AI](./docs/en/05-ai.md)                     | Assistant tools and limits             |
-| [Integrations](./docs/en/06-integrations.md) | Google Drive, local folders and Notion |
-| [Development](./docs/en/07-development.md)   | Environment, scripts, conventions      |
-| [Deployment](./docs/en/08-deployment.md)     | Running locally and with Docker        |
-| [Operation](./docs/en/09-operation.md)       | Recurring tasks and diagnosis          |
-| [Glossary](./docs/en/10-glossary.md)         | Vocabulary                             |
-| [OpenCore](./docs/en/11-opencore.md)         | The MIT engine and CLI                 |
-| [Licensing model](./docs/en/12-licensing.md) | MIT, obligations, monetisation         |
-| [AI providers](./docs/en/13-ai-providers.md) | Ollama, Gemini and BYOK                |
-| [Roadmap](./docs/en/14-roadmap.md)           | Status and planning                    |
+| Document                                         | Content                                |
+| ------------------------------------------------ | -------------------------------------- |
+| [Quickstart](./docs/en/00-quickstart.md)         | From zero to chatting in 5 minutes     |
+| [Product](./docs/en/01-product.md)               | What the platform does                 |
+| [Architecture](./docs/en/02-architecture.md)     | Layers and data flow                   |
+| [Data model](./docs/en/03-data-model.md)         | SQLite tables                          |
+| [Security](./docs/en/04-security.md)             | Access and protections                 |
+| [AI](./docs/en/05-ai.md)                         | Assistant tools and limits             |
+| [Integrations](./docs/en/06-integrations.md)     | Google Drive, local folders and Notion |
+| [Development](./docs/en/07-development.md)       | Environment, scripts, conventions      |
+| [Deployment](./docs/en/08-deployment.md)         | Running locally and with Docker        |
+| [Operation](./docs/en/09-operation.md)           | Recurring tasks and diagnosis          |
+| [Glossary](./docs/en/10-glossary.md)             | Vocabulary                             |
+| [Engine and CLI](./docs/en/11-engine-and-cli.md) | The package and its CLI (MIT)          |
+| [Licensing model](./docs/en/12-licensing.md)     | MIT, obligations, monetisation         |
+| [AI providers](./docs/en/13-ai-providers.md)     | Ollama, Gemini and BYOK                |
+| [Roadmap](./docs/en/14-roadmap.md)               | Status and planning                    |
 
 ## Requirements
 
@@ -126,10 +126,10 @@ src/
     notion.server.ts         Notion API client
     notion-tokens.server.ts  Notion OAuth and token lifecycle
     office.server.ts         Text/PDF/Office extraction (Drive + local)
-    opencore/                Model provider + local credential custody
+    engine/                  Model provider + local credential custody
 drizzle/schema.ts             Typed SQLite schema
 drizzle/init.sql              SQLite DDL (applied at startup)
-packages/opencore/            MIT engine (model provider, config, tools, CLI)
+packages/openexpert/            MIT engine (model provider, config, tools, CLI)
 docker/                       Dockerfile and docker-compose
 docs/{en,es}/                 Bilingual documentation
 ```

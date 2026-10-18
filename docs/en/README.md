@@ -19,7 +19,7 @@ change to `../es/`.
 | 08  | [Deployment](./08-deployment.md)          | Engineering            | Local run and Docker                   |
 | 09  | [Operation & support](./09-operation.md)  | Both                   | Tasks, diagnosis, backups              |
 | 10  | [Glossary](./10-glossary.md)              | Business               | Vocabulary                             |
-| 11  | [OpenCore](./11-opencore.md)              | All                    | The MIT engine and CLI                 |
+| 11  | [Engine and CLI](./11-engine-and-cli.md)  | All                    | The package and its CLI (MIT)          |
 | 12  | [Licensing model](./12-licensing.md)      | Both                   | MIT and obligations                    |
 | 13  | [AI providers](./13-ai-providers.md)      | Both                   | Ollama, Gemini, BYOK                   |
 | 14  | [Roadmap](./14-roadmap.md)                | Both                   | Status and planning                    |

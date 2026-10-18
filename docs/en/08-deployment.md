@@ -11,14 +11,14 @@
 | Development      | `npm ci && npm run dev`                                                                   |
 | Production build | `npm run build` then `node .output/server/index.mjs`                                      |
 | Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
-| CLI              | `npx @openexpert/opencore serve`                                                          |
+| CLI              | `npx @openexpert/openexpert serve`                                                        |
 | Desktop (Linux)  | `npm run desktop:install` then `openexpert`                                               |
 
 The app listens on port 3000, on the **loopback interface only** (`127.0.0.1`).
 The dashboard has no authentication: whoever reaches the port can read and write
 the folders its owner granted. To expose it to a network on purpose, set
 `OPENEXPERT_HOST` (or `HOST`) — for example
-`OPENEXPERT_HOST=0.0.0.0 npx @openexpert/opencore serve` — after thinking about
+`OPENEXPERT_HOST=0.0.0.0 npx @openexpert/openexpert serve` — after thinking about
 who shares that network. The Docker image keeps binding every interface, because
 the published port is the point of the container. The Nitro preset is
 `node-server`.
@@ -64,7 +64,7 @@ database. Importing a backup replaces the current data.
 ## 5. Updates
 
 - Code: `git pull` / reinstall the package and rebuild.
-- Downloaded server: `npx @openexpert/opencore update`.
+- Downloaded server: `npx @openexpert/openexpert update`.
 
 ## 6. Desktop application (Linux)
 
@@ -107,7 +107,7 @@ npx tauri build --bundles deb,rpm,appimage   # -> src-tauri/target/release/bundl
 The first run downloads Tauri's packaging helpers (linuxdeploy, AppRun). These
 packages ship the **window only** and their menu entry runs
 `openexpert-desktop`, so the local server must already be running
-(`npm run opencore:serve`). For the "start the server and open the window"
+(`npm run openexpert:serve`). For the "start the server and open the window"
 behaviour, use the per-user launcher (`npm run desktop:install`).
 
 They are for distributing the app, not for installing it on a machine: the

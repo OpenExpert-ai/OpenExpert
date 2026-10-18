@@ -12,6 +12,7 @@ colabora no tenga que deducirlas del código.
 | 004 | [Aislamiento de dominio por Experto en servidor](./0004-aislamiento-dominio.md) |
 | 005 | [Migraciones con `PRAGMA user_version`](./0005-migraciones.md)                  |
 | 006 | [Una clave por proveedor](./0006-una-clave-por-proveedor.md)                    |
+| 007 | [Un nombre y una versión](./0007-un-nombre-y-una-version.md)                    |
 
 Los ADR son solo de adición: para cambiar una decisión se añade un registro
 nuevo que sustituye al anterior en lugar de editarlo.

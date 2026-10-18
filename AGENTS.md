@@ -74,13 +74,13 @@ disagree, the code is right and the docs are the bug.
 
 ## 5. Model provider: configuration, not code
 
-- The catalogue is `packages/opencore/src/providers.ts`: a provider is a record
+- The catalogue is `packages/openexpert/src/providers.ts`: a provider is a record
   (adapter, endpoint, key variable, headers, models) and the provider id is
   derived from it. **No two records may share a key variable** and a test
   enforces it, because a shared one means saving a key silently overwrites
   another provider's and the failure only shows up later as a 401.
-- Selection lives in `src/lib/opencore/model-provider.server.ts` and the shared
-  `@openexpert/opencore` engine (`selectModel` / `missingKeyHint`). Asking a
+- Selection lives in `src/lib/engine/model-provider.server.ts` and the shared
+  `@openexpert/openexpert` engine (`selectModel` / `missingKeyHint`). Asking a
   provider which models it serves is `listProviderModels`, used by the panel, the
   CLI and `doctor`, so none of them keeps its own version of the question.
 - Providers: `ollama` (local), `google` (Gemini free key), `anthropic`,
@@ -89,6 +89,14 @@ disagree, the code is right and the docs are the bug.
   `OLLAMA_BASE_URL`, `OPENEXPERT_BASE_URL` (the generic endpoint) and **one key
   per provider**: `GOOGLE_API_KEY`, `ANTHROPIC_API_KEY`, `OPENEXPERT_MODEL_KEY`,
   `OPENCODE_GO_API_KEY`.
+- **One name and one version.** The product, the package, the CLI and the release
+  are all OpenExpert (`@openexpert/openexpert`, binary `openexpert`, page
+  `docs/*/11-*`). `packages/openexpert/package.json` is the only place with a
+  version: the root manifest is private and declares `0.0.0`, the interface reads
+  the package's through `src/lib/version.ts`, and the desktop shell takes it at
+  build time. Releases are tagged `v<version>` and titled `OpenExpert <version>`;
+  `release.yml` creates them, because changesets would name them after the package.
+  See [ADR 007](./docs/en/adr/0007-one-name-one-version.md).
 - Configuration sources: `openexpert.json` (provider, model, `ai`/`chat`
   options) plus `~/.openexpert/secrets.json` (`0600`, API keys) plus env vars
   plus the `settings` table for UI preferences. **Precedence: real env >
@@ -96,8 +104,8 @@ disagree, the code is right and the docs are the bug.
 - `src/lib/config.server.ts` loads both files into `process.env` at startup; the
   `/settings` panel (`src/lib/settings.functions.ts`) writes the files and
   mirrors changes at runtime, so changes take effect without a restart.
-- The file schema is `packages/opencore/schema/openexpert.schema.json`
-  (`@openexpert/opencore/config`).
+- The file schema is `packages/openexpert/schema/openexpert.schema.json`
+  (`@openexpert/openexpert/config`).
 - Interface language (Spanish/English) is a `settings` preference; the client
   layer is `src/lib/i18n.tsx` with the English dictionary in
   `src/locales/en.ts` (Spanish is the source language).
@@ -162,18 +170,18 @@ Drive and local folders in `src/lib/office.server.ts`.
 - **Desktop shell (Linux).** `src-tauri/` is a Tauri 2 app whose only job is to
   render the local server in a native WebKitGTK window; all logic stays in the
   web app. It is launched by the `openexpert desktop` CLI command
-  (`packages/opencore/src/cli/desktop.ts`), which starts/reuses the Node server
+  (`packages/openexpert/src/cli/desktop.ts`), which starts/reuses the Node server
   and stops it when the window closes. `scripts/install-desktop.mjs` installs a
   per-user `openexpert` launcher, `.desktop` entry and icon;
   `scripts/uninstall-desktop.mjs` removes them.
 
 ## 8. Repository layout and tooling
 
-- `packages/opencore/` is the shared MIT engine: `model-provider`, `config`,
-  `storage`/`secrets` interfaces, the tool catalog and the `opencore` CLI
-  (`src/cli/`). The app imports `@openexpert/opencore/model-provider`.
+- `packages/openexpert/` is the shared MIT engine: `model-provider`, `config`,
+  `storage`/`secrets` interfaces, the tool catalog and the `openexpert` CLI
+  (`src/cli/`). The app imports `@openexpert/openexpert/model-provider`.
 - Scripts: `dev`, `build`, `preview`, `lint`/`lint:fix`, `format`/`format:check`,
-  `typecheck`, `test:run`, `test:coverage`, `opencore:doctor`, `opencore:serve`,
+  `typecheck`, `test:run`, `test:coverage`, `openexpert:doctor`, `openexpert:serve`,
   `desktop:install`/`desktop:uninstall`, `license:check`, `check:docs`,
   `check:commits`.
 - Pre-flight before shipping a change: `npm run typecheck`, `npm run lint`,

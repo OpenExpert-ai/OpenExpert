@@ -18,7 +18,7 @@ este contenido lo refleja.
 | 08  | [Despliegue](./08-despliegue.md)                           | Ingeniería           | Ejecución local y Docker                |
 | 09  | [Operación y soporte](./09-operacion-y-soporte.md)         | Ambos                | Tareas, diagnóstico, copias             |
 | 10  | [Glosario](./10-glosario.md)                               | Negocio              | Vocabulario                             |
-| 11  | [OpenCore](./11-opencore.md)                               | Todos                | El motor y CLI MIT                      |
+| 11  | [Motor y CLI](./11-motor-y-cli.md)                         | Todos                | El paquete y su CLI (MIT)               |
 | 12  | [Modelo de licencia](./12-licencia.md)                     | Ambos                | MIT y obligaciones                      |
 | 13  | [Proveedores de IA](./13-proveedores-ia.md)                | Ambos                | Ollama, Gemini, BYOK                    |
 | 14  | [Hoja de ruta](./14-hoja-de-ruta.md)                       | Ambos                | Estado y planificación                  |

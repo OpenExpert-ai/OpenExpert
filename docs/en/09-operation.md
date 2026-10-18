@@ -27,13 +27,13 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 
 ### 4.1 Chat
 
-| Symptom              | Cause                          | Action                           |
-| -------------------- | ------------------------------ | -------------------------------- |
-| Missing model key    | Provider not configured        | `opencore fix` / `opencore init` |
-| Rate limit reached   | Provider quota                 | Wait or switch model             |
-| Invalid key          | Wrong/restricted key           | Generate a new one               |
-| "Out of context"     | Expert does not cover the data | Switch Expert; it is isolation   |
-| Ollama not reachable | Ollama not running             | Start Ollama, `opencore doctor`  |
+| Symptom              | Cause                          | Action                               |
+| -------------------- | ------------------------------ | ------------------------------------ |
+| Missing model key    | Provider not configured        | `openexpert fix` / `openexpert init` |
+| Rate limit reached   | Provider quota                 | Wait or switch model                 |
+| Invalid key          | Wrong/restricted key           | Generate a new one                   |
+| "Out of context"     | Expert does not cover the data | Switch Expert; it is isolation       |
+| Ollama not reachable | Ollama not running             | Start Ollama, `openexpert doctor`    |
 
 ### 4.2 Google Drive
 

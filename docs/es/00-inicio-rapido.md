@@ -24,21 +24,21 @@ docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
 
-## Opción B — Con Node (el CLI de OpenCore)
+## Opción B — Con Node (el CLI)
 
 ```sh
-npx @openexpert/opencore
+npx @openexpert/openexpert
 ```
 
 El asistente detecta Ollama, te deja elegir proveedor, escribe
 `openexpert.json` y arranca la aplicación. Otros comandos:
 
 ```sh
-npx @openexpert/opencore serve     # arrancar
-npx @openexpert/opencore doctor    # revisar la configuración
-npx @openexpert/opencore fix       # auto-configurar lo que falte
-npx @openexpert/opencore models    # listar modelos del proveedor actual
-npx @openexpert/opencore update    # actualizar el servidor descargado
+npx @openexpert/openexpert serve     # arrancar
+npx @openexpert/openexpert doctor    # revisar la configuración
+npx @openexpert/openexpert fix       # auto-configurar lo que falte
+npx @openexpert/openexpert models    # listar modelos del proveedor actual
+npx @openexpert/openexpert update    # actualizar el servidor descargado
 ```
 
 ### Crear un proyecto
@@ -85,8 +85,8 @@ El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
 
 ## Diagnóstico
 
-- **El chat dice que falta la clave del modelo.** Ejecuta `opencore fix` u
-  `opencore init`.
+- **El chat dice que falta la clave del modelo.** Ejecuta `openexpert fix` u
+  `openexpert init`.
 - **No detecta Ollama.** Instálalo y descarga un modelo: `ollama pull llama3.1`.
 - **El puerto 3000 está ocupado.** Libéralo; el servidor está fijado al 3000.
 - **No encuentra la imagen Docker.** Constrúyela en local:

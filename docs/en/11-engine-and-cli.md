@@ -1,40 +1,46 @@
-# 11 · OpenCore
+# 11 · Engine and CLI
 
-> **Audience:** both. The shared MIT engine and CLI.
+> **Audience:** both. The package `@openexpert/openexpert`: what the app reuses, and the CLI you install.
 
 ---
 
 ## 1. Object
 
-**OpenCore** is the open-source engine and CLI of OpenExpert, distributed under
-the MIT license (`packages/opencore/`). It provides the model-provider selector,
-configuration loading, the storage/token interfaces, the tool catalog and the
-`opencore` CLI.
+`@openexpert/openexpert` (MIT, in `packages/openexpert/`) is the package of the
+local edition: the engine the application reuses —model-provider catalogue,
+configuration loading, the storage and token interfaces, the tool catalog— plus
+the **`openexpert` CLI** that installs, configures and runs it. There is no
+second product name: the package, the CLI and the application are all OpenExpert,
+and the **version you see in a release is this package's**, the only one that is
+published.
 
 ## 2. What it contains
 
-| Module                  | Purpose                                                              |
-| ----------------------- | -------------------------------------------------------------------- |
-| `src/model-provider.ts` | `selectModel` / `missingKeyHint` (google, ollama, openai-compatible) |
-| `src/config.ts`         | Loads `openexpert.json` + `OPENEXPERT_*`                             |
-| `src/storage.ts`        | `Storage` interface (file-backed)                                    |
-| `src/secrets.ts`        | `TokenStore` interface and credentials path                          |
-| `src/tools.ts`          | Tool catalog                                                         |
-| `src/cli/`              | The `opencore` CLI                                                   |
+| Module                   | Purpose                                                              |
+| ------------------------ | -------------------------------------------------------------------- |
+| `src/model-provider.ts`  | `selectModel` / `missingKeyHint` (google, ollama, openai-compatible) |
+| `src/providers.ts`       | The provider catalogue (adapter, endpoint, key variable, models)     |
+| `src/provider-models.ts` | Asks a provider which models it serves                               |
+| `src/config.ts`          | Loads `openexpert.json` + `OPENEXPERT_*`                             |
+| `src/storage.ts`         | `Storage` interface (file-backed)                                    |
+| `src/secrets.ts`         | `TokenStore` interface and credentials path                          |
+| `src/tools.ts`           | Tool catalog                                                         |
+| `src/cli/`               | The `openexpert` CLI                                                 |
 
 ## 3. CLI
 
 ```sh
-npx @openexpert/opencore          # interactive setup, then starts
-npx @openexpert/opencore serve    # start
-npx @openexpert/opencore doctor   # check configuration
-npx @openexpert/opencore fix      # auto-configure what is missing
-npx @openexpert/opencore models   # list models for the current provider
-npx @openexpert/opencore update   # refresh the downloaded server
+npx @openexpert/openexpert          # interactive setup, then starts
+npx @openexpert/openexpert serve    # start
+npx @openexpert/openexpert doctor   # check configuration
+npx @openexpert/openexpert fix      # auto-configure what is missing
+npx @openexpert/openexpert models   # list models for the current provider
+npx @openexpert/openexpert update   # refresh the downloaded server
 ```
 
 `serve` runs from a source checkout (`npm run dev`) or from a downloaded,
-checksum-verified server build.
+checksum-verified server build, which it fetches from the release tagged
+`v<version>`.
 
 ## 4. Configuration
 

@@ -28,8 +28,8 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ### Con Node
 
 ```sh
-npx @openexpert/opencore          # asistente, luego arranca
-npx @openexpert/opencore serve    # arrancar directamente
+npx @openexpert/openexpert          # asistente, luego arranca
+npx @openexpert/openexpert serve    # arrancar directamente
 ```
 
 O crea un proyecto:
@@ -97,7 +97,7 @@ Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y españ
 | [Despliegue](./docs/es/08-despliegue.md)            | Ejecución local y Docker                |
 | [Operación](./docs/es/09-operacion-y-soporte.md)    | Tareas periódicas y diagnóstico         |
 | [Glosario](./docs/es/10-glosario.md)                | Vocabulario                             |
-| [OpenCore](./docs/es/11-opencore.md)                | El motor y CLI MIT                      |
+| [Motor y CLI](./docs/es/11-motor-y-cli.md)          | El paquete y su CLI (MIT)               |
 | [Modelo de licencia](./docs/es/12-licencia.md)      | MIT, obligaciones, monetización         |
 | [Proveedores de IA](./docs/es/13-proveedores-ia.md) | Ollama, Gemini y BYOK                   |
 | [Hoja de ruta](./docs/es/14-hoja-de-ruta.md)        | Estado y planificación                  |
@@ -124,10 +124,10 @@ src/
     notion.server.ts         Cliente de la API de Notion
     notion-tokens.server.ts  OAuth de Notion y ciclo de vida de tokens
     office.server.ts         Extracción de texto/PDF/Office (Drive + local)
-    opencore/                Proveedor de modelo + custodia local de credenciales
+    engine/                  Proveedor de modelo + custodia local de credenciales
 drizzle/schema.ts             Esquema SQLite tipado
 drizzle/init.sql              DDL SQLite (aplicado al arrancar)
-packages/opencore/            Motor MIT (modelo, config, herramientas, CLI)
+packages/openexpert/            Motor MIT (modelo, config, herramientas, CLI)
 docker/                       Dockerfile y docker-compose
 docs/{en,es}/                 Documentación bilingüe
 ```

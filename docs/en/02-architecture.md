@@ -30,7 +30,7 @@ graph TD
     EE[Business core<br/>ee.server.ts]
     DB[SQLite<br/>db.server.ts]
     CHAT[Chat<br/>ai/chat.server.ts]
-    MODEL[Model provider<br/>opencore/model-provider.server.ts]
+    MODEL[Model provider<br/>engine/model-provider.server.ts]
     DRV[Google Drive<br/>drive.server.ts]
     NOT[Notion<br/>notion.server.ts]
     LOC[Local folders<br/>local-fs.server.ts]
@@ -75,13 +75,13 @@ src/
 │   ├── notion.server.ts        Notion API client
 │   ├── notion-tokens.server.ts Notion OAuth and token lifecycle
 │   ├── office.server.ts        Text/PDF/Office extraction (Drive + local)
-│   └── opencore/               Model provider + local credentials
+│   └── engine/                 Model provider + local credentials
 ├── components/                 AppShell and shadcn/ui
 drizzle/
 ├── schema.ts                   Typed SQLite schema (Drizzle)
 ├── migrations/                 Incremental DDL (PRAGMA user_version)
 └── init.sql                    DDL applied at startup
-packages/opencore/              MIT engine + CLI
+packages/openexpert/              MIT engine + CLI
 ```
 
 ## 4. Mutation flow

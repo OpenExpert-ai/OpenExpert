@@ -94,9 +94,9 @@ conversation id and only for this provider.
 ## 6. Using the CLI
 
 ```sh
-npx @openexpert/opencore        # interactive wizard
-npx @openexpert/opencore models # list models for the current provider
-npx @openexpert/opencore doctor # check the configuration
+npx @openexpert/openexpert        # interactive wizard
+npx @openexpert/openexpert models # list models for the current provider
+npx @openexpert/openexpert doctor # check the configuration
 ```
 
 The wizard and the panel store secrets in `~/.openexpert/secrets.json` (mode

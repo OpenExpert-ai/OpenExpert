@@ -19,7 +19,7 @@ cp openexpert.json.example openexpert.json   # optional; defaults work
 npm run dev                                 # http://localhost:3000
 ```
 
-In a fresh checkout, `npm ci` also builds `packages/opencore` (its `prepare`
+In a fresh checkout, `npm ci` also builds `packages/openexpert` (its `prepare`
 script), so the CLI is ready.
 
 ## 3. Environment variables
@@ -40,7 +40,7 @@ Documented in `.env.example`. The essentials:
 
 `.env` is git-ignored. The CLI wizard stores secrets in
 `~/.openexpert/secrets.json`, which the server loads into the environment at
-startup (existing env vars win), so `npm run dev` and `opencore serve` behave
+startup (existing env vars win), so `npm run dev` and `openexpert serve` behave
 the same.
 
 ### Configuration files and the settings panel
@@ -72,8 +72,8 @@ in `src/locales/en.ts` (Spanish is the source language).
 | `npm run format` / `format:check` | Prettier                               |
 | `npm run typecheck`               | TypeScript without emit                |
 | `npm run test:run`                | Tests (app + package)                  |
-| `npm run opencore:doctor`         | CLI diagnostics                        |
-| `npm run opencore:serve`          | Boot the app through the CLI           |
+| `npm run openexpert:doctor`       | CLI diagnostics                        |
+| `npm run openexpert:serve`        | Boot the app through the CLI           |
 | `npm run license:check`           | Verify SPDX headers                    |
 | `npm run test:coverage`           | Tests with coverage thresholds         |
 | `npm run check:docs`              | Documentation links                    |

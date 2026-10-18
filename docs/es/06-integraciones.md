@@ -128,7 +128,7 @@ propósito**, nunca mientras una búsqueda recorre una carpeta, y la transcripci
 
 ### 5.1 Proveedores de modelo
 
-Los proveedores son **datos**: `packages/opencore/src/providers.ts` es un catálogo, y cada
+Los proveedores son **datos**: `packages/openexpert/src/providers.ts` es un catálogo, y cada
 ficha lleva su adaptador (`google`, `openai-compatible`, `anthropic`), su dirección, la
 **variable de entorno** que guarda su clave, sus cabeceras y, si el servicio lo pide, la
 **cabecera que debe llevar el id de la conversación**. El identificador de proveedor se

@@ -28,13 +28,13 @@ gratis.
 
 ### 4.1 Chat
 
-| Síntoma                   | Causa                       | Actuación                          |
-| ------------------------- | --------------------------- | ---------------------------------- |
-| Falta la clave del modelo | Proveedor sin configurar    | `opencore fix` / `opencore init`   |
-| Límite alcanzado          | Cuota del proveedor         | Esperar o cambiar de modelo        |
-| Clave no válida           | Clave incorrecta            | Generar una nueva                  |
-| «Fuera de contexto»       | El Experto no cubre el dato | Cambiar de Experto; es aislamiento |
-| Ollama no responde        | Ollama no está en marcha    | Arranca Ollama, `opencore doctor`  |
+| Síntoma                   | Causa                       | Actuación                            |
+| ------------------------- | --------------------------- | ------------------------------------ |
+| Falta la clave del modelo | Proveedor sin configurar    | `openexpert fix` / `openexpert init` |
+| Límite alcanzado          | Cuota del proveedor         | Esperar o cambiar de modelo          |
+| Clave no válida           | Clave incorrecta            | Generar una nueva                    |
+| «Fuera de contexto»       | El Experto no cubre el dato | Cambiar de Experto; es aislamiento   |
+| Ollama no responde        | Ollama no está en marcha    | Arranca Ollama, `openexpert doctor`  |
 
 ### 4.2 Google Drive
 
