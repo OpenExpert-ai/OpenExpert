@@ -1,5 +1,5 @@
 name: Bug report
-description: Report incorrect behaviour in the application, the OpenCore package, or the documentation.
+description: Report incorrect behaviour in the application, the OpenExpert package, or the documentation.
 title: "[bug] "
 labels: ["bug", "needs-triage"]
 body:
@@ -10,7 +10,7 @@ body:
       description: Where did you observe the bug?
       options:
         - Application (local)
-        - OpenCore package / CLI
+        - OpenExpert package / CLI
         - Desktop app (Linux)
         - Documentation
         - Other / not sure
@@ -51,7 +51,7 @@ body:
         - OS: macOS 14
         - Node: 24.0.0
         - Provider: google / ollama / openai-compatible
-        - Version: output of `npx @openexpert/opencore version`
+        - Version: output of `npx @openexpert/openexpert version`
   - type: textarea
     id: logs
     attributes:

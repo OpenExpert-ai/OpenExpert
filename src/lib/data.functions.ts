@@ -346,8 +346,8 @@ export const listConversations = createServerFn({ method: "GET" })
 
 export const getDriveStatus = createServerFn({ method: "GET" }).handler(async () => {
   const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
-  const local: typeof import("@/lib/opencore/local-secrets.server") =
-    await import("@/lib/opencore/local-secrets.server");
+  const local: typeof import("@/lib/engine/local-secrets.server") =
+    await import("@/lib/engine/local-secrets.server");
   return {
     ...(await tokens.driveConnection()),
     configured: tokens.googleConfigured(),
@@ -356,20 +356,20 @@ export const getDriveStatus = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const getGrantedFiles = createServerFn({ method: "GET" }).handler(async () => {
-  const local: typeof import("@/lib/opencore/local-secrets.server") =
-    await import("@/lib/opencore/local-secrets.server");
+  const local: typeof import("@/lib/engine/local-secrets.server") =
+    await import("@/lib/engine/local-secrets.server");
   return { files: local.loadGrantedFiles() };
 });
 
 export const getDriveConsent = createServerFn({ method: "GET" }).handler(async () => {
-  const local: typeof import("@/lib/opencore/local-secrets.server") =
-    await import("@/lib/opencore/local-secrets.server");
+  const local: typeof import("@/lib/engine/local-secrets.server") =
+    await import("@/lib/engine/local-secrets.server");
   return { consent: local.loadDriveConsent() };
 });
 
 export const acceptDriveConsent = createServerFn({ method: "POST" }).handler(async () => {
-  const local: typeof import("@/lib/opencore/local-secrets.server") =
-    await import("@/lib/opencore/local-secrets.server");
+  const local: typeof import("@/lib/engine/local-secrets.server") =
+    await import("@/lib/engine/local-secrets.server");
   const privacyUrl =
     process.env["OPENEXPERT_PRIVACY_URL"]?.trim() ||
     "https://github.com/OpenExpert-ai/OpenExpert/blob/main/PRIVACY.md";
@@ -395,8 +395,8 @@ export const setGrantedFiles = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const local: typeof import("@/lib/opencore/local-secrets.server") =
-      await import("@/lib/opencore/local-secrets.server");
+    const local: typeof import("@/lib/engine/local-secrets.server") =
+      await import("@/lib/engine/local-secrets.server");
     const existing = local.loadGrantedFiles();
     const map = new Map(existing.map((f) => [f.id, f]));
     const now = new Date().toISOString();
@@ -446,7 +446,7 @@ export const privacyUrl = createServerFn({ method: "GET" }).handler(async () => 
  * number, OAuth client id). Public identifiers only.
  */
 export const getClientConfig = createServerFn({ method: "GET" }).handler(async () => {
-  const secrets = await import("@/lib/opencore/local-secrets.server").then((m) =>
+  const secrets = await import("@/lib/engine/local-secrets.server").then((m) =>
     m.loadGrantedFiles(),
   );
   void secrets;
@@ -503,8 +503,8 @@ export const disconnectDrive = createServerFn({ method: "POST" }).handler(async 
 export const syncIntegration = createServerFn({ method: "POST" })
   .validator((d) => z.object({ id: z.literal("gdrive") }).parse(d))
   .handler(async () => {
-    const local: typeof import("@/lib/opencore/local-secrets.server") =
-      await import("@/lib/opencore/local-secrets.server");
+    const local: typeof import("@/lib/engine/local-secrets.server") =
+      await import("@/lib/engine/local-secrets.server");
     const tokens: typeof import("./drive-tokens.server") = await import("./drive-tokens.server");
     const conn = await tokens.driveConnection();
     ee.assert(conn.connected, "Primero selecciona archivos de Google Drive en Fuentes.");
@@ -546,8 +546,8 @@ async function setLocalIntegration(roots: { path: string }[]): Promise<void> {
 }
 
 export const getLocalRoots = createServerFn({ method: "GET" }).handler(async () => {
-  const local: typeof import("@/lib/opencore/local-secrets.server") =
-    await import("@/lib/opencore/local-secrets.server");
+  const local: typeof import("@/lib/engine/local-secrets.server") =
+    await import("@/lib/engine/local-secrets.server");
   return { roots: local.loadLocalRoots() };
 });
 
@@ -562,8 +562,8 @@ export const addLocalRoot = createServerFn({ method: "POST" })
   .validator((d) => z.object({ path: z.string().trim().min(1).max(4096) }).parse(d))
   .handler(async ({ data }) => {
     const fs: typeof import("./local-fs.server") = await import("./local-fs.server");
-    const local: typeof import("@/lib/opencore/local-secrets.server") =
-      await import("@/lib/opencore/local-secrets.server");
+    const local: typeof import("@/lib/engine/local-secrets.server") =
+      await import("@/lib/engine/local-secrets.server");
     const info = fs.rootInfo(data.path);
     const roots = local.loadLocalRoots();
     if (!roots.some((r) => r.path === info.path)) {
@@ -586,8 +586,8 @@ export const addLocalRoot = createServerFn({ method: "POST" })
 export const removeLocalRoot = createServerFn({ method: "POST" })
   .validator((d) => z.object({ path: z.string().min(1).max(4096) }).parse(d))
   .handler(async ({ data }) => {
-    const local: typeof import("@/lib/opencore/local-secrets.server") =
-      await import("@/lib/opencore/local-secrets.server");
+    const local: typeof import("@/lib/engine/local-secrets.server") =
+      await import("@/lib/engine/local-secrets.server");
     const roots = local.loadLocalRoots().filter((r) => r.path !== data.path);
     local.saveLocalRoots(roots);
     await setLocalIntegration(roots);

@@ -5,7 +5,7 @@ name: Release
 #
 # Publishing uses npm Trusted Publishing (OIDC) with provenance, so no
 # `NPM_TOKEN` is needed. Configure the trusted publisher for
-# `@openexpert/opencore` and `create-openexpert` on npmjs.com.
+# `@openexpert/openexpert` and `create-openexpert` on npmjs.com.
 
 on:
   push:
@@ -50,9 +50,12 @@ jobs:
           version-script: npm run version-packages
           commit-message: "chore(release): version packages"
           pr-title: "chore(release): version packages"
-          create-github-releases: "true"
+          # The release is created by the job below, not here: changesets names it
+          # after the package it published (`<paquete>@<versión>`), and the product
+          # has one name and one version. See `server-asset`.
+          create-github-releases: "false"
 
-  # The bundle `npx @openexpert/opencore serve` downloads. It cannot live in its
+  # The bundle `npx @openexpert/openexpert serve` downloads. It cannot live in its
   # own release-triggered workflow: releases created here carry this run's
   # GITHUB_TOKEN, and GitHub does not start workflows from events that token
   # creates — 0.2.1 and 0.3.0 shipped with no assets because of exactly that.
@@ -73,27 +76,36 @@ jobs:
 
       - run: npm ci
 
-      # Changesets names the release after the package it published.
-      - name: Resolve the target tag
-        id: tag
+      # One name, one version: the tag is `v<versión>` and the release is titled
+      # after the product, not after the package. `ensureStandaloneApp` looks for
+      # this tag first, so it is also what the CLI downloads.
+      - name: Read the version and its notes
+        id: release
         run: |
           set -euo pipefail
-          tag="@openexpert/opencore@$(node -p "require('./packages/opencore/package.json').version")"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Attaching the bundle to $tag"
+          version=$(node -p "require('./packages/openexpert/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          awk -v v="$version" '$0 == "## " v {p=1; next} p && /^## / {exit} p {print}' \
+            packages/openexpert/CHANGELOG.md > notes.md
+          echo "release: v$version, $(wc -l < notes.md) líneas de notas"
 
       - name: Build
         run: |
-          npm run build --workspace @openexpert/opencore
+          npm run build --workspace @openexpert/openexpert
           npm run build
 
       - name: Package
         run: scripts/build-server-bundle.sh
 
-      - name: Attach to release
+      # Creates the release when it does not exist yet and attaches the bundle:
+      # the shell `npx @openexpert/openexpert serve` downloads.
+      - name: Publish the release with its bundle
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: OpenExpert ${{ steps.release.outputs.version }}
+          body_path: notes.md
           overwrite_files: true
           files: |
             openexpert-server-*.tar.gz
@@ -120,7 +132,7 @@ jobs:
 
       - name: Read package version
         id: pkg
-        run: node -e "console.log('version=' + require('./packages/opencore/package.json').version)" >> "$GITHUB_OUTPUT"
+        run: node -e "console.log('version=' + require('./packages/openexpert/package.json').version)" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4

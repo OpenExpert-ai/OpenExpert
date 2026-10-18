@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const provider = vi.hoisted(() => ({ current: "google" as string }));
 const generate = vi.hoisted(() => vi.fn());
 
-vi.mock("./opencore/model-provider.server", () => ({
+vi.mock("./engine/model-provider.server", () => ({
   selectedProvider: () => provider.current,
   getLanguageModel: () => ({ id: "fake-model" }),
 }));

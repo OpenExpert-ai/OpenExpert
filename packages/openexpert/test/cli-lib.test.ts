@@ -64,7 +64,7 @@ describe("expandHome", () => {
 
 describe("packageRoot / packageVersion", () => {
   it("resolves the package root from the module location", () => {
-    expect(packageRoot().endsWith(join("packages", "opencore", "src"))).toBe(true);
+    expect(packageRoot().endsWith(join("packages", "openexpert", "src"))).toBe(true);
   });
 
   it("returns a semver string, falling back to 0.0.0 when package.json is not reachable", () => {
@@ -75,13 +75,13 @@ describe("packageRoot / packageVersion", () => {
 });
 
 describe("findRepoRoot", () => {
-  it("walks up to a checkout marked by package.json + packages/opencore + vite.config.ts", () => {
+  it("walks up to a checkout marked by package.json + packages/openexpert + vite.config.ts", () => {
     const root = mkdtempSync(join(tmpdir(), "oe-reporoot-"));
     try {
-      mkdirSync(join(root, "packages", "opencore"), { recursive: true });
+      mkdirSync(join(root, "packages", "openexpert"), { recursive: true });
       writeFileSync(join(root, "package.json"), "{}");
       writeFileSync(join(root, "vite.config.ts"), "");
-      const nested = join(root, "packages", "opencore", "src");
+      const nested = join(root, "packages", "openexpert", "src");
       mkdirSync(nested, { recursive: true });
       expect(findRepoRoot(nested)).toBe(root);
       expect(findRepoRoot(root)).toBe(root);

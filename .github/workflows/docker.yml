@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "docker/**"
-      - "packages/opencore/**"
+      - "packages/openexpert/**"
       - "src/**"
       - "package.json"
       - "package-lock.json"

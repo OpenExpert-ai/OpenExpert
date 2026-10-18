@@ -1,7 +1,7 @@
 name: Server release asset
 
 # Builds the standalone node-server bundle and attaches it (plus its checksum)
-# to a GitHub release, so `npx @openexpert/opencore serve` can download and run
+# to a GitHub release, so `npx @openexpert/openexpert serve` can download and run
 # the local edition without a source checkout.
 #
 # This workflow cannot rely on `release: published` alone: releases created by
@@ -57,14 +57,15 @@ jobs:
           set -euo pipefail
           tag="${INPUT_TAG:-${EVENT_TAG:-}}"
           if [ -z "$tag" ]; then
-            tag="@openexpert/opencore@$(node -p "require('./packages/opencore/package.json').version")"
+            # The canonical shape: one name, one version (see release.yml).
+            tag="v$(node -p "require('./packages/openexpert/package.json').version")"
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Attaching the bundle to $tag"
 
       - name: Build
         run: |
-          npm run build --workspace @openexpert/opencore
+          npm run build --workspace @openexpert/openexpert
           npm run build
 
       - name: Package

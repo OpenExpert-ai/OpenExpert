@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest a new feature for OpenExpert or the OpenCore package.
+description: Suggest a new feature for OpenExpert or its package.
 title: "[feat] "
 labels: ["enhancement", "needs-triage"]
 body:

@@ -16,7 +16,7 @@
 //   do this — in which case the answer is a clear note, never a silent upload.
 
 import { generateText } from "ai";
-import { getLanguageModel, selectedProvider } from "./opencore/model-provider.server";
+import { getLanguageModel, selectedProvider } from "./engine/model-provider.server";
 
 /** How long to wait before giving up on a document the size of a report. */
 const TIMEOUT_MS = 60_000;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — asking a provider which models it serves.
+// OpenExpert — asking a provider which models it serves.
 //
 // One entry point for every surface that needs the answer: the settings panel
-// ("Listar" / "Probar conexión") and `opencore models` / `opencore doctor`.
+// ("Listar" / "Probar conexión") and `openexpert models` / `openexpert doctor`.
 // Each adapter knows its own protocol and the catalogue says where that
 // provider's key and endpoint live, so no list of providers is repeated here.
 //

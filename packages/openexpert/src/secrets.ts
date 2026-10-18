@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — where Google Drive tokens live.
+// OpenExpert — where Google Drive tokens live.
 // Cloud: google_tokens table (only the server touches it).
 // Local: a file on your machine (~/.openexpert/credentials.json by
 // default), never uploaded to Git.

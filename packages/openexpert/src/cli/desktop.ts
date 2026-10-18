@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// `opencore desktop` — start the local server (unless it is already running)
+// `openexpert desktop` — start the local server (unless it is already running)
 // and open the native OpenExpert window (the Tauri shell). This command owns
 // the server lifecycle so it can stop the server when the window closes.
 //
@@ -65,7 +65,7 @@ async function waitForServer(timeoutMs = 120_000): Promise<boolean> {
 /**
  * Find the source checkout, in order of confidence:
  *   1. OPENEXPERT_DESKTOP_REPO (baked by the installer),
- *   2. relative to the CLI installation (packages/opencore → repo root),
+ *   2. relative to the CLI installation (packages/openexpert → repo root),
  *   3. walking up from the current directory.
  */
 function resolveRepo(cwd: string): string | null {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Shared helpers for the OpenCore CLI: paths, config/secrets I/O, HTTP
+// Shared helpers for the OpenExpert CLI: paths, config/secrets I/O, HTTP
 // detection, and release download with checksum verification.
 
 import { spawn, spawnSync } from "node:child_process";
@@ -32,6 +32,13 @@ export type Secrets = Record<string, string | undefined>;
 
 export const DEFAULT_DATA_DIR = "~/.openexpert";
 
+/**
+ * The package name the releases carried until 0.4.0, before the product and the
+ * package shared one. Kept only so that an already-published version can still
+ * download its own bundle: it is a tag shape, not a naming option.
+ */
+const LEGACY_RELEASE_PACKAGE = "@openexpert/opencore";
+
 export function expandHome(p: string): string {
   if (p === "~") return homedir();
   if (p.startsWith("~/")) return join(homedir(), p.slice(2));
@@ -54,13 +61,13 @@ export function packageVersion(): string {
   }
 }
 
-/** Walk up from `start` to find a checkout (package.json + packages/opencore). */
+/** Walk up from `start` to find a checkout (package.json + packages/openexpert). */
 export function findRepoRoot(start = process.cwd()): string | null {
   let dir = resolve(start);
   for (let i = 0; i < 8; i++) {
     if (
       existsSync(join(dir, "package.json")) &&
-      existsSync(join(dir, "packages", "opencore")) &&
+      existsSync(join(dir, "packages", "openexpert")) &&
       existsSync(join(dir, "vite.config.ts"))
     ) {
       return dir;
@@ -188,7 +195,7 @@ export async function ensureStandaloneApp(
   const log = opts.log ?? (() => {});
   const tarball = `openexpert-server-${version}.tar.gz`;
   // Different tools tag releases differently; try the common shapes.
-  const tags = [`v${version}`, `@openexpert/opencore@${version}`, version];
+  const tags = [`v${version}`, `${LEGACY_RELEASE_PACKAGE}@${version}`, version];
 
   for (const tag of tags) {
     const base = `https://github.com/${repo}/releases/download/${tag}`;

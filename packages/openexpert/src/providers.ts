@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — the provider catalogue. A provider is data, not a branch.
+// OpenExpert — the provider catalogue. A provider is data, not a branch.
 //
 // Adding one is a record in this list: no type to widen, no factory to touch,
 // no validation to remember. That is the whole point. The shape follows the

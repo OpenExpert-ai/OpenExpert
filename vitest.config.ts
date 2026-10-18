@@ -15,7 +15,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/lib/**/*.ts"],
-      exclude: ["src/lib/**/*.d.ts", "src/lib/opencore/**"],
+      exclude: ["src/lib/**/*.d.ts", "src/lib/engine/**"],
       thresholds: {
         statements: 64,
         branches: 56,

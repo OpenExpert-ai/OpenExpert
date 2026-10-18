@@ -1,6 +1,6 @@
 # create-openexpert
 
-Scaffold a local OpenExpert (OpenCore) project.
+Scaffold a local OpenExpert project.
 
 ```sh
 npm create openexpert my-app

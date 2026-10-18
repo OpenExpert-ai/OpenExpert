@@ -1,4 +1,4 @@
-# @openexpert/opencore
+# @openexpert/openexpert
 
 ## 0.4.0
 

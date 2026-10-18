@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PROVIDERS, PROVIDER_IDS } from "@openexpert/opencore/model-provider";
+import { PROVIDERS, PROVIDER_IDS } from "@openexpert/openexpert/model-provider";
 import {
   aiUpdateSchema,
   applyFileConfigToEnv,

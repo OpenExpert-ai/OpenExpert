@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — tool catalog (the current 12).
+// OpenExpert — tool catalog (the current 12).
 // The model never touches the database directly: it only calls these
 // functions, and each one checks your permission before answering.
 

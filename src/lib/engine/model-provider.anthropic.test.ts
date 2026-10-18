@@ -14,8 +14,8 @@ import { generateText } from "ai";
 let baseUrl = "";
 
 // La ficha manda la dirección; en la prueba es la del servidor local.
-vi.mock("@openexpert/opencore/model-provider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@openexpert/opencore/model-provider")>();
+vi.mock("@openexpert/openexpert/model-provider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@openexpert/openexpert/model-provider")>();
   return {
     ...actual,
     providerDef: (id: string) => {

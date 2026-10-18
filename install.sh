@@ -257,8 +257,8 @@ fi
 if [ "$SKIP_BUILD" = 0 ] && [ "$DOCTOR" = 0 ]; then
   step "Compilando (CLI, interfaz web y ventana Tauri)"
   info "la primera compilación de Rust puede tardar 5-15 min…"
-  ( cd "$REPO" && npm run build --workspace @openexpert/opencore ) || die "falló la build del CLI (@openexpert/opencore)"
-  ok "CLI OpenCore"
+  ( cd "$REPO" && npm run build --workspace @openexpert/openexpert ) || die "falló la build del CLI (@openexpert/openexpert)"
+  ok "CLI OpenExpert"
   ( cd "$REPO" && npm run build ) || die "falló la build de la interfaz web (vite)"
   ok "interfaz web (.output)"
 
@@ -267,7 +267,7 @@ if [ "$SKIP_BUILD" = 0 ] && [ "$DOCTOR" = 0 ]; then
   TAURI_BIN="$REPO/node_modules/.bin/tauri"
   [ -x "$TAURI_BIN" ] || die "no existe $TAURI_BIN. Ejecuta: (cd $REPO && npm ci) y vuelve a intentarlo."
   ( cd "$REPO" && "$TAURI_BIN" build --no-bundle ) \
-    || die "falló la build de la ventana (Tauri). Causas típicas: falta rustc/cargo o las librerías de webkit2gtk-4.1 (míralo con: npm run opencore:doctor) o falta el CLI en node_modules (reintenta con --reinstall)."
+    || die "falló la build de la ventana (Tauri). Causas típicas: falta rustc/cargo o las librerías de webkit2gtk-4.1 (míralo con: npm run openexpert:doctor) o falta el CLI en node_modules (reintenta con --reinstall)."
   ok "ventana de escritorio (--no-bundle: no genera .deb/.rpm/AppImage, no hacen falta)"
 
   if [ "$BUNDLE" = 1 ]; then
@@ -302,7 +302,7 @@ if [ "$DOCTOR" = 0 ]; then
     NODE_BIN="$(command -v node)"
     # Escritura atómica: sobre un lanzador en ejecución, escribir encima da ETXTBSY.
     TMP_LAUNCHER="$LAUNCHER.new-$$"
-    printf '#!/usr/bin/env bash\n# SPDX-License-Identifier: MIT\nexport OPENEXPERT_DESKTOP_REPO="%s"\nmkdir -p "$HOME/.openexpert" 2>/dev/null || true\ncd "%s" 2>/dev/null || true\nif [ -t 1 ]; then\n  exec "%s" "%s/packages/opencore/bin/opencore.js" desktop "$@"\nelse\n  exec "%s" "%s/packages/opencore/bin/opencore.js" desktop "$@" >>"$HOME/.openexpert/desktop.log" 2>&1\nfi\n' \
+    printf '#!/usr/bin/env bash\n# SPDX-License-Identifier: MIT\nexport OPENEXPERT_DESKTOP_REPO="%s"\nmkdir -p "$HOME/.openexpert" 2>/dev/null || true\ncd "%s" 2>/dev/null || true\nif [ -t 1 ]; then\n  exec "%s" "%s/packages/openexpert/bin/openexpert.js" desktop "$@"\nelse\n  exec "%s" "%s/packages/openexpert/bin/openexpert.js" desktop "$@" >>"$HOME/.openexpert/desktop.log" 2>&1\nfi\n' \
       "$REPO" "$REPO" "$NODE_BIN" "$REPO" "$NODE_BIN" "$REPO" > "$TMP_LAUNCHER"
     chmod 755 "$TMP_LAUNCHER"
     mv -f "$TMP_LAUNCHER" "$LAUNCHER"
@@ -490,5 +490,5 @@ cat <<EOF
   Si acabas de añadir ~/.local/bin al PATH, abre un terminal nuevo (o: exec \$SHELL -l).
   Si la ventana sale en blanco en Wayland: WEBKIT_DISABLE_DMABUF_RENDERER=1 openexpert
   Ojo: 'openexpert' siempre abre la ventana (el lanzador añade el subcomando desktop).
-  Para los subcomandos del CLI sin ventana: cd $REPO && npm run opencore:doctor
+  Para los subcomandos del CLI sin ventana: cd $REPO && npm run openexpert:doctor
 EOF

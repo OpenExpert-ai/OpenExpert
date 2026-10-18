@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — which model to use. The harness is stable; the model is configuration.
+// OpenExpert — which model to use. The harness is stable; the model is configuration.
 //
 // Providers:
 import {

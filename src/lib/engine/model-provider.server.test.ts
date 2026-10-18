@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { getLanguageModel, providerHeaders, selectedProvider } from "./model-provider.server";
-import { providerDef } from "@openexpert/opencore/model-provider";
+import { providerDef } from "@openexpert/openexpert/model-provider";
 
 type Built = { modelId?: string; provider?: string };
 

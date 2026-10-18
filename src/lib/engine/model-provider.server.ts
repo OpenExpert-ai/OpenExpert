@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Server-side model provider selection, built on @openexpert/opencore.
+// Server-side model provider selection, built on @openexpert/openexpert.
 //
 // One branch per adapter, and the catalogue record decides which one runs,
 // where the key lives and which endpoint to use. A provider whose key is
@@ -19,7 +19,7 @@ import {
   selectModel,
   type ModelProviderId,
   type ProviderDef,
-} from "@openexpert/opencore/model-provider";
+} from "@openexpert/openexpert/model-provider";
 
 export type { ModelProviderId };
 

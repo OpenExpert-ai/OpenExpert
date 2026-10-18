@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — local configuration.
+// OpenExpert — local configuration.
 // Precedence: OPENEXPERT_* env vars > openexpert.json > defaults.
 
 import { existsSync, readFileSync } from "node:fs";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore — storage interface. OpenExpert is local-first: implementations
+// OpenExpert — storage interface. OpenExpert is local-first: implementations
 // are backed by the local data directory (SQLite / files).
 
 export type TableName =

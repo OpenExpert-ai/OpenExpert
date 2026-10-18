@@ -198,7 +198,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
         try {
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const grants = local.loadGrantedFiles();
           const q = (query ?? "").trim().toLowerCase();
           const files = grants
@@ -225,7 +225,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         used.add("Google Drive");
         try {
           const d = await import("../drive.server");
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const granted = local.loadGrantedFiles().map((g) => g.id);
           return await d.readFile(fileId, granted);
         } catch (e) {
@@ -278,7 +278,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         used.add("Google Drive");
         try {
           const d = await import("../drive.server");
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const granted = local.loadGrantedFiles().map((g) => g.id);
           const f = await d.updateFile(fileId, content, granted, newName);
           await ee
@@ -307,7 +307,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         used.add("Archivos locales");
         try {
           const MAX_LISTED = 200;
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           const all = fs.listLocalFiles(roots);
@@ -338,7 +338,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           const q = query.trim().toLowerCase();
@@ -362,7 +362,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           return await fs.searchLocalContent(roots, query);
@@ -425,7 +425,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           // The setting is read here, in the tool layer, so the filesystem module never has to know
@@ -461,7 +461,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           const f = fs.createLocalFile(folder, name, roots, content);
@@ -490,7 +490,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
-          const local = await import("../opencore/local-secrets.server");
+          const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           const f = fs.writeLocalFile(path, roots, content);

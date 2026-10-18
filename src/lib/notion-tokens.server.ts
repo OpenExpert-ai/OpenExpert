@@ -11,7 +11,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dataDir } from "@/lib/db.server";
-import * as local from "@/lib/opencore/local-secrets.server";
+import * as local from "@/lib/engine/local-secrets.server";
 
 const AUTHORIZE_URL = "https://api.notion.com/v1/oauth/authorize";
 const TOKEN_URL = "https://api.notion.com/v1/oauth/token";

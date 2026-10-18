@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Build configuration for @openexpert/opencore. Emits ESM + .d.ts and keeps
+// Build configuration for @openexpert/openexpert. Emits ESM + .d.ts and keeps
 // the JS entry points tree-shakeable.
 
 import { defineConfig } from "tsup";

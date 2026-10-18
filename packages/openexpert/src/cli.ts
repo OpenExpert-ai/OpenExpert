@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenCore CLI entry point. Dispatches subcommands. See `run`.
+// OpenExpert CLI entry point. Dispatches subcommands. See `run`.
 
 import { cmdDoctor, cmdFix, cmdModels, cmdServe, cmdUpdate, cmdVersion } from "./cli/commands.js";
 import { cmdDesktop } from "./cli/desktop.js";
@@ -20,8 +20,8 @@ Uso:
   openexpert version    muestra la versión
 
 Ejemplos:
-  npx @openexpert/opencore
-  npx @openexpert/opencore serve
+  npx @openexpert/openexpert
+  npx @openexpert/openexpert serve
 
 Docker (sin Node):
   docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert`);
