@@ -54,8 +54,8 @@ function replace(path, mode, write) {
 }
 
 if (!skipBuild) {
-  console.log("· Building the OpenCore CLI…");
-  sh("npm", ["run", "build", "--workspace", "@openexpert/opencore"]);
+  console.log("· Building the OpenExpert CLI…");
+  sh("npm", ["run", "build", "--workspace", "@openexpert/openexpert"]);
   console.log("· Building the web app…");
   sh("npm", ["run", "build"]);
   console.log("· Building the desktop window (Rust)…");
@@ -69,7 +69,13 @@ if (!skipBuild) {
     );
     process.exit(1);
   }
-  sh(tauriBin, ["build"]);
+  // The desktop package carries the product's version, read from the one place
+  // that has it (the package manifest) instead of a second number copied into
+  // `tauri.conf.json` that would drift.
+  const productVersion = JSON.parse(
+    readFileSync(join(repo, "packages", "openexpert", "package.json"), "utf8"),
+  ).version;
+  sh(tauriBin, ["build", "--config", JSON.stringify({ version: productVersion })]);
 }
 
 const binary = [
@@ -93,7 +99,7 @@ replace(installedBinary, 0o755, (tmp) => copyFileSync(binary, tmp));
 // (node + repo) so it works from a desktop launcher (rofi/wofi/fuzzel) whose
 // PATH may not include ~/.local/bin. Logs to ~/.openexpert/desktop.log when not
 // attached to a terminal.
-const cliEntry = join(repo, "packages", "opencore", "bin", "opencore.js");
+const cliEntry = join(repo, "packages", "openexpert", "bin", "openexpert.js");
 const nodeBin = process.execPath;
 const logFile = join(home, ".openexpert", "desktop.log");
 const launcher = join(binDir, "openexpert");

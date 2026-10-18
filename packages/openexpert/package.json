@@ -1,0 +1,99 @@
+{
+  "name": "@openexpert/openexpert",
+  "version": "0.4.0",
+  "description": "OpenExpert (MIT) — engine and CLI of the local-first operations dashboard: configuration, model-provider catalogue, storage and secrets interfaces, tool catalog, and the CLI that installs and runs the app.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./model-provider": {
+      "types": "./dist/model-provider.d.ts",
+      "default": "./dist/model-provider.js"
+    },
+    "./provider-models": {
+      "types": "./dist/provider-models.d.ts",
+      "default": "./dist/provider-models.js"
+    },
+    "./storage": {
+      "types": "./dist/storage.d.ts",
+      "default": "./dist/storage.js"
+    },
+    "./secrets": {
+      "types": "./dist/secrets.d.ts",
+      "default": "./dist/secrets.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "default": "./dist/tools.js"
+    },
+    "./schema": "./schema/openexpert.schema.json"
+  },
+  "bin": {
+    "openexpert": "./bin/openexpert.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "schema",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "openexpert",
+    "ai",
+    "agents",
+    "mit",
+    "oss",
+    "local-first"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenExpert-ai/OpenExpert.git",
+    "directory": "packages/openexpert"
+  },
+  "bugs": {
+    "url": "https://github.com/OpenExpert-ai/OpenExpert/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "prepare": "tsup",
+    "prepack": "tsup",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "doctor": "node ./bin/openexpert.js doctor",
+    "serve": "node ./bin/openexpert.js serve",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.91",
+    "@clack/prompts": "^1.8.1",
+    "ai": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.3",
+    "vitest": "^5.0.3"
+  }
+}

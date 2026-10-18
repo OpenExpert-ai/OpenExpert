@@ -24,21 +24,21 @@ docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
 
-## Option B — With Node (the OpenCore CLI)
+## Option B — With Node (the CLI)
 
 ```sh
-npx @openexpert/opencore
+npx @openexpert/openexpert
 ```
 
 The wizard detects Ollama, lets you choose a provider, writes
 `openexpert.json`, and starts the app. Other commands:
 
 ```sh
-npx @openexpert/opencore serve     # start
-npx @openexpert/opencore doctor    # check configuration
-npx @openexpert/opencore fix       # auto-configure what is missing
-npx @openexpert/opencore models    # list models for the current provider
-npx @openexpert/opencore update    # refresh the downloaded server
+npx @openexpert/openexpert serve     # start
+npx @openexpert/openexpert doctor    # check configuration
+npx @openexpert/openexpert fix       # auto-configure what is missing
+npx @openexpert/openexpert models    # list models for the current provider
+npx @openexpert/openexpert update    # refresh the downloaded server
 ```
 
 ### Scaffold a project
@@ -85,7 +85,7 @@ in the repository.
 
 ## Troubleshooting
 
-- **Chat says the model key is missing.** Run `opencore fix` or `opencore init`.
+- **Chat says the model key is missing.** Run `openexpert fix` or `openexpert init`.
 - **Ollama not detected.** Install it and pull a model: `ollama pull llama3.1`.
 - **Port 3000 busy.** Free it; the dev server is pinned to 3000.
 - **Docker image not found.** Build locally:

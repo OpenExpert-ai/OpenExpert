@@ -20,15 +20,15 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import { loadConfig } from "@openexpert/opencore/config";
-import type { AiConfig, ChatConfig, OpenExpertConfig } from "@openexpert/opencore/config";
+import { loadConfig } from "@openexpert/openexpert/config";
+import type { AiConfig, ChatConfig, OpenExpertConfig } from "@openexpert/openexpert/config";
 import {
   providerCatalogue,
   PROVIDER_IDS,
   PROVIDER_KEY_VARS,
   providerDef,
   type ProviderKeyVar,
-} from "@openexpert/opencore/model-provider";
+} from "@openexpert/openexpert/model-provider";
 import { patternsAreValid } from "./ai/injection";
 import { configPath, dataDir, dbPath, secretsPath } from "./paths.server";
 
@@ -111,7 +111,7 @@ function atomicWrite(path: string, contents: string, mode?: number): void {
 export function writeFileConfig(partial: RawFileConfig, cwd: string = process.cwd()): void {
   const current = readFileConfigRaw(cwd);
   const next: RawFileConfig = {
-    $schema: current.$schema ?? "./packages/opencore/schema/openexpert.schema.json",
+    $schema: current.$schema ?? "./packages/openexpert/schema/openexpert.schema.json",
     ...current,
     ...partial,
   };
@@ -446,7 +446,7 @@ export function rawConfigText(cwd: string = process.cwd()): string {
   const cfg = effectiveConfig(cwd);
   return JSON.stringify(
     {
-      $schema: "./packages/opencore/schema/openexpert.schema.json",
+      $schema: "./packages/openexpert/schema/openexpert.schema.json",
       modelProvider: cfg.modelProvider,
       modelId: cfg.modelId,
       ollamaBaseUrl: cfg.ollamaBaseUrl,

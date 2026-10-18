@@ -7,7 +7,7 @@
 ## 1. Licencia
 
 Todo el repositorio se distribuye bajo la **Licencia MIT**
-([`LICENSE`](../../LICENSE)). Incluye la aplicación, el paquete `opencore`, la
+([`LICENSE`](../../LICENSE)). Incluye la aplicación, el paquete `openexpert`, la
 configuración de Docker y la documentación.
 
 ## 2. Sin nube alojada

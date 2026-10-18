@@ -3,17 +3,16 @@
 // panel. Reads/writes openexpert.json + secrets.json, mirrors the result into
 // process.env and records every change in the activity log.
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { listProviderModels } from "@openexpert/opencore/provider-models";
+import { listProviderModels } from "@openexpert/openexpert/provider-models";
 import {
   endpointSourceOf,
   providerKeyEnvOf,
   PROVIDER_KEY_VARS,
-} from "@openexpert/opencore/model-provider";
+} from "@openexpert/openexpert/model-provider";
+import { APP_VERSION } from "./version";
 import * as ee from "./ee.server";
 import * as backup from "./backup.server";
 import { getDb, now, persist } from "@/lib/db.server";
@@ -340,14 +339,7 @@ export const setUiSettings = createServerFn({ method: "POST" })
 /* -------------------------------- runtime -------------------------------- */
 
 function runtimeInfo() {
-  let version = "0.0.0";
-  try {
-    const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
-      version?: string;
-    };
-    version = pkg.version ?? "0.0.0";
-  } catch {
-    // ignore
-  }
-  return { version, node: process.version, port: process.env["PORT"] || "3000" };
+  // The product has one version and it is the package's (`@/lib/version`), so the
+  // interface never reports a number of its own.
+  return { version: APP_VERSION, node: process.version, port: process.env["PORT"] || "3000" };
 }

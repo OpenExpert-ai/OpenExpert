@@ -19,7 +19,7 @@ cp openexpert.json.example openexpert.json   # opcional; los defectos valen
 npm run dev                                 # http://localhost:3000
 ```
 
-En un clon nuevo, `npm ci` también construye `packages/opencore` (su script
+En un clon nuevo, `npm ci` también construye `packages/openexpert` (su script
 `prepare`), así que el CLI queda listo.
 
 ## 3. Variables de entorno
@@ -41,7 +41,7 @@ Documentadas en `.env.example`. Lo esencial:
 `.env` está en `.gitignore`. El asistente del CLI guarda los secretos en
 `~/.openexpert/secrets.json`, que el servidor carga en el entorno al arrancar
 (las variables ya definidas tienen prioridad), de modo que `npm run dev` y
-`opencore serve` se comportan igual.
+`openexpert serve` se comportan igual.
 
 ### Ficheros de configuración y panel de ajustes
 
@@ -72,8 +72,8 @@ de i18n del cliente está en `src/lib/i18n.tsx` con el diccionario inglés en
 | `npm run format` / `format:check` | Prettier                                            |
 | `npm run typecheck`               | TypeScript sin emitir                               |
 | `npm run test:run`                | Tests (app + paquete)                               |
-| `npm run opencore:doctor`         | Diagnóstico del CLI                                 |
-| `npm run opencore:serve`          | Arranca la app con el CLI                           |
+| `npm run openexpert:doctor`       | Diagnóstico del CLI                                 |
+| `npm run openexpert:serve`        | Arranca la app con el CLI                           |
 | `npm run license:check`           | Verifica cabeceras SPDX                             |
 | `npm run test:coverage`           | Tests con umbrales de cobertura                     |
 | `npm run check:docs`              | Enlaces de la documentación                         |

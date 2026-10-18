@@ -20,7 +20,7 @@ OpenExpert is documented in two languages. Pick yours:
 | 08  | [Deployment](./en/08-deployment.md)          | [Despliegue](./es/08-despliegue.md)                           | Engineering            |
 | 09  | [Operation & support](./en/09-operation.md)  | [Operación y soporte](./es/09-operacion-y-soporte.md)         | Both                   |
 | 10  | [Glossary](./en/10-glossary.md)              | [Glosario](./es/10-glosario.md)                               | Business               |
-| 11  | [OpenCore](./en/11-opencore.md)              | [OpenCore](./es/11-opencore.md)                               | All                    |
+| 11  | [Engine and CLI](./en/11-engine-and-cli.md)  | [Motor y CLI](./es/11-motor-y-cli.md)                         | All                    |
 | 12  | [Licensing model](./en/12-licensing.md)      | [Modelo de licencia](./es/12-licencia.md)                     | Both                   |
 | 13  | [AI providers](./en/13-ai-providers.md)      | [Proveedores de IA](./es/13-proveedores-ia.md)                | Both                   |
 | 14  | [Roadmap](./en/14-roadmap.md)                | [Hoja de ruta](./es/14-hoja-de-ruta.md)                       | Both                   |

@@ -20,7 +20,7 @@ import {
   modelKeyError,
   modelLabel,
   selectedProvider,
-} from "@/lib/opencore/model-provider.server";
+} from "@/lib/engine/model-provider.server";
 import { detectInjection as injectionMatch } from "@/lib/ai/injection";
 import { createChatTools } from "@/lib/ai/tools";
 import { effectiveConfig } from "@/lib/config.server";

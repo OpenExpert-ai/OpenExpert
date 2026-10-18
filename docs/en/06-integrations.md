@@ -123,7 +123,7 @@ than a summary, because it feeds the search and the windowed read.
 
 ### 5.1 Model providers
 
-Providers are **data**: `packages/opencore/src/providers.ts` is a catalogue, and every record
+Providers are **data**: `packages/openexpert/src/providers.ts` is a catalogue, and every record
 carries its adapter (`google`, `openai-compatible`, `anthropic`), its endpoint, the
 **environment variable** holding its key, its headers and — when the service asks for it —
 the **header that must carry the conversation id**. The provider identifier is **derived from

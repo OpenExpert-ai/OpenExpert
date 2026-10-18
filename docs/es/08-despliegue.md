@@ -11,14 +11,14 @@
 | Desarrollo          | `npm ci && npm run dev`                                                                   |
 | Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                   |
 | Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
-| CLI                 | `npx @openexpert/opencore serve`                                                          |
+| CLI                 | `npx @openexpert/openexpert serve`                                                        |
 | Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                            |
 
 La aplicación escucha en el puerto 3000 y **solo en la interfaz de bucle local**
 (`127.0.0.1`). El panel no tiene autenticación: quien alcance el puerto puede
 leer y escribir las carpetas que su dueño haya autorizado. Para exponerlo a una
 red a propósito, define `OPENEXPERT_HOST` (o `HOST`) — por ejemplo
-`OPENEXPERT_HOST=0.0.0.0 npx @openexpert/opencore serve` — y piensa antes quién
+`OPENEXPERT_HOST=0.0.0.0 npx @openexpert/openexpert serve` — y piensa antes quién
 comparte esa red. La imagen Docker sigue escuchando en todas las interfaces,
 porque el puerto publicado es la razón del contenedor. El preset de Nitro es
 `node-server`.
@@ -64,7 +64,7 @@ base de datos. Importar una copia reemplaza los datos actuales.
 ## 5. Actualizaciones
 
 - Código: `git pull` / reinstala el paquete y reconstruye.
-- Servidor descargado: `npx @openexpert/opencore update`.
+- Servidor descargado: `npx @openexpert/openexpert update`.
 
 ## 6. Aplicación de escritorio (Linux)
 
@@ -109,7 +109,7 @@ npx tauri build --bundles deb,rpm,appimage   # -> src-tauri/target/release/bundl
 La primera ejecución descarga las utilidades de empaquetado de Tauri (linuxdeploy,
 AppRun). Estos paquetes llevan **solo la ventana** y su entrada de menú ejecuta
 `openexpert-desktop`, así que el servidor local tiene que estar ya en marcha
-(`npm run opencore:serve`). Para el comportamiento "arranca el servidor y abre
+(`npm run openexpert:serve`). Para el comportamiento "arranca el servidor y abre
 la ventana", usa el lanzador por usuario (`npm run desktop:install`).
 
 Sirven para distribuir la aplicación, no para instalarla en una máquina: la

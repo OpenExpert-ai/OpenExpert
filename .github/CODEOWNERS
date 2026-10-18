@@ -8,7 +8,7 @@
 /                          @OpenExpert-ai/maintainers
 
 # Core package and license governance
-/packages/opencore/        @OpenExpert-ai/maintainers
+/packages/openexpert/        @OpenExpert-ai/maintainers
 /LICENSE                   @OpenExpert-ai/maintainers
 /NOTICE                    @OpenExpert-ai/maintainers
 /SECURITY.md               @OpenExpert-ai/maintainers

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 #
-# Build the standalone server bundle that `npx @openexpert/opencore serve` and
+# Build the standalone server bundle that `npx @openexpert/openexpert serve` and
 # `openexpert desktop` download when there is no source checkout, and write it
 # (plus its checksum) to the repository root.
 #
@@ -10,14 +10,14 @@
 # so the artefact cannot drift between them.
 #
 # Usage: scripts/build-server-bundle.sh [version]
-#   version defaults to packages/opencore/package.json's version.
+#   version defaults to packages/openexpert/package.json's version.
 #
 # Requires the web build to exist (npm run build).
 set -euo pipefail
 
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-VERSION="${1:-$(node -p "require('./packages/opencore/package.json').version")}"
+VERSION="${1:-$(node -p "require('./packages/openexpert/package.json').version")}"
 TARBALL="openexpert-server-${VERSION}.tar.gz"
 
 if [ ! -f .output/server/index.mjs ]; then

@@ -62,8 +62,8 @@ jobs:
       - name: Test with coverage
         run: npm run test:coverage
 
-      - name: Build OpenCore package
-        run: npm run build --workspace @openexpert/opencore
+      - name: Build OpenExpert package
+        run: npm run build --workspace @openexpert/openexpert
 
       - name: Build application
         run: npm run build
@@ -112,7 +112,7 @@ jobs:
 
       - name: Build the app
         run: |
-          npm run build --workspace @openexpert/opencore
+          npm run build --workspace @openexpert/openexpert
           npm run build
 
       - name: Build the desktop window

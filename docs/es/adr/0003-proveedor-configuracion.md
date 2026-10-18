@@ -11,10 +11,10 @@ bifurcar la aplicación.
 
 ## Decisión
 
-La selección vive en `@openexpert/opencore/model-provider` y se controla por
+La selección vive en `@openexpert/openexpert/model-provider` y se controla por
 configuración: `OPENEXPERT_MODEL_PROVIDER` / `OPENEXPERT_MODEL_ID` (el entorno
 gana a `openexpert.json`, que gana a los valores por defecto).
-`src/lib/opencore/model-provider.server.ts` convierte esa selección en un
+`src/lib/engine/model-provider.server.ts` convierte esa selección en un
 `LanguageModel` del SDK de IA.
 
 ## Consecuencias

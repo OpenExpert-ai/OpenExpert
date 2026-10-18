@@ -40,7 +40,7 @@ export const now = () => new Date().toISOString();
 /**
  * Load the secrets written by the CLI wizard (`~/.openexpert/secrets.json`)
  * into the environment at startup, so `npm run dev` behaves like
- * `opencore serve`. Existing env vars always win.
+ * `openexpert serve`. Existing env vars always win.
  */
 function loadSecretsIntoEnv(): void {
   try {

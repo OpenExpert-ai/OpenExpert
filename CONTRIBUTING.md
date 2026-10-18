@@ -19,7 +19,7 @@ npm ci
 cp .env.example .env        # optional; Ollama needs no keys
 cp openexpert.json.example openexpert.json
 npm run dev                 # http://localhost:3000
-npm run opencore:doctor     # configuration check
+npm run openexpert:doctor     # configuration check
 ```
 
 ## Workflow

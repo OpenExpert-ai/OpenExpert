@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Multi-stage Dockerfile for the OpenExpert local edition.
-# Stage 1: install dependencies and build the app and the OpenCore package.
+# Stage 1: install dependencies and build the app and the OpenExpert package.
 # Stage 2: minimal runtime image running Nitro's node-server preset.
 
 # Base image pinned by digest, on purpose and in both stages: the tag alone can
@@ -21,10 +21,10 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json* ./
-# The workspace manifests and the OpenCore sources must be present before
+# The workspace manifests and the OpenExpert sources must be present before
 # `npm ci`: npm runs the workspace `prepare` (tsup) even with
 # --ignore-scripts, and tsup needs its input files.
-COPY packages/opencore ./packages/opencore
+COPY packages/openexpert ./packages/openexpert
 COPY packages/create-openexpert ./packages/create-openexpert
 
 # Install the full dependency tree.
@@ -40,8 +40,8 @@ COPY .changeset ./.changeset
 
 ENV NODE_ENV=production
 
-# Build the OpenCore package, then the application.
-RUN npm run build --workspace @openexpert/opencore \
+# Build the OpenExpert package, then the application.
+RUN npm run build --workspace @openexpert/openexpert \
  && npm run build
 
 # Prune devDependencies for the runtime stage.
@@ -66,7 +66,7 @@ RUN apt-get update \
 # Copy the built application and the runtime node_modules.
 COPY --from=builder --chown=openexpert:openexpert /app/.output /app/.output
 COPY --from=builder --chown=openexpert:openexpert /app/node_modules /app/node_modules
-COPY --from=builder --chown=openexpert:openexpert /app/packages/opencore /app/packages/opencore
+COPY --from=builder --chown=openexpert:openexpert /app/packages/openexpert /app/packages/openexpert
 COPY --from=builder --chown=openexpert:openexpert /app/package.json /app/package.json
 
 # Persistent volume for OpenExpert local data and credentials.

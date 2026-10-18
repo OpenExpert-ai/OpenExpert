@@ -7,6 +7,21 @@ to read every changeset.
 
 ## Unreleased
 
+### One name and one version
+
+- **The package is `@openexpert/openexpert`.** It used to be `@openexpert/opencore`, its CLI
+  answered to `opencore`, and the documentation had a page named after it — with no note
+  anywhere explaining why, so it read like a licensing strategy instead of a component.
+  Renaming the package is a new name on npm: the old one is deprecated with a pointer, and
+  the CLI (and the download of its bundle) keeps working for versions published before.
+- **Releases carry the product's name.** They are tagged `v<version>` and titled
+  `OpenExpert <version>`, instead of the package name changesets would use, and the bundle is
+  attached to that same release.
+- **One version.** The number in the interface (About) is the package's, and the root manifest
+  is a private workspace file without a version of its own. The desktop shell takes the same
+  number when it is built.
+- The app's internal module that wraps the engine is `src/lib/engine/`, not `src/lib/opencore/`.
+
 ### One key per provider
 
 - **A provider's key is its own.** No two records in the catalogue may declare the same
@@ -50,7 +65,7 @@ to read every changeset.
 - Model providers are `ollama`, `google` and `openai-compatible`; the
   `openexpert` gateway provider is gone.
 - Nitro preset is always `node-server`; run locally or with Docker.
-- `@openexpert/opencore` simplified to match (no mode/gateway/auth modules).
+- `@openexpert/openexpert` simplified to match (no mode/gateway/auth modules).
 - Documentation and `AGENTS.md` rewritten for the local edition.
 
 ### Added
@@ -79,7 +94,7 @@ to read every changeset.
   read.
 - **MIT license for the entire repository**: code, docs and the OpenCore
   engine.
-- **`@openexpert/opencore`** with a build step (`tsup`), generated types, a
+- **`@openexpert/openexpert`** with a build step (`tsup`), generated types, a
   JSON schema for `openexpert.json`, and a CLI (`init`, `doctor`, `fix`,
   `models`, `serve`, `update`).
 - **`create-openexpert`** (`npm create openexpert`) to scaffold a project.
@@ -104,7 +119,7 @@ to read every changeset.
 
 ### Fixed
 
-- `@openexpert/opencore` no longer reuses a port owned by another application for
+- `@openexpert/openexpert` no longer reuses a port owned by another application for
   `serve`/`desktop`, and `doctor`/`models` read the provider from the directory
   they were given.
 - A folder literally named `Trash` outside the XDG trash is no longer hidden in

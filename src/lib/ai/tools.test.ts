@@ -220,7 +220,7 @@ vi.mock("../drive.server", () => ({
   createFile: svc.driveCreate,
   updateFile: svc.driveUpdate,
 }));
-vi.mock("../opencore/local-secrets.server", () => ({
+vi.mock("../engine/local-secrets.server", () => ({
   loadGrantedFiles: svc.loadGrantedFiles,
   loadLocalRoots: svc.loadLocalRoots,
 }));

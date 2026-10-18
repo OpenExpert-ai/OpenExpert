@@ -50,7 +50,7 @@ openexpert-server-*.tar.gz
 openexpert-server-*.tar.gz.sha256
 pkg/
 
-# OpenCore local — nunca se sube a Git
+# OpenExpert local — nunca se sube a Git
 openexpert.json
 .openexpert/
 credentials.json

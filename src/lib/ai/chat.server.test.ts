@@ -32,7 +32,7 @@ vi.mock("ai", async (importOriginal) => {
   return { ...actual, streamText: mocks.streamText, convertToModelMessages: mocks.convert };
 });
 
-vi.mock("@/lib/opencore/model-provider.server", () => ({
+vi.mock("@/lib/engine/model-provider.server", () => ({
   getLanguageModel: (...a: unknown[]) => mocks.getLanguageModel(...a),
   modelKeyError: (...a: unknown[]) => mocks.modelKeyError(...a),
   modelLabel: () => "google:test-model",

@@ -94,9 +94,9 @@ de la conversación y solo para este proveedor.
 ## 6. Con el CLI
 
 ```sh
-npx @openexpert/opencore        # asistente interactivo
-npx @openexpert/opencore models # listar modelos del proveedor actual
-npx @openexpert/opencore doctor # revisar la configuración
+npx @openexpert/openexpert        # asistente interactivo
+npx @openexpert/openexpert models # listar modelos del proveedor actual
+npx @openexpert/openexpert doctor # revisar la configuración
 ```
 
 El asistente y el panel guardan los secretos en `~/.openexpert/secrets.json`

@@ -1,0 +1,251 @@
+// SPDX-License-Identifier: MIT
+// Shared helpers for the OpenExpert CLI: paths, config/secrets I/O, HTTP
+// detection, and release download with checksum verification.
+
+import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { ollamaApiBaseUrl } from "../model-provider.js";
+import { DEFAULT_OLLAMA_URL, type ModelProviderId } from "../providers.js";
+
+export { DEFAULT_OLLAMA_URL };
+
+/** Providers come from the catalogue: this is the same union the app uses. */
+export type Provider = ModelProviderId;
+
+export type FileConfig = {
+  modelProvider?: Provider;
+  modelId?: string;
+  ollamaBaseUrl?: string;
+  dataDir?: string;
+};
+
+/**
+ * Secrets are stored by environment-variable name. Which names hold a provider
+ * key is the catalogue's business (`PROVIDER_KEY_VARS`), so adding a provider
+ * needs no change here.
+ */
+export type Secrets = Record<string, string | undefined>;
+
+export const DEFAULT_DATA_DIR = "~/.openexpert";
+
+/**
+ * The package name the releases carried until 0.4.0, before the product and the
+ * package shared one. Kept only so that an already-published version can still
+ * download its own bundle: it is a tag shape, not a naming option.
+ */
+const LEGACY_RELEASE_PACKAGE = "@openexpert/opencore";
+
+export function expandHome(p: string): string {
+  if (p === "~") return homedir();
+  if (p.startsWith("~/")) return join(homedir(), p.slice(2));
+  return p;
+}
+
+export function packageRoot(): string {
+  // dist/cli.js -> package root is one level up.
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+export function packageVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(packageRoot(), "package.json"), "utf8")) as {
+      version?: string;
+    };
+    return pkg.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+/** Walk up from `start` to find a checkout (package.json + packages/openexpert). */
+export function findRepoRoot(start = process.cwd()): string | null {
+  let dir = resolve(start);
+  for (let i = 0; i < 8; i++) {
+    if (
+      existsSync(join(dir, "package.json")) &&
+      existsSync(join(dir, "packages", "openexpert")) &&
+      existsSync(join(dir, "vite.config.ts"))
+    ) {
+      return dir;
+    }
+    const parent = resolve(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+export function configPath(cwd = process.cwd()): string {
+  return join(cwd, "openexpert.json");
+}
+
+export function readConfig(cwd = process.cwd()): FileConfig {
+  try {
+    const p = configPath(cwd);
+    if (!existsSync(p)) return {};
+    return JSON.parse(readFileSync(p, "utf8")) as FileConfig;
+  } catch {
+    return {};
+  }
+}
+
+export function writeConfig(cfg: FileConfig, cwd = process.cwd()): void {
+  writeFileSync(configPath(cwd), JSON.stringify(cfg, null, 2) + "\n");
+}
+
+export function resolvedDataDir(cwd = process.cwd()): string {
+  const cfg = readConfig(cwd);
+  const raw = process.env["OPENEXPERT_DATA_DIR"] || cfg.dataDir || DEFAULT_DATA_DIR;
+  return expandHome(raw);
+}
+
+export function secretsPath(cwd = process.cwd()): string {
+  return join(resolvedDataDir(cwd), "secrets.json");
+}
+
+export function readSecrets(cwd = process.cwd()): Secrets {
+  try {
+    const p = secretsPath(cwd);
+    if (!existsSync(p)) return {};
+    return JSON.parse(readFileSync(p, "utf8")) as Secrets;
+  } catch {
+    return {};
+  }
+}
+
+export function writeSecrets(secrets: Secrets, cwd = process.cwd()): string {
+  const dir = resolvedDataDir(cwd);
+  mkdirSync(dir, { recursive: true });
+  const p = join(dir, "secrets.json");
+  writeFileSync(p, JSON.stringify(secrets, null, 2), { mode: 0o600 });
+  return p;
+}
+
+/** Merge stored secrets into the current environment for the child server. */
+export function secretsAsEnv(cwd = process.cwd()): Record<string, string> {
+  const s = readSecrets(cwd);
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(s)) if (v) out[k] = v;
+  return out;
+}
+
+/**
+ * Environment for the local server child process.
+ *
+ * The bundled server (Nitro) reads `NITRO_HOST`/`HOST` and defaults to every
+ * interface, which would publish the dashboard — no authentication, read and
+ * write access to the folders the owner granted — to whoever shares the
+ * network. Bind loopback unless the operator asks for something else through
+ * `OPENEXPERT_HOST` (or a `HOST` of their own).
+ */
+export function localServerEnv(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  return { HOST: env["OPENEXPERT_HOST"] || env["HOST"] || "127.0.0.1" };
+}
+
+export async function httpGetJson<T>(
+  url: string,
+  opts: { headers?: Record<string, string>; timeoutMs?: number } = {},
+): Promise<T | null> {
+  try {
+    const res = await fetch(url, {
+      ...(opts.headers ? { headers: opts.headers } : {}),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 2500),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+export async function detectOllama(
+  baseUrl = DEFAULT_OLLAMA_URL,
+  timeoutMs = 1500,
+): Promise<{ up: boolean; models: string[] }> {
+  const root = ollamaApiBaseUrl(baseUrl);
+  const data = await httpGetJson<{ models?: { name: string }[] }>(`${root}/api/tags`, {
+    timeoutMs,
+  });
+  if (!data) return { up: false, models: [] };
+  return { up: true, models: (data.models ?? []).map((m) => m.name) };
+}
+
+export function appCacheDir(version: string): string {
+  return join(expandHome(DEFAULT_DATA_DIR), "app", version);
+}
+
+/**
+ * Ensure a standalone server build exists for `version`. Downloads the
+ * release tarball published by the CI workflow and verifies its checksum.
+ * Returns the directory containing `.output/server/index.mjs`, or null.
+ */
+export async function ensureStandaloneApp(
+  version: string,
+  opts: { repo?: string; log?: (m: string) => void } = {},
+): Promise<string | null> {
+  const dir = appCacheDir(version);
+  const entry = join(dir, ".output", "server", "index.mjs");
+  if (existsSync(entry)) return dir;
+
+  const repo = opts.repo ?? "OpenExpert-ai/OpenExpert";
+  const log = opts.log ?? (() => {});
+  const tarball = `openexpert-server-${version}.tar.gz`;
+  // Different tools tag releases differently; try the common shapes.
+  const tags = [`v${version}`, `${LEGACY_RELEASE_PACKAGE}@${version}`, version];
+
+  for (const tag of tags) {
+    const base = `https://github.com/${repo}/releases/download/${tag}`;
+    const url = `${base}/${tarball}`;
+    log(`downloading ${url}`);
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+      if (!res.ok) continue;
+      const buf = Buffer.from(await res.arrayBuffer());
+
+      // Verify checksum when the .sha256 asset is available.
+      try {
+        const shaRes = await fetch(`${base}/${tarball}.sha256`, {
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (shaRes.ok) {
+          const expected = (await shaRes.text()).trim().split(/\s+/)[0];
+          const actual = createHash("sha256").update(buf).digest("hex");
+          if (expected && expected !== actual) {
+            log("checksum mismatch, aborting");
+            return null;
+          }
+        }
+      } catch {
+        // No checksum asset: continue (release is fetched over HTTPS).
+      }
+
+      mkdirSync(dir, { recursive: true });
+      const tmp = join(dir, tarball);
+      writeFileSync(tmp, buf);
+      const r = spawnSync("tar", ["-xzf", tmp, "-C", dir], { stdio: "ignore" });
+      if (r.status !== 0) return null;
+      return existsSync(entry) ? dir : null;
+    } catch {
+      // try the next tag
+    }
+  }
+  return null;
+}
+
+export function run(
+  cmd: string,
+  args: string[],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv } = {},
+): Promise<number> {
+  return new Promise((res) => {
+    const child = spawn(cmd, args, { stdio: "inherit", cwd: opts.cwd, env: opts.env });
+    const forward = (sig: NodeJS.Signals) => () => child.kill(sig);
+    process.on("SIGINT", forward("SIGINT"));
+    process.on("SIGTERM", forward("SIGTERM"));
+    child.on("exit", (code) => res(code ?? 0));
+  });
+}

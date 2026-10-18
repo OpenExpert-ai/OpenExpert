@@ -16,7 +16,7 @@ import { Copy, ExternalLink, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import { SettingsCard as Card, SettingsField as Field } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
-import type { ModelProviderId } from "@openexpert/opencore/model-provider";
+import type { ModelProviderId } from "@openexpert/openexpert/model-provider";
 import {
   getSettings,
   listModels,
