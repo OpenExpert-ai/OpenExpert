@@ -1,5 +1,5 @@
 {
-  "$schema": "./packages/opencore/schema/openexpert.schema.json",
+  "$schema": "./packages/openexpert/schema/openexpert.schema.json",
   "modelProvider": "ollama",
   "modelId": "llama3.1",
   "ollamaBaseUrl": "http://localhost:11434",

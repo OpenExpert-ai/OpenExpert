@@ -8,7 +8,7 @@ import * as p from "@clack/prompts";
 
 const OPENEXPERT_JSON = {
   $schema:
-    "https://raw.githubusercontent.com/OpenExpert-ai/OpenExpert/main/packages/opencore/schema/openexpert.schema.json",
+    "https://raw.githubusercontent.com/OpenExpert-ai/OpenExpert/main/packages/openexpert/schema/openexpert.schema.json",
   modelProvider: "ollama",
   modelId: "llama3.1",
   ollamaBaseUrl: "http://localhost:11434",
@@ -67,7 +67,7 @@ docker compose exec ollama ollama pull llama3.1
 ## Run with the CLI
 
 \`\`\`sh
-npx @openexpert/opencore serve
+npx @openexpert/openexpert serve
 \`\`\`
 
 Configuration lives in \`openexpert.json\`.
@@ -104,7 +104,7 @@ async function main() {
       `  cd ${name}\n` +
       `  docker compose up -d\n` +
       `  docker compose exec ollama ollama pull llama3.1\n\n` +
-      `O bien:  npx @openexpert/opencore serve\n` +
+      `O bien:  npx @openexpert/openexpert serve\n` +
       `Luego abre http://localhost:3000`,
     "Listo",
   );

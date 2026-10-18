@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: MIT
-// Thin launcher for the OpenCore CLI. The implementation lives in
+// Thin launcher for the OpenExpert CLI. The implementation lives in
 // src/cli.ts and is compiled to dist/cli.js. If the package has not been
 // built yet (source checkout), a clear instruction is printed.
 
@@ -14,8 +14,8 @@ const dist = join(here, "..", "dist", "cli.js");
 if (!existsSync(dist)) {
   console.error(
     "OpenExpert CLI is not built yet.\n" +
-      "Run: npm run build --workspace @openexpert/opencore\n" +
-      "(or use `npm run opencore:doctor` from the repository root).",
+      "Run: npm run build --workspace @openexpert/openexpert\n" +
+      "(or use `npm run openexpert:doctor` from the repository root).",
   );
   process.exit(1);
 }
