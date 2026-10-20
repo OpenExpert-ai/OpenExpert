@@ -24,7 +24,7 @@
 //
 // What it does *not* do: hide most of `/usr` (it is mounted read-only, on purpose: the interpreter
 // and its standard library live there) and survive a machine without bubblewrap. The order is
-// bubblewrap (network + filesystem), then `unshare -Un` (network only, the filesystem stays
+// bubblewrap (network + filesystem), then `unshare -Urn` (network only, the filesystem stays
 // readable and the result says so), then refusing to run. The real gate is still the capability
 // itself — an Expert only has this tool when its owner adds it — plus the script being written to
 // the activity trail by the tool that calls this.
@@ -202,15 +202,24 @@ export async function runPython(
   opts: { timeoutMs?: number | undefined } = {},
 ): Promise<PythonRun> {
   const script = String(code ?? "");
-  if (!script.trim()) return refusal("No llegó ningún código que ejecutar.", "none");
+  // Which barrier this machine has, even when the run is refused below: the field travels to the
+  // model, and answering `none` on a machine that has `bubblewrap` would read as "nothing isolates
+  // this", which is not true.
   const sandbox = pythonSandbox();
+  if (!script.trim()) return refusal("No llegó ningún código que ejecutar.", sandbox.kind);
   if (sandbox.kind === "none")
     return refusal(
       "Esta máquina no puede aislar el script de la red (`bubblewrap` ni `unshare` con espacios de nombres), así que no se ejecuta: ejecutar código sin esa barrera daría al script salida a Internet y acceso a tus archivos. Instala `bubblewrap` y vuelve a intentarlo.",
       "none",
     );
   const interpreter = pythonAvailable();
-  if (!interpreter.ok || !interpreter.path) return refusal(interpreter.note ?? "", sandbox.kind);
+  // `pythonAvailable` always explains itself when it fails; the fallback is here so no future edit
+  // to it can turn a refusal into an empty answer (`ok: false`, no output, no reason).
+  if (!interpreter.ok || !interpreter.path)
+    return refusal(
+      interpreter.note ?? "No se encontró un intérprete de Python que ejecutar.",
+      sandbox.kind,
+    );
   // The sandbox only mounts BINDS, so an interpreter installed somewhere else (pyenv, a venv under
   // the home directory) would not exist inside it. Refusing is honest; mounting `~` is not.
   let python = interpreter.path;
@@ -345,7 +354,14 @@ export async function runPython(
             ? limitNote
               ? { note: limitNote }
               : {}
-            : { note: "El script falló: mira el error de arriba." }),
+            : {
+                // A non-zero exit with nothing on stderr is what a barrier that could not start
+                // the interpreter looks like from here: say that instead of pointing at an empty
+                // error the model cannot read.
+                note: stderr.text.trim()
+                  ? `El script falló (código ${exit ?? "sin código"}): mira el error de arriba.`
+                  : `El script terminó con código ${exit ?? "sin código"} sin escribir nada en la salida de error: puede que el sandbox no haya podido arrancar el intérprete de Python.`,
+              }),
     };
   } finally {
     rmSync(dir, { recursive: true, force: true });
