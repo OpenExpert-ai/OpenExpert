@@ -76,6 +76,15 @@ el directorio desde el que se arranca la aplicación, así que cópialo también
 Guarda la copia con seguridad: contiene tus tokens y las claves que los cifran
 y firman.
 
+`GET /api/backup` (Ajustes → Datos → Descargar copia) empaqueta ese mismo
+conjunto en un único JSON: la base de datos, `openexpert.json`, `secrets.json`,
+los ficheros cifrados de credenciales y `secret.key`. Al importarlo se reescriben
+todos, así que Drive, la selección del Picker, las carpetas locales y Notion
+vuelven conectados. Como el fichero lleva la clave, es tan sensible como los
+propios tokens: guárdalo donde guardarías una contraseña. Las copias anteriores
+al formato 2 solo llevaban la base de datos, la configuración y los ficheros de
+credenciales sin la clave; al importarlas se avisa de lo que no pudieron traer.
+
 ## Referencias
 
 - [Despliegue](./08-despliegue.md) — cómo arrancarlo.

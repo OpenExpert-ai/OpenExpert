@@ -74,6 +74,15 @@ Copy `OPENEXPERT_DATA_DIR`. It holds `openexpert.db`, `secrets.json`,
 in the directory the app is started from, so copy that one too. Keep the copy
 secure: it holds your tokens and the keys that decrypt and sign them.
 
+`GET /api/backup` (Settings → Data → Download backup) packs the same set into a
+single JSON file: the database, `openexpert.json`, `secrets.json`, the encrypted
+credential files and `secret.key`. Importing it rewrites all of them, so Drive,
+the Picker selection, the local folders and Notion come back connected. Because
+the file carries the key, it is as sensitive as the tokens themselves: keep it
+where you would keep a password. Bundles written before format 2 carried only
+the database, the configuration and the credential files without the key;
+importing one reports what it could not bring.
+
 ## References
 
 - [Deployment](./08-deployment.md) — how to start it.

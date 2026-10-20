@@ -60,9 +60,10 @@ Rules:
 - Secrets are stored server-side and are not part of the normal data flow. The
   local settings panel can **reveal** a stored key on demand (the "Copiar"
   button), so treat the browser as trusted and do not expose the port.
-- Backups (`GET /api/backup`) embed `secrets.json` and `credentials.json`.
-  Cross-origin downloads are rejected; still, download backups only on a
-  trusted machine and store them safely.
+- Backups (`GET /api/backup`) embed `secrets.json`, the encrypted credential
+  files and `secret.key`, the key that decrypts them. The bundle is therefore as
+  sensitive as the tokens themselves: cross-origin downloads are rejected, but
+  still download backups only on a trusted machine and store them safely.
 - The Drive OAuth `state` carries a PKCE verifier signed with HMAC; the
   callback verifies the MAC in constant time.
 - Drive tokens and the Picker grants are AES-256-GCM encrypted with a key

@@ -93,6 +93,116 @@ describe("backups", () => {
     ).rejects.toThrow();
   });
 
+  it("lleva la clave local y el estado de las integraciones a otra instalación", async () => {
+    // The regression: the envelope carried credentials.json without secret.key, so a restore on
+    // another machine brought back tokens nobody could decrypt and every integration read as
+    // "not connected", with no warning.
+    const origin = mkdtempSync(join(tmpdir(), "oe-backup-origin-"));
+    const target = mkdtempSync(join(tmpdir(), "oe-backup-target-"));
+    const secrets = await import("./engine/local-secrets.server");
+    const previous = process.env["OPENEXPERT_DATA_DIR"];
+    try {
+      process.env["OPENEXPERT_DATA_DIR"] = origin;
+      await dataStats(); // creates and seeds the database where the bundle is built
+      secrets.saveTokens({
+        access_token: "at-1",
+        refresh_token: "rt-1",
+        expires_at: "2030-01-01T00:00:00.000Z",
+      });
+      secrets.saveGrantedFiles([
+        { id: "g1", name: "Hoja", mimeType: "text/csv", addedAt: "2026-01-01T00:00:00.000Z" },
+      ]);
+      secrets.saveLocalRoots([
+        { path: "/tmp/documentos", name: "documentos", addedAt: "2026-01-01T00:00:00.000Z" },
+      ]);
+      secrets.saveNotionToken({
+        access_token: "nt-1",
+        workspace_id: "w1",
+        workspace_name: "Espacio",
+        bot_id: null,
+        connected_at: "2026-01-01T00:00:00.000Z",
+      });
+      secrets.saveDriveConsent({
+        at: "2026-01-01T00:00:00.000Z",
+        privacyUrl: "https://example.test/p",
+      });
+      const key = readFileSync(join(origin, "secret.key"));
+
+      const bundle = buildBackup();
+      expect(bundle.version).toBe(2);
+      for (const file of ["secretKey", "driveGrants", "localRoots", "notion", "driveConsent"]) {
+        expect(bundle.files[file as keyof typeof bundle.files]).toBeTruthy();
+      }
+
+      process.env["OPENEXPERT_DATA_DIR"] = target;
+      const result = await restoreBackup(JSON.stringify(bundle));
+
+      expect(result.missing).toEqual([]);
+      expect(result.applied).toEqual(
+        expect.arrayContaining([
+          "db",
+          "credentials",
+          "secretKey",
+          "driveGrants",
+          "localRoots",
+          "notion",
+          "driveConsent",
+        ]),
+      );
+      expect(readFileSync(join(target, "secret.key")).equals(key)).toBe(true);
+      // The point of carrying the key: the blobs restore as readable state.
+      expect(secrets.loadTokens()?.access_token).toBe("at-1");
+      expect(secrets.loadGrantedFiles().map((g) => g.id)).toEqual(["g1"]);
+      expect(secrets.loadLocalRoots().map((r) => r.path)).toEqual(["/tmp/documentos"]);
+      expect(secrets.loadNotionToken()?.workspace_name).toBe("Espacio");
+      expect(secrets.loadDriveConsent()?.privacyUrl).toBe("https://example.test/p");
+    } finally {
+      if (previous === undefined) delete process.env["OPENEXPERT_DATA_DIR"];
+      else process.env["OPENEXPERT_DATA_DIR"] = previous;
+      rmSync(origin, { recursive: true, force: true });
+      rmSync(target, { recursive: true, force: true });
+    }
+  });
+
+  it("declara lo que una copia de la versión 1 no podía llevar", async () => {
+    await dataStats();
+    const bundle = buildBackup();
+    const v1 = {
+      format: bundle.format,
+      version: 1,
+      createdAt: bundle.createdAt,
+      files: { db: bundle.files.db! },
+    };
+
+    const result = await restoreBackup(JSON.stringify(v1));
+
+    expect(result.missing).toEqual([
+      "secretKey",
+      "driveGrants",
+      "localRoots",
+      "notion",
+      "driveConsent",
+    ]);
+  });
+
+  it("avisa de la clave cuando la copia trae blobs cifrados y no la clave", async () => {
+    await dataStats();
+    const bundle = buildBackup();
+    const bundleWithoutKey = {
+      format: bundle.format,
+      version: 2,
+      files: {
+        db: bundle.files.db!,
+        credentials: Buffer.from("soy un token cifrado").toString("base64"),
+      },
+    };
+
+    const result = await restoreBackup(JSON.stringify(bundleWithoutKey));
+
+    expect(result.missing).toEqual(["secretKey"]);
+    rmSync(join(dir, "credentials.json"), { force: true });
+  });
+
   it("clears chat history and reports the count", async () => {
     const { getDb, persist } = await import("./db.server");
     const { clearChatHistory, dataStats } = await import("./backup.server");

@@ -414,6 +414,9 @@ describe("datos", () => {
     const bundle = JSON.stringify({ format: "openexpert-backup", version: 1, files: {} });
     await expect(fns.importBackup({ data: { content: bundle } })).resolves.toEqual({
       applied: [],
+      // Una copia de la versión 1 no llevaba la clave ni el estado de las integraciones: el
+      // panel tiene que poder decirlo en vez de dar la restauración por completa.
+      missing: ["secretKey", "driveGrants", "localRoots", "notion", "driveConsent"],
       // Un paquete vacío no reemplaza nada, así que tampoco deja copia de seguridad.
       backupPath: null,
     });
