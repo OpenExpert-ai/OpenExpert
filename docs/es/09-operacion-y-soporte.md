@@ -54,8 +54,12 @@ gratis.
 
 ## 5. Copias de seguridad
 
-Copia `OPENEXPERT_DATA_DIR` (contiene `openexpert.db`, `credentials.json` y
-`secrets.json`). Guarda la copia con seguridad: contiene tus tokens.
+Copia `OPENEXPERT_DATA_DIR`. Contiene `openexpert.db`, `secrets.json`,
+`credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`,
+`secret.key`, `state-secret` y `state-secret-notion`. `openexpert.json` vive en
+el directorio desde el que se arranca la aplicación, así que cópialo también.
+Guarda la copia con seguridad: contiene tus tokens y las claves que los cifran
+y firman.
 
 ## Referencias
 

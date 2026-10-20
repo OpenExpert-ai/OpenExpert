@@ -6,13 +6,13 @@
 
 ## 1. Ways to run OpenExpert
 
-| Way              | Command                                                                                   |
-| ---------------- | ----------------------------------------------------------------------------------------- |
-| Development      | `npm ci && npm run dev`                                                                   |
-| Production build | `npm run build` then `node .output/server/index.mjs`                                      |
-| Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
-| CLI              | `npx @openexpert/openexpert serve`                                                        |
-| Desktop (Linux)  | `npm run desktop:install` then `openexpert`                                               |
+| Way              | Command                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| Development      | `npm ci && npm run dev`                                                                    |
+| Production build | `npm run build` then `node .output/server/index.mjs`                                       |
+| Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest` |
+| CLI              | `npx @openexpert/openexpert serve`                                                         |
+| Desktop (Linux)  | `npm run desktop:install` then `openexpert`                                                |
 
 The app listens on port 3000, on the **loopback interface only** (`127.0.0.1`).
 The dashboard has no authentication: whoever reaches the port can read and write
@@ -30,6 +30,10 @@ docker build -f docker/Dockerfile -t openexpert:local .
 docker run --rm -p 3000:3000 -v openexpert-data:/data \
   -e OPENEXPERT_MODEL_PROVIDER=ollama openexpert:local
 ```
+
+The release workflow publishes `latest`, `<version>` and `<sha>`. For an
+anonymous `docker pull` to work the package has to be public; if it is not, sign
+in first with `docker login ghcr.io` (a token with `read:packages`).
 
 `docker/docker-compose.yml` also starts an Ollama service:
 
@@ -60,6 +64,10 @@ The settings panel (**Configuration → Datos y copias**) can download a single
 JSON backup (database plus `openexpert.json`, `secrets.json` and
 `credentials.json`), restore it, clear the chat history and compact the
 database. Importing a backup replaces the current data.
+
+The JSON bundle covers the database and the three canonical files. The source
+grants and the Notion token (`drive-grants.json`, `local-roots.json`,
+`notion.json`) are **not** inside it: to keep them, copy the whole directory.
 
 ## 5. Updates
 
@@ -95,6 +103,10 @@ What it installs:
 `npm run desktop:uninstall` removes them. If the window renders blank on
 Wayland, launch it with `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
+Two internal variables override where `desktop` looks: `OPENEXPERT_DESKTOP_REPO`
+(the source checkout the installer was built from) and `OPENEXPERT_DESKTOP_BIN`
+(the window binary). The installer sets them; you do not need to.
+
 ### Distributable packages (deb, rpm, AppImage)
 
 The per-user launcher above is the recommended path on Linux. To build packages
@@ -103,6 +115,10 @@ instead:
 ```sh
 npx tauri build --bundles deb,rpm,appimage   # -> src-tauri/target/release/bundle/
 ```
+
+`npm run desktop:build` and `npx tauri build` take the version pinned in
+`src-tauri/tauri.conf.json`; `npm run desktop:install` injects the package's
+version at build time, so the launcher always carries the product version.
 
 The first run downloads Tauri's packaging helpers (linuxdeploy, AppRun). These
 packages ship the **window only** and their menu entry runs

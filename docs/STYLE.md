@@ -18,7 +18,8 @@ This guide keeps the docs consistent and verifiable. The English docs under
 - Numbered docs: `NN-slug.md` (`00-quickstart.md`, `13-ai-providers.md`).
 - The Spanish mirror keeps the same number and a Spanish slug
   (`00-inicio-rapido.md`).
-- Non-numbered: `README.md`, `STYLE.md`.
+- Non-numbered: `README.md`, `STYLE.md`, `PRIVACY.md`,
+  `POLITICA-DE-PRIVACIDAD.md`.
 
 ## Structure
 
@@ -38,8 +39,9 @@ This guide keeps the docs consistent and verifiable. The English docs under
 
 ## Links
 
-- Use **relative** links (`./03-data-model.md`, `../README.md`), never absolute
-  URLs for in-repo files.
+- Use **relative** links (`./en/03-data-model.md`, `../README.md`), never
+  absolute URLs for in-repo files. From `docs/`, a numbered document lives
+  under `en/` or `es/`.
 - If you link to a heading, use its exact anchor. Anchors are validated by
   `npm run check:docs`.
 

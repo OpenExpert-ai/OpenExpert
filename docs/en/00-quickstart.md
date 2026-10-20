@@ -11,7 +11,7 @@ no database server.
 
 ```sh
 docker run --rm -p 3000:3000 -v openexpert-data:/data \
-  ghcr.io/openexpert-ai/openexpert:local
+  ghcr.io/openexpert-ai/openexpert:latest
 ```
 
 Open <http://localhost:3000>. Data persists in the `openexpert-data` volume.
@@ -39,6 +39,7 @@ npx @openexpert/openexpert doctor    # check configuration
 npx @openexpert/openexpert fix       # auto-configure what is missing
 npx @openexpert/openexpert models    # list models for the current provider
 npx @openexpert/openexpert update    # refresh the downloaded server
+npx @openexpert/openexpert desktop   # start the server and open the native window
 ```
 
 ### Scaffold a project
@@ -47,7 +48,7 @@ npx @openexpert/openexpert update    # refresh the downloaded server
 npm create openexpert my-app
 cd my-app
 docker compose up -d
-docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
+docker compose exec ollama ollama pull llama3.1
 ```
 
 ## Option C — From source
@@ -70,6 +71,8 @@ See [AI providers](./13-ai-providers.md). In short:
 | `ollama`            | [Ollama](https://ollama.com) running | No keys, data stays local       |
 | `google`            | `GOOGLE_API_KEY`                     | Gemini, free key from AI Studio |
 | `openai-compatible` | base URL + key                       | Any OpenAI-compatible endpoint  |
+| `anthropic`         | `ANTHROPIC_API_KEY`                  | Claude                          |
+| `opencode-go`       | `OPENCODE_GO_API_KEY`                | OpenCode Go, subscription       |
 
 The wizard stores secrets in `~/.openexpert/secrets.json` (mode `0600`), never
 in the repository.
@@ -88,7 +91,8 @@ in the repository.
 - **Chat says the model key is missing.** Run `openexpert fix` or `openexpert init`.
 - **Ollama not detected.** Install it and pull a model: `ollama pull llama3.1`.
 - **Port 3000 busy.** Free it; the dev server is pinned to 3000.
-- **Docker image not found.** Build locally:
+- **Docker image not found, or the pull is denied.** The registry image may be
+  private: run `docker login ghcr.io`. Otherwise build it locally:
   `docker build -f docker/Dockerfile -t openexpert:local .`
 
 ## Next steps

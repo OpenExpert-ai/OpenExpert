@@ -26,17 +26,23 @@ En un clon nuevo, `npm ci` también construye `packages/openexpert` (su script
 
 Documentadas en `.env.example`. Lo esencial:
 
-| Variable                                                                                | Función                                                                     |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go` |
-| `OPENEXPERT_MODEL_ID`                                                                   | Identificador del modelo                                                    |
-| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | Una clave por proveedor: Gemini, Claude, OpenCode Go y tu propio endpoint   |
-| `OPENEXPERT_BASE_URL`                                                                   | Endpoint de `openai-compatible`, el único que pones tú                      |
-| `OLLAMA_BASE_URL`                                                                       | Endpoint de Ollama                                                          |
-| `OPENEXPERT_DATA_DIR`                                                                   | Directorio de datos (por defecto `~/.openexpert/`)                          |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                                             | OAuth de Drive (opcional)                                                   |
-| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET`                                     | OAuth de Drive (opcional)                                                   |
-| `PUBLIC_APP_URL`                                                                        | Origen público para la URI de redirección de Drive                          |
+| Variable                                                                                | Función                                                                            |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go`        |
+| `OPENEXPERT_MODEL_ID`                                                                   | Identificador del modelo                                                           |
+| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | Una clave por proveedor: Gemini, Claude, OpenCode Go y tu propio endpoint          |
+| `OPENEXPERT_BASE_URL`                                                                   | Endpoint de `openai-compatible`, el único que pones tú                             |
+| `OLLAMA_BASE_URL`                                                                       | Endpoint de Ollama                                                                 |
+| `OPENEXPERT_DATA_DIR`                                                                   | Directorio de datos (por defecto `~/.openexpert/`)                                 |
+| `GOOGLE_CLIENT_ID` / `OPENEXPERT_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`             | OAuth de Drive (opcional)                                                          |
+| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET`                                     | OAuth de Drive (opcional)                                                          |
+| `GOOGLE_PICKER_API_KEY` / `GOOGLE_PICKER_APP_ID`                                        | Google Picker: el selector de ficheros de Drive en el navegador                    |
+| `PUBLIC_APP_URL`                                                                        | Origen público para la URI de redirección de Drive                                 |
+| `OPENEXPERT_PRIVACY_URL`                                                                | URL de la política de privacidad que se muestra antes de activar Drive             |
+| `OPENEXPERT_NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET`                                  | OAuth de Notion (opcional)                                                         |
+| `NOTION_REDIRECT_URI` / `NOTION_OAUTH_STATE_SECRET`                                     | OAuth de Notion (opcional)                                                         |
+| `OPENEXPERT_HOST` / `HOST` / `PORT`                                                     | Interfaz y puerto del servidor local (bucle local y 3000 por defecto)              |
+| `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error` (por defecto `debug`, `info` en producción) |
 
 `.env` está en `.gitignore`. El asistente del CLI guarda los secretos en
 `~/.openexpert/secrets.json`, que el servidor carga en el entorno al arrancar
@@ -71,13 +77,19 @@ de i18n del cliente está en `src/lib/i18n.tsx` con el diccionario inglés en
 | `npm run lint` / `lint:fix`       | ESLint                                              |
 | `npm run format` / `format:check` | Prettier                                            |
 | `npm run typecheck`               | TypeScript sin emitir                               |
-| `npm run test:run`                | Tests (app + paquete)                               |
+| `npm run test:run` / `npm test`   | Tests (app + paquete)                               |
 | `npm run openexpert:doctor`       | Diagnóstico del CLI                                 |
 | `npm run openexpert:serve`        | Arranca la app con el CLI                           |
 | `npm run license:check`           | Verifica cabeceras SPDX                             |
 | `npm run test:coverage`           | Tests con umbrales de cobertura                     |
 | `npm run check:docs`              | Enlaces de la documentación                         |
 | `npm run check:commits`           | DCO + Conventional Commits (CI)                     |
+| `npm run build:dev`               | Build en modo development                           |
+| `npm run desktop:dev`             | Ventana Tauri en desarrollo                         |
+| `npm run desktop:build`           | Build de Tauri sin inyectar la versión              |
+| `npm run changeset`               | Redacta el changeset de la próxima release          |
+| `npm run version-packages`        | Aplica los changesets pendientes en local           |
+| `npm run release`                 | Compila y publica con Changesets                    |
 
 ### Puerto 3000
 
@@ -94,7 +106,9 @@ migraciones pendientes y siembra la configuración (Expertos e integraciones).
 instalaciones nuevas y añade un fichero numerado en `drizzle/migrations/`
 (p. ej. `0002_add_x.sql`) para las bases existentes. El runner los aplica en
 orden según `PRAGMA user_version`, así que una base antigua se actualiza al
-arrancar.
+arrancar. La numeración tiene huecos históricos (no hay `0003`): lo que cuenta
+es el orden y el `user_version`, no que el siguiente fichero sea el entero
+siguiente.
 
 Tras cualquier escritura, llama a `await persist()`: volcará el fichero de forma
 atómica (`.tmp` + `rename`).
@@ -157,7 +171,10 @@ Reglas que mantienen la CI fiable:
   de job **sustituye** el del workflow, así que un job que usa
   `actions/checkout` debe repetir `contents: read`.
 
-**Publicaciones.** Al mergear la pull request `chore(release): version packages`
+**Publicaciones.** Redacta la nota de tu cambio con `npm run changeset` y haz
+commit del fichero que escribe en `.changeset/`; los cambios solo de
+documentación no la necesitan, porque el manifiesto raíz es privado y no se
+versiona. Al mergear la pull request `chore(release): version packages`
 se publica en npm (OIDC trusted publishing, sin `NPM_TOKEN`) y se construye la
 imagen de Docker. Esa PR la abre `changesets/action` con el `GITHUB_TOKEN` por
 defecto, así que sus workflows llegan como **"action_required"** y hay que

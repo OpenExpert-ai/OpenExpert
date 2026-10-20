@@ -9,17 +9,17 @@ There is no cloud, no database server and no login.
 
 ## 1. Stack
 
-| Layer       | Technology                                                  | Function                                           |
-| ----------- | ----------------------------------------------------------- | -------------------------------------------------- |
-| Application | TanStack Start (React 19, file routes, SSR)                 | Rendering, navigation, server functions            |
-| Build       | Vite                                                        | Dev environment and build                          |
-| Styling     | Tailwind CSS 4 + shadcn/ui                                  | Visual system                                      |
-| Server      | Nitro (`node-server`)                                       | Runtime for the built server                       |
-| Database    | SQLite via `sql.js`                                         | Single file at `OPENEXPERT_DATA_DIR/openexpert.db` |
-| ORM         | Drizzle ORM (`sql-js`)                                      | Typed queries; schema in `drizzle/schema.ts`       |
-| AI          | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai`  | Chat, tools, streaming                             |
-| Model       | Ollama (default), Gemini, or any OpenAI-compatible endpoint | Reasoning and answers                              |
-| Sources     | Google Drive API, local folders, Notion (optional)          | Read/write the owner's content                     |
+| Layer       | Technology                                                                       | Function                                           |
+| ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Application | TanStack Start (React 19, file routes, SSR)                                      | Rendering, navigation, server functions            |
+| Build       | Vite                                                                             | Dev environment and build                          |
+| Styling     | Tailwind CSS 4 + shadcn/ui                                                       | Visual system                                      |
+| Server      | Nitro (`node-server`)                                                            | Runtime for the built server                       |
+| Database    | SQLite via `sql.js`                                                              | Single file at `OPENEXPERT_DATA_DIR/openexpert.db` |
+| ORM         | Drizzle ORM (`sql-js`)                                                           | Typed queries; schema in `drizzle/schema.ts`       |
+| AI          | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai` / `@ai-sdk/anthropic` | Chat, tools, streaming                             |
+| Model       | Ollama (default), Gemini, Claude, OpenCode Go or any OpenAI-compatible endpoint  | Reasoning and answers                              |
+| Sources     | Google Drive API, local folders, Notion (optional)                               | Read/write the owner's content                     |
 
 ## 2. Layers and dependency direction
 

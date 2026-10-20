@@ -2,10 +2,10 @@
 
 OpenExpert follows [Semantic Versioning](https://semver.org/) and uses
 [Changesets](https://github.com/changesets/changesets) to draft release
-notes. This file aggregates published releases for readers who do not want
-to read every changeset.
+notes. This file is the reader's summary of notable changes per release; the
+per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
-## Unreleased
+## 0.5.0 — 2026-10-18
 
 ### One name and one version
 
@@ -18,9 +18,11 @@ to read every changeset.
   `OpenExpert <version>`, instead of the package name changesets would use, and the bundle is
   attached to that same release.
 - **One version.** The number in the interface (About) is the package's, and the root manifest
-  is a private workspace file without a version of its own. The desktop shell takes the same
-  number when it is built.
+  is a private workspace file that only carries the `0.0.0` placeholder. The desktop shell takes
+  the same number when it is built.
 - The app's internal module that wraps the engine is `src/lib/engine/`, not `src/lib/opencore/`.
+
+## 0.4.0 — 2026-10-18
 
 ### One key per provider
 
@@ -53,6 +55,8 @@ to read every changeset.
 - **Copilot and the Nous portal are deliberately absent**, each with its reason written
   next to the catalogue: the first lends its service through its own extensions, the
   second is an OAuth account rather than an API key.
+
+## 0.3.x and earlier — local-first rewrite
 
 ### Local-first rewrite (breaking)
 
