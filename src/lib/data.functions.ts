@@ -319,11 +319,15 @@ export const listConversations = createServerFn({ method: "GET" })
       cur.count++;
       map.set(r.conversationId, cur);
     }
-    const retentionMs = chatSettings().retentionDays * 24 * 3600 * 1000;
-    const cutoff = Date.now() - retentionMs;
-    const expired = [...map.values()]
-      .filter((c) => new Date(c.updatedAt).getTime() < cutoff)
-      .map((c) => c.id);
+    // Retention of zero means "never prune", exactly what the settings screen promises
+    // ("0 desactiva la purga automática"). Treating it as "expire everything now" wiped
+    // the whole history of the expert the moment the list was opened.
+    const retentionDays = chatSettings().retentionDays;
+    const cutoff = Date.now() - retentionDays * 24 * 3600 * 1000;
+    const expired =
+      retentionDays > 0
+        ? [...map.values()].filter((c) => new Date(c.updatedAt).getTime() < cutoff).map((c) => c.id)
+        : [];
     if (expired.length) {
       for (const id of expired)
         orm

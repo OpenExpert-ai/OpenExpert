@@ -526,10 +526,26 @@ describe("getChat, clearChat y listConversations", () => {
     ).toEqual(["nueva"]);
   });
 
-  it("con retención 0 no se guarda ninguna conversación", async () => {
+  it("con retención 0 no poda nada: cero significa sin purga", async () => {
     chatCfg.retentionDays = 0;
-    await insertChat("general", "c1", new Date().toISOString(), userMessage("efímera"));
-    expect(await fns.listConversations({ data: { expertId: "general" } })).toEqual([]);
+    await insertChat("general", "antigua", "2020-01-01T00:00:00.000Z", userMessage("de 2020"));
+    await insertChat("general", "reciente", new Date().toISOString(), userMessage("de hoy"));
+
+    const list = (await fns.listConversations({ data: { expertId: "general" } })) as {
+      id: string;
+    }[];
+    expect(list.map((c) => c.id).sort()).toEqual(["antigua", "reciente"]);
+
+    // Nada se borró por el camino: el historial de 2020 sigue en la tabla.
+    const { orm } = await db.getDb();
+    expect(
+      orm
+        .select()
+        .from(schema.chatMessages)
+        .all()
+        .map((r) => r.conversationId)
+        .sort(),
+    ).toEqual(["antigua", "reciente"]);
   });
 });
 

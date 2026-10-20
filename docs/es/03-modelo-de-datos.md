@@ -71,8 +71,8 @@ para volver a sembrar la configuración.
 | `message`         | TEXT (JSON) | Mensaje completo de UI       |
 | `created_at`      | TEXT        | Fecha ISO                    |
 
-**Retención: configurable (`chat.retentionDays`, por defecto 30 días).**
-`listConversations` elimina los hilos antiguos.
+**Retención: configurable (`chat.retentionDays`, por defecto 30 días; `0` la desactiva).**
+`listConversations` elimina los hilos anteriores al corte; con `0` no borra nada.
 
 ### `settings` — preferencias clave/valor
 
