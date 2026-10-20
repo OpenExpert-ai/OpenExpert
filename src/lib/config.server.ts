@@ -462,15 +462,16 @@ export function rawConfigText(cwd: string = process.cwd()): string {
 /**
  * An injection pattern supplied by the user (settings panel or `openexpert.json`).
  * It runs against every message on the main thread, so it is bounded and cannot
- * carry a nested quantifier: `(a+)+` freezes the process for a minute on a
- * 29-character string. See `hasNestedQuantifier`.
+ * carry a repetition that backtracks catastrophically: `(a+)+` freezes the process for a
+ * minute on a 29-character string, and `((a+))+` or `(a|aa)+` for four on 31. See
+ * `hasNestedQuantifier`.
  */
 const injectionPattern = z
   .string()
   .max(120, { message: "Un patrón no puede pasar de 120 caracteres" })
   .refine((p) => !hasNestedQuantifier(p), {
     message:
-      "El patrón tiene cuantificadores anidados (por ejemplo (a+)+): puede congelar el servidor",
+      "El patrón repite un grupo que ya lleva un cuantificador o una alternación dentro (por ejemplo (a+)+, ((a+))+ o (a|aa)+): puede congelar el servidor",
   });
 
 export const fileConfigSchema = z.object({

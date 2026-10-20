@@ -9,16 +9,105 @@
 export const INJECTION_REGEX =
   /(modo dios|god ?mode|ignora (todas )?(las |tus )?(instrucciones|reglas)|ignore (all )?(previous |your )?(instructions|rules)|jailbreak|system prompt|prompt del sistema|sin restricciones|act[uú]a como (un )?admin|bypass|dan mode|desactiva (la )?seguridad|eleva(r)? (mis )?privilegios|hazme admin)/i;
 
+type Quantifier = { min: number; max: number; length: number };
+
+/** The quantifier that starts at `i`, or null when the character there is a literal. */
+function quantifierAt(pattern: string, i: number): Quantifier | null {
+  if (i >= pattern.length) return null;
+  const ch = pattern[i];
+  if (ch === "*") return { min: 0, max: Number.POSITIVE_INFINITY, length: 1 };
+  if (ch === "+") return { min: 1, max: Number.POSITIVE_INFINITY, length: 1 };
+  if (ch === "?") return { min: 0, max: 1, length: 1 };
+  if (ch !== "{") return null;
+  const m = /^\{(\d+)(?:,(\d*))?\}/.exec(pattern.slice(i));
+  if (!m) return null; // A literal brace.
+  const min = Number(m[1]);
+  const max = m[2] === undefined ? min : m[2] === "" ? Number.POSITIVE_INFINITY : Number(m[2]);
+  return { min, max, length: m[0].length };
+}
+
+/** Whether the quantifier can repeat two or more times, which is what makes it multiply. */
+function repeats(q: Quantifier): boolean {
+  return q.max >= 2;
+}
+
 /**
- * The shape behind catastrophic backtracking: a quantified group that is itself
- * quantified (`(a+)+`). Such a pattern makes every user message a way to freeze
- * the process (measured: 59 s of blocked event loop on a 29-character string),
- * and this filter runs on the main thread for every message. Patterns are
- * rejected when saved and skipped here, so one stored before that check cannot
- * hang the app either.
+ * Whether the quantifier varies how much it consumes. A fixed `{n}` and the optional `?` /
+ * `{0,1}` cannot turn one input into several partitions, so they are not a source of blowup.
+ */
+function varies(q: Quantifier): boolean {
+  return q.max !== q.min && !(q.min === 0 && q.max === 1);
+}
+
+/**
+ * The shape behind catastrophic backtracking: a group that repeats — two or more times,
+ * bounded or not — and whose content can repeat in more than one way, because it holds a
+ * variable-length repetition (`(a+)+`, `((a+))+`, `((a{1,3}))+`, `(.*a){20}`) or an
+ * alternation (`(a|aa)+`, `(a|b+)+`). Such a pattern makes every user message a way to
+ * freeze the process (measured: 251.7 s of blocked event loop for `((a+))+$` on a
+ * 31-character string, 59 s for `(a+)+$`), and this filter runs on the main thread for every
+ * message. Patterns are rejected when saved and skipped here, so one stored before that check
+ * cannot hang the app either.
+ *
+ * The pattern is walked once, keeping a frame per open group: whether its content holds a
+ * variable-length repetition and whether it holds an alternation, both counting nested
+ * groups. When a group closes and a repetition follows it, either flag makes it invalid. The
+ * rule is conservative on purpose — `(hola|adios)+` is rejected although its branches cannot
+ * overlap, this module prefers a false positive over a false negative, and an alternation
+ * that is not repeated is always allowed.
  */
 export function hasNestedQuantifier(pattern: string): boolean {
-  return /\([^)]*[+*]\)[*+{]/.test(pattern);
+  type Frame = { repetition: boolean; alternation: boolean };
+  const open: Frame[] = [];
+  let inClass = false;
+
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+
+    if (ch === "\\") {
+      i++; // An escaped character is a literal: `\(` does not open a group.
+      continue;
+    }
+    if (inClass) {
+      if (ch === "]") inClass = false;
+      continue;
+    }
+    if (ch === "[") {
+      inClass = true;
+      continue;
+    }
+    if (ch === "(") {
+      open.push({ repetition: false, alternation: false });
+      continue;
+    }
+    if (ch === ")") {
+      const frame = open.pop();
+      if (!frame) continue; // Unbalanced: rejected by `patternsAreValid`.
+      const q = quantifierAt(pattern, i + 1);
+      const repeated = q !== null && repeats(q);
+      if (repeated && (frame.repetition || frame.alternation)) return true;
+      const parent = open[open.length - 1];
+      if (parent) {
+        // What a group holds is also held by the group that wraps it.
+        parent.repetition ||= frame.repetition || (q !== null && varies(q));
+        parent.alternation ||= frame.alternation;
+      }
+      continue;
+    }
+    if (ch === "|") {
+      const frame = open[open.length - 1];
+      if (frame) frame.alternation = true;
+      continue;
+    }
+    const q = quantifierAt(pattern, i);
+    if (q) {
+      const frame = open[open.length - 1];
+      if (frame && varies(q)) frame.repetition = true;
+      i += q.length - 1;
+    }
+  }
+
+  return false;
 }
 
 let cache: { key: string; res: RegExp[] } | null = null;

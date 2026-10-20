@@ -23,6 +23,21 @@ describe("openexpert.json", () => {
     expect(() => parseRawConfig(JSON.stringify({ modelProvider: "nope" }))).toThrow();
   });
 
+  it("rejects a pattern that can freeze the server", async () => {
+    // The second entry: `openexpert.json` goes through the same guard as the panel.
+    const { parseRawConfig } = await import("./config.server");
+    expect(() =>
+      parseRawConfig(JSON.stringify({ chat: { injectionExtraPatterns: ["((a+))+$"] } })),
+    ).toThrow();
+    expect(() =>
+      parseRawConfig(JSON.stringify({ chat: { injectionExtraPatterns: ["(a|aa)+"] } })),
+    ).toThrow();
+    expect(
+      parseRawConfig(JSON.stringify({ chat: { injectionExtraPatterns: ["hola|adios"] } })).chat
+        ?.injectionExtraPatterns,
+    ).toEqual(["hola|adios"]);
+  });
+
   it("writes, reads, edits and resets the file", async () => {
     const { writeFileConfig, readFileConfigRaw, resetFileConfig, effectiveConfig } =
       await import("./config.server");
