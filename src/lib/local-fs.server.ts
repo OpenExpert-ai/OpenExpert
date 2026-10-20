@@ -195,6 +195,9 @@ export type LocalRead = {
   /** Set when the file continues past this window: read again with `offset: nextOffset`. */
   hasMore?: boolean;
   nextOffset?: number;
+  /** Where the window started inside its first line, and where the next one resumes. */
+  charOffset?: number;
+  nextCharOffset?: number;
   /** For spreadsheets and CSV: what the table is. */
   sheets?: SheetInfo[];
 };
@@ -315,9 +318,61 @@ const DEFAULT_READ_LINES = 2_000;
 export type ReadOptions = {
   offset?: number | undefined;
   limit?: number | undefined;
+  /**
+   * Character inside the line where the window starts (0-based). Only needed to continue a line
+   * that did not fit in one read: `nextCharOffset` says where to resume.
+   */
+  charOffset?: number | undefined;
   /** Allow a scanned PDF to be read with a model. The caller decides: it is a cloud call. */
   vision?: boolean | undefined;
 };
+
+/**
+ * The longest slice of the file that starts at `line` (1-based) and character `char` (0-based,
+ * inside that line), takes at most `limit` lines and at most `budget` characters, plus the point
+ * where the next read has to resume.
+ *
+ * The two caps are measured in different units on purpose — lines are what a person counts,
+ * characters are what the context can hold — but they have to be reconciled at the same cursor.
+ * When one line is bigger than the budget, the character cap decides, and only a cursor *inside*
+ * the line lets the caller reach the rest.
+ */
+function takeWindow(
+  lines: string[],
+  line: number,
+  char: number,
+  limit: number,
+  budget: number,
+): { text: string; line: number; char: number; more: boolean; truncated: boolean } {
+  let text = "";
+  let ln = line;
+  let ch = char;
+  let whole = 0;
+  for (;;) {
+    if (ln > lines.length) return { text, line: ln, char: 0, more: false, truncated: false };
+    if (whole >= limit) return { text, line: ln, char: ch, more: true, truncated: false };
+    const cur = lines[ln - 1] ?? "";
+    if (ch > cur.length) ch = cur.length;
+    // The newline that separates this line from the piece before it costs a character too.
+    const sep = text.length > 0 ? 1 : 0;
+    const room = budget - text.length - sep;
+    const rest = cur.length - ch;
+    if (room < rest) {
+      const take = Math.max(0, room);
+      return {
+        text: text + (sep ? "\n" : "") + cur.slice(ch, ch + take),
+        line: ln,
+        char: ch + take,
+        more: true,
+        truncated: true,
+      };
+    }
+    text += (sep ? "\n" : "") + cur.slice(ch);
+    whole++;
+    ch = 0;
+    ln++;
+  }
+}
 
 export async function readLocalFile(
   target: string,
@@ -345,20 +400,38 @@ export async function readLocalFile(
   const totalLines = lines.length;
   const offset = Math.max(1, Math.floor(opts.offset ?? 1));
   const limit = Math.max(1, Math.floor(opts.limit ?? DEFAULT_READ_LINES));
-  const from = Math.min(offset - 1, totalLines);
-  const window = lines.slice(from, from + limit);
-  const joined = window.join("\n");
-  const truncated = joined.length > MAX_CHARS;
-  const lastLine = Math.min(totalLines, offset - 1 + window.length);
-  const hasMore = lastLine < totalLines;
+  if (offset > totalLines) {
+    // Past the last line there is nothing to return, and an empty content with no reason reads as
+    // an empty file: say what happened and where the file ends.
+    return {
+      ...base,
+      totalLines,
+      offset,
+      limit,
+      note: `El archivo tiene ${totalLines} línea(s): el offset ${offset} queda fuera del final. Usa un offset entre 1 y ${totalLines}.`,
+    };
+  }
+  // The window is bounded by lines **and** by characters, and where it ends is one cursor: the
+  // line (nextOffset) plus, when the cap cut through a line, the character inside it
+  // (nextCharOffset). Without the second half a single line longer than the cap was unreachable
+  // past the cut, which is the case this window exists for (a minified .js, a one-line .json).
+  const wantedChar = Math.max(0, Math.floor(opts.charOffset ?? 0));
+  const win = takeWindow(lines, offset, wantedChar, limit, MAX_CHARS);
   return {
     ...base,
-    content: truncated ? joined.slice(0, MAX_CHARS) : joined,
+    content: win.text,
     totalLines,
     offset,
     limit,
-    ...(truncated ? { truncated: true } : {}),
-    ...(hasMore ? { hasMore: true, nextOffset: lastLine + 1 } : {}),
+    ...(wantedChar > 0 ? { charOffset: wantedChar } : {}),
+    ...(win.truncated ? { truncated: true } : {}),
+    ...(win.more
+      ? {
+          hasMore: true,
+          nextOffset: win.line,
+          ...(win.char > 0 ? { nextCharOffset: win.char } : {}),
+        }
+      : {}),
     ...(sheets?.length ? { sheets } : {}),
   };
 }

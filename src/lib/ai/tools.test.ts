@@ -863,6 +863,35 @@ describe("file content tools", () => {
     expect((out["sheets"] as { rows: number }[])[0]?.rows).toBe(2);
   });
 
+  it("read_local_file forwards the character cursor that continues a long line", async () => {
+    svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
+    svc.readLocalFile.mockResolvedValue({
+      path: "/r/one.json",
+      name: "one.json",
+      size: 300_000,
+      modifiedTime: "2026-01-01T00:00:00.000Z",
+      content: "x".repeat(200_000),
+      totalLines: 1,
+      truncated: true,
+      hasMore: true,
+      nextOffset: 1,
+      nextCharOffset: 200_000,
+    });
+    const { tools } = await buildExpert([], ["local"]);
+    const out = await exec(tools.read_local_file)({
+      path: "/r/one.json",
+      offset: 1,
+      limit: 2000,
+      charOffset: 200_000,
+    });
+    expect(svc.readLocalFile).toHaveBeenCalledWith("/r/one.json", ["/r"], {
+      offset: 1,
+      limit: 2000,
+      charOffset: 200_000,
+    });
+    expect(out["nextCharOffset"]).toBe(200_000);
+  });
+
   it("search_inside_files returns the lines where the text appears", async () => {
     svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
     svc.searchLocalContent.mockResolvedValue({
