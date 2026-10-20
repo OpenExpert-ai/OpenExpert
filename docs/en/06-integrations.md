@@ -40,6 +40,10 @@ to touch Google Cloud.
    so you grant OpenExpert access to specific files.
 6. The granted list lives encrypted in `~/.openexpert/drive-grants.json`. The
    chat can search/read/create/edit only within that list.
+7. The trash icon **revokes** access to that file: its id is dropped from
+   `drive-grants.json`, `search_drive` stops listing it, `read_drive_file`
+   answers `(sin acceso)` and the change is recorded in the activity log.
+   `Desconectar` revokes every file at once.
 
 ### 2.2 Scopes
 
