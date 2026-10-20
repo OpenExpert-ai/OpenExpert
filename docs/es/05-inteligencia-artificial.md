@@ -64,8 +64,13 @@ en Google Drive.
 
 El script se ejecuta en un directorio temporal privado, con el entorno limpio, un
 tiempo máximo (30 s, hasta 120 s) y la salida acotada, y el propio script queda
-en el registro de actividad. Es una capacidad, no una jaula: no aísla la red ni
-el sistema de ficheros.
+en el registro de actividad. La red está cortada siempre: corre dentro de un
+espacio de nombres de red propio y, si el sistema no puede crearlo, no se ejecuta.
+El resto del disco solo queda fuera de su alcance con `bubblewrap` —un `/usr` de
+lectura y el directorio de trabajo—, así que sin él tampoco se ejecuta: `unshare -Urn`
+aísla la red y deja tus claves legibles, que es peor que no ejecutar nada, y el
+resultado dice cómo instalarlo. El intérprete tiene que ser el del sistema, en
+`/usr`, `/opt`, `/lib` o `/lib64`, porque son los directorios que monta el sandbox.
 
 ### Notion (opcional)
 

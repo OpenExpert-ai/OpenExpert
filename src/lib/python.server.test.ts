@@ -274,3 +274,39 @@ describe("runPython isolation", async () => {
     expect(r.stdout.trim()).toBe("True");
   });
 });
+
+// The docs described this tool as "a capability, not a sandbox: it isolates neither the network nor
+// the filesystem" while the module refused to run without bubblewrap (T-0029). A wrong claim about
+// a security barrier is the expensive kind of documentation bug: it decides whether someone turns
+// the capability on, and in which direction it misleads. Every document that describes the
+// isolation has to name the binary the guarantee comes from, and the retired sentence cannot come
+// back in either language.
+describe("run_python documentation", () => {
+  const docs = [
+    "docs/en/04-security.md",
+    "docs/es/04-seguridad-y-acceso.md",
+    "docs/en/05-ai.md",
+    "docs/es/05-inteligencia-artificial.md",
+    "docs/en/06-integrations.md",
+    "docs/es/06-integraciones.md",
+  ];
+  // One line, so a phrase split across a paragraph wrap still matches.
+  const read = (file: string): string =>
+    readFileSync(join(process.cwd(), file), "utf8").replace(/\s+/g, " ");
+
+  it.each(docs)("%s names the barrier the module relies on", (file) => {
+    const text = read(file);
+    expect(text).toContain("run_python");
+    expect(text).toContain("bubblewrap");
+  });
+
+  it.each(["docs/en/05-ai.md", "docs/es/05-inteligencia-artificial.md"])(
+    "%s does not claim the script runs without isolation",
+    (file) => {
+      const text = read(file);
+      expect(text).not.toContain("not a sandbox");
+      expect(text).not.toContain("no es una jaula");
+      expect(text).not.toContain("no aísla la red ni");
+    },
+  );
+});
