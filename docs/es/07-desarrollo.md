@@ -118,17 +118,28 @@ npm run build
 ## 8. Integración continua y publicaciones
 
 Todo cambio llega a `main` a través de una pull request: la rama está protegida
-por un ruleset (sin escrituras directas, sin force-push, sin borrado).
+por un ruleset (sin escrituras directas, sin force-push, sin borrado), y
+[`.github/required-checks.md`](../../.github/required-checks.md) guarda la
+versión de ese ruleset que además hace que los checks bloqueen el merge — hoy un
+run en rojo se puede mergear igual, que es como entró rota la pull request #48.
 
-| Workflow             | Se ejecuta con                                 | Qué hace                                                                              |
-| -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `ci.yml`             | push / PR a `main`                             | lint, formato, licencias, enlaces, tipos, tests, build, ventana de escritorio         |
-| `codeql.yml`         | push / PR a `main`, semanal                    | análisis de CodeQL                                                                    |
-| `scorecard.yml`      | push a `main`, semanal, manual                 | OpenSSF Scorecard                                                                     |
-| `docker.yml`         | PRs que tocan la app o `docker/`, push, manual | construye la imagen y prueba el contenedor                                            |
-| `pages.yml`          | cambios en `site/`, manual                     | despliega el sitio estático en GitHub Pages                                           |
-| `release.yml`        | push a `main`, manual                          | versiona/publica con Changesets, adjunta el bundle del servidor y construye la imagen |
-| `server-release.yml` | una release publicada, manual                  | adjunta el bundle del servidor a una release (relleno: `-f tag=<tag>`)                |
+La ventana de escritorio y el smoke test de Docker son jobs de `ci.yml`
+condicionados a los ficheros que construyen, así que una pull request de
+documentación no paga ninguno de los dos. No hay ejecución en el push a `main`:
+la pull request ya validó ese árbol.
+
+| Workflow             | Se ejecuta con                                      | Qué hace                                                                                                                               |
+| -------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`             | PRs a `main`, manual                                | lint, formato, licencias, enlaces, tipos, tests, build; la ventana de escritorio y el smoke test de Docker cuando cambian sus entradas |
+| `codeql.yml`         | PRs a `main`, semanal                               | análisis de CodeQL                                                                                                                     |
+| `scorecard.yml`      | semanal, cambios en la protección de rama, manual   | OpenSSF Scorecard                                                                                                                      |
+| `pages.yml`          | cambios en `site/`, manual                          | despliega el sitio estático en GitHub Pages                                                                                            |
+| `release.yml`        | push a `main` (salvo `docs/**` y `site/**`), manual | versiona/publica con Changesets, adjunta el bundle del servidor y construye la imagen                                                  |
+| `server-release.yml` | manual                                              | repara una release que se quedó sin el bundle del servidor (`-f tag=<tag>`)                                                            |
+
+Cinco workflows corren con disparadores propios (`ci`, `codeql`, `scorecard`,
+`pages`, `release`); `server-release.yml` solo existe como herramienta manual de
+reparación.
 
 Reglas que mantienen la CI fiable:
 
@@ -138,6 +149,9 @@ Reglas que mantienen la CI fiable:
 - Las herramientas que se descargan en tiempo de ejecución (`actionlint`,
   `gitleaks`) se bajan en una versión fija y se comprueban contra el
   `*_checksums.txt` publicado con esa release antes de ejecutarlas.
+- Los pasos de `github/codeql-action` de un workflow se mueven como una sola
+  versión: CodeQL aborta cuando no coinciden, así que Dependabot los agrupa
+  (`github/codeql-action*`) y la subida llega en una única pull request.
 - El `permissions:` de nivel superior es de solo lectura en todos los workflows y
   cada job pide el permiso de escritura que necesita. Un `permissions:` a nivel
   de job **sustituye** el del workflow, así que un job que usa

@@ -1,8 +1,8 @@
 name: CodeQL
 
+# Pull request plus the weekly sweep. A push to `main` re-analysed the exact
+# tree the pull request had just analysed, for ~139 min-robot a month.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   schedule:
@@ -12,10 +12,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
@@ -27,6 +32,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The three steps below are ONE version, not three. CodeQL aborts with
+      # "All steps in a workflow that use github/codeql-action must use the same
+      # version to work correctly" when they disagree, which is exactly what
+      # happened three times on 2026-10-18 (#60, #62, #64 each bumped one step).
+      # Dependabot groups `github/codeql-action*` (see `.github/dependabot.yml`),
+      # so a bump arrives as a single pull request: move every pin in this file
+      # together, and never add a fourth codeql-action step on its own version.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4
         with:

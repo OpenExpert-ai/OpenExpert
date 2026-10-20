@@ -1,11 +1,12 @@
 name: OpenSSF Scorecard
 
+# Weekly, on a branch-protection change and on demand. The `push` trigger was 98
+# of the 101 runs in a month and said nothing the weekly sweep does not: the
+# score is a periodic signal, not a per-commit gate.
 on:
   branch_protection_rule:
   schedule:
     - cron: "28 5 * * 1"
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # Least privilege at the top level; publishing results and uploading the SARIF
@@ -13,12 +14,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: scorecard-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
-    # Advisory only: never block the pipeline on a registry hiccup.
-    continue-on-error: true
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write
@@ -28,7 +32,9 @@ jobs:
         with:
           persist-credentials: false
 
-      # Scorecard is advisory: a registry hiccup must not fail the workflow.
+      # Advisory only: a registry hiccup must not fail the workflow. The
+      # `continue-on-error` lives on this step and not on the job, so a broken
+      # upload below still surfaces instead of being swallowed by a green job.
       - name: Run analysis
         id: scorecard
         continue-on-error: true
@@ -38,6 +44,9 @@ jobs:
           results_format: sarif
           publish_results: true
 
+      # The only github/codeql-action step in this workflow, so it cannot
+      # disagree with itself; keep it on the same version as `codeql.yml` all
+      # the same (Dependabot groups them in `.github/dependabot.yml`).
       - name: Upload SARIF
         if: always() && hashFiles('results.sarif') != ''
         uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4
