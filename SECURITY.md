@@ -68,5 +68,11 @@ which stay on your machine.
 The local server binds to `127.0.0.1` and has no authentication, so only
 processes on the same machine can reach the dashboard and the folders its owner
 granted. Setting `OPENEXPERT_HOST` (or `HOST`) to another interface publishes it
-to that network; the Docker image binds every interface by design. See
-`docs/en/08-deployment.md`.
+to that network, and to every one of them with `0.0.0.0`; the Docker image binds
+every interface by design. The names it answers to come from its configuration —
+loopback, the listen address, and whatever `OPENEXPERT_ALLOWED_ORIGINS` lists —
+never from the `Host` a request claims, which is what keeps DNS rebinding out. A
+wildcard says where to listen, not which names are trusted: exposing the app on
+`0.0.0.0` still needs those names listed, or every request that carries an
+`Origin` (the chat's `POST /api/chat` among them) is answered with 403. Neither
+variable adds authentication. See `docs/en/08-deployment.md`.

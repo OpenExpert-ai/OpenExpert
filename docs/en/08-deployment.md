@@ -20,10 +20,23 @@ the folders its owner granted. To expose it to a network on purpose, set
 `OPENEXPERT_HOST` (or `HOST`) — for example
 `OPENEXPERT_HOST=0.0.0.0 npx @openexpert/openexpert serve` — after thinking about
 who shares that network: the server answers only the names it knows (the loopback
-ones and the one it listens on) and returns 403 to the rest. The Docker image
-binds every interface **inside the container** (that is how a published port
-works), so the container is private only because of the `127.0.0.1:` prefix on
-the published port. Keep it: see
+ones and the one it listens on) and returns 403 to the rest.
+
+The wildcard says **where to listen, not which names are served**: the names you
+will actually open the app with — the LAN address, or the public domain when a
+reverse proxy sits in front — go in `OPENEXPERT_ALLOWED_ORIGINS`, comma separated,
+with the port the `Host` carries (the listening one when it carries none). Without
+that list the browser's `Origin` is an unknown name and `POST /api/chat` returns
+403: the chat does not work.
+
+```sh
+OPENEXPERT_HOST=0.0.0.0 OPENEXPERT_ALLOWED_ORIGINS=http://192.168.1.10:3000 \
+  npx @openexpert/openexpert serve
+```
+
+The Docker image binds every interface **inside the container** (that is how a
+published port works), so the container is private only because of the
+`127.0.0.1:` prefix on the published port. Keep it: see
 [`docker/README.md`](../../docker/README.md). The Nitro preset is `node-server`.
 
 ## 2. Docker
