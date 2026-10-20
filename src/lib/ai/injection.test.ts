@@ -77,6 +77,10 @@ describe("detectInjection", () => {
     // 251.7 s of blocked event loop with this 31-character input.
     const input = "a".repeat(30) + "X";
     const started = performance.now();
+    // The pattern is an attack fixture, not one the app compiles: the guard rejects it first
+    // and that is exactly what this test checks. CodeQL only sees the string reaching
+    // `RegExp` and reports js/redos, so the alert is suppressed here on purpose.
+    // codeql[js/redos]
     expect(detectInjection(input, ["((a+))+$"])).toBe(false);
     expect(performance.now() - started).toBeLessThan(50);
   });
