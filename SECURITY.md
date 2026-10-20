@@ -45,7 +45,11 @@ when one is published alongside this file.
 - All writes go through server functions; the database is a local SQLite file
   that never leaves your machine.
 - The chat blocks prompt-injection attempts with a regex pre-filter and
-  records the event in the activity log.
+  records the event in the activity log. Extra patterns come from the settings
+  panel or `openexpert.json`, and a pattern that repeats a group already holding
+  a quantifier or an alternation (`(a+)+`, `((a+))+`, `(a|aa)+`) is rejected when
+  saved and skipped at run time: it would block the event loop for minutes on a
+  short message, because the filter runs before the model is called.
 
 ## Operational secrets
 

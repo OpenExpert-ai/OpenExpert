@@ -82,6 +82,20 @@ describe("chatUpdateSchema", () => {
     expect(() => chatUpdateSchema.parse({ ...chat, injectionExtraPatterns: ["("] })).toThrow();
   });
 
+  it("rejects a pattern that can freeze the server, whatever its shape", () => {
+    // `((a+))+` and `(a|aa)+` passed the old guard and cost the same four minutes as `(a+)+`.
+    for (const pattern of ["((a+))+$", "(?:(?:a+))+$", "(a|aa)+", "(a|b+)+", "(a{1,3})+"]) {
+      expect(() =>
+        chatUpdateSchema.parse({ ...chat, injectionExtraPatterns: [pattern] }),
+      ).toThrow();
+    }
+  });
+
+  it("keeps accepting an alternation that is not repeated", () => {
+    const parsed = chatUpdateSchema.parse({ ...chat, injectionExtraPatterns: ["hola|adios"] });
+    expect(parsed.injectionExtraPatterns).toEqual(["hola|adios"]);
+  });
+
   it("rejects an out-of-range maxSteps", () => {
     expect(() => chatUpdateSchema.parse({ ...chat, maxSteps: 0 })).toThrow();
   });

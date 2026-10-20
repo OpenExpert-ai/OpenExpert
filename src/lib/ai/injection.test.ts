@@ -29,9 +29,37 @@ describe("detectInjection", () => {
   it("recognises the patterns that backtrack catastrophically", () => {
     expect(hasNestedQuantifier("(a+)+$")).toBe(true);
     expect(hasNestedQuantifier("(?:x*)*")).toBe(true);
-    // Ordinary patterns are not rejected: alternation and single quantifiers are fine.
-    expect(hasNestedQuantifier("(hola|adios)+")).toBe(false);
+    // A quantified group that wraps another quantifier, at any depth. The old check only
+    // saw the brackets closing right behind the quantifier, so these got through.
+    expect(hasNestedQuantifier("((a+))+$")).toBe(true);
+    expect(hasNestedQuantifier("(?:(?:a+))+$")).toBe(true);
+    expect(hasNestedQuantifier("((a{1,3}))+")).toBe(true);
+    // A repetition around an unbounded one, bounded or not, multiplies just the same.
+    expect(hasNestedQuantifier("(a+){2}")).toBe(true);
+    expect(hasNestedQuantifier("(.*a){20}")).toBe(true);
+  });
+
+  it("rejects a quantified alternation, which costs the same", () => {
+    // `(a|aa)+` splits the input exponentially many ways: both branches can start with
+    // the same text, so every repetition is a choice point.
+    expect(hasNestedQuantifier("(a|aa)+")).toBe(true);
+    expect(hasNestedQuantifier("(a|b+)+")).toBe(true);
+    expect(hasNestedQuantifier("(?:ab|c)+")).toBe(true);
+    // Conservative on purpose: the branches do not overlap, but the group repeats.
+    expect(hasNestedQuantifier("(ab|cd){2}")).toBe(true);
+  });
+
+  it("keeps the patterns that cannot backtrack catastrophically", () => {
+    // Alternation without repetition, a group without a quantifier, an optional group,
+    // a single quantifier, escaped parentheses and a character class of literals.
+    expect(hasNestedQuantifier("hola|adios")).toBe(false);
+    expect(hasNestedQuantifier("(hola|adios)")).toBe(false);
+    expect(hasNestedQuantifier("(hola|adios)?")).toBe(false);
     expect(hasNestedQuantifier("ignora.+instrucciones")).toBe(false);
+    expect(hasNestedQuantifier("\\(a+\\)+")).toBe(false);
+    expect(hasNestedQuantifier("[(a+)]+")).toBe(false);
+    // A fixed repetition does not multiply the ways to split the input.
+    expect(hasNestedQuantifier("(\\d{2})+")).toBe(false);
   });
 
   it("stays fast on the pattern that used to freeze the process", () => {
@@ -41,6 +69,15 @@ describe("detectInjection", () => {
     const input = "a".repeat(28) + "!";
     const started = performance.now();
     expect(detectInjection(input, ["(a+)+$"])).toBe(false);
+    expect(performance.now() - started).toBeLessThan(50);
+  });
+
+  it("stays fast on a group that wraps another one", () => {
+    // Same gate, other shape: `((a+))+$` passed the old check. Measured before the fix:
+    // 251.7 s of blocked event loop with this 31-character input.
+    const input = "a".repeat(30) + "X";
+    const started = performance.now();
+    expect(detectInjection(input, ["((a+))+$"])).toBe(false);
     expect(performance.now() - started).toBeLessThan(50);
   });
 });
