@@ -62,3 +62,6 @@ notion.json
 secret.key
 state-secret
 state-secret-notion
+
+# Worktrees de los agentes (Hermes/autopiloto)
+.worktrees/
