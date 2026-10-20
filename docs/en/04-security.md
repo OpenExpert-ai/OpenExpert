@@ -29,7 +29,12 @@ restricted to the pages shared in Notion's picker.
    by the model.
 3. **Human approval.** The assistant only _proposes_ actions (`propose_*`);
    nothing changes until you approve the card.
-4. **Transport hardening.** Every response carries `X-Content-Type-Options`,
+4. **Sandboxed code.** `run_python` runs a script only when `bubblewrap` can lock
+   it in a temporary directory with no network and no view of the rest of the disk.
+   Without `bubblewrap` it does not run: a network namespace isolates the network
+   and leaves your keys readable, which is worse than not running anything
+   (`src/lib/python.server.ts`).
+5. **Transport hardening.** Every response carries `X-Content-Type-Options`,
    `Referrer-Policy`, `X-Frame-Options` and `Permissions-Policy`, plus a
    `Content-Security-Policy` in production. The `/api/*` routes (chat, backup)
    reject cross-origin requests; server functions are protected by the CSRF

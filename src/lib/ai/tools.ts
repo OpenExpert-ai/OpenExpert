@@ -399,7 +399,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         "Ejecuta un script corto de Python y devuelve lo que imprime. Úsalo para **calcular**: sumar una columna, agrupar por meses, sacar un porcentaje o un total. " +
         "Lee los datos con read_local_file y deja que el cálculo lo haga el script: sumar a ojo sobre cientos de filas sale mal, y sale mal con seguridad. " +
         "El script corre en un directorio temporal propio, dentro de un espacio de nombres sin red y sin las variables de entorno de la aplicación, con un límite de 30 segundos (hasta 120). " +
-        "Si esta máquina no puede aislarlo de la red, no se ejecuta; si no tiene `bubblewrap`, el resultado lo advierte y el script puede leer archivos locales. " +
+        "Necesita `bubblewrap` para ver solo ese directorio: si la máquina no lo tiene (o no puede crear los espacios de nombres), el script no se ejecuta y el resultado dice cómo instalarlo. " +
         "Cuenta solo con la biblioteca estándar de Python: no des por hecho pandas ni nada que haya que instalar.",
       inputSchema: z.object({
         code: z.string().min(1).max(20000),

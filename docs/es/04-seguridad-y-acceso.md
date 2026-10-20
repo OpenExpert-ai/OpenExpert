@@ -32,7 +32,11 @@ selector.
    `chat.server.ts`, no por el modelo.
 3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`);
    nada cambia hasta que apruebas la tarjeta.
-4. **Endurecimiento del transporte.** Cada respuesta incluye
+4. **Código aislado.** `run_python` solo ejecuta el script si `bubblewrap` puede
+   encerrarlo en un directorio temporal sin red y sin ver el resto del disco. Sin
+   `bubblewrap` no se ejecuta: un espacio de nombres de red aísla la red y deja tus
+   claves legibles, que es peor que no ejecutar nada (`src/lib/python.server.ts`).
+5. **Endurecimiento del transporte.** Cada respuesta incluye
    `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y
    `Permissions-Policy`, además de una `Content-Security-Policy` en producción.
    Las rutas `/api/*` (chat, copia) rechazan peticiones entre orígenes; las

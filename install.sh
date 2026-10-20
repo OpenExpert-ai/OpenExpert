@@ -121,28 +121,28 @@ PM=""; PM_INSTALL=""; PM_PACKAGES=""; PM_PATTERN=""
 if have pacman; then
   PM=pacman
   PM_INSTALL="pacman -S --needed --noconfirm"
-  PM_PACKAGES="base-devel pkgconf nodejs npm rust webkit2gtk-4.1 libsoup3 gtk3 librsvg"
+  PM_PACKAGES="base-devel pkgconf nodejs npm rust webkit2gtk-4.1 libsoup3 gtk3 librsvg bubblewrap"
 elif have apt-get; then
   PM=apt
   PM_INSTALL="apt-get install -y"
   # Ojo: en Debian/Ubuntu estables el nodejs del repo es <24 (Debian 13: node 20, npm 9),
   # así que no lo pedimos aquí; el script avisará de cómo instalar Node 24 (nvm/NodeSource).
-  PM_PACKAGES="build-essential pkg-config libwebkit2gtk-4.1-dev libsoup-3.0-dev libgtk-3-dev librsvg2-dev libssl-dev"
+  PM_PACKAGES="build-essential pkg-config libwebkit2gtk-4.1-dev libsoup-3.0-dev libgtk-3-dev librsvg2-dev libssl-dev bubblewrap"
 elif have dnf; then
   PM=dnf
   PM_INSTALL="dnf install -y"
-  PM_PACKAGES="@development-tools pkgconf-pkg-config webkit2gtk4.1-devel libsoup3-devel gtk3-devel librsvg2-devel openssl-devel rust cargo nodejs24 nodejs24-npm"
+  PM_PACKAGES="@development-tools pkgconf-pkg-config webkit2gtk4.1-devel libsoup3-devel gtk3-devel librsvg2-devel openssl-devel rust cargo nodejs24 nodejs24-npm bubblewrap"
 elif have zypper; then
   PM=zypper
   PM_INSTALL="zypper --non-interactive install"
   PM_PATTERN="zypper --non-interactive install -t pattern devel_basis"
   # Leap 16: el .pc de WebKitGTK 4.1 lo trae webkit2gtk3-devel; npm va aparte (npm24).
-  PM_PACKAGES="pkg-config webkit2gtk3-devel libsoup-devel gtk3-devel librsvg-devel libopenssl-devel rust cargo nodejs24 npm24"
+  PM_PACKAGES="pkg-config webkit2gtk3-devel libsoup-devel gtk3-devel librsvg-devel libopenssl-devel rust cargo nodejs24 npm24 bubblewrap"
 elif have apk; then
   PM=apk
   PM_INSTALL="apk add --no-cache"
   # Alpine 3.24: nodejs 24.18 + npm 11.12 en el repo principal (musl).
-  PM_PACKAGES="build-base pkgconf linux-headers nodejs npm rust cargo webkit2gtk-4.1-dev gtk+3.0-dev libsoup3-dev librsvg-dev openssl-dev"
+  PM_PACKAGES="build-base pkgconf linux-headers nodejs npm rust cargo webkit2gtk-4.1-dev gtk+3.0-dev libsoup3-dev librsvg-dev openssl-dev bubblewrap"
 else
   warn "no reconozco el gestor de paquetes; si falta algo, instálalo a mano."
 fi
@@ -353,7 +353,17 @@ else
   fail "la instalación no se valida; corrige lo anterior o repite sin --doctor"
 fi
 
-# 6.2 lanzadores: cualquier menú (rofi, wofi, fuzzel, GNOME, KDE…) lee
+# 6.2 aislamiento de run_python: la herramienta no ejecuta scripts sin bubblewrap (lo decide
+# src/lib/python.server.ts, que se niega en vez de correr sin sistema de ficheros aislado), así que
+# se dice aquí, al instalar, y no cuando el asistente lo necesita y falla.
+step "Aislamiento de código (run_python)"
+if have bwrap; then
+  ok "bubblewrap ($(command -v bwrap)): run_python ejecuta en un directorio temporal sin red"
+else
+  warn "sin bubblewrap: run_python no ejecutará scripts. Instálalo: sudo apt install bubblewrap (o dnf/pacman/apk)"
+fi
+
+# 6.3 lanzadores: cualquier menú (rofi, wofi, fuzzel, GNOME, KDE…) lee
 # ~/.local/share/applications, así que la entrada sirve en todos; aquí se
 # comprueba el que tengas y se refresca su caché si hace falta.
 step "Lanzadores de aplicaciones"
