@@ -227,12 +227,13 @@ export const getDataStats = createServerFn({ method: "GET" }).handler(async () =
 export const importBackup = createServerFn({ method: "POST" })
   .validator((d) => z.object({ content: z.string().min(2).max(200_000_000) }).parse(d))
   .handler(async ({ data }) => {
-    let applied: string[];
+    let restored: backup.RestoreResult;
     try {
-      applied = backup.restoreBackup(data.content).applied;
+      restored = await backup.restoreBackup(data.content);
     } catch (e) {
       throw new Error(e instanceof Error ? e.message : "Copia no válida", { cause: e });
     }
+    const { applied, backupPath } = restored;
     await ee.logActivity({
       actor: "human",
       actor_name: OWNER_NAME,
@@ -242,7 +243,7 @@ export const importBackup = createServerFn({ method: "POST" })
       summary: `Copia restaurada (${applied.join(", ")})`,
       sources: ["Copia de seguridad"],
     });
-    return { applied };
+    return { applied, backupPath };
   });
 
 export const clearChatHistory = createServerFn({ method: "POST" }).handler(async () => {

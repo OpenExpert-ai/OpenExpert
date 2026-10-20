@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
-import { describe, expect, it } from "vitest";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { isSameOrigin, securityHeaders } from "./http.server";
+import { fetchWithTimeout, isSameOrigin, securityHeaders } from "./http.server";
 
 describe("isSameOrigin", () => {
   const fake = (origin: string | null, host: string): Request =>
@@ -30,5 +32,41 @@ describe("securityHeaders", () => {
     const csp = securityHeaders(true)["Content-Security-Policy"] ?? "";
     expect(csp).toContain("https://apis.google.com");
     expect(csp).toContain("frame-src https://docs.google.com");
+  });
+});
+
+describe("fetchWithTimeout", () => {
+  // A server that accepts the connection and never answers: the shape of a proxy that tarpits or a
+  // provider that stops replying. Undici's `fetch` has no timeout of its own, so without this the
+  // chat turn stayed streaming until the user pressed Stop.
+  let server: Server;
+  let url: string;
+
+  beforeAll(async () => {
+    server = createServer(() => {
+      // Deliberately no response.
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/never`;
+  });
+
+  afterAll(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  it("gives up and says which service did not answer", async () => {
+    await expect(
+      fetchWithTimeout(url, {}, { service: "Google Drive", timeoutMs: 200 }),
+    ).rejects.toThrow(/Google Drive no respondió en 200 ms/);
+  });
+
+  it("returns the response when the service does answer", async () => {
+    const res = await fetchWithTimeout(
+      `data:text/plain,hola`,
+      {},
+      { service: "Prueba", timeoutMs: 1_000 },
+    );
+    expect(await res.text()).toBe("hola");
   });
 });

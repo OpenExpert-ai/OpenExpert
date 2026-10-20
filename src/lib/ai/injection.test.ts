@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
-import { detectInjection } from "./injection";
+import { detectInjection, hasNestedQuantifier } from "./injection";
 
 describe("detectInjection", () => {
   it("blocks obvious English jailbreak attempts", () => {
@@ -24,5 +24,23 @@ describe("detectInjection", () => {
 
   it("treats empty input as safe", () => {
     expect(detectInjection("")).toBe(false);
+  });
+
+  it("recognises the patterns that backtrack catastrophically", () => {
+    expect(hasNestedQuantifier("(a+)+$")).toBe(true);
+    expect(hasNestedQuantifier("(?:x*)*")).toBe(true);
+    // Ordinary patterns are not rejected: alternation and single quantifiers are fine.
+    expect(hasNestedQuantifier("(hola|adios)+")).toBe(false);
+    expect(hasNestedQuantifier("ignora.+instrucciones")).toBe(false);
+  });
+
+  it("stays fast on the pattern that used to freeze the process", () => {
+    // Measured before the fix: 59 s of blocked event loop on this 29-character input, because a
+    // stored `(a+)+$` was compiled and run against every message. It must now be skipped, and the
+    // whole check has to cost milliseconds.
+    const input = "a".repeat(28) + "!";
+    const started = performance.now();
+    expect(detectInjection(input, ["(a+)+$"])).toBe(false);
+    expect(performance.now() - started).toBeLessThan(50);
   });
 });

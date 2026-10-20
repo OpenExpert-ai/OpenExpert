@@ -6,6 +6,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import * as ee from "../ee.server";
 import { getDb } from "@/lib/db.server";
+import { logger } from "@/lib/logger.server";
 import * as schema from "../../../drizzle/schema";
 
 export const DOMAIN = {
@@ -258,7 +259,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Creado en Drive: ${f.name}`,
               sources: ["Google Drive"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "create_drive_file", expertId }),
+            );
           return { action: "created", ...f };
         } catch (e) {
           return { error: (e as Error).message };
@@ -291,7 +294,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Editado en Drive: ${f.name}`,
               sources: ["Google Drive"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "update_drive_file", expertId }),
+            );
           return { action: "updated", ...f };
         } catch (e) {
           return { error: (e as Error).message };
@@ -386,7 +391,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         used.add("Python");
         try {
           const py = await import("../python.server");
-          const run = py.runPython(code, { timeoutMs });
+          const run = await py.runPython(code, { timeoutMs });
           // The script itself goes to the activity trail: running code is the one action where the
           // audit record is not a nicety but the way to answer "what did it actually run?".
           await ee
@@ -400,7 +405,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               sources: ["Python"],
               snapshot: { script: code.slice(0, 4000) },
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "run_python", expertId }),
+            );
           return run;
         } catch (e) {
           return { error: (e as Error).message };
@@ -475,7 +482,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Creado archivo local: ${f.name}`,
               sources: ["Archivos locales"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "create_local_file", expertId }),
+            );
           return { action: "created", ...f };
         } catch (e) {
           return { error: (e as Error).message };
@@ -504,7 +513,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Editado archivo local: ${f.name}`,
               sources: ["Archivos locales"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "update_local_file", expertId }),
+            );
           return { action: "updated", ...f };
         } catch (e) {
           return { error: (e as Error).message };
@@ -611,7 +622,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Creada página en Notion: ${page.title}`,
               sources: ["Notion"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "create_notion_page", expertId }),
+            );
           return { action: "created", ...page };
         } catch (e) {
           return { error: (e as Error).message };
@@ -638,7 +651,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Actualizada página en Notion: ${page.title}`,
               sources: ["Notion"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "update_notion_page", expertId }),
+            );
           return { action: "updated", ...page };
         } catch (e) {
           return { error: (e as Error).message };
@@ -665,7 +680,9 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: "Añadidos bloques a una página de Notion",
               sources: ["Notion"],
             })
-            .catch(() => {});
+            .catch((e: unknown) =>
+              logger.error("activity.log_failed", e, { tool: "append_notion_blocks", expertId }),
+            );
           return { action: "appended", ...r };
         } catch (e) {
           return { error: (e as Error).message };

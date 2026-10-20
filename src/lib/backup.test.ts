@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -28,7 +28,7 @@ describe("backups", () => {
 
   it("restores a backup and resets to initial data", async () => {
     const bundle = buildBackup();
-    const result = restoreBackup(JSON.stringify(bundle));
+    const result = await restoreBackup(JSON.stringify(bundle));
     expect(result.applied).toContain("db");
 
     await resetData();
@@ -38,10 +38,59 @@ describe("backups", () => {
     expect(stats.chatMessages).toBe(0);
   });
 
-  it("rejects an unknown format", () => {
-    expect(() =>
+  it("refuses a bundle that is not a database and leaves the current one untouched", async () => {
+    // The regression: the bytes were renamed over the real database without being opened, so a
+    // corrupt bundle left an installation that could not start and had no way back.
+    await dataStats();
+    const dbFile = join(dir, "openexpert.db");
+    const before = readFileSync(dbFile);
+    const bundle = {
+      format: "openexpert-backup",
+      version: 1,
+      files: { db: Buffer.from("esto no es una base de datos").toString("base64") },
+    };
+
+    await expect(restoreBackup(JSON.stringify(bundle))).rejects.toThrow(
+      /no contiene una base de datos válida/,
+    );
+    expect(readFileSync(dbFile).equals(before)).toBe(true);
+  });
+
+  it("refuses a truncated database that still carries the SQLite header", async () => {
+    // The header is not enough: a file cut in half keeps it and sql.js then throws on open.
+    await dataStats();
+    const dbFile = join(dir, "openexpert.db");
+    const before = readFileSync(dbFile);
+    const broken = Buffer.concat([
+      Buffer.from("SQLite format 3\u0000", "latin1"),
+      Buffer.from("<html>portal cautivo</html>".repeat(20)),
+    ]);
+    const bundle = {
+      format: "openexpert-backup",
+      version: 1,
+      files: { db: broken.toString("base64") },
+    };
+
+    await expect(restoreBackup(JSON.stringify(bundle))).rejects.toThrow(/no es válida|válida/);
+    expect(readFileSync(dbFile).equals(before)).toBe(true);
+  });
+
+  it("keeps a copy of the database it replaced and says where it is", async () => {
+    await dataStats();
+    const dbFile = join(dir, "openexpert.db");
+    const previous = readFileSync(dbFile);
+    const bundle = buildBackup();
+
+    const result = await restoreBackup(JSON.stringify(bundle));
+    expect(result.backupPath).toBe(`${dbFile}.bak`);
+    expect(existsSync(result.backupPath!)).toBe(true);
+    expect(readFileSync(result.backupPath!).equals(previous)).toBe(true);
+  });
+
+  it("rejects an unknown format", async () => {
+    await expect(
       restoreBackup(JSON.stringify({ format: "nope", version: 1, files: {} })),
-    ).toThrow();
+    ).rejects.toThrow();
   });
 
   it("clears chat history and reports the count", async () => {

@@ -345,6 +345,7 @@ export const en: Record<string, string> = {
   Secretos: "Secrets",
   "Copia restaurada": "Backup restored",
   "Copia no válida": "Invalid backup",
+  "Copia anterior guardada en {path}": "Previous copy saved to {path}",
   "¿Borrar todo el historial de conversaciones?": "Delete the whole conversation history?",
   "Historial borrado ({n} mensajes)": "History cleared ({n} messages)",
   "Base de datos compactada": "Database compacted",

@@ -12,9 +12,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dataDir } from "@/lib/db.server";
 import * as local from "@/lib/engine/local-secrets.server";
+import { fetchWithTimeout } from "@/lib/http.server";
 
 const AUTHORIZE_URL = "https://api.notion.com/v1/oauth/authorize";
 const TOKEN_URL = "https://api.notion.com/v1/oauth/token";
+
+const notionFetch = (url: string, init: RequestInit = {}) =>
+  fetchWithTimeout(url, init, { service: "Notion" });
 
 /** Pinned API version; Notion requires the `Notion-Version` header. */
 export const NOTION_VERSION = "2026-03-11";
@@ -88,7 +92,7 @@ export type NotionTokenResponse = {
 
 export async function exchangeCode(code: string, origin: string): Promise<NotionTokenResponse> {
   const basic = Buffer.from(`${clientId()}:${clientSecret()}`).toString("base64");
-  const r = await fetch(TOKEN_URL, {
+  const r = await notionFetch(TOKEN_URL, {
     method: "POST",
     headers: {
       authorization: `Basic ${basic}`,

@@ -9,8 +9,13 @@
 
 import { getNotionToken, NOTION_VERSION } from "./notion-tokens.server";
 import { logger } from "./logger.server";
+import { fetchWithTimeout } from "./http.server";
 
 const API = "https://api.notion.com/v1";
+
+/** Every Notion request gets a deadline: a host that never answers used to hang the chat turn. */
+const notionFetch = (url: string, init: RequestInit = {}) =>
+  fetchWithTimeout(url, init, { service: "Notion" });
 
 type Json = Record<string, unknown>;
 
@@ -20,7 +25,7 @@ async function call(
   opts: { optional?: boolean } = {},
 ): Promise<Json> {
   const token = getNotionToken();
-  const res = await fetch(`${API}${path}`, {
+  const res = await notionFetch(`${API}${path}`, {
     ...init,
     headers: {
       authorization: `Bearer ${token}`,

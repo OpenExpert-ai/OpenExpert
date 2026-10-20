@@ -23,7 +23,7 @@
 // the script being written to the activity trail by the tool that calls this, which is the same
 // contract the local writes use.
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -34,6 +34,8 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_TIMEOUT_MS = 120_000;
 /** Output kept for the model; the rest is dropped with a note, never silently. */
 const MAX_OUTPUT = 20_000;
+/** Bytes held in memory while the script runs; beyond this it is killed. */
+const MAX_BUFFER = 8 * 1024 * 1024;
 
 export type PythonRun = {
   ok: boolean;
@@ -67,33 +69,33 @@ function cap(value: string): { text: string; truncated: boolean } {
 /**
  * Run a script and return what it printed. Never throws for a failure *inside* the script: a
  * traceback is information the model needs, not an error of this function.
+ *
+ * Asynchronous on purpose: `spawnSync` froze the whole process for as long as the script ran, and
+ * the process is what serves the panel, the chat stream and the API. A script that ignores SIGTERM
+ * is killed with SIGKILL when the deadline passes.
  */
-export function runPython(code: string, opts: { timeoutMs?: number | undefined } = {}): PythonRun {
+export async function runPython(
+  code: string,
+  opts: { timeoutMs?: number | undefined } = {},
+): Promise<PythonRun> {
   const script = String(code ?? "");
-  if (!script.trim()) {
-    return {
-      ok: false,
-      exit: null,
-      stdout: "",
-      stderr: "",
-      truncated: false,
-      timedOut: false,
-      durationMs: 0,
-      note: "No llegó ningún código que ejecutar.",
-    };
-  }
+  const nothing = (note: string): PythonRun => ({
+    ok: false,
+    exit: null,
+    stdout: "",
+    stderr: "",
+    truncated: false,
+    timedOut: false,
+    durationMs: 0,
+    note,
+  });
+  if (!script.trim()) return nothing("No llegó ningún código que ejecutar.");
   const interpreter = pythonAvailable();
   if (!interpreter.ok || !interpreter.path) {
-    return {
-      ok: false,
-      exit: null,
-      stdout: "",
-      stderr: "",
-      truncated: false,
-      timedOut: false,
-      durationMs: 0,
-      ...(interpreter.note ? { note: interpreter.note } : {}),
-    };
+    return nothing(
+      interpreter.note ??
+        "No hay ningún intérprete de Python en esta máquina (`python3`), así que no se puede ejecutar código.",
+    );
   }
   const timeoutMs = Math.min(
     Math.max(1_000, Math.floor(opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)),
@@ -101,15 +103,13 @@ export function runPython(code: string, opts: { timeoutMs?: number | undefined }
   );
   const dir = mkdtempSync(join(tmpdir(), "openexpert-py-"));
   const started = Date.now();
+  const file = join(dir, "calc.py");
+  writeFileSync(file, script, "utf8");
   try {
-    const file = join(dir, "calc.py");
-    writeFileSync(file, script, "utf8");
     // `-I` is isolated mode: no user site-packages, no `PYTHON*` variables from the environment.
-    const result = spawnSync(interpreter.path, ["-I", file], {
+    const child = spawn(interpreter.path, ["-I", file], {
       cwd: dir,
-      timeout: timeoutMs,
-      encoding: "utf8",
-      maxBuffer: 8 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
       // Only what a script legitimately needs. Everything else — tokens, keys, cloud credentials —
       // stays out of reach of code that a model wrote.
       env: {
@@ -120,26 +120,67 @@ export function runPython(code: string, opts: { timeoutMs?: number | undefined }
         TMPDIR: dir,
       },
     });
-    const timedOut =
-      result.error?.name === "Error" && /ETIMEDOUT|timed?out/i.test(result.error.message);
-    const stdout = cap(String(result.stdout ?? ""));
-    const stderr = cap(String(result.stderr ?? ""));
-    const exit = typeof result.status === "number" ? result.status : null;
+
+    const out: Buffer[] = [];
+    const err: Buffer[] = [];
+    let buffered = 0;
+    let overflow = false;
+    // A runaway `print` is capped in memory as well as in the result, like `spawnSync`'s maxBuffer.
+    const collect = (sink: Buffer[]) => (chunk: Buffer) => {
+      buffered += chunk.byteLength;
+      if (buffered > MAX_BUFFER) {
+        overflow = true;
+        child.kill("SIGKILL");
+        return;
+      }
+      sink.push(chunk);
+    };
+    child.stdout?.on("data", collect(out));
+    child.stderr?.on("data", collect(err));
+
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      // SIGTERM is ignored by a `while True:` loop; SIGKILL is not.
+      child.kill("SIGKILL");
+    }, timeoutMs);
+
+    const outcome = await new Promise<{ code: number | null; error?: Error }>((resolve) => {
+      let settled = false;
+      child.on("error", (e) => {
+        if (settled) return;
+        settled = true;
+        resolve({ code: null, error: e });
+      });
+      child.on("close", (code) => {
+        if (settled) return;
+        settled = true;
+        resolve({ code });
+      });
+    });
+    clearTimeout(timer);
+
+    const stdout = cap(Buffer.concat(out).toString("utf8"));
+    const stderr = cap(Buffer.concat(err).toString("utf8"));
+    const exit = outcome.code;
+    const failedToStart = outcome.error;
     return {
-      ok: exit === 0,
+      ok: exit === 0 && !failedToStart,
       exit,
       stdout: stdout.text,
       stderr: stderr.text,
-      truncated: stdout.truncated || stderr.truncated,
+      truncated: stdout.truncated || stderr.truncated || overflow,
       timedOut,
       durationMs: Date.now() - started,
       ...(timedOut
         ? {
             note: `El script tardó más de ${Math.round(timeoutMs / 1000)} s y se paró. Prueba con menos datos o divide el cálculo.`,
           }
-        : exit === 0
-          ? {}
-          : { note: "El script falló: mira el error de arriba." }),
+        : failedToStart
+          ? { note: `No se pudo ejecutar Python: ${failedToStart.message}` }
+          : exit === 0
+            ? {}
+            : { note: "El script falló: mira el error de arriba." }),
     };
   } finally {
     rmSync(dir, { recursive: true, force: true });

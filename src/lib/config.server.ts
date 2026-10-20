@@ -29,7 +29,7 @@ import {
   providerDef,
   type ProviderKeyVar,
 } from "@openexpert/openexpert/model-provider";
-import { patternsAreValid } from "./ai/injection";
+import { hasNestedQuantifier, patternsAreValid } from "./ai/injection";
 import { configPath, dataDir, dbPath, secretsPath } from "./paths.server";
 
 export type ConfigSource = "env" | "file" | "secrets" | "default";
@@ -459,6 +459,20 @@ export function rawConfigText(cwd: string = process.cwd()): string {
   );
 }
 
+/**
+ * An injection pattern supplied by the user (settings panel or `openexpert.json`).
+ * It runs against every message on the main thread, so it is bounded and cannot
+ * carry a nested quantifier: `(a+)+` freezes the process for a minute on a
+ * 29-character string. See `hasNestedQuantifier`.
+ */
+const injectionPattern = z
+  .string()
+  .max(120, { message: "Un patrón no puede pasar de 120 caracteres" })
+  .refine((p) => !hasNestedQuantifier(p), {
+    message:
+      "El patrón tiene cuantificadores anidados (por ejemplo (a+)+): puede congelar el servidor",
+  });
+
 export const fileConfigSchema = z.object({
   $schema: z.string().optional(),
   modelProvider: z.enum(PROVIDER_IDS).optional(),
@@ -480,7 +494,7 @@ export const fileConfigSchema = z.object({
       injectionGuard: z.boolean().optional(),
       visionPdf: z.boolean().optional(),
       injectionExtraPatterns: z
-        .array(z.string())
+        .array(injectionPattern)
         .refine(patternsAreValid, { message: "Patrón regular inválido" })
         .optional(),
       retentionDays: z.number().int().min(0).optional(),
@@ -514,7 +528,7 @@ export const chatUpdateSchema = z.object({
   // that is a decision for its owner, not a default.
   visionPdf: z.boolean().default(false),
   injectionExtraPatterns: z
-    .array(z.string())
+    .array(injectionPattern)
     .max(50)
     .refine(patternsAreValid, { message: "Patrón regular inválido" }),
   retentionDays: z.number().int().min(0).max(3650),
