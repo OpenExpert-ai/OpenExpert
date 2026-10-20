@@ -19,6 +19,61 @@ const driveFetch = (url: string, init: RequestInit = {}) =>
 const driveTransfer = (url: string, init: RequestInit = {}) =>
   fetchWithTimeout(url, init, { service: "Google Drive", timeoutMs: 60_000 });
 
+/** The size ceiling for one Drive document, in bytes. A file over it is refused, never read:
+ *  both the metadata check and the read below hold the same line. */
+const MAX_DRIVE_BYTES = 25_000_000;
+
+/** The ceiling as it reads in a note: `25 MB` beats `25000000 bytes` in the chat. */
+const MAX_DRIVE_MB = Math.round(MAX_DRIVE_BYTES / 1_000_000);
+
+const tooLarge = (what: string) => `${what} demasiado grande (>${MAX_DRIVE_MB} MB) para leerlo.`;
+
+/**
+ * Read a body up to `maxBytes`, cancelling the stream as soon as it goes over. `.text()` and
+ * `.arrayBuffer()` buffer the whole document first: an 800 MB PDF reached memory before its size
+ * was compared, and a text export had no ceiling at all. `Content-Length` is honoured first —
+ * Google sends it — and the running byte count is the backstop for a body that under-reports it.
+ */
+async function readCapped(res: Response, maxBytes = MAX_DRIVE_BYTES) {
+  const declared = Number(res.headers.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    if (res.body) await res.body.cancel().catch(() => {});
+    return { bytes: null, over: true };
+  }
+  if (!res.body) {
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength > maxBytes) return { bytes: null, over: true };
+    return { bytes: buf, over: false };
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => {});
+      return { bytes: null, over: true };
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, at);
+    at += chunk.byteLength;
+  }
+  return { bytes, over: false };
+}
+
+/** A body decoded as text, or `null` when it is over the ceiling. */
+async function readText(res: Response) {
+  const { bytes } = await readCapped(res);
+  return bytes ? new TextDecoder().decode(bytes) : null;
+}
+
 async function call(path: string, query: Record<string, string> = {}) {
   const token = await getAccessToken();
   const qs = new URLSearchParams(query).toString();
@@ -56,28 +111,38 @@ export async function readFile(id: string, grantedIds: string[]) {
   }
   const meta = (await (
     await call(`/files/${encodeURIComponent(id)}`, {
-      fields: "id,name,mimeType,modifiedTime,webViewLink",
+      // `size` comes with the metadata so the decision is taken before the body: without it the
+      // only way to know how heavy a PDF or an Office file was, was to download it whole.
+      fields: "id,name,mimeType,modifiedTime,webViewLink,size",
     })
   ).json()) as DriveFile;
+  // Google Docs, Sheets and Slides carry no `size` (they are not stored as one blob), so their
+  // exports rely on the cap inside the read rather than on this check.
+  const declared = Number(meta.size ?? "");
+  if (Number.isFinite(declared) && declared > MAX_DRIVE_BYTES)
+    return { ...meta, content: null, note: tooLarge("Archivo") };
   const exp = EXPORT[meta.mimeType];
   let text: string;
-  if (exp)
-    text = await (await call(`/files/${encodeURIComponent(id)}/export`, { mimeType: exp })).text();
-  else if (meta.mimeType.startsWith("text/") || meta.mimeType === "application/json")
-    text = await (await call(`/files/${encodeURIComponent(id)}`, { alt: "media" })).text();
-  else if (meta.mimeType === "application/pdf") {
-    const token = await getAccessToken();
-    const buf = new Uint8Array(
-      await (
-        await driveTransfer(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-      ).arrayBuffer(),
+  if (exp) {
+    const body = await readText(
+      await call(`/files/${encodeURIComponent(id)}/export`, { mimeType: exp }),
     );
-    if (buf.byteLength > 25_000_000)
-      return { ...meta, content: null, note: "PDF demasiado grande (>25 MB) para leerlo." };
+    if (body === null) return { ...meta, content: null, note: tooLarge("Documento") };
+    text = body;
+  } else if (meta.mimeType.startsWith("text/") || meta.mimeType === "application/json") {
+    const body = await readText(await call(`/files/${encodeURIComponent(id)}`, { alt: "media" }));
+    if (body === null) return { ...meta, content: null, note: tooLarge("Archivo") };
+    text = body;
+  } else if (meta.mimeType === "application/pdf") {
+    const token = await getAccessToken();
+    const body = await readCapped(
+      await driveTransfer(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    );
+    if (!body.bytes) return { ...meta, content: null, note: tooLarge("PDF") };
     const { extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(buf);
+    const pdf = await getDocumentProxy(body.bytes);
     const out = await extractText(pdf, { mergePages: true });
     text = String(out.text ?? "")
       .replace(/\s+\n/g, "\n")
@@ -86,16 +151,13 @@ export async function readFile(id: string, grantedIds: string[]) {
   } else if (OFFICE_MIME[meta.mimeType]) {
     const officeExt = OFFICE_MIME[meta.mimeType]!;
     const token = await getAccessToken();
-    const buf = new Uint8Array(
-      await (
-        await driveTransfer(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-      ).arrayBuffer(),
+    const body = await readCapped(
+      await driveTransfer(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     );
-    if (buf.byteLength > 25_000_000)
-      return { ...meta, content: null, note: "Documento demasiado grande (>25 MB) para leerlo." };
-    const r = await extractOfficeText(buf, officeExt);
+    if (!body.bytes) return { ...meta, content: null, note: tooLarge("Documento") };
+    const r = await extractOfficeText(body.bytes, officeExt);
     if (!r.text) return { ...meta, content: null, note: r.note };
     text = r.text;
   } else return { ...meta, content: null, note: "Tipo de archivo no legible como texto." };
