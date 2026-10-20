@@ -109,3 +109,129 @@ describe("drive.server createFile", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 });
+
+/** A body delivered in `chunk`-sized pieces, counting the pieces that were actually pulled: the
+ *  point is that the reader stops pulling once the cap is crossed, not that the text is short. */
+function streamedBody(size: number, chunk: number) {
+  let pulled = 0;
+  let stopped = false;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulled += 1;
+      if (pulled * chunk > size) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(new Uint8Array(chunk).fill(65));
+    },
+    cancel() {
+      stopped = true;
+    },
+  });
+  return { body, pulled: () => pulled, cancelled: () => stopped };
+}
+
+const MB = 1024 * 1024;
+
+describe("drive.server readFile size limits", () => {
+  beforeEach(() => vi.resetModules());
+  afterEach(() => vi.restoreAllMocks());
+
+  it("refuses a file from its metadata, before downloading the body", async () => {
+    const calls: string[] = [];
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      calls.push(u);
+      if (u.includes("fields="))
+        return json({
+          id: "big",
+          name: "informe.pdf",
+          mimeType: "application/pdf",
+          modifiedTime: "2026-01-01",
+          size: String(30_000_000),
+        });
+      throw new Error("no debería descargar el cuerpo");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { readFile } = await import("./drive.server");
+    const out = await readFile("big", ["big"]);
+    expect(out.content).toBeNull();
+    expect((out as { note?: string }).note).toContain("25 MB");
+    // Only the metadata request: `size` decides before any media call is made.
+    expect(calls).toHaveLength(1);
+  });
+
+  it("stops reading a text body that goes over the cap", async () => {
+    const stream = streamedBody(80 * MB, MB);
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("fields="))
+        return json({
+          id: "t1",
+          name: "notas.txt",
+          mimeType: "text/plain",
+          modifiedTime: "2026-01-01",
+          size: "1024",
+        });
+      return new Response(stream.body, { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { readFile } = await import("./drive.server");
+    const out = await readFile("t1", ["t1"]);
+    expect(out.content).toBeNull();
+    expect((out as { note?: string }).note).toContain("25 MB");
+    // 25 pieces fill the cap and the 26th crosses it; the other 54 never reach memory.
+    expect(stream.pulled()).toBeLessThan(80);
+    expect(stream.pulled()).toBeLessThanOrEqual(27);
+  });
+
+  it("trusts a Content-Length over the cap and never touches the body", async () => {
+    const stream = streamedBody(80 * MB, MB);
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("fields="))
+        return json({
+          id: "t2",
+          name: "notas.txt",
+          mimeType: "text/plain",
+          modifiedTime: "2026-01-01",
+          size: "1024",
+        });
+      return new Response(stream.body, {
+        status: 200,
+        headers: { "content-length": String(40 * 1000 * 1000) },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { readFile } = await import("./drive.server");
+    const out = await readFile("t2", ["t2"]);
+    expect(out.content).toBeNull();
+    expect((out as { note?: string }).note).toContain("25 MB");
+    // The first piece may already be queued by the Response wrapper; the other 79 are not read
+    // and the stream is cancelled instead of drained.
+    expect(stream.pulled()).toBeLessThanOrEqual(1);
+    expect(stream.cancelled()).toBe(true);
+  });
+
+  it("applies the same cap to a Google Docs export", async () => {
+    const stream = streamedBody(60 * MB, MB);
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes("fields="))
+        return json({
+          id: "d1",
+          name: "acta",
+          mimeType: "application/vnd.google-apps.document",
+          modifiedTime: "2026-01-01",
+        });
+      if (u.includes("/export")) return new Response(stream.body, { status: 200 });
+      throw new Error(`petición inesperada: ${u}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { readFile } = await import("./drive.server");
+    const out = await readFile("d1", ["d1"]);
+    expect(out.content).toBeNull();
+    expect((out as { note?: string }).note).toContain("25 MB");
+    expect(stream.pulled()).toBeLessThan(60);
+  });
+});
