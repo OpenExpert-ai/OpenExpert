@@ -22,7 +22,7 @@ import {
   selectedProvider,
 } from "@/lib/engine/model-provider.server";
 import { detectInjection as injectionMatch } from "@/lib/ai/injection";
-import { createChatTools } from "@/lib/ai/tools";
+import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
 import { effectiveConfig } from "@/lib/config.server";
 import { forbidden, isSameOrigin } from "@/lib/http.server";
 import { logger } from "@/lib/logger.server";
@@ -201,7 +201,7 @@ Trabaja SIEMPRE dentro de esas carpetas autorizadas; nunca propongas rutas fuera
 }${
     hasPython
       ? `PYTHON DISPONIBLE (ejecutas código para calcular):
-- run_python: escribe un script corto y devuelve lo que imprime; corre en un directorio temporal, sin red.
+- run_python: escribe un script corto y devuelve lo que imprime; corre en un directorio temporal, en un espacio de nombres sin red. Si la máquina no puede aislarlo de la red, no se ejecuta, y el resultado lo dice.
 REGLA DE LAS CUENTAS: si la respuesta depende de una cuenta —un total, un porcentaje, agrupar por meses, comparar dos columnas— hazla con un script y no a ojo. Con pocas filas acertarás igual; con cientos te equivocarás y no te darás cuenta, y un número mal en un panel de negocio es peor que un error. Lee los datos con read_local_file y deja que el script sume.`
       : `Este Experto no puede ejecutar código: si la pregunta pide una cuenta sobre muchas filas, dilo antes de dar una cifra aproximada.`
   }
@@ -244,18 +244,13 @@ Formato (adáptalo a la pregunta):
     system: `${system}\nProveedor activo: ${modelLabel()}.`,
     messages: await convertToModelMessages(messages),
     tools,
-    // Only writes require explicit approval: they modify the user's Drive.
-    // Reads (search and read) run directly. The user already controls which
-    // files exist via the Picker.
-    toolApproval: {
-      create_drive_file: "user-approval",
-      update_drive_file: "user-approval",
-      create_local_file: "user-approval",
-      update_local_file: "user-approval",
-      create_notion_page: "user-approval",
-      update_notion_page: "user-approval",
-      append_notion_blocks: "user-approval",
-    },
+    // Writes require explicit approval: Drive files, local files and Notion
+    // pages are the things the user cannot get back. Reads (search and read)
+    // run directly. `APPROVAL_REQUIRED` is the single list; a test checks that
+    // every write in the catalog is on it.
+    toolApproval: Object.fromEntries(
+      APPROVAL_REQUIRED.map((name) => [name, "user-approval" as const]),
+    ),
     temperature: cfg.ai.temperature,
     topP: cfg.ai.topP,
     maxOutputTokens: cfg.ai.maxOutputTokens,

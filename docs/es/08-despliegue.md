@@ -6,30 +6,35 @@
 
 ## 1. Formas de ejecutar OpenExpert
 
-| Forma               | Comando                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Desarrollo          | `npm ci && npm run dev`                                                                   |
-| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                   |
-| Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
-| CLI                 | `npx @openexpert/openexpert serve`                                                        |
-| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                            |
+| Forma               | Comando                                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| Desarrollo          | `npm ci && npm run dev`                                                                             |
+| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                             |
+| Docker              | `docker run -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
+| CLI                 | `npx @openexpert/openexpert serve`                                                                  |
+| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                                      |
 
 La aplicación escucha en el puerto 3000 y **solo en la interfaz de bucle local**
 (`127.0.0.1`). El panel no tiene autenticación: quien alcance el puerto puede
 leer y escribir las carpetas que su dueño haya autorizado. Para exponerlo a una
 red a propósito, define `OPENEXPERT_HOST` (o `HOST`) — por ejemplo
 `OPENEXPERT_HOST=0.0.0.0 npx @openexpert/openexpert serve` — y piensa antes quién
-comparte esa red. La imagen Docker sigue escuchando en todas las interfaces,
-porque el puerto publicado es la razón del contenedor. El preset de Nitro es
-`node-server`.
+comparte esa red: el servidor solo atiende los nombres que conoce (bucle local y
+el de escucha) y responde 403 al resto. La imagen Docker escucha en todas las
+interfaces **dentro del contenedor** (así funciona un puerto publicado), así que
+su aislamiento depende del prefijo `127.0.0.1:` del puerto: no lo quites. Ver
+[`docker/README.md`](../../docker/README.md). El preset de Nitro es `node-server`.
 
 ## 2. Docker
 
 ```sh
 docker build -f docker/Dockerfile -t openexpert:local .
-docker run --rm -p 3000:3000 -v openexpert-data:/data \
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data \
   -e OPENEXPERT_MODEL_PROVIDER=ollama openexpert:local
 ```
+
+El puerto publicado se ata a `127.0.0.1` a propósito: la aplicación no tiene login. Ver
+[`docker/README.md`](../../docker/README.md).
 
 `docker/docker-compose.yml` también arranca un servicio Ollama:
 
