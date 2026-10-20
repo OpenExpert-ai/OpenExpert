@@ -55,6 +55,19 @@ function chatRequest(body: unknown, headers: Record<string, string> = {}): Reque
   });
 }
 
+/** Same request, but with the body sent verbatim (no JSON.stringify around it). */
+function rawChatRequest(body: string): Request {
+  return new Request("http://localhost/api/chat", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      host: "localhost:3000",
+      origin: "http://localhost:3000",
+    },
+    body,
+  });
+}
+
 const userMessage = (text: string) => ({ id: "m1", role: "user", parts: [{ type: "text", text }] });
 const validBody = () => ({
   expertId: "ventas",
@@ -160,6 +173,32 @@ describe("handleChat model wiring", () => {
     );
     expect(res.status).toBe(403);
     expect(mocks.streamText).not.toHaveBeenCalled();
+  });
+});
+
+describe("malformed chat bodies", () => {
+  it("returns 400 JSON, not a 500 page, when the body is not JSON", async () => {
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(rawChatRequest("{ esto no es json"));
+    expect(res.status).toBe(400);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect(await res.json()).toEqual({ error: "JSON inválido" });
+    expect(mocks.streamText).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the body is empty", async () => {
+    const { handleChat } = await import("./chat.server");
+    const request = rawChatRequest("");
+    const res = await handleChat(request);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "JSON inválido" });
+  });
+
+  it("keeps the 400 for valid JSON with the wrong shape", async () => {
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(chatRequest({ expertId: "ventas", messages: [] }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Petición inválida" });
   });
 });
 
