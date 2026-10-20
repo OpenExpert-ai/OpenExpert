@@ -23,11 +23,13 @@
 //   serves the panel, the chat stream and the API.
 //
 // What it does *not* do: hide most of `/usr` (it is mounted read-only, on purpose: the interpreter
-// and its standard library live there) and survive a machine without bubblewrap. The order is
-// bubblewrap (network + filesystem), then `unshare -Urn` (network only, the filesystem stays
-// readable and the result says so), then refusing to run. The real gate is still the capability
-// itself — an Expert only has this tool when its owner adds it — plus the script being written to
-// the activity trail by the tool that calls this.
+// and its standard library live there) and run on a machine without bubblewrap. Both guarantees —
+// the network namespace and the filesystem mounts — come from that one binary, so there is no
+// second-class sandbox behind it: `unshare -Urn` isolates the network and leaves the whole disk
+// readable, `~/.openexpert/secret.key` included, which is worse than useless because the tool
+// would still look confined. It is detected only to name what is missing. The real gate is still
+// the capability itself — an Expert only has this tool when its owner adds it — plus the script
+// being written to the activity trail by the tool that calls this.
 
 import { spawn, spawnSync } from "node:child_process";
 import {
@@ -67,14 +69,13 @@ export type PythonRun = {
   note?: string;
 };
 
-/** `bwrap` isolates the network *and* the filesystem; `unshare` only the network. */
+/** `bwrap` isolates the network *and* the filesystem; `unshare` only the network, so it is not used. */
 export type PythonSandboxKind = "bwrap" | "unshare-net" | "none";
 
 export type PythonSandbox = {
   kind: PythonSandboxKind;
   /** Absolute path to the sandbox binary. */
   command?: string;
-  note?: string;
 };
 
 /** Look a binary up in `PATH` without going through a shell. */
@@ -131,16 +132,29 @@ export function pythonSandbox(): PythonSandbox {
     probed = { kind: "bwrap", command: bwrap };
   else {
     const unshare = whichBinary("unshare");
+    // Reported so the refusal can name it, never used to run: `unshare -Urn` keeps the host
+    // filesystem, so a script could read `~/.openexpert/secret.key` or any file outside the granted
+    // folders. Answering `none` here would hide a barrier that does exist; running behind it would
+    // make the tool look confined when it is not.
     probed =
       unshare && works(unshare, ["-Urn", trueBinary])
-        ? {
-            kind: "unshare-net",
-            command: unshare,
-            note: "El script corre sin red, pero esta máquina no tiene `bubblewrap`: el sistema de ficheros no está aislado, así que puede leer archivos locales.",
-          }
+        ? { kind: "unshare-net", command: unshare }
         : { kind: "none" };
   }
   return probed;
+}
+
+/**
+ * Why a script is not run on this machine, in the words the model gets, or `null` when the barrier
+ * confines both the network and the filesystem. `unshare -Urn` is the normal case on a desktop that
+ * never installed bubblewrap, and it is not enough: it isolates the network and leaves the disk
+ * readable. Bubblewrap is a free package on every distribution, so the message says how to get it.
+ */
+export function sandboxRefusal(sandbox: PythonSandbox): string | null {
+  if (sandbox.kind === "bwrap") return null;
+  if (sandbox.kind === "unshare-net")
+    return "Esta máquina no tiene `bubblewrap`, así que el script no se ejecuta: `unshare -Urn` aísla la red, pero el sistema de ficheros entero seguiría a la vista (tus claves, `credentials.json` y cualquier archivo fuera de las carpetas autorizadas). Instala `bubblewrap` (`sudo apt install bubblewrap`, `sudo dnf install bubblewrap` o `sudo pacman -S bubblewrap`) y vuelve a intentarlo.";
+  return "Esta máquina no puede aislar el script de la red (`bubblewrap` no está y `unshare` con espacios de nombres tampoco sirve), así que no se ejecuta: ejecutar código sin esa barrera daría al script salida a Internet y acceso a tus archivos. Instala `bubblewrap` y vuelve a intentarlo.";
 }
 
 /**
@@ -207,11 +221,11 @@ export async function runPython(
   // this", which is not true.
   const sandbox = pythonSandbox();
   if (!script.trim()) return refusal("No llegó ningún código que ejecutar.", sandbox.kind);
-  if (sandbox.kind === "none")
-    return refusal(
-      "Esta máquina no puede aislar el script de la red (`bubblewrap` ni `unshare` con espacios de nombres), así que no se ejecuta: ejecutar código sin esa barrera daría al script salida a Internet y acceso a tus archivos. Instala `bubblewrap` y vuelve a intentarlo.",
-      "none",
-    );
+  // One barrier, one guarantee: without `bubblewrap` the script does not run. A network-only
+  // namespace would leave `~/.openexpert/secret.key` one `open()` away and the answer looking
+  // sandboxed, which is exactly the bug this refuses to repeat.
+  const cannotRun = sandboxRefusal(sandbox);
+  if (cannotRun) return refusal(cannotRun, sandbox.kind);
   const interpreter = pythonAvailable();
   // `pythonAvailable` always explains itself when it fails; the fallback is here so no future edit
   // to it can turn a refusal into an empty answer (`ok: false`, no output, no reason).
@@ -245,37 +259,33 @@ export async function runPython(
   try {
     const file = join(dir, "calc.py");
     writeFileSync(file, script, "utf8");
-    const args =
-      sandbox.kind === "bwrap"
-        ? [
-            // A network namespace of its own, plus the mounts that make the rest of the disk not
-            // exist: read-only system directories, empty home/root/tmp, and the work directory.
-            "--unshare-net",
-            "--unshare-pid",
-            "--unshare-ipc",
-            "--unshare-uts",
-            "--die-with-parent",
-            "--dev",
-            "/dev",
-            ...BINDS.filter((p) => existsSync(p)).flatMap((p) => ["--ro-bind", p, p]),
-            "--tmpfs",
-            "/home",
-            "--tmpfs",
-            "/root",
-            "--tmpfs",
-            "/tmp",
-            "--bind",
-            dir,
-            dir,
-            "--chdir",
-            dir,
-            // `-I` is isolated mode: no user site-packages, no `PYTHON*` variables from the
-            // environment.
-            python,
-            "-I",
-            file,
-          ]
-        : ["-Urn", python, "-I", file];
+    const args = [
+      // A network namespace of its own, plus the mounts that make the rest of the disk not
+      // exist: read-only system directories, empty home/root/tmp, and the work directory.
+      "--unshare-net",
+      "--unshare-pid",
+      "--unshare-ipc",
+      "--unshare-uts",
+      "--die-with-parent",
+      "--dev",
+      "/dev",
+      ...BINDS.filter((p) => existsSync(p)).flatMap((p) => ["--ro-bind", p, p]),
+      "--tmpfs",
+      "/home",
+      "--tmpfs",
+      "/root",
+      "--tmpfs",
+      "/tmp",
+      "--bind",
+      dir,
+      dir,
+      "--chdir",
+      dir,
+      // `-I` is isolated mode: no user site-packages, no `PYTHON*` variables from the environment.
+      python,
+      "-I",
+      file,
+    ];
 
     const child = spawn(sandbox.command!, args, {
       cwd: dir,
@@ -334,7 +344,6 @@ export async function runPython(
     const stderr = cap(Buffer.concat(err).toString("utf8"));
     const exit = outcome.code;
     const failedToStart = outcome.error;
-    const limitNote = sandbox.kind === "unshare-net" ? sandbox.note : undefined;
     return {
       ok: exit === 0 && !failedToStart,
       exit,
@@ -351,9 +360,7 @@ export async function runPython(
         : failedToStart
           ? { note: `No se pudo ejecutar Python: ${failedToStart.message}` }
           : exit === 0
-            ? limitNote
-              ? { note: limitNote }
-              : {}
+            ? {}
             : {
                 // A non-zero exit with nothing on stderr is what a barrier that could not start
                 // the interpreter looks like from here: say that instead of pointing at an empty

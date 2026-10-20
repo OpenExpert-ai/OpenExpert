@@ -113,9 +113,12 @@ approval.
 `run_python` is not a connector but a capability: it stays off until it is enabled per Expert. The
 script runs in its own temporary directory, with no network access —it runs inside an isolated
 network namespace and is not executed at all when the system cannot create one— and none of the
-application's environment, under a time limit and with capped output. With `bubblewrap` installed it
-cannot see the rest of the disk either; without it, the result says so. It can only rely on Python's
-standard library, and the script that ran is kept in the activity trail.
+application's environment, under a time limit and with capped output. It cannot see the rest of the
+disk either: only its temporary directory and a read-only `/usr`, because both guarantees come from
+`bubblewrap`. On a machine without it —or with user namespaces disabled— the script is not run and
+the result says how to install it (`apt install bubblewrap`, `dnf install bubblewrap` or
+`pacman -S bubblewrap`). It can only rely on Python's standard library, and the script that ran is
+kept in the activity trail.
 
 A **scanned PDF** has no text layer: it is a photograph of a page. When the setting "Read
 scanned PDFs with the model" is on —it ships **off**—, the document is transcribed by the
