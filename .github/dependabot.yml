@@ -31,6 +31,23 @@ updates:
     # comment; Dependabot updates both.
     schedule:
       interval: "weekly"
+    # One pull request per action family instead of one per step. This is not a
+    # convenience: `github/codeql-action` refuses to run when the steps of a
+    # workflow disagree on the version ("All steps in a workflow that use
+    # github/codeql-action must use the same version to work correctly"), and a
+    # per-step split is what turned #60, #62 and #64 red on 2026-10-18 — none of
+    # them could pass alone. The patterns match sub-actions too
+    # (`github/codeql-action/init`, `/autobuild`, `/analyze`, `/upload-sarif`).
+    # The catch-all excludes the two families above so no dependency lands in
+    # two groups at once.
+    groups:
+      codeql-action:
+        patterns: ["github/codeql-action*"]
+      scorecard:
+        patterns: ["ossf/scorecard-action"]
+      github-actions:
+        patterns: ["*"]
+        exclude-patterns: ["github/codeql-action*", "ossf/scorecard-action"]
     commit-message:
       prefix: "ci"
     labels:

@@ -80,8 +80,11 @@ npm run check:docs   # links and anchors resolve
 ## Release process
 
 Releases are managed with [Changesets](https://github.com/changesets/changesets).
-Add a short note under `.changeset/` describing the change. Maintainers
-batch changes into a release, which is published to npm with provenance.
+Run `npm run changeset`, pick the package (`@openexpert/openexpert`) and the bump
+(`patch` / `minor` / `major`), and commit the generated file under `.changeset/`.
+Documentation-only changes need none: the root manifest is private and is not
+versioned. Maintainers batch the notes into a release, published to npm with
+provenance.
 
 ## Security
 

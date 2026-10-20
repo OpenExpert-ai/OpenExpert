@@ -4,21 +4,21 @@ name: Server release asset
 # to a GitHub release, so `npx @openexpert/openexpert serve` can download and run
 # the local edition without a source checkout.
 #
-# This workflow cannot rely on `release: published` alone: releases created by
-# the changesets action carry the workflow's own GITHUB_TOKEN, and GitHub does
-# not start workflows from events that token creates — which is why 0.2.1 and
-# 0.3.0 shipped with no assets at all. `release.yml` now builds and attaches the
-# bundle in the same run; this one stays for human-created releases and for
-# repairing a release by hand (`gh workflow run server-release.yml -f tag=<tag>`,
-# which attaches the bundle built from the default branch to the tag you name).
+# Manual only. `release.yml` already builds and attaches the same bundle in the
+# run that publishes the release, so the `release: published` trigger here was a
+# second upload of the same asset (`overwrite_files: true` on both sides) racing
+# the first one on every release created by hand. What remains is the repair
+# hatch for a release that shipped without assets:
+#
+#   gh workflow run server-release.yml -f tag=vX.Y.Z
+#
+# which attaches the bundle built from the default branch to the tag you name.
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to attach the bundle to (default: the released tag)"
+        description: "Release tag to attach the bundle to (default: the current version)"
         required: false
         type: string
 
@@ -31,6 +31,7 @@ jobs:
   bundle:
     name: Build and attach server bundle
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -52,10 +53,9 @@ jobs:
         id: tag
         env:
           INPUT_TAG: ${{ inputs.tag }}
-          EVENT_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          tag="${INPUT_TAG:-${EVENT_TAG:-}}"
+          tag="${INPUT_TAG:-}"
           if [ -z "$tag" ]; then
             # The canonical shape: one name, one version (see release.yml).
             tag="v$(node -p "require('./packages/openexpert/package.json').version")"

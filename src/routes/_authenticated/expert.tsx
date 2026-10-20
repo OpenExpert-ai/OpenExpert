@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -9,7 +9,6 @@ import {
 } from "ai";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { RichMarkdown } from "@/components/chat/RichMarkdown";
 import {
   ArrowUp,
   Mic,
@@ -45,6 +44,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ExpertForm } from "./experts";
+
+// react-markdown + remark-gfm + micromark weigh ~200 KB raw (~55 KB gzip). They
+// are only needed once there is assistant text to render, so they load on
+// demand instead of riding in this route's initial chunk.
+const RichMarkdown = lazy(() =>
+  import("@/components/chat/RichMarkdown").then((m) => ({ default: m.RichMarkdown })),
+);
 
 export const Route = createFileRoute("/_authenticated/expert")({
   head: () => ({
@@ -682,9 +688,11 @@ function AssistantMsg({
                 className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
               >
                 <X className="size-3.5" />{" "}
-                {part.type.includes("local")
-                  ? t("Escritura local denegada")
-                  : t("Acceso a Google Drive denegado")}
+                {part.type.includes("notion")
+                  ? t("Escritura en Notion denegada")
+                  : part.type.includes("local")
+                    ? t("Escritura local denegada")
+                    : t("Acceso a Google Drive denegado")}
               </div>
             );
           }
@@ -700,7 +708,13 @@ function AssistantMsg({
           }
           return null;
         })}
-        {(text || streaming) && <RichMarkdown text={text} streaming={!!streaming} />}
+        {(text || streaming) && (
+          <Suspense
+            fallback={<p className="text-sm whitespace-pre-wrap">{text || t("Pensando…")}</p>}
+          >
+            <RichMarkdown text={text} streaming={!!streaming} />
+          </Suspense>
+        )}
         {text && !streaming && (
           <div className="flex items-center gap-3 opacity-60 transition hover:opacity-100 focus-within:opacity-100">
             <button

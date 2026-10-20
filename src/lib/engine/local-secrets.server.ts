@@ -41,14 +41,40 @@ function keyFile(): string {
   return join(d, "secret.key");
 }
 
+/**
+ * The key file exists but cannot be used. Distinct from "no file yet" (a first
+ * run): every credential saved with the old key is unreadable, and generating a
+ * new one would overwrite the only thing that could ever decrypt them again.
+ */
+export class SecretKeyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SecretKeyError";
+  }
+}
+
 function getKey(): Buffer {
   const f = keyFile();
-  if (existsSync(f)) {
-    const k = readFileSync(f);
-    if (k.length === 32) return k;
+  if (!existsSync(f)) {
+    const created = randomBytes(32);
+    writeFileSync(f, created, { mode: 0o600 });
+    return created;
   }
-  const k = randomBytes(32);
-  writeFileSync(f, k, { mode: 0o600 });
+  let k: Buffer;
+  try {
+    k = readFileSync(f);
+  } catch (e) {
+    throw new SecretKeyError(
+      `No se pudo leer el fichero de clave ${f}: ${e instanceof Error ? e.message : String(e)}. ` +
+        "Las credenciales guardadas no se pueden descifrar y no se ha generado una clave nueva.",
+    );
+  }
+  if (k.length !== 32) {
+    throw new SecretKeyError(
+      `El fichero de clave ${f} está dañado (${k.length} bytes, se esperaban 32). ` +
+        "Las credenciales guardadas no se pueden descifrar: vuelve a conectar Drive y Notion desde Integraciones.",
+    );
+  }
   return k;
 }
 
@@ -72,6 +98,14 @@ function decrypt(payload: string): string {
   return Buffer.concat([decipher.update(enc), decipher.final()]).toString("utf8");
 }
 
+/**
+ * A damaged key file is not "nothing stored": returning `null` there would hide
+ * the loss behind "Drive is not connected". Let it reach the caller.
+ */
+function rethrowIfKeyError(e: unknown): void {
+  if (e instanceof SecretKeyError) throw e;
+}
+
 /* ----------------------------- Drive tokens ----------------------------- */
 
 export function loadTokens(): LocalTokens | null {
@@ -81,7 +115,8 @@ export function loadTokens(): LocalTokens | null {
     const raw = readFileSync(f, "utf8");
     if (!raw) return null;
     return JSON.parse(decrypt(raw)) as LocalTokens;
-  } catch {
+  } catch (e) {
+    rethrowIfKeyError(e);
     return null;
   }
 }
@@ -104,7 +139,8 @@ export function loadGrantedFiles(): DriveGrant[] {
     const raw = readFileSync(f, "utf8");
     if (!raw) return [];
     return JSON.parse(decrypt(raw)) as DriveGrant[];
-  } catch {
+  } catch (e) {
+    rethrowIfKeyError(e);
     return [];
   }
 }
@@ -139,7 +175,8 @@ export function loadLocalRoots(): LocalRoot[] {
     const raw = readFileSync(f, "utf8");
     if (!raw) return [];
     return JSON.parse(decrypt(raw)) as LocalRoot[];
-  } catch {
+  } catch (e) {
+    rethrowIfKeyError(e);
     return [];
   }
 }
@@ -176,7 +213,8 @@ export function loadNotionToken(): NotionToken | null {
     const raw = readFileSync(f, "utf8");
     if (!raw) return null;
     return JSON.parse(decrypt(raw)) as NotionToken;
-  } catch {
+  } catch (e) {
+    rethrowIfKeyError(e);
     return null;
   }
 }
@@ -201,7 +239,8 @@ export function loadDriveConsent(): DriveConsent | null {
     const raw = readFileSync(f, "utf8");
     if (!raw) return null;
     return JSON.parse(decrypt(raw)) as DriveConsent;
-  } catch {
+  } catch (e) {
+    rethrowIfKeyError(e);
     return null;
   }
 }

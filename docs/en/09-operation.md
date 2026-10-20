@@ -49,12 +49,30 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 | Symptom        | Cause              | Action                                            |
 | -------------- | ------------------ | ------------------------------------------------- |
 | Data lost      | File deleted/moved | Restore from your backup of `OPENEXPERT_DATA_DIR` |
-| Port 3000 busy | Another process    | Free port 3000                                    |
+| Port 3000 busy | Another process    | Free port 3000, or `PORT=3100 openexpert`         |
+
+The commands in this table run in a terminal: `openexpert doctor`, `fix`, `init`
+and `version` do not open the window. Only `openexpert` with no arguments (or
+`openexpert desktop`) starts the graphical shell.
+
+### 4.4 Desktop launcher
+
+| Symptom                              | Cause                                         | Action                                                      |
+| ------------------------------------ | --------------------------------------------- | ----------------------------------------------------------- |
+| The menu entry does nothing          | launcher pointing at a file that is not there | `npm run desktop:check`, then `npm run desktop:install`     |
+| The window shows another application | another process owns the port                 | `ss -ltnp \| grep :3000`; free it or start with `PORT=3100` |
+| The window is blank after `git pull` | window older than the server                  | reinstall it: `npm run desktop:install`                     |
+
+`install.sh --doctor` performs the same launcher check and exits non-zero when it
+fails, so it can be used from a script.
 
 ## 5. Backups
 
-Copy `OPENEXPERT_DATA_DIR` (it contains `openexpert.db`, `credentials.json` and
-`secrets.json`). Keep the copy secure: it holds your tokens.
+Copy `OPENEXPERT_DATA_DIR`. It holds `openexpert.db`, `secrets.json`,
+`credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`,
+`secret.key`, `state-secret` and `state-secret-notion`. `openexpert.json` lives
+in the directory the app is started from, so copy that one too. Keep the copy
+secure: it holds your tokens and the keys that decrypt and sign them.
 
 ## References
 

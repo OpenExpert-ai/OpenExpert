@@ -56,6 +56,17 @@ Las herramientas de lectura extraen texto de ficheros de texto, PDF, Word
 (`.docx`), Excel (`.xlsx`) y PowerPoint (`.pptx`), tanto en carpetas locales como
 en Google Drive.
 
+### Capacidades (apagadas por defecto)
+
+| Herramienta  | Función                                                     | Activar                            |
+| ------------ | ----------------------------------------------------------- | ---------------------------------- |
+| `run_python` | Cálculos, como script corto de Python (biblioteca estándar) | `python` en `sources`, por Experto |
+
+El script se ejecuta en un directorio temporal privado, con el entorno limpio, un
+tiempo máximo (30 s, hasta 120 s) y la salida acotada, y el propio script queda
+en el registro de actividad. Es una capacidad, no una jaula: no aísla la red ni
+el sistema de ficheros.
+
 ### Notion (opcional)
 
 | Herramienta                                                                                    | Requiere                                  |

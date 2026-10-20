@@ -30,13 +30,19 @@ showed).
 - Releases are tagged `v<version>` and titled `OpenExpert <version>`. The release
   is created by `release.yml`, not by changesets, because changesets would name it
   after the package.
-- The desktop shell takes the same version at build time (`--config`), instead of
-  keeping a copy in `tauri.conf.json`.
+- The desktop shell takes the same version, and cannot read it: Rust has no JSON
+  manifest. `tauri.conf.json`, `Cargo.toml` and the `openexpert-desktop` entry in
+  `Cargo.lock` carry copies that `npm run desktop:sync-version` writes from
+  `packages/openexpert/package.json`; `version-packages` runs it, `install.sh`
+  refuses to build when they diverge and the desktop gate reports it.
 
 ## Consequences
 
 - One number to bump, one name to read, in the release, the CLI, the interface and
   the npm page.
+- The bump is still one number, but it lands in four files: the manifest plus the
+  three Rust-side copies, through the script. Editing only the manifest leaves the
+  binary and the packages behind, and the gate stops that from shipping.
 - The package rename is a new npm name: npm has no rename and a trusted publisher
   can only be configured for a package that already exists, so the first publish
   of the new name is manual and the old one is deprecated with a pointer. Everything

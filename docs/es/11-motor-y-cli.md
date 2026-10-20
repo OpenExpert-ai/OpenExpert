@@ -16,16 +16,18 @@ son OpenExpert, y **la versión que ves en una release es la de este paquete**, 
 
 ## 2. Qué contiene
 
-| Módulo                   | Finalidad                                                            |
-| ------------------------ | -------------------------------------------------------------------- |
-| `src/model-provider.ts`  | `selectModel` / `missingKeyHint` (google, ollama, openai-compatible) |
-| `src/providers.ts`       | El catálogo de proveedores (adaptador, dirección, variable, modelos) |
-| `src/provider-models.ts` | Pregunta a un proveedor qué modelos sirve                            |
-| `src/config.ts`          | Carga `openexpert.json` + `OPENEXPERT_*`                             |
-| `src/storage.ts`         | Interfaz `Storage` (fichero)                                         |
-| `src/secrets.ts`         | Interfaz `TokenStore` y ruta de credenciales                         |
-| `src/tools.ts`           | Catálogo de herramientas                                             |
-| `src/cli/`               | El CLI `openexpert`                                                  |
+| Módulo                   | Finalidad                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `src/model-provider.ts`  | `selectModel` / `missingKeyHint`; adaptadores `google`, `anthropic`, `openai-compatible` |
+| `src/providers.ts`       | El catálogo de proveedores (adaptador, dirección, variable, modelos)                     |
+| `src/provider-models.ts` | Pregunta a un proveedor qué modelos sirve                                                |
+| `src/config.ts`          | Carga `openexpert.json` + `OPENEXPERT_*`                                                 |
+| `src/storage.ts`         | Interfaz `Storage` (fichero)                                                             |
+| `src/secrets.ts`         | Interfaz `TokenStore` y ruta de credenciales                                             |
+| `src/tools.ts`           | Catálogo de herramientas                                                                 |
+| `src/index.ts`           | Barrel: reexporta config, model-provider, provider-models, storage, secrets, tools       |
+| `schema/`                | `openexpert.schema.json` (la exportación `./schema`) de `openexpert.json`                |
+| `src/cli/`               | El CLI `openexpert`                                                                      |
 
 ## 3. CLI
 
@@ -36,6 +38,9 @@ npx @openexpert/openexpert doctor   # revisar la configuración
 npx @openexpert/openexpert fix      # auto-configurar lo que falte
 npx @openexpert/openexpert models   # listar modelos del proveedor actual
 npx @openexpert/openexpert update   # actualizar el servidor descargado
+npx @openexpert/openexpert desktop  # arranca el servidor y abre la ventana nativa
+npx @openexpert/openexpert version  # muestra la versión
+npx @openexpert/openexpert help     # ayuda
 ```
 
 `serve` arranca desde el código (`npm run dev`) o desde un servidor descargado y
@@ -51,6 +56,8 @@ verificado por checksum, que se trae de la release etiquetada `v<versión>`.
 | `OPENEXPERT_BASE_URL`                                                                   | Endpoint del proveedor genérico `openai-compatible`                         |
 | `OLLAMA_BASE_URL`                                                                       | Endpoint de Ollama                                                          |
 | `OPENEXPERT_DATA_DIR`                                                                   | Directorio de datos (por defecto `~/.openexpert/`)                          |
+| `OPENEXPERT_HOST` / `PORT`                                                              | Interfaz y puerto del servidor local (`127.0.0.1:3000`)                     |
+| `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error`                                      |
 
 Ni `openexpert.json` ni `~/.openexpert/` se versionan.
 

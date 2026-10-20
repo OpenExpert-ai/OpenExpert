@@ -9,6 +9,12 @@
 #
 # To use a different provider, set environment variables, e.g.:
 #   OPENEXPERT_MODEL_PROVIDER=google GOOGLE_API_KEY=... docker compose up
+#
+# SECURITY: both services are published on loopback only (127.0.0.1). The app
+# has NO login: whoever reaches the port can read and write the workspace,
+# reveal the provider API keys and download the backup with the credentials.
+# Do not rewrite these as "3000:3000" / "11434:11434" — that publishes them to
+# the LAN, which is not what you want on a shared network. See docker/README.md.
 
 name: openexpert
 
@@ -21,7 +27,8 @@ services:
     container_name: openexpert
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # Loopback only, on purpose: the app has no authentication.
+      - "127.0.0.1:3000:3000"
     environment:
       OPENEXPERT_MODEL_PROVIDER: ${OPENEXPERT_MODEL_PROVIDER:-ollama}
       OPENEXPERT_MODEL_ID: ${OPENEXPERT_MODEL_ID:-llama3.1}
@@ -54,7 +61,9 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     ports:
-      - "11434:11434"
+      # Loopback only: Ollama has no authentication either, and the app does not
+      # need it reachable from anywhere but its own container.
+      - "127.0.0.1:11434:11434"
 
 volumes:
   openexpert-data:

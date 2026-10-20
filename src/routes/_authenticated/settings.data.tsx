@@ -59,6 +59,9 @@ function DataSettings() {
       const content = await file.text();
       const r = await doImport({ data: { content } });
       toast.success(`${t("Copia restaurada")} (${r.applied.join(", ")})`);
+      // The restore keeps the database it replaced, so an unwanted import can be undone by hand.
+      if (r.backupPath)
+        toast.message(t("Copia anterior guardada en {path}", { path: r.backupPath }));
       await refresh();
     } catch (e) {
       toast.error((e as Error).message || t("Copia no válida"));

@@ -73,6 +73,19 @@ describe("drive.server readFile", () => {
     const { updateFile } = await import("./drive.server");
     await expect(updateFile("f9", "x", [])).rejects.toThrow(/permiso/i);
   });
+
+  it("sends every Drive request with a deadline", async () => {
+    // Undici's fetch never times out on its own: without this signal a host that stops answering
+    // kept the chat turn streaming until the user pressed Stop.
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      json({ id: "f3", name: "a.txt", mimeType: "text/plain", modifiedTime: "2026-01-01" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { readFile } = await import("./drive.server");
+    await readFile("f3", ["f3"]);
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
 });
 
 describe("drive.server createFile", () => {

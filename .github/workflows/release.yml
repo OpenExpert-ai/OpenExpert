@@ -10,6 +10,14 @@ name: Release
 on:
   push:
     branches: [main]
+    # A merge that only touches the prose or the website cannot contain a
+    # changeset that matters here, so it does not need to ask "is there
+    # anything to version?". `**.md` is deliberately not ignored: a changeset
+    # file is Markdown too (`.changeset/*.md`) and filtering it would leave a
+    # release unversioned.
+    paths-ignore:
+      - "docs/**"
+      - "site/**"
   workflow_dispatch:
 
 # Least privilege at the top level; each job escalates only what it needs.
@@ -24,6 +32,7 @@ jobs:
   version:
     name: Version packages
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
@@ -64,6 +73,7 @@ jobs:
     needs: version
     if: needs.version.outputs.published == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
@@ -118,6 +128,7 @@ jobs:
     # merge into main.
     if: needs.version.outputs.published == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -157,5 +168,8 @@ jobs:
             ${{ steps.image.outputs.name }}:${{ github.sha }}
           provenance: true
           sbom: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Its own cache scope: the single-arch smoke build in `ci.yml` shares
+          # this backend and, without a scope, the multi-arch layers here
+          # evicted it (and vice versa).
+          cache-from: type=gha,scope=release-multiarch
+          cache-to: type=gha,mode=max,scope=release-multiarch

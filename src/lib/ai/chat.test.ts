@@ -19,7 +19,11 @@ afterAll(() => {
 function chatRequest(body: unknown): Request {
   return new Request("http://localhost/api/chat", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      host: "localhost:3000",
+      origin: "http://localhost:3000",
+    },
     body: JSON.stringify(body),
   });
 }

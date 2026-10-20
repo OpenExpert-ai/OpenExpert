@@ -47,15 +47,34 @@ gratis.
 
 ### 4.3 Base de datos
 
-| Síntoma             | Causa                  | Actuación                                   |
-| ------------------- | ---------------------- | ------------------------------------------- |
-| Datos perdidos      | Fichero borrado/movido | Restaurar tu copia de `OPENEXPERT_DATA_DIR` |
-| Puerto 3000 ocupado | Otro proceso           | Liberar el puerto 3000                      |
+| Síntoma             | Causa                  | Actuación                                        |
+| ------------------- | ---------------------- | ------------------------------------------------ |
+| Datos perdidos      | Fichero borrado/movido | Restaurar tu copia de `OPENEXPERT_DATA_DIR`      |
+| Puerto 3000 ocupado | Otro proceso           | Liberar el puerto 3000, o `PORT=3100 openexpert` |
+
+Los comandos de esta tabla se ejecutan en el terminal: `openexpert doctor`,
+`fix`, `init` y `version` no abren la ventana. Solo `openexpert` sin argumentos
+(o `openexpert desktop`) arranca la interfaz gráfica.
+
+### 4.4 Lanzador de escritorio
+
+| Síntoma                                   | Causa                                          | Actuación                                                    |
+| ----------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------ |
+| La entrada del menú no hace nada          | El lanzador apunta a un fichero que ya no está | `npm run desktop:check` y luego `npm run desktop:install`    |
+| La ventana muestra otra aplicación        | Otro proceso ocupa el puerto                   | `ss -ltnp \| grep :3000`; libéralo o arranca con `PORT=3100` |
+| La ventana sale en blanco tras `git pull` | La ventana es más antigua que el servidor      | Reinstálala: `npm run desktop:install`                       |
+
+`install.sh --doctor` hace esa misma comprobación del lanzador y sale con código
+distinto de cero cuando falla, así que sirve desde un script.
 
 ## 5. Copias de seguridad
 
-Copia `OPENEXPERT_DATA_DIR` (contiene `openexpert.db`, `credentials.json` y
-`secrets.json`). Guarda la copia con seguridad: contiene tus tokens.
+Copia `OPENEXPERT_DATA_DIR`. Contiene `openexpert.db`, `secrets.json`,
+`credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`,
+`secret.key`, `state-secret` y `state-secret-notion`. `openexpert.json` vive en
+el directorio desde el que se arranca la aplicación, así que cópialo también.
+Guarda la copia con seguridad: contiene tus tokens y las claves que los cifran
+y firman.
 
 ## Referencias
 

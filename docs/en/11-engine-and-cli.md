@@ -16,16 +16,18 @@ published.
 
 ## 2. What it contains
 
-| Module                   | Purpose                                                              |
-| ------------------------ | -------------------------------------------------------------------- |
-| `src/model-provider.ts`  | `selectModel` / `missingKeyHint` (google, ollama, openai-compatible) |
-| `src/providers.ts`       | The provider catalogue (adapter, endpoint, key variable, models)     |
-| `src/provider-models.ts` | Asks a provider which models it serves                               |
-| `src/config.ts`          | Loads `openexpert.json` + `OPENEXPERT_*`                             |
-| `src/storage.ts`         | `Storage` interface (file-backed)                                    |
-| `src/secrets.ts`         | `TokenStore` interface and credentials path                          |
-| `src/tools.ts`           | Tool catalog                                                         |
-| `src/cli/`               | The `openexpert` CLI                                                 |
+| Module                   | Purpose                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| `src/model-provider.ts`  | `selectModel` / `missingKeyHint`; adapters `google`, `anthropic`, `openai-compatible` |
+| `src/providers.ts`       | The provider catalogue (adapter, endpoint, key variable, models)                      |
+| `src/provider-models.ts` | Asks a provider which models it serves                                                |
+| `src/config.ts`          | Loads `openexpert.json` + `OPENEXPERT_*`                                              |
+| `src/storage.ts`         | `Storage` interface (file-backed)                                                     |
+| `src/secrets.ts`         | `TokenStore` interface and credentials path                                           |
+| `src/tools.ts`           | Tool catalog                                                                          |
+| `src/index.ts`           | Barrel: re-exports config, model-provider, provider-models, storage, secrets, tools   |
+| `schema/`                | `openexpert.schema.json` (the `./schema` export) for `openexpert.json`                |
+| `src/cli/`               | The `openexpert` CLI                                                                  |
 
 ## 3. CLI
 
@@ -36,6 +38,9 @@ npx @openexpert/openexpert doctor   # check configuration
 npx @openexpert/openexpert fix      # auto-configure what is missing
 npx @openexpert/openexpert models   # list models for the current provider
 npx @openexpert/openexpert update   # refresh the downloaded server
+npx @openexpert/openexpert desktop  # start the server and open the native window
+npx @openexpert/openexpert version  # print the version
+npx @openexpert/openexpert help     # usage
 ```
 
 `serve` runs from a source checkout (`npm run dev`) or from a downloaded,
@@ -52,6 +57,8 @@ checksum-verified server build, which it fetches from the release tagged
 | `OPENEXPERT_BASE_URL`                                                                   | Endpoint of the generic `openai-compatible` provider                        |
 | `OLLAMA_BASE_URL`                                                                       | Ollama endpoint                                                             |
 | `OPENEXPERT_DATA_DIR`                                                                   | Data directory (default `~/.openexpert/`)                                   |
+| `OPENEXPERT_HOST` / `PORT`                                                              | Interface and port of the local server (`127.0.0.1:3000`)                   |
+| `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error`                                      |
 
 Neither `openexpert.json` nor `~/.openexpert/` is committed.
 

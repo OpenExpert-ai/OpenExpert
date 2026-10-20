@@ -9,17 +9,17 @@ hay nube, ni servidor de base de datos, ni inicio de sesión.
 
 ## 1. Stack
 
-| Capa          | Tecnología                                                 | Función                                              |
-| ------------- | ---------------------------------------------------------- | ---------------------------------------------------- |
-| Aplicación    | TanStack Start (React 19, rutas por fichero, SSR)          | Renderizado, navegación, server functions            |
-| Build         | Vite                                                       | Entorno de desarrollo y build                        |
-| Estilos       | Tailwind CSS 4 + shadcn/ui                                 | Sistema visual                                       |
-| Servidor      | Nitro (`node-server`)                                      | Runtime del servidor construido                      |
-| Base de datos | SQLite vía `sql.js`                                        | Fichero único en `OPENEXPERT_DATA_DIR/openexpert.db` |
-| ORM           | Drizzle ORM (`sql-js`)                                     | Consultas tipadas; esquema en `drizzle/schema.ts`    |
-| IA            | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai` | Chat, herramientas, streaming                        |
-| Modelo        | Ollama (defecto), Gemini o endpoint OpenAI-compatible      | Razonamiento y respuestas                            |
-| Fuentes       | API de Google Drive, carpetas locales, Notion (opcional)   | Lectura/escritura del contenido del propietario      |
+| Capa          | Tecnología                                                                           | Función                                              |
+| ------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| Aplicación    | TanStack Start (React 19, rutas por fichero, SSR)                                    | Renderizado, navegación, server functions            |
+| Build         | Vite                                                                                 | Entorno de desarrollo y build                        |
+| Estilos       | Tailwind CSS 4 + shadcn/ui                                                           | Sistema visual                                       |
+| Servidor      | Nitro (`node-server`)                                                                | Runtime del servidor construido                      |
+| Base de datos | SQLite vía `sql.js`                                                                  | Fichero único en `OPENEXPERT_DATA_DIR/openexpert.db` |
+| ORM           | Drizzle ORM (`sql-js`)                                                               | Consultas tipadas; esquema en `drizzle/schema.ts`    |
+| IA            | Vercel AI SDK (`ai`) + `@ai-sdk/google` / `@ai-sdk/openai` / `@ai-sdk/anthropic`     | Chat, herramientas, streaming                        |
+| Modelo        | Ollama (defecto), Gemini, Claude, OpenCode Go o cualquier endpoint OpenAI-compatible | Razonamiento y respuestas                            |
+| Fuentes       | API de Google Drive, carpetas locales, Notion (opcional)                             | Lectura/escritura del contenido del propietario      |
 
 ## 2. Capas y dirección de dependencia
 

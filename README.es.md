@@ -11,6 +11,8 @@ El proyecto es **open source bajo licencia MIT**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A524-339933)](https://nodejs.org)
+[![CodeQL](https://github.com/OpenExpert-ai/OpenExpert/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
+[![Scorecard](https://img.shields.io/openssf-scorecard/github/OpenExpert-ai/OpenExpert)](https://scorecard.dev/viewer/?uri=github.com/OpenExpert-ai/OpenExpert)
 
 ## Arranque rápido
 
@@ -18,9 +20,11 @@ Guía completa: [docs/es/00-inicio-rapido.md](./docs/es/00-inicio-rapido.md).
 
 ### Docker (sin Node)
 
+La aplicación no tiene login: mantenla en `127.0.0.1` (ver [docker/README.md](./docker/README.md)).
+
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local
-# o con Ollama incluido:
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
+# o con Ollama incluido (también solo en bucle local):
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
@@ -61,6 +65,13 @@ npm run desktop:install    # compila e instala el lanzador
 openexpert                 # arranca el servidor y abre la ventana
 ```
 
+O instala todo (dependencias, build, lanzador y entrada de menú) con un solo
+comando:
+
+```sh
+./install.sh              # añade --skip-build para reutilizar un build previo
+```
+
 Ver [Despliegue](./docs/es/08-despliegue.md).
 
 ## Cómo funciona
@@ -68,7 +79,7 @@ Ver [Despliegue](./docs/es/08-despliegue.md).
 - **Datos** en un único fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db`
   (por defecto `~/.openexpert/`). Nada sale de tu equipo.
 - **IA** como configuración: [Ollama](https://ollama.com) (por defecto, sin
-  claves), Google Gemini (clave gratuita) o cualquier endpoint
+  claves), Google Gemini (clave gratuita), Claude o cualquier endpoint
   OpenAI-compatible. Ver [docs/es/13-proveedores-ia.md](./docs/es/13-proveedores-ia.md).
 - **Fuentes** (opcional): Google Drive, carpetas locales y Notion, conectadas con
   tu propia cuenta; los tokens y las concesiones se guardan en local con permisos
@@ -109,6 +120,8 @@ Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y españ
 
 ## Estructura
 
+Las rutas que más se tocan:
+
 ```
 vite.config.ts                Configuración de build (Nitro node-server)
 src/
@@ -127,18 +140,24 @@ src/
     engine/                  Proveedor de modelo + custodia local de credenciales
 drizzle/schema.ts             Esquema SQLite tipado
 drizzle/init.sql              DDL SQLite (aplicado al arrancar)
-packages/openexpert/            Motor MIT (modelo, config, herramientas, CLI)
+packages/openexpert/          Motor MIT (modelo, config, herramientas, CLI)
 docker/                       Dockerfile y docker-compose
 docs/{en,es}/                 Documentación bilingüe
+scripts/                      Scripts del repositorio (docs, licencias, escritorio)
+src-tauri/                    Cáscara de escritorio Tauri (solo la ventana)
+install.sh                    Instalación Linux en un solo comando
+.changeset/                   Notas de la próxima versión
 ```
 
 ## Notas
 
 - Propietario único: no hay login ni gestión multiusuario.
-- `.env` está excluido del control de versiones; `.env.example` documenta cada
-  variable.
+- `.env` está excluido del control de versiones; `.env.example` documenta las
+  variables de entorno que se suelen definir.
 - El repositorio entero se distribuye bajo la **Licencia MIT**. Ver
   [`LICENSE`](./LICENSE) y [`NOTICE`](./NOTICE).
 - [`SECURITY.md`](./SECURITY.md) describe el canal privado para reportar
   vulnerabilidades.
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) explica cómo contribuir.
+- [`PRIVACY.md`](./PRIVACY.md) es la política de privacidad (en español:
+  [`docs/es/POLITICA-DE-PRIVACIDAD.md`](./docs/es/POLITICA-DE-PRIVACIDAD.md)).

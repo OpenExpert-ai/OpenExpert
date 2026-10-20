@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { APPROVAL_REQUIRED } from "./tools";
 
 let dir: string;
 
@@ -42,7 +43,14 @@ vi.mock("@/lib/engine/model-provider.server", () => ({
 function chatRequest(body: unknown, headers: Record<string, string> = {}): Request {
   return new Request("http://localhost/api/chat", {
     method: "POST",
-    headers: { "content-type": "application/json", ...headers },
+    // A real browser fetch sends both: `Host` is the server it dialled,
+    // `Origin` the page it is on. The origin check needs them.
+    headers: {
+      "content-type": "application/json",
+      host: "localhost:3000",
+      origin: "http://localhost:3000",
+      ...headers,
+    },
     body: JSON.stringify(body),
   });
 }
@@ -106,7 +114,9 @@ describe("handleChat model wiring", () => {
     // system prompt is included.
     expect(String(args["system"])).toContain("GOOGLE DRIVE CONECTADO");
     expect(args["tools"]).toBeTruthy();
-    expect(args["toolApproval"]).toMatchObject({ create_drive_file: "user-approval" });
+    expect(args["toolApproval"]).toEqual(
+      Object.fromEntries(APPROVAL_REQUIRED.map((name) => [name, "user-approval"])),
+    );
     expect(args["abortSignal"]).toBeDefined();
     // Google provider asks for thinking; other providers get no options.
     expect(args["providerOptions"]).toMatchObject({ google: { thinkingConfig: {} } });

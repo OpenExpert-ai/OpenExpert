@@ -28,19 +28,22 @@ OpenExpert is documented in two languages. Pick yours:
 
 ## Companion files
 
-| File                                            | Purpose                                                  |
-| ----------------------------------------------- | -------------------------------------------------------- |
-| [`README.md`](../README.md)                     | Top-level project entry point (English).                 |
-| [`README.es.md`](../README.es.md)               | Top-level project entry point (Spanish).                 |
-| [`CONTRIBUTING.md`](../CONTRIBUTING.md)         | How to contribute, DCO and release process.              |
-| [`SECURITY.md`](../SECURITY.md)                 | Private vulnerability reporting and secret hygiene.      |
-| [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md)   | Community standards.                                     |
-| [`GOVERNANCE.md`](../GOVERNANCE.md)             | Roles, decisions and releases.                           |
-| [`LICENSE`](../LICENSE) / [`NOTICE`](../NOTICE) | License and third-party attributions.                    |
-| [`CHANGELOG.md`](../CHANGELOG.md)               | Released changes.                                        |
-| [`AGENTS.md`](../AGENTS.md)                     | Operational rules for AI assistants working on the repo. |
-| [`STYLE.md`](./STYLE.md)                        | Documentation style guide.                               |
-| [`.env.example`](../.env.example)               | Documented environment variables.                        |
+| File                                                                  | Purpose                                                  |
+| --------------------------------------------------------------------- | -------------------------------------------------------- |
+| [`README.md`](../README.md)                                           | Top-level project entry point (English).                 |
+| [`README.es.md`](../README.es.md)                                     | Top-level project entry point (Spanish).                 |
+| [`CONTRIBUTING.md`](../CONTRIBUTING.md)                               | How to contribute, DCO and release process.              |
+| [`SECURITY.md`](../SECURITY.md)                                       | Private vulnerability reporting and secret hygiene.      |
+| [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md)                         | Community standards.                                     |
+| [`GOVERNANCE.md`](../GOVERNANCE.md)                                   | Roles, decisions and releases.                           |
+| [`LICENSE`](../LICENSE) / [`NOTICE`](../NOTICE)                       | License and third-party attributions.                    |
+| [`CHANGELOG.md`](../CHANGELOG.md)                                     | Released changes.                                        |
+| [`AGENTS.md`](../AGENTS.md)                                           | Operational rules for AI assistants working on the repo. |
+| [`PRIVACY.md`](../PRIVACY.md)                                         | Privacy policy (canonical).                              |
+| [`docs/en/PRIVACY.md`](./en/PRIVACY.md)                               | English pointer to the canonical policy.                 |
+| [`docs/es/POLITICA-DE-PRIVACIDAD.md`](./es/POLITICA-DE-PRIVACIDAD.md) | Privacy policy in Spanish.                               |
+| [`STYLE.md`](./STYLE.md)                                              | Documentation style guide.                               |
+| [`.env.example`](../.env.example)                                     | Documented environment variables.                        |
 
 ## Conventions
 

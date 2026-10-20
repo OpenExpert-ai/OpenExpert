@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -69,5 +69,34 @@ describe("local SQLite database", () => {
     await persist();
     const rows = orm.select().from(schema.invoices).all();
     expect(rows.some((r) => r.id === "inv-1" && r.status === "overdue")).toBe(true);
+  });
+
+  it("tries again after a failed start instead of caching the rejection", async () => {
+    // The regression: `handle = init()` kept the rejected promise forever, so one failure (a full
+    // disk, a locked directory) made every later request fail with the same error until the process
+    // was restarted — the Retry button in the UI could never work.
+    const { getDb, resetDbHandle, dbPath } = await import("./db.server");
+    const good = process.env["OPENEXPERT_DATA_DIR"]!;
+    // A parent that is a regular file: `mkdirSync` fails, so the first start cannot succeed.
+    const blocker = join(dir, "not-a-directory");
+    writeFileSync(blocker, "");
+    try {
+      resetDbHandle();
+      process.env["OPENEXPERT_DATA_DIR"] = join(blocker, "data");
+      await expect(getDb()).rejects.toThrow();
+
+      // Same process, same module: with the rejection no longer cached the next call connects.
+      process.env["OPENEXPERT_DATA_DIR"] = good;
+      const { orm } = await getDb();
+      expect(
+        orm
+          .select()
+          .from((await import("../../drizzle/schema")).experts)
+          .all().length,
+      ).toBe(4);
+      expect(existsSync(dbPath())).toBe(true);
+    } finally {
+      process.env["OPENEXPERT_DATA_DIR"] = good;
+    }
   });
 });

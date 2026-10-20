@@ -21,9 +21,11 @@ Full guide: [docs/en/00-quickstart.md](./docs/en/00-quickstart.md).
 
 ### Docker (no Node required)
 
+The app has no login: keep it on `127.0.0.1` (see [docker/README.md](./docker/README.md)).
+
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local
-# or bring Ollama along:
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
+# or bring Ollama along (loopback only, as above):
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
@@ -63,6 +65,13 @@ npm run desktop:install    # build + install the launcher
 openexpert                 # start the server and open the window
 ```
 
+Or install everything (dependencies, build, launcher, menu entry) with one
+command:
+
+```sh
+./install.sh              # add --skip-build to reuse an existing build
+```
+
 See [Deployment](./docs/en/08-deployment.md).
 
 ## How it works
@@ -70,7 +79,7 @@ See [Deployment](./docs/en/08-deployment.md).
 - **Data** lives in a single SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db`
   (default `~/.openexpert/`). Nothing leaves your machine.
 - **AI** is configuration: [Ollama](https://ollama.com) (default, no keys),
-  Google Gemini (free API key) or any OpenAI-compatible endpoint. See
+  Google Gemini (free API key), Claude or any OpenAI-compatible endpoint. See
   [docs/en/13-ai-providers.md](./docs/en/13-ai-providers.md).
 - **Sources** (optional): Google Drive, local folders and Notion, connected with
   your own account; tokens and grants are stored locally with mode `0600`.
@@ -111,6 +120,8 @@ Spanish).
 
 ## Layout
 
+The most relevant paths:
+
 ```
 vite.config.ts                Build configuration (Nitro node-server)
 src/
@@ -129,17 +140,24 @@ src/
     engine/                  Model provider + local credential custody
 drizzle/schema.ts             Typed SQLite schema
 drizzle/init.sql              SQLite DDL (applied at startup)
-packages/openexpert/            MIT engine (model provider, config, tools, CLI)
+packages/openexpert/          MIT engine (model provider, config, tools, CLI)
 docker/                       Dockerfile and docker-compose
 docs/{en,es}/                 Bilingual documentation
+scripts/                      Repo scripts (docs check, licences, desktop install)
+src-tauri/                    Tauri desktop shell (the window only)
+install.sh                    One-command Linux install
+.changeset/                   Release notes for the next version
 ```
 
 ## Notes
 
 - Single owner: there is no login and no multi-user management.
-- `.env` is git-ignored; `.env.example` documents every variable.
+- `.env` is git-ignored; `.env.example` documents the environment variables you
+  normally set.
 - The whole repository is released under the **MIT License**. See
   [`LICENSE`](./LICENSE) and [`NOTICE`](./NOTICE).
 - [`SECURITY.md`](./SECURITY.md) describes the private channel for reporting
   vulnerabilities.
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) explains how to contribute.
+- [`PRIVACY.md`](./PRIVACY.md) is the privacy policy (Spanish:
+  [`docs/es/POLITICA-DE-PRIVACIDAD.md`](./docs/es/POLITICA-DE-PRIVACIDAD.md)).

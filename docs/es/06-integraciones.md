@@ -116,9 +116,11 @@ requieren `local`; las de Notion, `notion`; y ejecutar código, `python`. Todas 
 escrituras requieren aprobación humana.
 
 `run_python` no es un conector, es una capacidad: está apagada hasta que se activa por Experto. El
-script corre en un directorio temporal propio, sin acceso a la red ni a las variables de entorno de
-la aplicación, con un límite de tiempo y la salida recortada. Solo cuenta con la biblioteca estándar
-de Python, y queda en el registro de actividad con el script que se ejecutó.
+script corre en un directorio temporal propio, sin acceso a la red —se ejecuta dentro de un espacio
+de nombres de red aislado y, si el sistema no puede crearlo, no se ejecuta— ni a las variables de
+entorno de la aplicación, con un límite de tiempo y la salida recortada. Con `bubblewrap` instalado
+tampoco ve el resto del disco; sin él, el resultado lo advierte. Solo cuenta con la biblioteca
+estándar de Python, y queda en el registro de actividad con el script que se ejecutó.
 
 Un **PDF escaneado** no tiene capa de texto: es la foto de una página. Si el ajuste
 «Leer PDF escaneados con el modelo» está activado —viene **apagado**—, se transcribe con

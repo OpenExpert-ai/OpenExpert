@@ -11,7 +11,7 @@ cuentas y sin servidor de base de datos.
 
 ```sh
 docker run --rm -p 3000:3000 -v openexpert-data:/data \
-  ghcr.io/openexpert-ai/openexpert:local
+  ghcr.io/openexpert-ai/openexpert:latest
 ```
 
 Abre <http://localhost:3000>. Los datos persisten en el volumen
@@ -39,6 +39,7 @@ npx @openexpert/openexpert doctor    # revisar la configuración
 npx @openexpert/openexpert fix       # auto-configurar lo que falte
 npx @openexpert/openexpert models    # listar modelos del proveedor actual
 npx @openexpert/openexpert update    # actualizar el servidor descargado
+npx @openexpert/openexpert desktop   # arranca el servidor y abre la ventana nativa
 ```
 
 ### Crear un proyecto
@@ -47,7 +48,7 @@ npx @openexpert/openexpert update    # actualizar el servidor descargado
 npm create openexpert mi-app
 cd mi-app
 docker compose up -d
-docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
+docker compose exec ollama ollama pull llama3.1
 ```
 
 ## Opción C — Desde el código
@@ -70,6 +71,8 @@ Ver [Proveedores de IA](./13-proveedores-ia.md). En resumen:
 | `ollama`            | [Ollama](https://ollama.com) en marcha | Sin claves, datos en local           |
 | `google`            | `GOOGLE_API_KEY`                       | Gemini, clave gratuita de AI Studio  |
 | `openai-compatible` | base URL + clave                       | Cualquier endpoint OpenAI-compatible |
+| `anthropic`         | `ANTHROPIC_API_KEY`                    | Claude                               |
+| `opencode-go`       | `OPENCODE_GO_API_KEY`                  | OpenCode Go, suscripción             |
 
 El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
 `0600`), nunca en el repositorio.
@@ -89,8 +92,9 @@ El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
   `openexpert init`.
 - **No detecta Ollama.** Instálalo y descarga un modelo: `ollama pull llama3.1`.
 - **El puerto 3000 está ocupado.** Libéralo; el servidor está fijado al 3000.
-- **No encuentra la imagen Docker.** Constrúyela en local:
-  `docker build -f docker/Dockerfile -t openexpert:local .`
+- **No encuentra la imagen Docker o la descarga se deniega.** Puede que el
+  paquete sea privado: ejecuta `docker login ghcr.io`. Si no, constrúyela en
+  local: `docker build -f docker/Dockerfile -t openexpert:local .`
 
 ## Siguientes pasos
 

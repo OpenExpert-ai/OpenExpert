@@ -7,14 +7,22 @@
 import { getAccessToken } from "./drive-tokens.server";
 import { logger } from "./logger.server";
 import { OFFICE_MIME, extractOfficeText } from "./office.server";
+import { fetchWithTimeout } from "./http.server";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 
+/** A Drive request with a deadline: a host that accepts the connection and goes silent used
+ *  to leave the chat streaming until the user pressed Stop. File transfers get longer. */
+const driveFetch = (url: string, init: RequestInit = {}) =>
+  fetchWithTimeout(url, init, { service: "Google Drive" });
+const driveTransfer = (url: string, init: RequestInit = {}) =>
+  fetchWithTimeout(url, init, { service: "Google Drive", timeoutMs: 60_000 });
+
 async function call(path: string, query: Record<string, string> = {}) {
   const token = await getAccessToken();
   const qs = new URLSearchParams(query).toString();
-  const res = await fetch(`${DRIVE}${path}${qs ? `?${qs}` : ""}`, {
+  const res = await driveFetch(`${DRIVE}${path}${qs ? `?${qs}` : ""}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -61,7 +69,7 @@ export async function readFile(id: string, grantedIds: string[]) {
     const token = await getAccessToken();
     const buf = new Uint8Array(
       await (
-        await fetch(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
+        await driveTransfer(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
           headers: { Authorization: `Bearer ${token}` },
         })
       ).arrayBuffer(),
@@ -80,7 +88,7 @@ export async function readFile(id: string, grantedIds: string[]) {
     const token = await getAccessToken();
     const buf = new Uint8Array(
       await (
-        await fetch(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
+        await driveTransfer(`${DRIVE}/files/${encodeURIComponent(id)}?alt=media`, {
           headers: { Authorization: `Bearer ${token}` },
         })
       ).arrayBuffer(),
@@ -119,7 +127,7 @@ async function upload(
   const boundary = "ee" + crypto.randomUUID().replace(/-/g, "");
   const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: ${srcMime}; charset=UTF-8\r\n\r\n${content}\r\n--${boundary}--`;
   const url = `${UPLOAD}${path}?uploadType=multipart&fields=id,name,mimeType,modifiedTime,webViewLink`;
-  const res = await fetch(url, {
+  const res = await driveTransfer(url, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,

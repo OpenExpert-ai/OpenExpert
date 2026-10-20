@@ -1,10 +1,16 @@
 name: CI
 
+# Pull requests only. A merge into `main` has already been validated by the pull
+# request that produced it, so re-running the whole suite on the merge commit
+# paid twice for the same tree: it was ~451 of the ~900 min-robot a month this
+# workflow consumed. `workflow_dispatch` covers anything that has to be checked
+# on `main` after the fact. `.github/required-checks.md` holds the ruleset that
+# makes these checks actually block the merge; until it is applied, a red run
+# can still be merged.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 # Actions are pinned to a full commit SHA (with the version in a trailing
 # comment) so a moved tag cannot change what runs here. Dependabot keeps both
@@ -22,6 +28,58 @@ env:
   NODE_VERSION: 24
 
 jobs:
+  # The desktop window and the Docker smoke test only need to run when
+  # something they build changed. This is a job, not workflow-level `paths`,
+  # because `paths` would skip the whole suite on a documentation pull request
+  # and leave the required checks pending forever.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      desktop: ${{ steps.filter.outputs.desktop }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Filter the optional jobs
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          # A manual run exercises everything: that is what the button is for.
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "desktop=true" >> "$GITHUB_OUTPUT"
+            echo "docker=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # What the Tauri build consumes: its crate, the manifests that decide
+          # the dependency tree, the Vite config and this workflow.
+          desktop_re='^(src-tauri/|(.*/)?package(-lock)?\.json$|vite\.config\.ts$|\.github/workflows/ci\.yml$)'
+          # What the image ships: `docker/Dockerfile` copies the app, its
+          # public assets, the SQL, the packaging scripts and both workspace
+          # packages, so a change anywhere in there has to smoke-test the image.
+          docker_re='^(docker/|src/|public/|drizzle/|scripts/|\.changeset/|packages/|(.*/)?package(-lock)?\.json$|tsconfig[^/]*\.json$|vite\.config\.ts$|\.github/workflows/ci\.yml$)'
+          changed="$(git diff --name-only "origin/${BASE_REF}...HEAD")" || {
+            # Fail open: if the diff cannot be computed, run every job rather
+            # than silently skipping the ones that validate the build.
+            echo "cannot diff against origin/${BASE_REF}; running every job" >&2
+            echo "desktop=true" >> "$GITHUB_OUTPUT"
+            echo "docker=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if printf '%s\n' "$changed" | grep -Eq "$desktop_re"; then desktop=true; else desktop=false; fi
+          if printf '%s\n' "$changed" | grep -Eq "$docker_re"; then docker=true; else docker=false; fi
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
+          echo "docker=$docker" >> "$GITHUB_OUTPUT"
+          echo "desktop=$desktop docker=$docker"
+
   lint-typecheck-test-build:
     name: Lint · Typecheck · Test · Build
     runs-on: ubuntu-latest
@@ -40,9 +98,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # `github.base_ref` goes through the environment: interpolating a ref name
+      # straight into a shell command is how a branch name runs code.
       - name: Commit hygiene (DCO + Conventional Commits)
         if: github.event_name == 'pull_request'
-        run: node scripts/check-commits.mjs "origin/${{ github.base_ref }}..HEAD"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-commits.mjs "origin/${BASE_REF}..HEAD"
 
       - name: Lint
         run: npm run lint
@@ -68,24 +130,19 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Upload app build
-        if: success()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: openexpert-app
-          path: |
-            .output
-            dist
-          if-no-files-found: ignore
-          retention-days: 7
-
   # The window is the only artefact a user gets from a source checkout, and the
   # app build above does not cover it: a wrong frontendDist, a missing Tauri CLI
-  # or a broken bundle only shows up here. The Ubuntu runner already ships a
-  # Rust toolchain, so this job needs no extra action.
+  # or a broken bundle only shows up here. It is also the expensive job (~78 %
+  # of this workflow), so it runs only when its inputs change and caches the
+  # Rust build.
   desktop-window:
     name: Desktop window (Linux)
-    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    # 24.04 instead of `latest`: the job depends on the system WebKitGTK 4.1 and
+    # on the Rust toolchain the image ships, so a runner image bump has to be a
+    # decision rather than a surprise.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -107,6 +164,13 @@ jobs:
       - name: Rust toolchain
         run: rustc --version && cargo --version
 
+      - name: Cache the Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          # The crate is not at the repository root: its target directory is
+          # `src-tauri/target`, which the default (`workspaces: .`) would miss.
+          workspaces: src-tauri -> target
+
       - name: Install dependencies
         run: npm ci
 
@@ -115,10 +179,9 @@ jobs:
           npm run build --workspace @openexpert/openexpert
           npm run build
 
-      - name: Build the desktop window
-        run: node_modules/.bin/tauri build --no-bundle
-
-      - name: Package a .deb
+      # One build, not two: `--no-bundle` compiled and then `--bundles deb`
+      # compiled and linked again for the same output.
+      - name: Build the desktop window and package it
         run: node_modules/.bin/tauri build --bundles deb
 
       - name: Check the artefacts
@@ -131,11 +194,68 @@ jobs:
           dpkg-deb -c "$deb" | grep -q 'usr/share/applications/OpenExpert.desktop'
           ls -lh "$deb"
 
-  workflow-lint:
-    name: Workflow lint
+  # The image smoke test used to be its own workflow, which duplicated the
+  # trigger logic and rebuilt on every push to `main` even when only a Markdown
+  # file had changed. Its cache scope is its own: the release workflow builds
+  # multi-arch images into the same backend and used to evict this one's cache.
+  docker-smoke:
+    name: Docker smoke
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - name: Build (no push)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          # Load into the local daemon so the smoke test can run it.
+          load: true
+          provenance: false
+          sbom: false
+          tags: openexpert:ci-${{ github.sha }}
+          cache-from: type=gha,scope=docker-smoke
+          cache-to: type=gha,mode=max,scope=docker-smoke
+
+      - name: Smoke test
+        run: |
+          docker run --rm -d --name openexpert-smoke -p 3000:3000 \
+            -e OPENEXPERT_MODEL_PROVIDER=ollama \
+            openexpert:ci-${{ github.sha }}
+          status=starting
+          for _ in $(seq 1 24); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' openexpert-smoke 2>/dev/null || echo unknown)
+            [ "$status" = "healthy" ] && break
+            sleep 5
+          done
+          echo "health status: $status"
+          if [ "$status" != "healthy" ]; then
+            docker logs openexpert-smoke || true
+            docker stop openexpert-smoke || true
+            exit 1
+          fi
+          curl -fsS http://localhost:3000/ >/dev/null
+          docker stop openexpert-smoke
+
+  # actionlint and gitleaks each took a whole runner for a few seconds of work.
+  hygiene:
+    name: Workflows and secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # gitleaks scans the history, not just the working tree.
+          fetch-depth: 0
 
       # The release tarball is downloaded at a fixed version and its published
       # checksum is verified before the binary is executed: a runner must never
@@ -153,13 +273,6 @@ jobs:
       - name: Run actionlint
         run: ./actionlint -color
 
-  secret-scan:
-    name: Secret scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
       # The gitleaks CLI is MIT and needs no license (unlike the Action
       # wrapper, which requires a paid license for organization repos) and its
       # published checksum is verified before use.
