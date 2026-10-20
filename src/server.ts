@@ -3,7 +3,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { securityHeaders } from "./lib/http.server";
+import { isAllowedHost, securityHeaders } from "./lib/http.server";
 import { logger } from "./lib/logger.server";
 
 type ServerEntry = {
@@ -54,6 +54,17 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const requestId = crypto.randomUUID();
     try {
+      // A `Host` this server was not configured to serve is a DNS rebinding
+      // attempt (or a misdirected request): refuse it before any handler sees
+      // it. The TanStack CSRF middleware compares Origin with the request URL,
+      // which under rebinding are both the attacker's host.
+      if (!isAllowedHost(request)) {
+        logger.warn("http.host", {
+          requestId,
+          host: request.headers.get("host") ?? "",
+        });
+        return applySecurityHeaders(new Response("Forbidden", { status: 403 }), requestId);
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return applySecurityHeaders(

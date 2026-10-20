@@ -688,9 +688,11 @@ function AssistantMsg({
                 className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
               >
                 <X className="size-3.5" />{" "}
-                {part.type.includes("local")
-                  ? t("Escritura local denegada")
-                  : t("Acceso a Google Drive denegado")}
+                {part.type.includes("notion")
+                  ? t("Escritura en Notion denegada")
+                  : part.type.includes("local")
+                    ? t("Escritura local denegada")
+                    : t("Acceso a Google Drive denegado")}
               </div>
             );
           }

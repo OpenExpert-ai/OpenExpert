@@ -16,6 +16,24 @@ export const DOMAIN = {
   accounts: "clientes",
 } as const;
 
+/**
+ * Tools that write something the user cannot get back: Drive files, local
+ * files (a whole-file overwrite) and Notion pages (shared with third parties).
+ * The chat endpoint maps every name here to `"user-approval"`, which makes the
+ * SDK pause the turn and ask before `execute` runs — the card in the UI is the
+ * only way to resume it. Keep it in sync with the catalog: a new write tool
+ * that is not listed here runs without asking.
+ */
+export const APPROVAL_REQUIRED = [
+  "create_drive_file",
+  "update_drive_file",
+  "create_local_file",
+  "update_local_file",
+  "create_notion_page",
+  "update_notion_page",
+  "append_notion_blocks",
+] as const;
+
 /** Result of proposing an action that requires human confirmation. */
 export type ProposedAction = {
   eventId: string;
@@ -380,7 +398,8 @@ export function createChatTools(ctx: ChatToolsContext) {
       description:
         "Ejecuta un script corto de Python y devuelve lo que imprime. Úsalo para **calcular**: sumar una columna, agrupar por meses, sacar un porcentaje o un total. " +
         "Lee los datos con read_local_file y deja que el cálculo lo haga el script: sumar a ojo sobre cientos de filas sale mal, y sale mal con seguridad. " +
-        "El script corre en un directorio temporal propio, sin acceso a la red ni a las variables de entorno de la aplicación, con un límite de 30 segundos (hasta 120). " +
+        "El script corre en un directorio temporal propio, dentro de un espacio de nombres sin red y sin las variables de entorno de la aplicación, con un límite de 30 segundos (hasta 120). " +
+        "Si esta máquina no puede aislarlo de la red, no se ejecuta; si no tiene `bubblewrap`, el resultado lo advierte y el script puede leer archivos locales. " +
         "Cuenta solo con la biblioteca estándar de Python: no des por hecho pandas ni nada que haya que instalar.",
       inputSchema: z.object({
         code: z.string().min(1).max(20000),

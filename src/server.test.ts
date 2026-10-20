@@ -147,3 +147,23 @@ describe("server.fetch: excepciones", () => {
     );
   });
 });
+
+const ctx = {} as never;
+
+const callWithHost = (url: string, host: string) =>
+  server.fetch(new Request(url, { headers: { host } }), {}, ctx);
+
+describe("server entry", () => {
+  it("refuses a Host the server does not serve", async () => {
+    const res = await callWithHost("http://evil.test:3000/api/backup", "evil.test:3000");
+    expect(res.status).toBe(403);
+    expect(await res.text()).toBe("Forbidden");
+    // The security headers still apply to the refusal.
+    expect(res.headers.get("x-request-id")).toBeTruthy();
+  });
+
+  it("does not refuse the loopback host before the handler runs", async () => {
+    const res = await callWithHost("http://localhost:3000/", "localhost:3000");
+    expect(res.status).not.toBe(403);
+  });
+});

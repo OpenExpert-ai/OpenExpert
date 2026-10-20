@@ -281,6 +281,7 @@ export const en: Record<string, string> = {
   "Aprobado. Escribiendo el archivo…": "Approved. Writing the file…",
   "Denegado. No se escribirá nada.": "Denied. Nothing will be written.",
   "Escritura local denegada": "Local write denied",
+  "Escritura en Notion denegada": "Notion write denied",
   "Listando archivos locales": "Listing local files",
   "Buscando archivos locales": "Searching local files",
   "Leyendo archivo local": "Reading a local file",

@@ -192,7 +192,6 @@ describe("grants del Picker, raíces locales, Notion y consentimiento", () => {
       process.env["OPENEXPERT_DATA_DIR"] = dir;
     }
   });
-
 });
 
 describe("clave dañada: error explícito en vez de 'sin conexión'", () => {

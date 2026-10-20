@@ -19,21 +19,27 @@ The dashboard has no authentication: whoever reaches the port can read and write
 the folders its owner granted. To expose it to a network on purpose, set
 `OPENEXPERT_HOST` (or `HOST`) — for example
 `OPENEXPERT_HOST=0.0.0.0 npx @openexpert/openexpert serve` — after thinking about
-who shares that network. The Docker image keeps binding every interface, because
-the published port is the point of the container. The Nitro preset is
-`node-server`.
+who shares that network: the server answers only the names it knows (the loopback
+ones and the one it listens on) and returns 403 to the rest. The Docker image
+binds every interface **inside the container** (that is how a published port
+works), so the container is private only because of the `127.0.0.1:` prefix on
+the published port. Keep it: see
+[`docker/README.md`](../../docker/README.md). The Nitro preset is `node-server`.
 
 ## 2. Docker
 
 ```sh
 docker build -f docker/Dockerfile -t openexpert:local .
-docker run --rm -p 3000:3000 -v openexpert-data:/data \
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data \
   -e OPENEXPERT_MODEL_PROVIDER=ollama openexpert:local
 ```
 
 The release workflow publishes `latest`, `<version>` and `<sha>`. For an
 anonymous `docker pull` to work the package has to be public; if it is not, sign
 in first with `docker login ghcr.io` (a token with `read:packages`).
+
+The published port is bound to `127.0.0.1` on purpose: the app has no login. See
+[`docker/README.md`](../../docker/README.md).
 
 `docker/docker-compose.yml` also starts an Ollama service:
 

@@ -21,9 +21,11 @@ Full guide: [docs/en/00-quickstart.md](./docs/en/00-quickstart.md).
 
 ### Docker (no Node required)
 
+The app has no login: keep it on `127.0.0.1` (see [docker/README.md](./docker/README.md)).
+
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
-# or bring Ollama along:
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
+# or bring Ollama along (loopback only, as above):
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```

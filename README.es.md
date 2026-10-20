@@ -20,9 +20,11 @@ Guía completa: [docs/es/00-inicio-rapido.md](./docs/es/00-inicio-rapido.md).
 
 ### Docker (sin Node)
 
+La aplicación no tiene login: mantenla en `127.0.0.1` (ver [docker/README.md](./docker/README.md)).
+
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
-# o con Ollama incluido:
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
+# o con Ollama incluido (también solo en bucle local):
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```

@@ -414,6 +414,8 @@ describe("datos", () => {
     const bundle = JSON.stringify({ format: "openexpert-backup", version: 1, files: {} });
     await expect(fns.importBackup({ data: { content: bundle } })).resolves.toEqual({
       applied: [],
+      // Un paquete vacío no reemplaza nada, así que tampoco deja copia de seguridad.
+      backupPath: null,
     });
     await expect(fns.importBackup({ data: { content: "{no es un backup" } })).rejects.toThrow();
     await expect(
