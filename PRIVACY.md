@@ -84,8 +84,10 @@ Concretely:
 ## 5. Backups
 
 Backups (`GET /api/backup`) bundle the database, `openexpert.json`,
-`secrets.json` and `credentials.json` into one JSON file on **your machine**.
-They never leave it. Cross-origin downloads are rejected by the server.
+`secrets.json`, the encrypted credentials and the local key that decrypts them
+into one JSON file on **your machine**. They never leave it. Because the file
+carries that key, it deserves the same care as the tokens it holds. Cross-origin
+downloads are rejected by the server.
 
 ## 6. Activity log and revert
 

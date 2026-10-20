@@ -63,9 +63,11 @@ Reglas:
   datos. El panel de ajustes local puede **revelar** una clave guardada a
   petición (botón "Copiar"), así que considera el navegador como entorno de
   confianza y no expongas el puerto.
-- Las copias de seguridad (`GET /api/backup`) incluyen `secrets.json` y
-  `credentials.json`. Se rechazan las descargas entre orígenes; aun así,
-  descarga copias solo en un equipo de confianza y guárdalas con cuidado.
+- Las copias de seguridad (`GET /api/backup`) incluyen `secrets.json`, los
+  ficheros cifrados de credenciales y `secret.key`, la clave que los descifra.
+  El sobre es, por tanto, tan sensible como los propios tokens: se rechazan las
+  descargas entre orígenes, pero aun así descarga copias solo en un equipo de
+  confianza y guárdalas con cuidado.
 - El `state` de OAuth lleva un verifier PKCE firmado con HMAC; el callback
   lo verifica en tiempo constante.
 - Los tokens de Drive y la lista de concesiones del Picker están cifrados

@@ -233,17 +233,19 @@ export const importBackup = createServerFn({ method: "POST" })
     } catch (e) {
       throw new Error(e instanceof Error ? e.message : "Copia no válida", { cause: e });
     }
-    const { applied, backupPath } = restored;
+    const { applied, missing, backupPath } = restored;
     await ee.logActivity({
       actor: "human",
       actor_name: OWNER_NAME,
       type: "Configuración",
       expert_id: "general",
       status: "ok",
-      summary: `Copia restaurada (${applied.join(", ")})`,
+      summary:
+        `Copia restaurada (${applied.join(", ")})` +
+        (missing.length ? `; no incluidos en la copia: ${missing.join(", ")}` : ""),
       sources: ["Copia de seguridad"],
     });
-    return { applied, backupPath };
+    return { applied, missing, backupPath };
   });
 
 export const clearChatHistory = createServerFn({ method: "POST" }).handler(async () => {

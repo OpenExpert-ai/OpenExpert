@@ -32,6 +32,32 @@ export const Route = createFileRoute("/_authenticated/settings/data")({
   component: DataSettings,
 });
 
+/** The envelope's keys, as the user reads them. */
+function fileLabel(key: string, t: (text: string) => string): string {
+  switch (key) {
+    case "db":
+      return t("Base de datos");
+    case "config":
+      return t("Configuración");
+    case "secrets":
+      return t("Secretos");
+    case "credentials":
+      return t("Credenciales de Drive");
+    case "secretKey":
+      return t("Clave local");
+    case "driveGrants":
+      return t("Concesiones del Picker");
+    case "localRoots":
+      return t("Carpetas locales");
+    case "notion":
+      return t("Notion");
+    case "driveConsent":
+      return t("Consentimiento de Drive");
+    default:
+      return key;
+  }
+}
+
 function DataSettings() {
   const get = useServerFn(getDataStats);
   const doImport = useServerFn(importBackup);
@@ -58,7 +84,17 @@ function DataSettings() {
     try {
       const content = await file.text();
       const r = await doImport({ data: { content } });
-      toast.success(`${t("Copia restaurada")} (${r.applied.join(", ")})`);
+      toast.success(
+        `${t("Copia restaurada")} (${r.applied.map((f) => fileLabel(f, t)).join(", ")})`,
+      );
+      // A bundle that could not bring everything says so: the integrations it
+      // left behind would otherwise show up as "not connected" with no reason.
+      if (r.missing.length)
+        toast.warning(
+          t("La copia no traía: {list}. Si los usabas, tendrás que configurarlos otra vez.", {
+            list: r.missing.map((f) => fileLabel(f, t)).join(", "),
+          }),
+        );
       // The restore keeps the database it replaced, so an unwanted import can be undone by hand.
       if (r.backupPath)
         toast.message(t("Copia anterior guardada en {path}", { path: r.backupPath }));
@@ -141,7 +177,9 @@ function DataSettings() {
 
       <Card
         title={t("Copia de seguridad")}
-        desc={t("Incluye la base de datos, la configuración y las credenciales locales.")}
+        desc={t(
+          "Incluye la base de datos, la configuración, las credenciales locales y el estado de tus integraciones.",
+        )}
       >
         <div className="flex flex-wrap gap-3">
           <a href="/api/backup" download className={`${btnPrimary} items-center gap-1.5`}>
@@ -168,6 +206,11 @@ function DataSettings() {
         </div>
         <p className="text-xs text-muted-foreground">
           {t("Importar reemplaza los datos actuales. Se recomienda descargar una copia antes.")}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {t(
+            "La copia lleva la clave que descifra esas credenciales: quien tenga el fichero puede leer tus tokens. Guárdala como guardarías las credenciales.",
+          )}
         </p>
       </Card>
 

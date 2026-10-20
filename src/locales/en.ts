@@ -135,8 +135,16 @@ export const en: Record<string, string> = {
   Eventos: "Events",
   Mensajes: "Messages",
   "Copia de seguridad": "Backup",
-  "Incluye la base de datos, la configuración y las credenciales locales.":
-    "Includes the database, the configuration and the local credentials.",
+  "Incluye la base de datos, la configuración, las credenciales locales y el estado de tus integraciones.":
+    "Includes the database, the configuration, the local credentials and the state of your integrations.",
+  "La copia lleva la clave que descifra esas credenciales: quien tenga el fichero puede leer tus tokens. Guárdala como guardarías las credenciales.":
+    "The backup also carries the key that decrypts those credentials: whoever holds the file can read your tokens. Store it as you would store the credentials.",
+  "La copia no traía: {list}. Si los usabas, tendrás que configurarlos otra vez.":
+    "The backup did not include: {list}. If you were using them, you will have to set them up again.",
+  "Credenciales de Drive": "Drive credentials",
+  "Clave local": "Local key",
+  "Concesiones del Picker": "Picker grants",
+  "Consentimiento de Drive": "Drive consent",
   "Descargar copia": "Download backup",
   "Importar copia": "Import backup",
   "Importar {b} los datos actuales. Se recomienda descargar una copia antes.":

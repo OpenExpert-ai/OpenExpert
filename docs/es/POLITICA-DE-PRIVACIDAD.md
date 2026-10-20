@@ -63,7 +63,7 @@ En concreto:
 
 ## 5. Copias de seguridad
 
-Las copias (`GET /api/backup`) empaquetan la base de datos, `openexpert.json`, `secrets.json` y `credentials.json` en un único JSON en **tu máquina**. Nunca salen de ella. El servidor rechaza descargas cross-origin.
+Las copias (`GET /api/backup`) empaquetan la base de datos, `openexpert.json`, `secrets.json`, las credenciales cifradas y la clave local que las descifra en un único JSON en **tu máquina**. Nunca salen de ella. Como el fichero lleva esa clave, merece el mismo cuidado que los tokens que contiene. El servidor rechaza descargas cross-origin.
 
 ## 6. Registro de actividad y reversión
 

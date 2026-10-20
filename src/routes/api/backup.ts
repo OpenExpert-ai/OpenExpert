@@ -7,9 +7,9 @@ export const Route = createFileRoute("/api/backup")({
   server: {
     handlers: {
       GET: ({ request }) => {
-        // The bundle embeds secrets.json and credentials.json. Block
-        // cross-origin downloads triggered by another site; direct/local
-        // requests (no Origin header) still work.
+        // The bundle embeds secrets.json, the encrypted credentials and the key
+        // that decrypts them. Block cross-origin downloads triggered by another
+        // site; direct/local requests (no Origin header) still work.
         if (!isSameOrigin(request)) return forbidden();
         const json = JSON.stringify(buildBackup(), null, 2);
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");

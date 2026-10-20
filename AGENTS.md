@@ -167,8 +167,12 @@ Drive and local folders in `src/lib/office.server.ts`.
   Docker. There is no Vercel preset. Port 3000 is pinned because the Drive OAuth
   redirect URI depends on it.
 - Backup (`GET /api/backup`, `src/lib/backup.server.ts`) bundles the database
-  plus `openexpert.json`, `secrets.json` and `credentials.json`; restoring
-  replaces the current data.
+  plus `openexpert.json`, `secrets.json` and the credential custody —
+  `credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`,
+  `drive-consent.json` and `secret.key` — so a restore on another machine keeps
+  the integrations connected. The key makes the bundle as sensitive as the
+  tokens; restoring replaces the current data and reports what the bundle did
+  not carry.
 - **Desktop shell (Linux).** `src-tauri/` is a Tauri 2 app whose only job is to
   render the local server in a native WebKitGTK window; all logic stays in the
   web app. It is launched by the `openexpert desktop` CLI command

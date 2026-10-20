@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Backup, restore and data maintenance for the local edition.
 //
-// A backup is a single JSON document holding the SQLite database plus the
-// canonical files (openexpert.json, secrets.json, credentials.json), all
-// base64-encoded so the bundle stays portable and self-contained.
+// A backup is a single JSON document holding the SQLite database plus every
+// file the install keeps outside it (configuration, secrets, and the encrypted
+// credential custody: tokens, Picker grants, local folders, Notion, consent and
+// the key that decrypts them), all base64-encoded so the bundle stays portable
+// and self-contained. The key travels with the blobs on purpose: without it a
+// restored credentials.json is ciphertext nobody can read, which is the same as
+// losing the integration. That also makes the bundle as sensitive as the tokens
+// it carries, and the panel says so.
 
 import {
   copyFileSync,
@@ -15,6 +20,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { join } from "node:path";
 import type { Database } from "sql.js";
 import { z } from "zod";
 import { applyFileConfigToEnv, setRuntimeEnv } from "./config.server";
@@ -23,9 +29,35 @@ import { configPath, credentialsPath, dataDir, dbPath, secretsPath } from "./pat
 import * as schema from "../../drizzle/schema";
 
 export const BACKUP_FORMAT = "openexpert-backup";
-export const BACKUP_VERSION = 1;
+/** 2 adds the local key and the integration state (grants, folders, Notion, consent). */
+export const BACKUP_VERSION = 2;
 
-type LogicalFile = "db" | "config" | "secrets" | "credentials";
+/**
+ * Every file the envelope can carry. The order is the one the panel and the
+ * activity log list them in, so the database comes first.
+ */
+const BACKUP_FILES = [
+  "db",
+  "config",
+  "secrets",
+  "credentials",
+  "secretKey",
+  "driveGrants",
+  "localRoots",
+  "notion",
+  "driveConsent",
+] as const;
+
+export type LogicalFile = (typeof BACKUP_FILES)[number];
+
+/** Credential custody: encrypted with the local key, mode 0600 on disk. */
+const ENCRYPTED_FILES: LogicalFile[] = [
+  "credentials",
+  "driveGrants",
+  "localRoots",
+  "notion",
+  "driveConsent",
+];
 
 function fileFor(key: LogicalFile): string {
   switch (key) {
@@ -37,6 +69,16 @@ function fileFor(key: LogicalFile): string {
       return secretsPath();
     case "credentials":
       return credentialsPath();
+    case "secretKey":
+      return join(dataDir(), "secret.key");
+    case "driveGrants":
+      return join(dataDir(), "drive-grants.json");
+    case "localRoots":
+      return join(dataDir(), "local-roots.json");
+    case "notion":
+      return join(dataDir(), "notion.json");
+    case "driveConsent":
+      return join(dataDir(), "drive-consent.json");
   }
 }
 
@@ -49,7 +91,7 @@ export type BackupBundle = {
 
 export function buildBackup(): BackupBundle {
   const files: Partial<Record<LogicalFile, string>> = {};
-  for (const key of ["db", "config", "secrets", "credentials"] as LogicalFile[]) {
+  for (const key of BACKUP_FILES) {
     const path = fileFor(key);
     if (existsSync(path)) files[key] = readFileSync(path).toString("base64");
   }
@@ -63,7 +105,9 @@ export function buildBackup(): BackupBundle {
 
 const restoreSchema = z.object({
   format: z.literal(BACKUP_FORMAT),
-  version: z.number().int().min(1),
+  // A newer bundle may mean things this version cannot honour, so it is refused
+  // instead of being applied halfway.
+  version: z.number().int().min(1).max(BACKUP_VERSION),
   files: z.record(z.string(), z.string()),
 });
 
@@ -96,9 +140,55 @@ async function assertValidDatabase(buf: Buffer): Promise<void> {
 
 export type RestoreResult = {
   applied: LogicalFile[];
+  /**
+   * Files this version can restore that the bundle did not bring, and whose
+   * absence changes what the installation can do: the local key when there are
+   * encrypted blobs to decrypt, and — for version 1 bundles — the key and the
+   * integration state, which that format never carried.
+   */
+  missing: LogicalFile[];
   /** Copy of the previous database, kept so the restore can be undone. */
   backupPath: string | null;
 };
+
+/**
+ * What a restore will be short of.
+ *
+ * From version 2 on `buildBackup` includes every data-dir file that exists, so
+ * an absent one means "not configured at the origin" and is not news. A version
+ * 1 bundle never carried the key or the integration state, so those absences are
+ * a known hole worth reporting: the credentials it does carry come back as
+ * ciphertext and every integration shows as disconnected. The key is also
+ * reported whenever the bundle brings encrypted blobs without it, whatever the
+ * version says.
+ */
+function missingAfterRestore(
+  version: number,
+  files: Partial<Record<LogicalFile, string>>,
+): LogicalFile[] {
+  const missing: LogicalFile[] = [];
+  const extras: LogicalFile[] = [
+    "secretKey",
+    "driveGrants",
+    "localRoots",
+    "notion",
+    "driveConsent",
+  ];
+  if (version < 2) missing.push(...extras.filter((k) => files[k] === undefined));
+  if (files["secretKey"] === undefined && ENCRYPTED_FILES.some((k) => files[k] !== undefined)) {
+    missing.push("secretKey");
+  }
+  return missing;
+}
+
+/**
+ * The envelope carries the key and the blobs it decrypts, so everything it
+ * writes back — the database aside — is owner-only, exactly as the app leaves
+ * it on disk.
+ */
+function modeFor(key: LogicalFile): number | undefined {
+  return key === "db" || key === "config" ? undefined : 0o600;
+}
 
 /**
  * Restore a bundle, overwriting the database and canonical files.
@@ -119,11 +209,11 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
   // 1. Stage every file beside its target; nothing real is touched yet.
   const staged: { key: LogicalFile; path: string; tmp: string }[] = [];
   try {
-    for (const key of ["db", "config", "secrets", "credentials"] as LogicalFile[]) {
+    for (const key of BACKUP_FILES) {
       const b64 = parsed.files[key];
       if (b64 === undefined) continue;
       const path = fileFor(key);
-      const mode = key === "secrets" || key === "credentials" ? 0o600 : undefined;
+      const mode = modeFor(key);
       const tmp = `${path}.restore-tmp`;
       writeFileSync(tmp, Buffer.from(b64, "base64"), mode ? { mode } : undefined);
       staged.push({ key, path, tmp });
@@ -194,7 +284,7 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
     }
   }
 
-  return { applied, backupPath };
+  return { applied, missing: missingAfterRestore(parsed.version, parsed.files), backupPath };
 }
 
 /* ---------------------------- maintenance ------------------------------- */
