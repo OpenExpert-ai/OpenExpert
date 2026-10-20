@@ -71,8 +71,8 @@ configuration.
 | `message`         | TEXT (JSON) | Full UI message               |
 | `created_at`      | TEXT        | ISO timestamp                 |
 
-**Retention: configurable (`chat.retentionDays`, default 30 days).**
-`listConversations` prunes older threads.
+**Retention: configurable (`chat.retentionDays`, default 30 days; `0` disables it).**
+`listConversations` prunes threads older than the window; with `0` it deletes nothing.
 
 ### `settings` — key/value preferences
 

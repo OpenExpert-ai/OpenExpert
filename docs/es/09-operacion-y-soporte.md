@@ -20,7 +20,7 @@ gratis.
 
 ## 3. Mantenimiento automático
 
-- Retención de conversaciones: 30 días, limpieza oportunista.
+- Retención de conversaciones: 30 días, limpieza oportunista (0 la desactiva).
 - Refresco de tokens de Drive: automático.
 - Reversión: cada cambio conserva su snapshot en el registro de actividad.
 
