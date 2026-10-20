@@ -28,9 +28,23 @@ leer y escribir las carpetas que su dueño haya autorizado. Para exponerlo a una
 red a propósito, define `OPENEXPERT_HOST` (o `HOST`) — por ejemplo
 `OPENEXPERT_HOST=0.0.0.0 npx @openexpert/openexpert serve` — y piensa antes quién
 comparte esa red: el servidor solo atiende los nombres que conoce (bucle local y
-el de escucha) y responde 403 al resto. La imagen Docker escucha en todas las
-interfaces **dentro del contenedor** (así funciona un puerto publicado), así que
-su aislamiento depende del prefijo `127.0.0.1:` del puerto: no lo quites. Ver
+el de escucha) y responde 403 al resto.
+
+El comodín dice **dónde escuchar, no qué nombres atiende**: los nombres con los
+que vas a abrir la app — la IP de la LAN, o el dominio público si hay un proxy
+inverso delante — van en `OPENEXPERT_ALLOWED_ORIGINS`, separados por comas, con
+el puerto que lleve el `Host` (si no lo llevan, el de escucha). Sin esa lista el
+`Origin` que manda el navegador es un nombre desconocido y `POST /api/chat`
+responde 403: el chat no funciona.
+
+```sh
+OPENEXPERT_HOST=0.0.0.0 OPENEXPERT_ALLOWED_ORIGINS=http://192.168.1.10:3000 \
+  npx @openexpert/openexpert serve
+```
+
+La imagen Docker escucha en todas las interfaces **dentro del contenedor** (así
+funciona un puerto publicado), así que su aislamiento depende del prefijo
+`127.0.0.1:` del puerto: no lo quites. Ver
 [`docker/README.md`](../../docker/README.md). El preset de Nitro es `node-server`.
 
 ## 2. Docker

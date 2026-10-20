@@ -28,7 +28,12 @@ Exposing it is a decision with consequences: put the app behind a reverse proxy
 that authenticates, or bind the published port to an address only you can reach,
 and assume that whoever gets past it owns the data. If you do expose it, also set
 `OPENEXPERT_HOST=0.0.0.0`: the server answers only `Host` names it was configured
-for and returns 403 to the rest, which is what keeps DNS rebinding out.
+for and returns 403 to the rest, which is what keeps DNS rebinding out. A wildcard
+says where to listen, not which names are served, so name the ones you will use in
+`OPENEXPERT_ALLOWED_ORIGINS` (comma separated, `host:port` or a full origin): the
+LAN address, or the proxy's public domain. Without it the browser's `Origin` is a
+host the server does not know and `POST /api/chat` answers 403 — the chat does not
+work, and neither does anything else that fetches `/api/*` with an `Origin`.
 
 ## Run it
 

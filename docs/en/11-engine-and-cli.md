@@ -58,6 +58,7 @@ checksum-verified server build, which it fetches from the release tagged
 | `OLLAMA_BASE_URL`                                                                       | Ollama endpoint                                                             |
 | `OPENEXPERT_DATA_DIR`                                                                   | Data directory (default `~/.openexpert/`)                                   |
 | `OPENEXPERT_HOST` / `PORT`                                                              | Interface and port of the local server (`127.0.0.1:3000`)                   |
+| `OPENEXPERT_ALLOWED_ORIGINS`                                                            | Extra names the server answers to (LAN or reverse proxy), comma separated   |
 | `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error`                                      |
 
 Neither `openexpert.json` nor `~/.openexpert/` is committed.

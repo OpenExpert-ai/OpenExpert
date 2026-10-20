@@ -69,6 +69,62 @@ describe("isSameOrigin", () => {
   });
 });
 
+describe("OPENEXPERT_ALLOWED_ORIGINS", () => {
+  it("lets the chat work on a wildcard bind once the LAN name is listed", () => {
+    // The bug this guards: `OPENEXPERT_HOST=0.0.0.0` accepted any `Host` on the
+    // port but the `Origin` still had to be in `allowedHosts()`, which the
+    // wildcard never populated — so `POST /api/chat` answered 403 on exactly
+    // the deployment the documentation recommends.
+    vi.stubEnv("OPENEXPERT_HOST", "0.0.0.0");
+    vi.stubEnv("OPENEXPERT_ALLOWED_ORIGINS", "http://192.168.1.10:3000");
+    expect(isAllowedHost(fake(null, "192.168.1.10:3000"))).toBe(true);
+    expect(isSameOrigin(fake("http://192.168.1.10:3000", "192.168.1.10:3000", "POST"))).toBe(true);
+  });
+
+  it("still rejects an Origin on another port under the wildcard", () => {
+    vi.stubEnv("OPENEXPERT_HOST", "0.0.0.0");
+    vi.stubEnv("OPENEXPERT_ALLOWED_ORIGINS", "http://192.168.1.10:3000");
+    expect(isSameOrigin(fake("http://192.168.1.10:4000", "192.168.1.10:3000", "POST"))).toBe(false);
+  });
+
+  it("keeps rejecting a foreign Origin when the server is not on a wildcard", () => {
+    vi.stubEnv("OPENEXPERT_HOST", "192.168.1.10");
+    expect(isSameOrigin(fake("http://evil.test:3000", "192.168.1.10:3000", "POST"))).toBe(false);
+    vi.stubEnv("OPENEXPERT_ALLOWED_ORIGINS", "http://192.168.1.11:3000");
+    expect(isSameOrigin(fake("http://evil.test:3000", "192.168.1.10:3000", "POST"))).toBe(false);
+  });
+
+  it("takes a bare host and gives it the listening port", () => {
+    vi.stubEnv("OPENEXPERT_ALLOWED_ORIGINS", "openexpert.example.com");
+    expect(allowedHosts()).toContain("openexpert.example.com:3000");
+    expect(
+      isSameOrigin(fake("http://openexpert.example.com", "openexpert.example.com", "POST")),
+    ).toBe(true);
+  });
+
+  it("serves a reverse proxy whose Host is the public domain", () => {
+    // The proxy terminates TLS and forwards `Host: openexpert.example.com`,
+    // which is a name the listen address knows nothing about.
+    vi.stubEnv("OPENEXPERT_HOST", "127.0.0.1");
+    vi.stubEnv(
+      "OPENEXPERT_ALLOWED_ORIGINS",
+      "https://openexpert.example.com, https://admin.example.com",
+    );
+    expect(isAllowedHost(fake(null, "openexpert.example.com"))).toBe(true);
+    expect(
+      isSameOrigin(fake("https://openexpert.example.com", "openexpert.example.com", "POST")),
+    ).toBe(true);
+    expect(isSameOrigin(fake("https://evil.test", "openexpert.example.com", "POST"))).toBe(false);
+  });
+
+  it("ignores empty and malformed entries instead of widening the allowlist", () => {
+    vi.stubEnv("OPENEXPERT_ALLOWED_ORIGINS", " , not a host , http://, ,");
+    expect(allowedHosts()).not.toContain("not a host:3000");
+    expect(allowedHosts().some((host) => /\s|\//.test(host))).toBe(false);
+    expect(isSameOrigin(fake("http://evil.test:3000", "localhost:3000", "POST"))).toBe(false);
+  });
+});
+
 describe("isAllowedHost", () => {
   it("allows the loopback names and nothing else by default", () => {
     for (const host of ["localhost:3000", "127.0.0.1:3000", "[::1]:3000"]) {

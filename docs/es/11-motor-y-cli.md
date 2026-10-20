@@ -57,6 +57,7 @@ verificado por checksum, que se trae de la release etiquetada `v<versión>`.
 | `OLLAMA_BASE_URL`                                                                       | Endpoint de Ollama                                                          |
 | `OPENEXPERT_DATA_DIR`                                                                   | Directorio de datos (por defecto `~/.openexpert/`)                          |
 | `OPENEXPERT_HOST` / `PORT`                                                              | Interfaz y puerto del servidor local (`127.0.0.1:3000`)                     |
+| `OPENEXPERT_ALLOWED_ORIGINS`                                                            | Nombres extra que atiende (LAN o proxy inverso), por comas                  |
 | `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error`                                      |
 
 Ni `openexpert.json` ni `~/.openexpert/` se versionan.

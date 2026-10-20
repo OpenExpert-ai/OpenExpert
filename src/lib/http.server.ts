@@ -5,6 +5,9 @@
 
 const DEFAULT_PORT = 3000;
 
+/** `host:port` in the shape a configured name is allowed to take (`[::1]` included). */
+const HOST_SHAPE = /^(?:\[[0-9a-f:.]+\]|[a-z0-9._-]+):\d+$/;
+
 /** The port the app serves on: `PORT`, and 3000 by default (Drive's redirect pins it). */
 function listenPort(): number {
   const port = Number(process.env["PORT"] ?? DEFAULT_PORT);
@@ -26,10 +29,44 @@ function normalizeHost(value: string | null): string | null {
 }
 
 /**
+ * The names the operator listed in `OPENEXPERT_ALLOWED_ORIGINS`, comma
+ * separated. Binding a wildcard address says where to listen, not which names
+ * are served: the LAN address behind `0.0.0.0`, or the public domain of the
+ * reverse proxy in front, cannot be derived from it, so the operator names
+ * them here and both the `Host` and the `Origin` check accept them. An entry
+ * may be a full origin (`https://openexpert.example.com`) or a bare
+ * `host[:port]`; a missing port means the listening one, the same rule the
+ * request's own `Host` goes through. Entries are configuration, not input: a
+ * name only gets here because someone wrote it.
+ */
+function configuredOrigins(): string[] {
+  const raw = (process.env["OPENEXPERT_ALLOWED_ORIGINS"] ?? "").trim();
+  const hosts: string[] = [];
+  for (const entry of raw.split(",")) {
+    const text = entry.trim();
+    if (!text) continue;
+    let value = text;
+    if (text.includes("://")) {
+      try {
+        value = new URL(text).host;
+      } catch {
+        continue;
+      }
+    }
+    const host = normalizeHost(value);
+    // `normalizeHost` keeps whatever it is given as a name; an entry with a
+    // space or a slash is a typo, not a host, and letting it into the allowlist
+    // would be dead weight (or, worse, read as one).
+    if (host && HOST_SHAPE.test(host) && !hosts.includes(host)) hosts.push(host);
+  }
+  return hosts;
+}
+
+/**
  * The hosts this server answers to. Derived from its own configuration — the
- * loopback names plus whatever `OPENEXPERT_HOST`/`HOST` told it to listen on —
- * and never from the `Host` a request claims, which is exactly what a DNS
- * rebinding attack controls.
+ * loopback names, whatever `OPENEXPERT_HOST`/`HOST` told it to listen on, and
+ * the names listed in `OPENEXPERT_ALLOWED_ORIGINS` — and never from the `Host`
+ * a request claims, which is exactly what a DNS rebinding attack controls.
  */
 export function allowedHosts(): string[] {
   const hosts = new Set<string>();
@@ -45,6 +82,7 @@ export function allowedHosts(): string[] {
     const host = normalizeHost(configured);
     if (host) hosts.add(host);
   }
+  for (const host of configuredOrigins()) hosts.add(host);
   return [...hosts];
 }
 

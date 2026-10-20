@@ -42,6 +42,7 @@ Documented in `.env.example`. The essentials:
 | `OPENEXPERT_NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET`                                  | Notion OAuth (optional)                                                         |
 | `NOTION_REDIRECT_URI` / `NOTION_OAUTH_STATE_SECRET`                                     | Notion OAuth (optional)                                                         |
 | `OPENEXPERT_HOST` / `HOST` / `PORT`                                                     | Interface and port the local server binds (loopback and 3000 by default)        |
+| `OPENEXPERT_ALLOWED_ORIGINS`                                                            | Extra names the server answers to (LAN address, proxy domain), comma separated  |
 | `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error` (default: `debug`, `info` in production) |
 
 `.env` is git-ignored. The CLI wizard stores secrets in
