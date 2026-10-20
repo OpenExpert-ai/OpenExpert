@@ -83,11 +83,16 @@ async function save(expertId: string, msgs: UIMessage[], conversationId = "defau
 
 export async function handleChat(request: Request) {
   if (!isSameOrigin(request)) return forbidden();
-  const body = (await request.json()) as {
-    messages: UIMessage[];
-    expertId: string;
-    conversationId?: string;
-  };
+  // A body that is not JSON is the client's mistake, not a server failure:
+  // `request.json()` throws a SyntaxError on a truncated or hand-written
+  // payload, and unwrapped it would leave the endpoint as a 500 with the SSR
+  // error page instead of a 400 the caller can act on.
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json(400, "JSON inválido");
+  }
   const parsed = z
     .object({
       expertId: z.string().min(1).max(80),
