@@ -48,6 +48,19 @@ describe("extractOfficeText", () => {
     expect(out.text).toContain("Contenido pptx");
   });
 
+  it("reads .pptx slides in slide order, not in entry-name order", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { extractOfficeText } = await import("./office.server");
+    // As strings, `slide10.xml` sorts before `slide2.xml`; with nine slides or
+    // fewer the two orders agree, which is why this needs a longer deck.
+    const files: Record<string, Uint8Array> = {};
+    for (let n = 1; n <= 12; n++)
+      files[`ppt/slides/slide${n}.xml`] = strToU8(`<p:sld><a:t>Diapositiva ${n}</a:t></p:sld>`);
+    const out = await extractOfficeText(zipSync(files), ".pptx");
+    const slides = (out.text ?? "").split("\n").map((line) => line.trim());
+    expect(slides).toEqual(Array.from({ length: 12 }, (_, i) => `Diapositiva ${i + 1}`));
+  });
+
   it("reads paragraph text from an OpenDocument file", async () => {
     const { extractOfficeText } = await import("./office.server");
     const out = await extractOfficeText(Buffer.from(ODT_B64, "base64"), ".odt");

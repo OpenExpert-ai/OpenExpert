@@ -170,14 +170,24 @@ function plainText(fragment: string): string {
   return decodeEntities(text);
 }
 
+/** `ppt/slides/slide12.xml` → 12; null for anything else in the archive. */
+function slideNumber(name: string): number | null {
+  const match = /^ppt\/slides\/slide(\d+)\.xml$/.exec(name);
+  return match ? Number(match[1]) : null;
+}
+
 function pptxText(buf: Uint8Array): string {
   const { unzipSync, strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
   const files = unzipSync(buf);
+  // Sort by the slide number, not by the entry name: as strings `slide10.xml`
+  // lands between `slide1.xml` and `slide2.xml`, and in a deck the order is the
+  // content, so the model would read slide 2 after slide 12 without any error.
   const slides = Object.keys(files)
-    .filter((k) => /^ppt\/slides\/slide\d+\.xml$/.test(k))
-    .sort();
+    .map((name) => ({ name, number: slideNumber(name) }))
+    .filter((s): s is { name: string; number: number } => s.number !== null)
+    .sort((a, b) => a.number - b.number);
   return slides
-    .map((k) => collect(strFromU8(files[k]!), "a:t").map(decodeEntities).join(" "))
+    .map(({ name }) => collect(strFromU8(files[name]!), "a:t").map(decodeEntities).join(" "))
     .join("\n");
 }
 
