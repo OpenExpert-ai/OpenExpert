@@ -10,9 +10,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dataDir } from "@/lib/db.server";
 import * as local from "@/lib/engine/local-secrets.server";
+import { fetchWithTimeout } from "@/lib/http.server";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
+
+const googleFetch = (url: string, init: RequestInit = {}) =>
+  fetchWithTimeout(url, init, { service: "Google" });
 
 /** Non-sensitive scope: per-file access. No CASA required. */
 export const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.file"];
@@ -42,7 +46,7 @@ type Tokens = {
 };
 
 async function postToken(body: Record<string, string>): Promise<Tokens> {
-  const r = await fetch(TOKEN_URL, {
+  const r = await googleFetch(TOKEN_URL, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -140,7 +144,7 @@ export async function disconnectDrive(): Promise<void> {
   local.removeGrantedFiles();
   local.removeDriveConsent();
   if (prev?.refresh_token && clientId() && clientSecret()) {
-    await fetch("https://oauth2.googleapis.com/revoke", {
+    await googleFetch("https://oauth2.googleapis.com/revoke", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({

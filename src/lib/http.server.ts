@@ -16,6 +16,32 @@ export function isSameOrigin(request: Request): boolean {
 
 export const forbidden = () => new Response("Forbidden", { status: 403 });
 
+/**
+ * `fetch` with a hard deadline. Node's fetch (undici) has no request timeout of
+ * its own: a provider that accepts the connection and never answers leaves the
+ * chat turn streaming forever, and the user has to press Stop without knowing
+ * why. `service` names the caller so the failure says what hung and for how long.
+ */
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  opts: { service: string; timeoutMs?: number },
+): Promise<Response> {
+  const { service, timeoutMs = 20_000 } = opts;
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (e) {
+    const name = (e as { name?: string }).name;
+    if (name === "TimeoutError" || name === "AbortError") {
+      const limit = timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)} s` : `${timeoutMs} ms`;
+      throw new Error(`${service} no respondió en ${limit}. Comprueba tu conexión o el proxy.`, {
+        cause: e,
+      });
+    }
+    throw e;
+  }
+}
+
 /** Security headers applied to every response (see `src/server.ts`). */
 export function securityHeaders(isProduction: boolean): Record<string, string> {
   const headers: Record<string, string> = {

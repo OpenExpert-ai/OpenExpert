@@ -6,7 +6,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import type { Database } from "sql.js";
+import type { Database, SqlJsStatic } from "sql.js";
 import { drizzle, type SQLJsDatabase } from "drizzle-orm/sql-js";
 import schemaSql from "../../drizzle/init.sql?raw";
 import * as schema from "../../drizzle/schema";
@@ -28,6 +28,23 @@ const require = createRequire(import.meta.url);
 // Load sql.js at runtime (CommonJS) instead of letting the bundler inline it:
 // its Node build relies on __dirname, which does not exist in an ESM bundle.
 const initSqlJs = require("sql.js") as typeof import("sql.js").default;
+
+// The module is loaded once and shared: the restore path opens a backup with it
+// to check the database is valid *before* it is allowed to replace the real one.
+let sqlModule: Promise<SqlJsStatic> | null = null;
+
+export function loadSqlJs(): Promise<SqlJsStatic> {
+  if (!sqlModule) {
+    sqlModule = initSqlJs({ locateFile: (f) => require.resolve(`sql.js/dist/${f}`) }).catch(
+      (e: unknown) => {
+        // Same trap as `getDb()` below: a rejection must not be cached forever.
+        sqlModule = null;
+        throw e;
+      },
+    );
+  }
+  return sqlModule;
+}
 
 export type Db = SQLJsDatabase<typeof schema>;
 
@@ -87,9 +104,7 @@ function applyMigrations(raw: Database): void {
 }
 
 async function init(): Promise<Handle> {
-  const SQL = await initSqlJs({
-    locateFile: (f) => require.resolve(`sql.js/dist/${f}`),
-  });
+  const SQL = await loadSqlJs();
   const file = dbPath();
   mkdirSync(dirname(file), { recursive: true });
   const raw = existsSync(file) ? new SQL.Database(readFileSync(file)) : new SQL.Database();
@@ -102,7 +117,16 @@ async function init(): Promise<Handle> {
 }
 
 export function getDb(): Promise<Handle> {
-  if (!handle) handle = init();
+  if (!handle) {
+    handle = init().catch((e: unknown) => {
+      // A cached rejection used to outlive the failure that caused it: a corrupt
+      // database or a full disk left every later request — every tool, every save
+      // — replaying the same error until the process was restarted. Dropping the
+      // handle lets the next call try again (and succeed once the cause is gone).
+      handle = null;
+      throw e;
+    });
+  }
   return handle;
 }
 

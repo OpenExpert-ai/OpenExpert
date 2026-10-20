@@ -302,7 +302,9 @@ Formato (adáptalo a la pregunta):
           sources: [...used],
           duration_ms: Date.now() - startedAt,
         })
-        .catch(() => {});
+        .catch((e: unknown) =>
+          logger.error("activity.log_failed", e, { tool: "chat", expertId, conversationId }),
+        );
     },
   });
 }

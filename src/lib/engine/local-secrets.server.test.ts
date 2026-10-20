@@ -61,11 +61,11 @@ describe("clave local", () => {
     expect(local.loadTokens()).toEqual(tokens);
   });
 
-  it("regenera la clave cuando el fichero no mide 32 bytes", () => {
-    writeFileSync(join(dir, "secret.key"), randomBytes(16), { mode: 0o600 });
-    local.saveTokens(tokens);
-    expect(readFileSync(join(dir, "secret.key")).byteLength).toBe(32);
-    expect(local.loadTokens()).toEqual(tokens);
+  it("se niega a regenerar la clave si el fichero está dañado y conserva el original", () => {
+    const damaged = randomBytes(16);
+    writeFileSync(join(dir, "secret.key"), damaged, { mode: 0o600 });
+    expect(() => local.saveTokens(tokens)).toThrow(/está dañado/);
+    expect(readFileSync(join(dir, "secret.key")).equals(damaged)).toBe(true);
   });
 });
 
@@ -191,5 +191,28 @@ describe("grants del Picker, raíces locales, Notion y consentimiento", () => {
     } finally {
       process.env["OPENEXPERT_DATA_DIR"] = dir;
     }
+  });
+
+});
+
+describe("clave dañada: error explícito en vez de 'sin conexión'", () => {
+  it("lanza SecretKeyError al leer si la clave no mide 32 bytes", () => {
+    writeFileSync(join(dir, "secret.key"), Buffer.from("corta"), { mode: 0o600 });
+    // blobs con forma de cifrado: el descifrado llega a la clave en vez de fallar antes por longitud
+    const blob = Buffer.alloc(40).toString("base64");
+    writeFileSync(join(dir, "credentials.json"), blob);
+    writeFileSync(join(dir, "drive-grants.json"), blob);
+    writeFileSync(join(dir, "notion.json"), blob);
+
+    expect(() => local.loadTokens()).toThrow(local.SecretKeyError);
+    expect(() => local.loadGrantedFiles()).toThrow(local.SecretKeyError);
+    expect(() => local.loadNotionToken()).toThrow(local.SecretKeyError);
+  });
+
+  it("con el directorio vacío no hay error: es el estado normal de primer arranque", () => {
+    expect(local.loadTokens()).toBeNull();
+    expect(local.loadGrantedFiles()).toEqual([]);
+    expect(local.loadLocalRoots()).toEqual([]);
+    expect(local.loadNotionToken()).toBeNull();
   });
 });

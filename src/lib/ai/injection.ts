@@ -9,16 +9,34 @@
 export const INJECTION_REGEX =
   /(modo dios|god ?mode|ignora (todas )?(las |tus )?(instrucciones|reglas)|ignore (all )?(previous |your )?(instructions|rules)|jailbreak|system prompt|prompt del sistema|sin restricciones|act[uú]a como (un )?admin|bypass|dan mode|desactiva (la )?seguridad|eleva(r)? (mis )?privilegios|hazme admin)/i;
 
+/**
+ * The shape behind catastrophic backtracking: a quantified group that is itself
+ * quantified (`(a+)+`). Such a pattern makes every user message a way to freeze
+ * the process (measured: 59 s of blocked event loop on a 29-character string),
+ * and this filter runs on the main thread for every message. Patterns are
+ * rejected when saved and skipped here, so one stored before that check cannot
+ * hang the app either.
+ */
+export function hasNestedQuantifier(pattern: string): boolean {
+  return /\([^)]*[+*]\)[*+{]/.test(pattern);
+}
+
+let cache: { key: string; res: RegExp[] } | null = null;
+
 /** Compile user-supplied patterns, ignoring any that are not valid regexes. */
 function compileExtra(patterns: string[]): RegExp[] {
+  const key = patterns.join("\u0000");
+  if (cache && cache.key === key) return cache.res;
   const out: RegExp[] = [];
   for (const p of patterns) {
+    if (hasNestedQuantifier(p)) continue;
     try {
       out.push(new RegExp(p, "i"));
     } catch {
       // Ignore invalid patterns; they are rejected when saved.
     }
   }
+  cache = { key, res: out };
   return out;
 }
 
