@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
   acceptDriveConsent,
+  addGrantedFiles,
   addLocalRoot,
   browseLocalDir,
   disconnectDrive,
@@ -16,7 +17,7 @@ import {
   getLocalRoots,
   getNotionStatus,
   removeLocalRoot,
-  setGrantedFiles,
+  revokeGrantedFile,
   startDriveAuth,
   startNotionAuth,
   syncIntegration,
@@ -173,7 +174,7 @@ function SourcesPage() {
         );
         return;
       }
-      await setGrantedFiles({ data: { files: outcome.files } });
+      await addGrantedFiles({ data: { files: outcome.files } });
       await qc.invalidateQueries({ queryKey: ["drive-grants"] });
       await qc.invalidateQueries({ queryKey: ["drive-status"] });
       await qc.invalidateQueries({ queryKey: ["workspace"] });
@@ -186,10 +187,16 @@ function SourcesPage() {
   };
 
   const onRemoveGranted = async (id: string) => {
-    const remaining = granted.data?.files.filter((f) => f.id !== id) ?? [];
-    await setGrantedFiles({ data: { files: remaining } });
-    await qc.invalidateQueries({ queryKey: ["drive-grants"] });
-    await qc.invalidateQueries({ queryKey: ["workspace"] });
+    try {
+      await revokeGrantedFile({ data: { id } });
+      toast.success(t("Acceso retirado: el Experto ya no puede leer ese archivo."));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      await qc.invalidateQueries({ queryKey: ["drive-grants"] });
+      await qc.invalidateQueries({ queryKey: ["drive-status"] });
+      await qc.invalidateQueries({ queryKey: ["workspace"] });
+    }
   };
 
   return (

@@ -551,19 +551,19 @@ describe("getChat, clearChat y listConversations", () => {
 
 /* ------------------------------ Google Drive ---------------------------- */
 
-describe("setGrantedFiles y los grants del Picker", () => {
-  it("acumula por id, conserva addedAt y resume los tipos en la integración", async () => {
-    const pdf = { id: "f-pdf", name: "Factura", mimeType: "application/pdf" };
-    const doc = { id: "f-doc", name: "Acta", mimeType: "application/vnd.google-apps.document" };
-    const otro = { id: "f-otro", name: "Zip", mimeType: "application/zip" };
+describe("addGrantedFiles, revokeGrantedFile y los grants del Picker", () => {
+  const pdf = { id: "f-pdf", name: "Factura", mimeType: "application/pdf" };
+  const doc = { id: "f-doc", name: "Acta", mimeType: "application/vnd.google-apps.document" };
+  const otro = { id: "f-otro", name: "Zip", mimeType: "application/zip" };
 
-    const first = (await fns.setGrantedFiles({ data: { files: [pdf, doc] } })) as {
+  it("acumula por id, conserva addedAt y resume los tipos en la integración", async () => {
+    const first = (await fns.addGrantedFiles({ data: { files: [pdf, doc] } })) as {
       ok: boolean;
       count: number;
     };
     expect(first).toEqual({ ok: true, count: 2 });
 
-    const second = (await fns.setGrantedFiles({ data: { files: [pdf, otro] } })) as {
+    const second = (await fns.addGrantedFiles({ data: { files: [pdf, otro] } })) as {
       count: number;
     };
     expect(second.count).toBe(3);
@@ -591,12 +591,66 @@ describe("setGrantedFiles y los grants del Picker", () => {
     );
   });
 
+  it("retirar un archivo lo revoca: deja de leerse y queda en el registro", async () => {
+    await fns.addGrantedFiles({ data: { files: [pdf, doc] } });
+
+    const removed = (await fns.revokeGrantedFile({ data: { id: "f-pdf" } })) as {
+      ok: boolean;
+      revoked: boolean;
+      count: number;
+    };
+    expect(removed).toEqual({ ok: true, revoked: true, count: 1 });
+
+    const grants = (await fns.getGrantedFiles()) as { files: { id: string }[] };
+    expect(grants.files.map((f) => f.id)).toEqual(["f-doc"]);
+
+    // El mismo id que `read_drive_file` compara contra los grants guardados.
+    const drive = await import("./drive.server");
+    const read = await drive.readFile(
+      "f-pdf",
+      grants.files.map((f) => f.id),
+    );
+    expect(read.name).toBe("(sin acceso)");
+    expect(read.content).toBeNull();
+
+    const ws = (await fns.getWorkspace()) as {
+      integrations: { id: string; entities: { name: string; count: number }[] }[];
+    };
+    expect(ws.integrations.find((i) => i.id === "gdrive")!.entities).toEqual([
+      { name: "Documentos", count: 1 },
+    ]);
+
+    const trace = (await activityRows()).filter((r) => r.summary.startsWith("Retirado el acceso"));
+    expect(trace).toHaveLength(1);
+    expect(trace[0]?.type).toBe("Integración");
+    expect(trace[0]?.summary).toContain("Factura");
+  });
+
+  it("retirar un id que no está concedido no cambia nada ni deja traza", async () => {
+    await fns.addGrantedFiles({ data: { files: [doc] } });
+    const before = (await activityRows()).length;
+
+    const out = (await fns.revokeGrantedFile({ data: { id: "f-fantasma" } })) as {
+      ok: boolean;
+      revoked: boolean;
+      count: number;
+    };
+    expect(out).toEqual({ ok: true, revoked: false, count: 1 });
+    const grants = (await fns.getGrantedFiles()) as { files: { id: string }[] };
+    expect(grants.files.map((f) => f.id)).toEqual(["f-doc"]);
+    expect((await activityRows()).length).toBe(before);
+  });
+
   it("rechaza un grant sin id", async () => {
     await expect(
-      fns.setGrantedFiles({
+      fns.addGrantedFiles({
         data: { files: [{ id: "", name: "x", mimeType: "application/pdf" }] },
       }),
     ).rejects.toThrow();
+  });
+
+  it("rechaza revocar sin id", async () => {
+    await expect(fns.revokeGrantedFile({ data: { id: "" } })).rejects.toThrow();
   });
 
   it("sin grants concedidos la lista está vacía", async () => {

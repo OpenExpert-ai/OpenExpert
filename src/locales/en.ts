@@ -253,6 +253,8 @@ export const en: Record<string, string> = {
   "No se pudo conectar Google Drive": "Could not connect Google Drive",
   "Google Drive sincronizado": "Google Drive synced",
   "Google Drive desconectado": "Google Drive disconnected",
+  "Acceso retirado: el Experto ya no puede leer ese archivo.":
+    "Access revoked: the Expert can no longer read that file.",
 
   // --- Local files -----------------------------------------------------------
   "Archivos locales": "Local files",

@@ -41,6 +41,10 @@ necesitas entrar en Google Cloud.
    para que concedas acceso a archivos concretos.
 6. La lista de concesiones se guarda cifrada en `~/.openexpert/drive-grants.json`.
    El chat solo puede buscar/leer/crear/editar dentro de esa lista.
+7. La papelera de un archivo de esa lista **revoca** el acceso: su id sale de
+   `drive-grants.json`, `search_drive` deja de listarlo, `read_drive_file`
+   responde `(sin acceso)` y el cambio queda en el registro de actividad.
+   `Desconectar` revoca todos los archivos de golpe.
 
 ### 2.2 Scopes
 

@@ -118,6 +118,8 @@ disagree, the code is right and the docs are the bug.
   user selects files through the Google Picker.
 - Tokens live AES-256-GCM encrypted in `~/.openexpert/credentials.json`
   (`0600`); the Picker grants live in `~/.openexpert/drive-grants.json`.
+  Quitar un archivo en Ajustes → Fuentes lo revoca (`revokeGrantedFile`): el id
+  sale del fichero y `read_drive_file`/`search_drive` dejan de verlo.
 - Client credentials: `OPENEXPERT_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID` and
   `GOOGLE_CLIENT_SECRET`; Picker: `GOOGLE_PICKER_API_KEY`,
   `GOOGLE_PICKER_APP_ID`. Redirect URI:
@@ -127,8 +129,8 @@ disagree, the code is right and the docs are the bug.
   connecting can be overridden with `OPENEXPERT_PRIVACY_URL`
   ([`PRIVACY.md`](./PRIVACY.md) is canonical).
 - Callback: `src/routes/auth.google.callback.ts`. Server fns: `startDriveAuth`,
-  `getDriveStatus`, `getGrantedFiles`, `setGrantedFiles`, `acceptDriveConsent`,
-  `getClientConfig`. Engine: `src/lib/drive.server.ts`,
+  `getDriveStatus`, `getGrantedFiles`, `addGrantedFiles`, `revokeGrantedFile`,
+  `acceptDriveConsent`, `getClientConfig`. Engine: `src/lib/drive.server.ts`,
   `src/lib/drive-tokens.server.ts`.
 
 ### Local folders (`local`)

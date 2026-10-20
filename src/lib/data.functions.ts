@@ -9,6 +9,7 @@ import { z } from "zod";
 import * as ee from "./ee.server";
 import { EXPERT_DOMAINS } from "./domains";
 import { chatSettings } from "@/lib/config.server";
+import type { DriveGrant } from "@/lib/engine/local-secrets.server";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
@@ -382,22 +383,29 @@ export const acceptDriveConsent = createServerFn({ method: "POST" }).handler(asy
   return { ok: true, ...c };
 });
 
-export const setGrantedFiles = createServerFn({ method: "POST" })
-  .validator((d) =>
-    z
-      .object({
-        files: z
-          .array(
-            z.object({
-              id: z.string().min(1),
-              name: z.string(),
-              mimeType: z.string(),
-            }),
-          )
-          .max(5000),
-      })
-      .parse(d),
-  )
+/** Writes the granted set and mirrors it in the `gdrive` integration row. */
+async function saveGrantedFiles(next: DriveGrant[], now: string): Promise<void> {
+  const local: typeof import("@/lib/engine/local-secrets.server") =
+    await import("@/lib/engine/local-secrets.server");
+  local.saveGrantedFiles(next);
+  const { orm } = await getDb();
+  orm
+    .update(schema.integrations)
+    .set({ connected: true, entities: summarizeGrants(next), lastSync: now })
+    .where(eq(schema.integrations.id, "gdrive"))
+    .run();
+  await persist();
+}
+
+const grantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  mimeType: z.string(),
+});
+
+/** Adds the files picked in Google Picker to the granted set (never replaces it). */
+export const addGrantedFiles = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ files: z.array(grantSchema).max(5000) }).parse(d))
   .handler(async ({ data }) => {
     const local: typeof import("@/lib/engine/local-secrets.server") =
       await import("@/lib/engine/local-secrets.server");
@@ -408,16 +416,35 @@ export const setGrantedFiles = createServerFn({ method: "POST" })
       map.set(f.id, { ...f, addedAt: map.get(f.id)?.addedAt ?? now });
     }
     const next = [...map.values()].slice(-5000);
-    local.saveGrantedFiles(next);
-    const { orm } = await getDb();
-    const entities = summarizeGrants(next);
-    orm
-      .update(schema.integrations)
-      .set({ connected: true, entities, lastSync: now })
-      .where(eq(schema.integrations.id, "gdrive"))
-      .run();
-    await persist();
+    await saveGrantedFiles(next, now);
     return { ok: true, count: next.length };
+  });
+
+/**
+ * Revokes the grant for one file. The id disappears from `drive-grants.json`, so
+ * `read_drive_file`/`search_drive` stop seeing it (they check the stored ids).
+ */
+export const revokeGrantedFile = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ id: z.string().min(1).max(200) }).parse(d))
+  .handler(async ({ data }) => {
+    const local: typeof import("@/lib/engine/local-secrets.server") =
+      await import("@/lib/engine/local-secrets.server");
+    const existing = local.loadGrantedFiles();
+    const target = existing.find((f) => f.id === data.id);
+    if (!target) return { ok: true, revoked: false, count: existing.length };
+    const next = existing.filter((f) => f.id !== data.id);
+    const now = new Date().toISOString();
+    await saveGrantedFiles(next, now);
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Integración",
+      expert_id: "general",
+      status: "ok",
+      summary: `Retirado el acceso a «${target.name}» de Google Drive (${next.length} archivo(s) concedido(s))`,
+      sources: ["Google Drive"],
+    });
+    return { ok: true, revoked: true, count: next.length };
   });
 
 function summarizeGrants(files: { mimeType: string }[]) {
