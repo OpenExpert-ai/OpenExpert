@@ -15,7 +15,10 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/lib/**/*.ts"],
-      exclude: ["src/lib/**/*.d.ts", "src/lib/engine/**"],
+      // `src/lib/engine/**` used to be excluded, so the AES-256-GCM custody of
+      // the OAuth tokens (`local-secrets.server.ts`) was never measured. It is
+      // in scope now that it has its own tests.
+      exclude: ["src/lib/**/*.d.ts"],
       thresholds: {
         statements: 64,
         branches: 56,
