@@ -31,8 +31,8 @@ function appUrl(): string {
  * Does this HTTP response come from the OpenExpert server? Every response
  * carries `x-request-id` (src/server.ts) and the security headers
  * (src/lib/http.server.ts). Any other app squatting the port (an unrelated
- * Express service, a dev server…) must NOT be reused: the window always points
- * at http://localhost:3000 and would show that other app instead ("Cannot GET /").
+ * Express service, a dev server…) must NOT be reused: the window would show
+ * that other app instead ("Cannot GET /").
  */
 export function looksLikeOpenExpert(status: number, headers: Headers): boolean {
   return status < 500 && headers.has("x-request-id") && headers.has("x-frame-options");
@@ -172,9 +172,10 @@ export async function cmdDesktop(cwd = process.cwd()): Promise<number> {
   } else if (probe === "other") {
     console.error(
       `El puerto ${port()} está ocupado por otra aplicación, no por OpenExpert.\n` +
-        `La ventana apunta siempre a ${appUrl()}, así que mostraría esa otra aplicación.\n` +
-        `Mira quién lo ocupa, libéralo (o cambia el puerto de ese programa) y vuelve a intentarlo:\n` +
-        `  ss -ltnp | grep :${port()}     # o: lsof -i :${port()}\n`,
+        `OpenExpert no arranca encima de otro programa. Mira quién lo ocupa y libéralo\n` +
+        `(o elige otro puerto para OpenExpert con PORT):\n` +
+        `  ss -ltnp | grep :${port()}     # o: lsof -i :${port()}\n` +
+        `  PORT=3100 openexpert\n`,
     );
     return 1;
   } else {
@@ -214,8 +215,14 @@ export async function cmdDesktop(cwd = process.cwd()): Promise<number> {
   process.once("SIGTERM", onSignal);
 
   console.log("Abriendo la ventana de OpenExpert…");
+  // The port belongs to this command (it honours PORT), not to the window: the
+  // shell loads OPENEXPERT_DESKTOP_URL instead of the address compiled into the
+  // binary, so `PORT=3100 openexpert` opens 3100 and not 3000.
   const code = await new Promise<number>((resolve) => {
-    const win = spawn(bin, [], { stdio: "inherit", env });
+    const win = spawn(bin, [], {
+      stdio: "inherit",
+      env: { ...env, OPENEXPERT_DESKTOP_URL: appUrl() },
+    });
     win.on("exit", (c) => resolve(c ?? 0));
   });
 

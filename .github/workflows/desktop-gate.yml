@@ -1,0 +1,132 @@
+name: Desktop gate
+
+# Advisory on purpose. These are the checks of the release checklist
+# (docs/en/08-deployment.md §5) that need neither keys nor a Rust build; they
+# report instead of blocking while the rest of the list is still open. When the
+# updater keys exist and the runtime smoke test (block E) is automated, drop
+# `continue-on-error` and make this a required check.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege at the top level; the job repeats `contents: read` because a
+# job-level `permissions:` block replaces this one.
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  gate:
+    name: Desktop gates (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    # Warning mode: a failure shows up in the run and in the annotations, but it
+    # does not stop the pull request.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install desktop-file-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends desktop-file-utils
+
+      # A — one version in the manifest, tauri.conf.json, Cargo.toml, Cargo.lock.
+      # B — bundle.targets coherent with bundle.active, capabilities and windows.
+      # C — icons in the bundle, frontendDist, the 512 icon the launcher installs.
+      - name: A · B · C — versions, configuration and assets
+        run: |
+          if node scripts/check-desktop-config.mjs; then
+            echo "::notice title=Desktop gates::A, B and C pass"
+          else
+            echo "::warning title=Desktop gates::A, B or C has problems (output above); advisory for now"
+          fi
+
+      # D — the installer in a throwaway HOME, twice (idempotence), with a
+      # stand-in for the window binary because this job does not compile Rust.
+      - name: D — installer smoke in a temporary HOME
+        run: |
+          set -euo pipefail
+          sandbox="${RUNNER_TEMP}/desktop-home"
+          rm -rf "${sandbox}"
+          mkdir -p "${sandbox}/home" src-tauri/target/release
+          printf '#!/bin/sh\nexit 0\n' > src-tauri/target/release/openexpert-desktop
+          chmod +x src-tauri/target/release/openexpert-desktop
+
+          HOME="${sandbox}/home" node scripts/install-desktop.mjs --skip-build
+          HOME="${sandbox}/home" node scripts/install-desktop.mjs --check
+          bash -n "${sandbox}/home/.local/bin/openexpert"
+          desktop-file-validate "${sandbox}/home/.local/share/applications/openexpert.desktop"
+
+          sha256sum \
+            "${sandbox}/home/.local/bin/openexpert" \
+            "${sandbox}/home/.local/share/applications/openexpert.desktop" \
+            "${sandbox}/home/.local/share/icons/hicolor/512x512/apps/openexpert.png" \
+            > "${sandbox}/first.sha256"
+          HOME="${sandbox}/home" node scripts/install-desktop.mjs --skip-build
+          sha256sum -c "${sandbox}/first.sha256"
+          echo "::notice title=Desktop gates::D passes (launcher, menu entry, 512 icon, idempotence)"
+
+      # D — the case that went unnoticed for three days on a real machine: a
+      # launcher that exists, is executable and runs a file that no longer does.
+      - name: D — a dead launcher must fail the check
+        run: |
+          set -euo pipefail
+          sandbox="${RUNNER_TEMP}/desktop-home"
+          launcher="${sandbox}/home/.local/bin/openexpert"
+          cp "${launcher}" "${sandbox}/good-launcher"
+          printf '#!/usr/bin/env bash\nexec "/usr/bin/node" "/gone/packages/opencore/bin/opencore.js" desktop "$@"\n' > "${launcher}"
+          chmod +x "${launcher}"
+          if HOME="${sandbox}/home" node scripts/install-desktop.mjs --check; then
+            echo "::warning title=Desktop gates::a launcher that runs a missing file passed --check"
+          else
+            echo "::notice title=Desktop gates::D also catches the pre-rename launcher"
+          fi
+          cp "${sandbox}/good-launcher" "${launcher}"
+
+      # The launcher opens the window only with no arguments; `doctor`, `fix`,
+      # `init`, `serve` and `version` must reach the CLI instead. The CLI is
+      # replaced by a stub here, so this measures routing and nothing else.
+      - name: D — subcommands do not open the window
+        run: |
+          set -euo pipefail
+          home="${RUNNER_TEMP}/desktop-home/home"
+          launcher="${home}/.local/bin/openexpert"
+          stub="${RUNNER_TEMP}/stub-cli.mjs"
+          printf 'console.log("STUB", process.argv.slice(2).join(" "));\n' > "${stub}"
+          sed "s|\"${GITHUB_WORKSPACE}/packages/openexpert/bin/openexpert.js\"|\"${stub}\"|g" \
+            "${launcher}" > "${RUNNER_TEMP}/launcher-stub"
+
+          run_it() {
+            rm -f "${home}/.openexpert/desktop.log"
+            HOME="${home}" bash "${RUNNER_TEMP}/launcher-stub" "$@" > "${RUNNER_TEMP}/out" 2>&1 || true
+            cat "${RUNNER_TEMP}/out" 2>/dev/null || true
+            cat "${home}/.openexpert/desktop.log" 2>/dev/null || true
+          }
+
+          test "$(run_it)" = "STUB desktop"
+          test "$(run_it version)" = "STUB version"
+          test "$(run_it doctor --verbose)" = "STUB doctor --verbose"
+          echo "::notice title=Desktop gates::D routes subcommands to the CLI and only opens the window with no arguments"
+
+      - name: E · F · G — not automated yet
+        run: |
+          echo "::notice title=Desktop gates::E (runtime smoke under Xvfb) and F (glibc, ldd, objdump of the binary) need a Rust build, which this advisory job skips."
+          echo "::notice title=Desktop gates::G (cargo audit, signed artefacts, attest-build-provenance) needs the updater key pair; see docs/en/08-deployment.md section 5."
+
+      - name: H — documentation links
+        run: node scripts/check-docs.mjs

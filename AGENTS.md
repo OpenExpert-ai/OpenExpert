@@ -173,7 +173,25 @@ Drive and local folders in `src/lib/office.server.ts`.
   (`packages/openexpert/src/cli/desktop.ts`), which starts/reuses the Node server
   and stops it when the window closes. `scripts/install-desktop.mjs` installs a
   per-user `openexpert` launcher, `.desktop` entry and icon;
-  `scripts/uninstall-desktop.mjs` removes them.
+  `scripts/uninstall-desktop.mjs` removes them. `install.sh` delegates in that
+  script instead of generating its own copies, and `--doctor` /
+  `npm run desktop:check` fail on a launcher whose `exec` target no longer exists.
+  The launcher opens the window only with no argument: any subcommand (`doctor`,
+  `fix`, `init`, `serve`, `version`) runs the CLI and never starts the GUI.
+- **The window follows the port.** The window URL is not the one compiled into
+  the binary: `openexpert desktop` exports `OPENEXPERT_DESKTOP_URL` and the shell
+  navigates to it (`src-tauri/src/main.rs`), so `PORT=3100 openexpert` opens 3100. `build.frontendDist` is `src-tauri/fallback/` (one page, no web app
+  embedded: the server serves it); `bundle.targets` is `all`, so
+  `npm run desktop:build` really produces `.deb`/`.rpm`/AppImage.
+- **One version, three copies.** `packages/openexpert/package.json` is the source;
+  `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and the `openexpert-desktop`
+  entry in `src-tauri/Cargo.lock` are written by
+  `npm run desktop:sync-version` (`-- --check` verifies them). `version-packages`
+  runs it, `install.sh` refuses to build when they diverge and
+  `.github/workflows/desktop-gate.yml` reports it. A bump touches all three.
+- **No updater.** There is no `tauri-plugin-updater`, no `createUpdaterArtifacts`
+  and no key: updating the window means rebuilding and reinstalling it. What is
+  missing is listed in `docs/en/08-deployment.md` §5.
 
 ## 8. Repository layout and tooling
 

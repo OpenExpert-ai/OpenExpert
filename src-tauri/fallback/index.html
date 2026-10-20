@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  The desktop shell loads the local OpenExpert server over HTTP
+  (OPENEXPERT_DESKTOP_URL, set by `openexpert desktop`), so it does not embed
+  the web app. This directory is only what Tauri needs to have "web assets"
+  at build time: an entry point for the case where the window is opened
+  without the orchestrator, instead of a blank page.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>OpenExpert</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0b0b0c;
+        color: #e7e7ea;
+        display: grid;
+        place-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      main {
+        max-width: 34rem;
+        line-height: 1.6;
+        padding: 2rem;
+      }
+      code {
+        background: #1b1b1f;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+      }
+      p + p {
+        color: #a9a9b3;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>OpenExpert</h1>
+      <p>
+        La ventana no ha cargado el servidor local. Arráncala con
+        <code>openexpert</code> (o <code>openexpert desktop</code>): ese comando levanta el servidor
+        y abre esta ventana en el puerto correcto.
+      </p>
+      <p>
+        The window did not reach the local server. Start it with
+        <code>openexpert</code>: that command runs the server and opens this window on the right
+        port.
+      </p>
+    </main>
+  </body>
+</html>
