@@ -121,6 +121,31 @@ describe("cmdDesktop", () => {
     // The reused server must not be killed on shutdown (we did not start it).
   });
 
+  it("tells the window which port it serves instead of the compiled 3000", async () => {
+    // `PORT=3100 openexpert`: the window used to load http://localhost:3000 no
+    // matter what the CLI served, so it showed a blank page (or another app).
+    vi.stubEnv("PORT", "3100");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("", { status: 200, headers: OPENEXPERT_HEADERS })),
+    );
+    spawnMock.mockImplementation((cmd: string) => {
+      const c = fakeChild();
+      if (cmd === binPath) process.nextTick(() => (c as unknown as EventEmitter).emit("exit", 0));
+      return c;
+    });
+
+    expect(await cmdDesktop(cwd)).toBe(0);
+    expect(logs.join("\n")).toContain("Usando el servidor ya activo en http://localhost:3100");
+    expect(spawnMock).toHaveBeenLastCalledWith(
+      binPath,
+      [],
+      expect.objectContaining({
+        env: expect.objectContaining({ OPENEXPERT_DESKTOP_URL: "http://localhost:3100" }),
+      }),
+    );
+  });
+
   it("starts the standalone server when nothing is listening, then opens the window", async () => {
     const app = join(home, "app");
     mkdirSync(join(app, ".output", "server"), { recursive: true });

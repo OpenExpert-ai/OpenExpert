@@ -100,12 +100,9 @@ done
 # ── entorno de referencia ────────────────────────────────────────────────────
 HOME_DIR="${HOME:?HOME no está definido}"
 BIN_DIR="$HOME_DIR/.local/bin"
-APPS_DIR="$HOME_DIR/.local/share/applications"
-ICON_DIR="$HOME_DIR/.local/share/icons/hicolor/512x512/apps"
-HICOLOR_DIR="$HOME_DIR/.local/share/icons/hicolor"
-LAUNCHER="$BIN_DIR/openexpert"
-DESKTOP_FILE="$APPS_DIR/openexpert.desktop"
-ICON_FILE="$ICON_DIR/openexpert.png"
+# Las otras tres piezas (binario de la ventana, entrada de menú e icono) las
+# escribe y comprueba scripts/install-desktop.mjs; aquí solo se informa de ellas.
+DESKTOP_FILE="$HOME_DIR/.local/share/applications/openexpert.desktop"
 DATA_DIR="$HOME_DIR/.openexpert"
 XDG_CONFIG="${XDG_CONFIG_HOME:-$HOME_DIR/.config}"
 ROFI_CONF="$XDG_CONFIG/rofi/config.rasi"
@@ -221,6 +218,16 @@ if [ "$NODE_OK" = 0 ]; then
 fi
 [ "$NPM_OK" = 1 ] || die "hace falta npm ≥11 (tienes v${NPM_MAJOR:-ninguno}). Actualiza: npm i -g npm@latest"
 
+# Una sola versión: el manifiesto del paquete manda y `tauri.conf.json`,
+# `Cargo.toml` y `Cargo.lock` son copias que escribe el script de sincronización.
+# Si divergen, el .deb y el binario saldrían con números distintos.
+if ! VERSION_CHECK="$(node "$REPO/scripts/sync-desktop-version.mjs" --check 2>&1)"; then
+  printf '%s\n' "$VERSION_CHECK" >&2
+  die "las versiones del escritorio no coinciden con packages/openexpert/package.json.
+       Ejecuta: npm run desktop:sync-version   (o node scripts/sync-desktop-version.mjs)"
+fi
+ok "versión del escritorio sincronizada con packages/openexpert/package.json"
+
 if [ "$SKIP_BUILD" = 0 ] && [ "$RUST_OK" = 0 ]; then
   die "falta el toolchain de Rust para compilar la ventana. Instálalo: curl https://sh.rustup.rs -sSf | sh
        (o usa ./install.sh --skip-build si ya tienes el binario compilado)"
@@ -292,46 +299,11 @@ if [ "$DOCTOR" = 0 ]; then
 
   # ── 4. publicar el comando y la entrada de menú ────────────────────────────
   step "Publicando el comando y la entrada de menú"
+  # Un solo camino: scripts/install-desktop.mjs escribe el lanzador, el binario,
+  # la entrada de menú y el icono, y comprueba lo que ha escrito. Este script no
+  # los vuelve a generar: las dos copias ya divergieron una vez.
   ( cd "$REPO" && node scripts/install-desktop.mjs --skip-build ) \
     || die "el instalador del repo (scripts/install-desktop.mjs) ha fallado"
-  ok "scripts/install-desktop.mjs"
-
-  # El lanzador lo genera el repo; si faltara, lo recreo con las rutas de ESTE clon.
-  if [ ! -x "$LAUNCHER" ]; then
-    mkdir -p "$BIN_DIR"
-    NODE_BIN="$(command -v node)"
-    # Escritura atómica: sobre un lanzador en ejecución, escribir encima da ETXTBSY.
-    TMP_LAUNCHER="$LAUNCHER.new-$$"
-    printf '#!/usr/bin/env bash\n# SPDX-License-Identifier: MIT\nexport OPENEXPERT_DESKTOP_REPO="%s"\nmkdir -p "$HOME/.openexpert" 2>/dev/null || true\ncd "%s" 2>/dev/null || true\nif [ -t 1 ]; then\n  exec "%s" "%s/packages/openexpert/bin/openexpert.js" desktop "$@"\nelse\n  exec "%s" "%s/packages/openexpert/bin/openexpert.js" desktop "$@" >>"$HOME/.openexpert/desktop.log" 2>&1\nfi\n' \
-      "$REPO" "$REPO" "$NODE_BIN" "$REPO" "$NODE_BIN" "$REPO" > "$TMP_LAUNCHER"
-    chmod 755 "$TMP_LAUNCHER"
-    mv -f "$TMP_LAUNCHER" "$LAUNCHER"
-    warn "he recreado el lanzador a mano"
-  fi
-  ok "lanzador: $LAUNCHER"
-
-  # La entrada de menú debe apuntar al lanzador por ruta absoluta (rofi/systemd no usan tu PATH).
-  mkdir -p "$APPS_DIR"
-  SRC_DESKTOP="$REPO/src-tauri/OpenExpert.desktop"
-  [ -f "$SRC_DESKTOP" ] || die "no encuentro $SRC_DESKTOP"
-  sed -e "s|^Exec=.*|Exec=$LAUNCHER|" -e "s|^TryExec=.*|TryExec=$LAUNCHER|" \
-      -e "s|^Icon=.*|Icon=openexpert|" "$SRC_DESKTOP" > "$DESKTOP_FILE"
-  if ! grep -q '^TryExec=' "$DESKTOP_FILE"; then
-    sed -i "\|^Exec=.*|a TryExec=$LAUNCHER" "$DESKTOP_FILE"
-  fi
-  chmod 644 "$DESKTOP_FILE"
-  ok "entrada de menú: $DESKTOP_FILE"
-
-  ICON_SRC="$REPO/public/icon-source.png"
-  if [ -f "$ICON_SRC" ]; then
-    mkdir -p "$ICON_DIR"
-    cp -f "$ICON_SRC" "$ICON_FILE"
-    chmod 644 "$ICON_FILE"
-    ok "icono: $ICON_FILE"
-  else
-    warn "no encuentro $ICON_SRC (la entrada saldrá sin icono)"
-  fi
-
   mkdir -p "$DATA_DIR"
 fi
 
@@ -368,63 +340,20 @@ fi
 # ── 6. verificación (y rofi) ─────────────────────────────────────────────────
 step "Verificación"
 
-# 6.1 el comando existe y es ejecutable
-if [ -x "$LAUNCHER" ]; then
-  ok "comando: $LAUNCHER"
+# 6.1 las cuatro piezas instaladas y de verdad utilizables: el comando que
+# existe pero ejecuta un fichero que ya no está cuenta como roto (el lanzador
+# anterior al rename apuntaba a packages/opencore y este script lo daba por
+# bueno). Quien sabe cómo se generan —scripts/install-desktop.mjs— es quien las
+# comprueba: bash -n, que el fichero tras exec exista, Exec/TryExec, icono 512.
+if CHECK_OUT="$(node "$REPO/scripts/install-desktop.mjs" --check 2>&1)"; then
+  printf '%s\n' "$CHECK_OUT"
+  ok "lanzador, ventana, entrada de menú e icono"
 else
-  fail "no existe el comando $LAUNCHER"
+  printf '%s\n' "$CHECK_OUT" >&2
+  fail "la instalación no se valida; corrige lo anterior o repite sin --doctor"
 fi
 
-# 6.2 el lanzador apunta a este clon (no a otro usuario/ruta)
-if [ -f "$LAUNCHER" ]; then
-  if grep -qF "\"$REPO\"" "$LAUNCHER"; then
-    ok "el lanzador apunta a $REPO"
-  else
-    fail "el lanzador NO apunta a este clon; revisa $LAUNCHER"
-  fi
-fi
-
-# 6.3 binario de la ventana donde el CLI lo busca
-if [ -x "$BIN_DIR/openexpert-desktop" ]; then
-  ok "ventana: $BIN_DIR/openexpert-desktop"
-elif [ -x "$REPO/src-tauri/target/release/openexpert-desktop" ]; then
-  warn "la ventana solo está en el repo (sin copiar a ~/.local/bin): ejecuta sin --skip-build"
-else
-  fail "no hay binario de ventana compilado"
-fi
-
-# 6.4 entrada de menú válida y ejecutable
-if [ -f "$DESKTOP_FILE" ]; then
-  if have desktop-file-validate; then
-    VALIDATE_OUT="$(desktop-file-validate "$DESKTOP_FILE" 2>&1)" && VALIDATE_RC=0 || VALIDATE_RC=$?
-    if [ "$VALIDATE_RC" = 0 ]; then
-      ok "entrada .desktop válida"
-      [ -n "$VALIDATE_OUT" ] && info "$VALIDATE_OUT"
-    else
-      fail "desktop-file-validate rechaza $DESKTOP_FILE"
-      printf '%s\n' "$VALIDATE_OUT" >&2
-    fi
-  else
-    ok "entrada .desktop presente (sin desktop-file-validate para validarla)"
-  fi
-  EXEC_PATH="$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' "$DESKTOP_FILE" | head -1)"
-  if [ -x "$EXEC_PATH" ]; then ok "Exec → $EXEC_PATH"; else fail "Exec apunta a algo que no existe: $EXEC_PATH"; fi
-  TRY_PATH="$(sed -n 's/^TryExec=\(.*\)/\1/p' "$DESKTOP_FILE" | head -1)"
-  if [ -n "$TRY_PATH" ] && [ ! -x "$TRY_PATH" ]; then
-    fail "TryExec apunta a algo que no existe: $TRY_PATH (rofi ocultaría la entrada)"
-  fi
-else
-  fail "no existe $DESKTOP_FILE"
-fi
-
-# 6.5 icono
-if [ -f "$ICON_FILE" ]; then ok "icono: $ICON_FILE"; else warn "falta el icono $ICON_FILE"; fi
-
-# 6.6 cachés de menú/iconos
-if have update-desktop-database; then update-desktop-database "$APPS_DIR" 2>/dev/null && ok "caché de menús actualizada" || warn "update-desktop-database devolvió un error"; fi
-if have gtk-update-icon-cache; then gtk-update-icon-cache -f -t "$HICOLOR_DIR" >/dev/null 2>&1 && ok "caché de iconos actualizada" || warn "gtk-update-icon-cache devolvió un error"; fi
-
-# 6.7 lanzadores: cualquier menú (rofi, wofi, fuzzel, GNOME, KDE…) lee
+# 6.2 lanzadores: cualquier menú (rofi, wofi, fuzzel, GNOME, KDE…) lee
 # ~/.local/share/applications, así que la entrada sirve en todos; aquí se
 # comprueba el que tengas y se refresca su caché si hace falta.
 step "Lanzadores de aplicaciones"
@@ -471,12 +400,18 @@ if [ "$LAUNCHERS" = 0 ]; then
 fi
 
 # ── resumen ──────────────────────────────────────────────────────────────────
+SUMMARY_NOUN="Instalación"
+SUMMARY_DONE="Instalación completada"
+if [ "$DOCTOR" = 1 ]; then
+  SUMMARY_NOUN="Diagnóstico"
+  SUMMARY_DONE="Diagnóstico completado"
+fi
 printf '\n%s────────────────────────────────────────%s\n' "$C_DIM" "$C_0"
 if [ "$FAILURES" -gt 0 ]; then
-  printf '%sInstalación con %s problema(s) y %s aviso(s).%s\n' "$C_ERR" "$FAILURES" "$WARNINGS" "$C_0"
+  printf '%s%s con %s problema(s) y %s aviso(s).%s\n' "$C_ERR" "$SUMMARY_NOUN" "$FAILURES" "$WARNINGS" "$C_0"
   exit 1
 fi
-printf '%s✓ Instalación completada%s' "$C_OK" "$C_0"
+printf '%s✓ %s%s' "$C_OK" "$SUMMARY_DONE" "$C_0"
 if [ "$WARNINGS" -gt 0 ]; then
   printf ' con %s aviso(s)' "$WARNINGS"
 fi
@@ -489,6 +424,11 @@ cat <<EOF
 
   Si acabas de añadir ~/.local/bin al PATH, abre un terminal nuevo (o: exec \$SHELL -l).
   Si la ventana sale en blanco en Wayland: WEBKIT_DISABLE_DMABUF_RENDERER=1 openexpert
-  Ojo: 'openexpert' siempre abre la ventana (el lanzador añade el subcomando desktop).
-  Para los subcomandos del CLI sin ventana: cd $REPO && npm run openexpert:doctor
+
+  'openexpert' sin argumentos abre la ventana. Los subcomandos no abren interfaz:
+    openexpert doctor     revisa la configuración
+    openexpert fix        auto-configura lo que falte
+    openexpert init       asistente de configuración
+    openexpert version    versión instalada
+  Otro puerto: PORT=3100 openexpert   (la ventana carga el puerto que sirve el comando)
 EOF

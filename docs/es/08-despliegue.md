@@ -66,6 +66,57 @@ base de datos. Importar una copia reemplaza los datos actuales.
 - Código: `git pull` / reinstala el paquete y reconstruye.
 - Servidor descargado: `npx @openexpert/openexpert update`.
 
+### La ventana de escritorio no tiene actualizador (decisión, no descuido)
+
+`tauri.conf.json` no declara `plugins.updater`, no hay
+`bundle.createUpdaterArtifacts` y `tauri-plugin-updater` no es una dependencia:
+una instalación de escritorio se actualiza recompilándola y reinstalándola desde
+el repositorio.
+
+```sh
+git pull && npm ci && npm run desktop:install
+```
+
+El servidor y la ventana son mitades independientes y no hay saludo de versión
+entre ellas: una ventana instalada hace semanas sigue cargando lo que sirva el
+servidor, así que un `git pull` que toque `src-tauri/` pide reinstalar la ventana
+(y solo la ventana).
+
+Para tener actualizaciones automáticas hace falta, como mínimo:
+
+| Pieza                                                                            | Dónde va                                        |
+| -------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Un par de claves (`npx tauri signer generate -w ~/.tauri/openexpert.key`)        | clave pública → `plugins.updater.pubkey`        |
+| La clave privada y su contraseña                                                 | secretos del CI, nunca el repositorio           |
+| `bundle.createUpdaterArtifacts: true`                                            | `src-tauri/tauri.conf.json`                     |
+| `tauri-plugin-updater` y `.plugin(tauri_plugin_updater::Builder::new().build())` | `src-tauri/Cargo.toml`, `src-tauri/src/main.rs` |
+| `plugins.updater.endpoints` apuntando a un manifiesto estático                   | `tauri.conf.json`, publicado con cada release   |
+| Un paso que firme los artefactos                                                 | `.github/workflows/release.yml`                 |
+
+Nada de esto se puede rellenar desde el repositorio: el par de claves se genera
+una vez y lo guarda quien publica, y la clave pública tiene que coincidir con
+ella. Mientras no exista, `.github/workflows/desktop-gate.yml` avisa de lo que
+falta en cada pull request sin bloquearlo.
+
+### Lista de comprobación antes de publicar la cáscara
+
+Ocho bloques y qué los comprueba hoy:
+
+| Bloque                    | Qué revisa                                                                                                                 | Dónde                                              |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| A · Identidad y versiones | una versión en el manifiesto, `tauri.conf.json`, `Cargo.toml` y `Cargo.lock`                                               | `npm run desktop:sync-version -- --check` (puerta) |
+| B · Configuración         | `bundle.targets` coherente con `bundle.active`; cada ventana tiene capability; sin `remote`                                | `scripts/check-desktop-config.mjs` (puerta)        |
+| C · Assets y frontend     | cada icono del bundle existe, es cuadrado y hay uno de 512; `frontendDist` existe con entrada                              | `scripts/check-desktop-config.mjs` (puerta)        |
+| D · Instalador            | instalar en un `HOME` temporal, dos veces (idempotencia), `bash -n`, `desktop-file-validate`, un lanzador muerto falla     | `desktop-gate.yml`                                 |
+| E · Humo de ejecución     | el servidor responde en un puerto libre; la ventana arranca bajo Xvfb; puerto ocupado sale ≠0; `PORT=3100` sigue al puerto | **sin automatizar**: hace falta compilar Rust      |
+| F · Compatibilidad        | techo de `GLIBC_*` con `objdump`, `ldd` sin «not found», `.deb` construido en `ubuntu:22.04`                               | **sin automatizar**                                |
+| G · Cadena de suministro  | `cargo audit`, `npm audit`, artefactos firmados, `attest-build-provenance`                                                 | **bloqueado por el par de claves del updater**     |
+| H · Documentación         | `npm run check:docs`; que los comandos documentados hagan lo que dicen                                                     | `check:docs` en el CI, y los tests del CLI         |
+
+`desktop-gate.yml` ejecuta A–D y H con `continue-on-error: true` a nivel de job:
+un fallo se ve en la ejecución y en las anotaciones, pero no bloquea el pull
+request. Quita esa marca cuando E y G dejen de ser manuales.
+
 ## 6. Aplicación de escritorio (Linux)
 
 OpenExpert puede ejecutarse como una ventana nativa (Tauri + WebKitGTK) que se
@@ -78,7 +129,9 @@ ventana y detiene el servidor cuando la ventana se cierra.
 
 Requisitos para compilar la ventana: Node.js, un toolchain de Rust y las
 librerías de desarrollo de WebKitGTK 4.1 (`webkit2gtk-4.1`, `libsoup-3.0`,
-`gtk3`).
+`gtk3`). El suelo práctico es Ubuntu 22.04 / Debian 12: son las versiones más
+antiguas con `libwebkit2gtk-4.1` y glibc 2.35 o superior, y el CI construye el
+`.deb` sobre `ubuntu-latest`.
 
 ```sh
 npm run desktop:install     # compila la app + la ventana e instala el lanzador
@@ -97,14 +150,69 @@ Qué instala:
 `npm run desktop:uninstall` los elimina. Si la ventana sale en blanco en
 Wayland, lánzala con `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
+`install.sh`, en la raíz del repositorio, instala las mismas cuatro piezas:
+delega en `scripts/install-desktop.mjs` en vez de generar copias propias, y los
+dos caminos comprueban el resultado — el lanzador tiene que ser bash válido, el
+fichero que ejecuta tiene que existir, `Exec`/`TryExec` tienen que apuntar a
+ejecutables y el icono tiene que ser de 512×512. `npm run desktop:check` hace esa
+misma comprobación por su cuenta (sale con código distinto de cero si el lanzador
+está muerto, que es lo que informa `install.sh --doctor`).
+
+La ventana carga la URL que sirve el comando, no un puerto compilado dentro del
+binario: `openexpert desktop` exporta `OPENEXPERT_DESKTOP_URL` y la cáscara
+navega a ella, así que `PORT=3100 openexpert` abre 3100. Sin esa variable —un
+binario lanzado directamente desde un paquete— la ventana vuelve a
+`http://localhost:3000`.
+
+`openexpert` **sin argumentos** abre la ventana; cualquier subcomando ejecuta el
+CLI y no arranca la interfaz gráfica:
+
+| Comando              | Qué hace                                               |
+| -------------------- | ------------------------------------------------------ |
+| `openexpert`         | arranca el servidor y abre la ventana                  |
+| `openexpert doctor`  | revisa la configuración (sin ventana)                  |
+| `openexpert fix`     | escribe lo que falte en la configuración (sin ventana) |
+| `openexpert init`    | asistente de configuración (sin ventana)               |
+| `openexpert serve`   | solo el servidor, para un navegador                    |
+| `openexpert version` | la versión instalada                                   |
+
+La cáscara no lleva interfaz embebida: `build.frontendDist` apunta a
+`src-tauri/fallback/`, una única página estática que solo aparece si se abre la
+ventana sin el orquestador y explica cómo arrancar el servidor. La aplicación web
+siempre la sirve por HTTP el servidor local, así que los 1,7 MB de
+`.output/public` no van dentro del binario.
+
+### Una sola versión para la cáscara
+
+La versión del producto es `packages/openexpert/package.json`. Rust no puede leer
+un manifiesto JSON, así que tres ficheros llevan una copia —
+`src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` y la entrada
+`openexpert-desktop` de `src-tauri/Cargo.lock` — y esta es la única forma
+soportada de subirlas:
+
+```sh
+npm run desktop:sync-version              # escribe las tres copias
+npm run desktop:sync-version -- --check   # distinto de cero si han divergido
+```
+
+`npm run version-packages` lo ejecuta después de `changeset version`, así que el
+pull request de release ya lleva los tres ficheros, e `install.sh` se niega a
+compilar cuando divergen. Un cambio de versión a mano tiene que tocar los tres.
+
 ### Paquetes distribuibles (deb, rpm, AppImage)
 
 El lanzador por usuario de arriba es la vía recomendada en Linux. Para generar
 paquetes:
 
 ```sh
-npx tauri build --bundles deb,rpm,appimage   # -> src-tauri/target/release/bundle/
+npm run desktop:build                # -> src-tauri/target/release/bundle/
+npx tauri build --bundles deb        # o un objetivo cada vez
 ```
+
+`bundle.targets` es `"all"`, así que `desktop:build` genera todos los paquetes
+que soporte la plataforma (`.deb`, `.rpm` y AppImage en Linux) en vez de terminar
+en verde sin nada que publicar. Compilar la ventana ya no necesita `npm run build`
+antes: la cáscara no lleva la aplicación web dentro.
 
 La primera ejecución descarga las utilidades de empaquetado de Tauri (linuxdeploy,
 AppRun). Estos paquetes llevan **solo la ventana** y su entrada de menú ejecuta
