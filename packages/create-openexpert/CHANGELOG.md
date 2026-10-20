@@ -1,5 +1,14 @@
 # create-openexpert
 
+## 0.2.1
+
+### Patch Changes
+
+- 7843cf6: La plantilla usa la imagen publicada. El `docker-compose.yml` que genera
+  `npm create openexpert` apuntaba a `ghcr.io/openexpert-ai/openexpert:local`, una
+  etiqueta que el registro nunca publica (solo `latest`, la versión y el sha), así
+  que `docker compose up -d` fallaba en un proyecto recién creado.
+
 ## 0.2.0
 
 ### Minor Changes

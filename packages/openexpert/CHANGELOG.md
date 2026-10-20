@@ -1,5 +1,36 @@
 # @openexpert/openexpert
 
+## 0.5.1
+
+### Patch Changes
+
+- 2cc57a0: Escritorio: el lanzador ya no inyecta `desktop` en todos los comandos, así que
+  `openexpert doctor`, `fix`, `init`, `serve` y `version` ejecutan el CLI sin abrir
+  la ventana (solo `openexpert` sin argumentos, o `openexpert desktop`, arranca la
+  interfaz). La ventana carga el puerto que sirve el comando (`PORT=3100`) en vez
+  del 3000 compilado en el binario, y el instalador comprueba lo que escribe: un
+  lanzador que ejecuta un fichero que ya no existe falla en vez de darse por bueno.
+  Una sola versión manda: `npm run desktop:sync-version` escribe
+  `tauri.conf.json`, `Cargo.toml` y `Cargo.lock` desde el manifiesto del paquete.
+- cbefb87: Cierra las rutas de fallo que dejaban la instalación muerta, colgada o sin rastro: la base de datos
+  se reintenta tras un arranque fallido (antes quedaba envenenada hasta reiniciar), una copia de
+  seguridad se valida antes de sustituir nada y deja la anterior en `openexpert.db.bak` con vuelta
+  atrás, una `secret.key` dañada falla en voz alta en vez de regenerarse encima de los tokens, los
+  patrones de inyección con cuantificadores anidados se rechazan (congelaban el servidor 59 s con 29
+  caracteres), las llamadas a Drive y Notion llevan timeout, los fallos del registro de auditoría se
+  registran con contexto y `run_python` ya no bloquea el bucle de eventos.
+- 295634b: `run_python` deja de tener red: el script se ejecuta dentro de un espacio de nombres
+  aislado (`bubblewrap`; si no está, `unshare -n`) y, cuando el sistema no puede crear
+  ninguno, la herramienta se niega a ejecutar. Con `bubblewrap` tampoco ve el resto del
+  disco. La descripción de la herramienta y la documentación dicen ahora exactamente eso.
+
+  El despliegue Docker publica la app y Ollama solo en `127.0.0.1`, porque el panel no
+  tiene login, y queda escrito en el compose y en `docker/README.md`.
+
+  El control de origen de `/api/*` valida el `Host` y el `Origin` contra los hosts que el
+  servidor sirve, no contra el `Host` de la petición: cierra el DNS rebinding. Un `POST`
+  sin `Origin` ya no se da por bueno.
+
 ## 0.5.0
 
 ### Minor Changes
