@@ -53,8 +53,11 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 
 ## 5. Backups
 
-Copy `OPENEXPERT_DATA_DIR` (it contains `openexpert.db`, `credentials.json` and
-`secrets.json`). Keep the copy secure: it holds your tokens.
+Copy `OPENEXPERT_DATA_DIR`. It holds `openexpert.db`, `secrets.json`,
+`credentials.json`, `drive-grants.json`, `local-roots.json`, `notion.json`,
+`secret.key`, `state-secret` and `state-secret-notion`. `openexpert.json` lives
+in the directory the app is started from, so copy that one too. Keep the copy
+secure: it holds your tokens and the keys that decrypt and sign them.
 
 ## References
 

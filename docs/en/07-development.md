@@ -26,17 +26,23 @@ script), so the CLI is ready.
 
 Documented in `.env.example`. The essentials:
 
-| Variable                                                                                | Function                                                                    |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go` |
-| `OPENEXPERT_MODEL_ID`                                                                   | Model identifier                                                            |
-| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | One key per provider: Gemini, Claude, OpenCode Go and your own endpoint     |
-| `OPENEXPERT_BASE_URL`                                                                   | Endpoint of `openai-compatible`, which is the only one you provide          |
-| `OLLAMA_BASE_URL`                                                                       | Ollama endpoint                                                             |
-| `OPENEXPERT_DATA_DIR`                                                                   | Data directory (default `~/.openexpert/`)                                   |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                                             | Drive OAuth (optional)                                                      |
-| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET`                                     | Drive OAuth (optional)                                                      |
-| `PUBLIC_APP_URL`                                                                        | Public origin used to build the Drive redirect URI                          |
+| Variable                                                                                | Function                                                                        |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `OPENEXPERT_MODEL_PROVIDER`                                                             | `ollama` \| `google` \| `anthropic` \| `openai-compatible` \| `opencode-go`     |
+| `OPENEXPERT_MODEL_ID`                                                                   | Model identifier                                                                |
+| `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` / `OPENCODE_GO_API_KEY` / `OPENEXPERT_MODEL_KEY` | One key per provider: Gemini, Claude, OpenCode Go and your own endpoint         |
+| `OPENEXPERT_BASE_URL`                                                                   | Endpoint of `openai-compatible`, which is the only one you provide              |
+| `OLLAMA_BASE_URL`                                                                       | Ollama endpoint                                                                 |
+| `OPENEXPERT_DATA_DIR`                                                                   | Data directory (default `~/.openexpert/`)                                       |
+| `GOOGLE_CLIENT_ID` / `OPENEXPERT_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`             | Drive OAuth (optional)                                                          |
+| `GOOGLE_REDIRECT_URI` / `GOOGLE_OAUTH_STATE_SECRET`                                     | Drive OAuth (optional)                                                          |
+| `GOOGLE_PICKER_API_KEY` / `GOOGLE_PICKER_APP_ID`                                        | Google Picker: the in-browser Drive file selector                               |
+| `PUBLIC_APP_URL`                                                                        | Public origin used to build the Drive redirect URI                              |
+| `OPENEXPERT_PRIVACY_URL`                                                                | Privacy-policy URL shown before activating Drive                                |
+| `OPENEXPERT_NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET`                                  | Notion OAuth (optional)                                                         |
+| `NOTION_REDIRECT_URI` / `NOTION_OAUTH_STATE_SECRET`                                     | Notion OAuth (optional)                                                         |
+| `OPENEXPERT_HOST` / `HOST` / `PORT`                                                     | Interface and port the local server binds (loopback and 3000 by default)        |
+| `OPENEXPERT_LOG_LEVEL`                                                                  | `debug` \| `info` \| `warn` \| `error` (default: `debug`, `info` in production) |
 
 `.env` is git-ignored. The CLI wizard stores secrets in
 `~/.openexpert/secrets.json`, which the server loads into the environment at
@@ -63,21 +69,27 @@ in `src/locales/en.ts` (Spanish is the source language).
 
 ## 4. Scripts
 
-| Script                            | Function                               |
-| --------------------------------- | -------------------------------------- |
-| `npm run dev`                     | Dev server on port **3000** (fixed)    |
-| `npm run build`                   | Production build (Nitro `node-server`) |
-| `npm run preview`                 | Serve the build                        |
-| `npm run lint` / `lint:fix`       | ESLint                                 |
-| `npm run format` / `format:check` | Prettier                               |
-| `npm run typecheck`               | TypeScript without emit                |
-| `npm run test:run`                | Tests (app + package)                  |
-| `npm run openexpert:doctor`       | CLI diagnostics                        |
-| `npm run openexpert:serve`        | Boot the app through the CLI           |
-| `npm run license:check`           | Verify SPDX headers                    |
-| `npm run test:coverage`           | Tests with coverage thresholds         |
-| `npm run check:docs`              | Documentation links                    |
-| `npm run check:commits`           | DCO + Conventional Commits (CI)        |
+| Script                            | Function                                      |
+| --------------------------------- | --------------------------------------------- |
+| `npm run dev`                     | Dev server on port **3000** (fixed)           |
+| `npm run build`                   | Production build (Nitro `node-server`)        |
+| `npm run preview`                 | Serve the build                               |
+| `npm run lint` / `lint:fix`       | ESLint                                        |
+| `npm run format` / `format:check` | Prettier                                      |
+| `npm run typecheck`               | TypeScript without emit                       |
+| `npm run test:run` / `npm test`   | Tests (app + package)                         |
+| `npm run openexpert:doctor`       | CLI diagnostics                               |
+| `npm run openexpert:serve`        | Boot the app through the CLI                  |
+| `npm run license:check`           | Verify SPDX headers                           |
+| `npm run test:coverage`           | Tests with coverage thresholds                |
+| `npm run check:docs`              | Documentation links                           |
+| `npm run check:commits`           | DCO + Conventional Commits (CI)               |
+| `npm run build:dev`               | Build with the development mode               |
+| `npm run desktop:dev`             | Tauri window in development mode              |
+| `npm run desktop:build`           | Raw Tauri build (does not inject the version) |
+| `npm run changeset`               | Draft the changeset for the next release      |
+| `npm run version-packages`        | Apply pending changesets locally              |
+| `npm run release`                 | Build, then publish with Changesets           |
 
 ### Port 3000
 
@@ -93,7 +105,9 @@ runs pending migrations and seeds the configuration (Experts and integrations).
 **Schema changes:** keep `schema.ts` and `init.sql` in sync for fresh installs
 and add a numbered file under `drizzle/migrations/` (e.g. `0002_add_x.sql`) for
 existing databases. The runner applies them in order using `PRAGMA
-user_version`, so an old database is upgraded at startup.
+user_version`, so an old database is upgraded at startup. The numbers have
+historical gaps (there is no `0003`): what matters is the order and the
+`user_version`, not that the next file is the next integer.
 
 After any write, call `await persist()`: it writes the file atomically
 (`.tmp` + `rename`).
@@ -141,7 +155,10 @@ Rules that keep CI trustworthy:
   workflow one, so a job that uses `actions/checkout` must repeat
   `contents: read`.
 
-**Releases.** Merging the `chore(release): version packages` pull request
+**Releases.** Draft the note for your change with `npm run changeset` and
+commit the file it writes under `.changeset/`; documentation-only changes need
+none, because the root manifest is private and is not versioned. Merging the
+`chore(release): version packages` pull request
 publishes to npm (OIDC trusted publishing, no `NPM_TOKEN`) and builds the Docker
 image. That PR is opened by `changesets/action` with the default `GITHUB_TOKEN`,
 so its workflows arrive as **"action_required"** and must be approved (Actions →

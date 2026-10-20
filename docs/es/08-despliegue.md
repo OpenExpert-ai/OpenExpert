@@ -6,13 +6,13 @@
 
 ## 1. Formas de ejecutar OpenExpert
 
-| Forma               | Comando                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Desarrollo          | `npm ci && npm run dev`                                                                   |
-| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                   |
-| Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
-| CLI                 | `npx @openexpert/openexpert serve`                                                        |
-| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                            |
+| Forma               | Comando                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Desarrollo          | `npm ci && npm run dev`                                                                    |
+| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                    |
+| Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest` |
+| CLI                 | `npx @openexpert/openexpert serve`                                                         |
+| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                             |
 
 La aplicación escucha en el puerto 3000 y **solo en la interfaz de bucle local**
 (`127.0.0.1`). El panel no tiene autenticación: quien alcance el puerto puede
@@ -30,6 +30,10 @@ docker build -f docker/Dockerfile -t openexpert:local .
 docker run --rm -p 3000:3000 -v openexpert-data:/data \
   -e OPENEXPERT_MODEL_PROVIDER=ollama openexpert:local
 ```
+
+El workflow de release publica `latest`, `<version>` y `<sha>`. Para que un
+`docker pull` anónimo funcione, el paquete tiene que ser público; si no lo es,
+entra antes con `docker login ghcr.io` (un token con `read:packages`).
 
 `docker/docker-compose.yml` también arranca un servicio Ollama:
 
@@ -60,6 +64,10 @@ El panel de ajustes (**Configuración → Datos y copias**) puede descargar una
 copia en un único JSON (base de datos más `openexpert.json`, `secrets.json` y
 `credentials.json`), restaurarla, borrar el historial de chat y compactar la
 base de datos. Importar una copia reemplaza los datos actuales.
+
+El JSON cubre la base de datos y los tres ficheros canónicos. Las concesiones de
+fuentes y el token de Notion (`drive-grants.json`, `local-roots.json`,
+`notion.json`) **no** van dentro: para conservarlos, copia el directorio entero.
 
 ## 5. Actualizaciones
 
@@ -97,6 +105,10 @@ Qué instala:
 `npm run desktop:uninstall` los elimina. Si la ventana sale en blanco en
 Wayland, lánzala con `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
 
+Dos variables internas cambian dónde busca `desktop`: `OPENEXPERT_DESKTOP_REPO`
+(el checkout del que se compiló el instalador) y `OPENEXPERT_DESKTOP_BIN` (el
+binario de la ventana). Las pone el instalador; no hace falta tocarlas.
+
 ### Paquetes distribuibles (deb, rpm, AppImage)
 
 El lanzador por usuario de arriba es la vía recomendada en Linux. Para generar
@@ -105,6 +117,10 @@ paquetes:
 ```sh
 npx tauri build --bundles deb,rpm,appimage   # -> src-tauri/target/release/bundle/
 ```
+
+`npm run desktop:build` y `npx tauri build` toman la versión fijada en
+`src-tauri/tauri.conf.json`; `npm run desktop:install` inyecta la versión del
+paquete al compilar, así que el lanzador lleva siempre la versión del producto.
 
 La primera ejecución descarga las utilidades de empaquetado de Tauri (linuxdeploy,
 AppRun). Estos paquetes llevan **solo la ventana** y su entrada de menú ejecuta
