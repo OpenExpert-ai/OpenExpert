@@ -121,6 +121,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck && npm run typecheck --workspaces --if-present
 
+      # The runner has no sandbox for `run_python`: `bubblewrap` is not installed and 24.04 restricts
+      # unprivileged user namespaces, so `unshare -Urn` fails. With no barrier the module refuses to
+      # run at all (that is its contract), so the tests that need to execute a script skip here and
+      # `src/lib/python.server.test.ts` checks the refusal instead. A green run of this job does not
+      # mean the barrier was exercised; that only happens on a machine with `bubblewrap`.
       - name: Test with coverage
         run: npm run test:coverage
 

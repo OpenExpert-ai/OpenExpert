@@ -5,18 +5,25 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { pythonAvailable, pythonSandbox, runPython } from "./python.server";
 
-// A machine without an interpreter is a supported state (the tool says so instead of crashing), so
-// the run tests are skipped rather than failed when there is nothing to run with.
+// Three states of a machine, not two: an interpreter can exist while no barrier does. That is not
+// hypothetical — GitHub's `ubuntu-latest` ships `python3` and refuses `unshare -Urn` (24.04 restricts
+// unprivileged user namespaces), so `pythonSandbox()` answers `none` there. The tool then refuses to
+// run on purpose, and a test that demands a run only means something where the barrier exists.
+// Demanding it everywhere is what left CI red on every branch (T-0032): six tests asking for output
+// from a run the module declines to make.
 const py = pythonAvailable();
-const withPython = it.skipIf(!py.ok);
-// Likewise a machine without namespaces: the tool refuses to run and says why. The tests that prove
-// the barrier are only meaningful where the barrier exists.
 const sandbox = pythonSandbox();
-const withSandbox = it.skipIf(!py.ok || sandbox.kind === "none");
+const canRun = py.ok && sandbox.kind !== "none";
+const withRun = it.skipIf(!canRun);
+// The tests that prove the barrier itself.
+const withSandbox = it.skipIf(!canRun);
 const withBwrap = it.skipIf(!py.ok || sandbox.kind !== "bwrap");
+// The barrier-less machine is the state CI runs in, so it is checked rather than skipped: nothing
+// runs, and the answer names what is missing.
+const withoutBarrier = it.skipIf(sandbox.kind !== "none");
 
 describe("runPython", async () => {
-  withPython("returns what the script printed", async () => {
+  withRun("returns what the script printed", async () => {
     const r = await runPython("print(2 + 40)");
     expect(r.ok).toBe(true);
     expect(r.exit).toBe(0);
@@ -30,7 +37,7 @@ describe("runPython", async () => {
     expect(r.exit).toBeNull();
   });
 
-  withPython("keeps the environment out of reach of the script", async () => {
+  withRun("keeps the environment out of reach of the script", async () => {
     // An API token in the app's environment must not become readable by model-written code. This is
     // the assertion that would catch a regression in the scrubbed `env`.
     process.env["OPENEXPERT_TEST_SECRET"] = "must-not-leak";
@@ -45,7 +52,7 @@ describe("runPython", async () => {
     }
   });
 
-  withPython("treats a traceback as information, not as a crash of this function", async () => {
+  withRun("treats a traceback as information, not as a crash of this function", async () => {
     const r = await runPython("raise ValueError('boom')");
     expect(r.ok).toBe(false);
     expect(r.exit).not.toBe(0);
@@ -53,14 +60,14 @@ describe("runPython", async () => {
     expect(r.note).toBeTruthy();
   });
 
-  withPython("stops a script that never ends", async () => {
+  withRun("stops a script that never ends", async () => {
     const r = await runPython("while True:\n    pass", { timeoutMs: 1_000 });
     expect(r.timedOut).toBe(true);
     expect(r.ok).toBe(false);
     expect(r.note).toContain("paró");
   });
 
-  withPython("leaves the event loop free while the script runs", async () => {
+  withRun("leaves the event loop free while the script runs", async () => {
     // Regression test for `spawnSync`: it blocked this very process for as long as the script ran,
     // so a slow calculation froze the panel, the chat stream and every API route with it. With a
     // child process the interval below keeps ticking.
@@ -77,13 +84,13 @@ describe("runPython", async () => {
     expect(ticks).toBeGreaterThan(10);
   });
 
-  withPython("caps the output and says that it did", async () => {
+  withRun("caps the output and says that it did", async () => {
     const r = await runPython("print('x' * 50000)");
     expect(r.truncated).toBe(true);
     expect(r.stdout.length).toBeLessThan(50000);
   });
 
-  withPython("reports which barrier wrapped the run", async () => {
+  withRun("reports which barrier wrapped the run", async () => {
     const r = await runPython("print(1)");
     expect(r.sandbox).toBe(sandbox.kind);
   });
@@ -92,6 +99,42 @@ describe("runPython", async () => {
     const found = pythonAvailable();
     if (found.ok) expect(found.path).toBeTruthy();
     else expect(found.note).toContain("python3");
+  });
+
+  // Whatever the machine has, a refusal has to be readable: `ok: false` with empty stdout, empty
+  // stderr and no note is the one answer with nothing in it to act on, and it is what a caller sees
+  // as "Python is broken" instead of "this machine cannot isolate the script".
+  it("never refuses to run without saying why", async () => {
+    for (const code of ["", "   ", "print(1)", "raise ValueError('boom')"]) {
+      const r = await runPython(code);
+      if (r.ok) continue;
+      const saysWhy = Boolean(r.note?.trim()) || r.stderr.trim().length > 0;
+      expect(saysWhy, `rechazo mudo para ${JSON.stringify(code)}`).toBe(true);
+    }
+  });
+
+  // `sandbox` describes the machine, not the run: a refusal used to answer `none` even where
+  // `bubblewrap` exists, which reaches the model as "this machine has no isolation at all".
+  it("reports the machine's barrier even when it refuses to run", async () => {
+    const r = await runPython("   ");
+    expect(r.ok).toBe(false);
+    expect(r.sandbox).toBe(sandbox.kind);
+  });
+
+  // The state CI runs in (interpreter, no barrier) is the one that was uncovered: nothing executes,
+  // every entry point answers with the reason, and none of them pretends the script ran.
+  withoutBarrier("refuses every script when the machine cannot isolate it", async () => {
+    for (const code of ["print(1)", "raise ValueError('boom')", "while True:\n    pass"]) {
+      const r = await runPython(code);
+      expect(r.ok).toBe(false);
+      expect(r.exit).toBeNull();
+      expect(r.stdout).toBe("");
+      expect(r.stderr).toBe("");
+      expect(r.timedOut).toBe(false);
+      expect(r.sandbox).toBe("none");
+      expect(r.note).toContain("bubblewrap");
+      expect(r.note).toContain("unshare");
+    }
   });
 
   // The two supported states of the machine: a namespace or a refusal. A silent third state — run
