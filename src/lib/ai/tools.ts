@@ -437,17 +437,19 @@ export function createChatTools(ctx: ChatToolsContext) {
       description:
         "Lee el contenido de un archivo local autorizado (texto, PDF, Word, Excel y PowerPoint). Pasa la ruta que devuelve list_local_files o search_local_files. " +
         "Devuelve el archivo en ventanas de 2000 líneas: si la respuesta trae `hasMore`, vuelve a llamar con `offset: nextOffset` para seguir por donde iba. " +
+        "Si además trae `nextCharOffset`, mándalo en `charOffset` con ese mismo `offset`: una línea que no cabe en una lectura se continúa así, y sin ese dato su resto no se puede pedir. " +
         "En hojas de cálculo y CSV devuelve además `sheets`, con el nombre de cada hoja, cuántas filas tiene y cómo se llaman sus columnas.",
       inputSchema: z.object({
         path: z.string(),
         offset: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).max(20000).optional(),
+        charOffset: z.number().int().min(0).optional(),
         onVision: z
           .boolean()
           .optional()
           .describe("Marcar sólo cuando haga falta leer un PDF escaneado: mándalo al modelo."),
       }),
-      execute: async ({ path, offset, limit, onVision }) => {
+      execute: async ({ path, offset, limit, charOffset, onVision }) => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
@@ -460,11 +462,11 @@ export function createChatTools(ctx: ChatToolsContext) {
             ? (await import("../config.server")).chatSettings().visionPdf
             : false;
           const window =
-            offset === undefined && limit === undefined
+            offset === undefined && limit === undefined && charOffset === undefined
               ? vision
                 ? { vision }
                 : null
-              : { offset, limit, ...(vision ? { vision } : {}) };
+              : { offset, limit, charOffset, ...(vision ? { vision } : {}) };
           // A plain read keeps calling with two arguments: the window is an addition, not a
           // different way of reading.
           return window

@@ -144,6 +144,66 @@ describe("windowed reads", () => {
     expect(last.content?.trim().endsWith("line 250")).toBe(true);
   });
 
+  it("keeps the rest of a line longer than the character cap within reach", async () => {
+    const fs = await import("./local-fs.server");
+    const one = join(root, "one-line.json");
+    // A position-dependent pattern, so a gap or a repeated piece shows up in the comparison.
+    const body = Array.from({ length: 30_000 }, (_, i) => String(i).padStart(10, "0")).join("");
+    expect(body).toHaveLength(300_000);
+    writeFileSync(one, body);
+
+    const first = await fs.readLocalFile(one, [root]);
+    expect(first.totalLines).toBe(1);
+    expect(first.content).toHaveLength(200_000);
+    expect(first.truncated).toBe(true);
+    expect(first.hasMore).toBe(true);
+    expect(first.nextOffset).toBe(1);
+    expect(first.nextCharOffset).toBe(200_000);
+
+    const rest = await fs.readLocalFile(one, [root], {
+      offset: first.nextOffset,
+      charOffset: first.nextCharOffset,
+    });
+    expect(rest.content).toHaveLength(100_000);
+    expect(rest.truncated).toBeUndefined();
+    expect(rest.hasMore).toBeUndefined();
+    expect((first.content ?? "") + (rest.content ?? "")).toBe(body);
+  });
+
+  it("cuts through a long line in a multi-line file and resumes at that character", async () => {
+    const fs = await import("./local-fs.server");
+    const mixed = join(root, "mixed.log");
+    const long = "y".repeat(250_000);
+    writeFileSync(mixed, `header\n${long}\ntail`);
+
+    const first = await fs.readLocalFile(mixed, [root], { limit: 10 });
+    expect(first.totalLines).toBe(3);
+    expect(first.content?.startsWith("header\n")).toBe(true);
+    expect(first.content).toHaveLength(200_000);
+    // It stopped inside line 2, not at the end of it: "header" plus the newline it carries.
+    expect(first.nextOffset).toBe(2);
+    expect(first.nextCharOffset).toBe(200_000 - "header".length - 1);
+    expect(first.hasMore).toBe(true);
+
+    const rest = await fs.readLocalFile(mixed, [root], {
+      offset: first.nextOffset,
+      charOffset: first.nextCharOffset,
+    });
+    expect((first.content ?? "") + (rest.content ?? "")).toBe(`header\n${long}\ntail`);
+    expect(rest.hasMore).toBeUndefined();
+  });
+
+  it("explains an offset past the last line instead of returning an empty window", async () => {
+    const fs = await import("./local-fs.server");
+    const small = join(root, "three.txt");
+    writeFileSync(small, "uno\ndos\ntres\n");
+
+    const out = await fs.readLocalFile(small, [root], { offset: 9 });
+    expect(out.content).toBeNull();
+    expect(out.note).toMatch(/offset 9/);
+    expect(out.note).toMatch(/4 línea/);
+  });
+
   it("describes a CSV as a table, without counting the header as a data row", async () => {
     const fs = await import("./local-fs.server");
     const csv = join(root, "invoices.csv");
