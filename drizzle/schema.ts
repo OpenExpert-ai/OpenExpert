@@ -42,7 +42,8 @@ export const activity = sqliteTable("activity", {
   status: text("status").notNull(),
   summary: text("summary").notNull(),
   sources: text("sources", { mode: "json" }).$type<string[]>().notNull().default([]),
-  durationMs: integer("duration_ms").notNull().default(300),
+  // Null when the action was not timed: a duration nobody measured is not a number.
+  durationMs: integer("duration_ms"),
   snapshot: text("snapshot", { mode: "json" }).$type<unknown>(),
 });
 

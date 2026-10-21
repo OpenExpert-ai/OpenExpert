@@ -47,19 +47,19 @@ para volver a sembrar la configuración.
 
 ### `activity` — registro de actividad
 
-| Columna       | Tipo        | Notas                                                      |
-| ------------- | ----------- | ---------------------------------------------------------- |
-| `id`          | TEXT PK     | `evt_` + 8 caracteres                                      |
-| `ts`          | TEXT        | Fecha ISO                                                  |
-| `actor`       | TEXT        | `human` o `agent`                                          |
-| `actor_name`  | TEXT        | Nombre visible                                             |
-| `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, … |
-| `expert_id`   | TEXT        | Experto afectado                                           |
-| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `reverted`            |
-| `summary`     | TEXT        | Descripción en una frase                                   |
-| `sources`     | TEXT (JSON) | Fuentes de la información                                  |
-| `duration_ms` | INTEGER     | Duración                                                   |
-| `snapshot`    | TEXT (JSON) | `{ entries }` (para reversión) o `{ pending }`             |
+| Columna       | Tipo        | Notas                                                       |
+| ------------- | ----------- | ----------------------------------------------------------- |
+| `id`          | TEXT PK     | `evt_` + 8 caracteres                                       |
+| `ts`          | TEXT        | Fecha ISO                                                   |
+| `actor`       | TEXT        | `human` o `agent`                                           |
+| `actor_name`  | TEXT        | Nombre visible                                              |
+| `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, …  |
+| `expert_id`   | TEXT        | Experto afectado                                            |
+| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `reverted`             |
+| `summary`     | TEXT        | Descripción en una frase                                    |
+| `sources`     | TEXT (JSON) | Fuentes de la información                                   |
+| `duration_ms` | INTEGER     | Duración medida en ms, o null si la acción no se cronometró |
+| `snapshot`    | TEXT (JSON) | `{ entries }` (para reversión) o `{ pending }`              |
 
 ### `chat_messages` — conversaciones
 

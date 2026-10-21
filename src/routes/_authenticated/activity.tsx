@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Bot, User, Undo2, Check, X, Search, ScrollText } from "lucide-react";
 import { PageHeader, inputCls } from "@/components/AppShell";
-import { useAct, useMe, useWorkspace, fmtTime } from "@/lib/store";
+import { ActivityEventMeta } from "@/components/activity/ActivityEventMeta";
+import { useAct, useMe, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { decideAction, revertEvent } from "@/lib/data.functions";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +50,7 @@ const PAGE = 40;
 function ActivityPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
-  const { t, locale } = useT();
+  const { t } = useT();
   const revert = useAct(revertEvent, t("Estado restaurado desde snapshot"));
   const decide = useAct(decideAction);
   const [actor, setActor] = useState("all");
@@ -163,17 +164,13 @@ function ActivityPage() {
                 </Badge>
               </div>
               <p className="mt-1 text-sm">{a.summary}</p>
-              <div className="mt-1 flex flex-wrap gap-x-4 font-mono text-[0.7rem] text-muted-foreground">
-                <span>{a.id}</span>
-                <span>{fmtTime(a.ts, locale)}</span>
-                <span>{(a.duration_ms / 1000).toFixed(2)}s</span>
-                {a.sources.length > 0 && (
-                  <span>
-                    {t("fuentes:")} {a.sources.join(", ")}
-                  </span>
-                )}
-                {a.hasSnapshot && <span className="text-primary/80">snapshot ✓</span>}
-              </div>
+              <ActivityEventMeta
+                id={a.id}
+                ts={a.ts}
+                duration_ms={a.duration_ms}
+                sources={a.sources}
+                hasSnapshot={a.hasSnapshot}
+              />
             </div>
             {a.status === "pending" && a.pending && (
               <div className="flex gap-2">

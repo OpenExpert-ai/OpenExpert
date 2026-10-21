@@ -47,19 +47,19 @@ configuration.
 
 ### `activity` — audit log
 
-| Column        | Type        | Notes                                                      |
-| ------------- | ----------- | ---------------------------------------------------------- |
-| `id`          | TEXT PK     | `evt_` + 8 chars                                           |
-| `ts`          | TEXT        | ISO timestamp                                              |
-| `actor`       | TEXT        | `human` or `agent`                                         |
-| `actor_name`  | TEXT        | Display name                                               |
-| `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, … |
-| `expert_id`   | TEXT        | Affected Expert                                            |
-| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `reverted`            |
-| `summary`     | TEXT        | One-line description                                       |
-| `sources`     | TEXT (JSON) | Information sources                                        |
-| `duration_ms` | INTEGER     | Duration                                                   |
-| `snapshot`    | TEXT (JSON) | `{ entries }` (for revert) or `{ pending }`                |
+| Column        | Type        | Notes                                                          |
+| ------------- | ----------- | -------------------------------------------------------------- |
+| `id`          | TEXT PK     | `evt_` + 8 chars                                               |
+| `ts`          | TEXT        | ISO timestamp                                                  |
+| `actor`       | TEXT        | `human` or `agent`                                             |
+| `actor_name`  | TEXT        | Display name                                                   |
+| `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, …     |
+| `expert_id`   | TEXT        | Affected Expert                                                |
+| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `reverted`                |
+| `summary`     | TEXT        | One-line description                                           |
+| `sources`     | TEXT (JSON) | Information sources                                            |
+| `duration_ms` | INTEGER     | Measured duration in ms, or null when the action was not timed |
+| `snapshot`    | TEXT (JSON) | `{ entries }` (for revert) or `{ pending }`                    |
 
 ### `chat_messages` — conversations
 

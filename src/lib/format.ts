@@ -31,3 +31,15 @@ export function formatBytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/**
+ * The duration of an action, in seconds, or a dash when it was not measured.
+ *
+ * Most activity events are not timed, and a number that nobody measured reads
+ * in the audit trail as a real one. `null` therefore stays `null`: the screen
+ * shows a dash instead of inventing a figure.
+ */
+export function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined || !Number.isFinite(ms)) return "—";
+  return `${(ms / 1000).toFixed(2)}s`;
+}

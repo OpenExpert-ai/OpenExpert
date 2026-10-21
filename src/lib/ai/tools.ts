@@ -458,6 +458,7 @@ export function createChatTools(ctx: ChatToolsContext) {
           const run = await py.runPython(code, { timeoutMs });
           // The script itself goes to the activity trail: running code is the one action where the
           // audit record is not a nicety but the way to answer "what did it actually run?".
+          // The duration is the one the run measured, not a placeholder.
           await ee
             .logActivity({
               actor: "agent",
@@ -467,6 +468,7 @@ export function createChatTools(ctx: ChatToolsContext) {
               status: run.ok ? "ok" : "failed",
               summary: `Script de Python (${run.durationMs} ms, salida ${run.exit ?? "-"})`,
               sources: ["Python"],
+              duration_ms: run.durationMs,
               snapshot: { script: code.slice(0, 4000) },
             })
             .catch((e: unknown) =>

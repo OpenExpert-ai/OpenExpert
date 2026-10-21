@@ -100,6 +100,16 @@ Cada cambio reversible guarda las filas previas en `snapshot.entries`; la
 pantalla de actividad puede reproducirlas. Reversibles: `experts`,
 `integrations`, `invoices`, `campaigns`.
 
+El registro solo dice lo que puede respaldar: `duration_ms` guarda el tiempo
+que la acción tardó de verdad, y es **null** en las acciones que no se
+cronometran (crear un Experto, guardar un ajuste, una escritura en Drive). La
+pantalla muestra ahí un guion. La columna llevaba un valor por defecto de
+300 ms, así que cada evento sin cronómetro se archivaba —y se mostraba— como
+«0.30s», que en un registro de auditoría se lee como una medición que nadie
+había hecho. La migración `0007` rehace la tabla sin el `NOT NULL` y sin ese
+valor por defecto; las filas ya guardadas conservan su valor, porque una
+entrada pasada no se puede dejar de medir.
+
 ## 7. Referencias
 
 - [Modelo de datos](./03-modelo-de-datos.md) — tablas.

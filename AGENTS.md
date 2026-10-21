@@ -49,6 +49,10 @@ disagree, the code is right and the docs are the bug.
   `invoices`, `campaigns`. Experts are created, edited and deleted from the UI;
   deleting an Expert clears its conversations (conversations are not
   revertible).
+- `activity.duration_ms` holds a **measured** duration, and it is null for the
+  actions that are not timed. Do not fill it with a constant: a number nobody
+  measured reads in the audit trail as a real one. The screen shows a dash
+  (`formatDuration` in `src/lib/format.ts`) when there is none.
 - File-based routes live in `src/routes/`; `routeTree.gen.ts` is generated.
 - Validation at the edge with Zod; user-facing messages in Spanish; no implicit
   `any`; format with Prettier.
