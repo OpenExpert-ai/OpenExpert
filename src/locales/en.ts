@@ -287,6 +287,50 @@ export const en: Record<string, string> = {
   "Acceso retirado: el Experto ya no puede leer ese archivo.":
     "Access revoked: the Expert can no longer read that file.",
 
+  // --- Data sources: Drive & Notion cards ------------------------------------
+  "Notion conectado.": "Notion connected.",
+  "Google Drive conectado. Ahora selecciona archivos con el Picker.":
+    "Google Drive connected. Now select files with the Picker.",
+  "Falta configurar el cliente OAuth en el servidor.":
+    "The OAuth client is not configured on the server.",
+  "Configura GOOGLE_PICKER_API_KEY en el archivo de secretos para habilitar el Picker.":
+    "Set GOOGLE_PICKER_API_KEY in the secrets file to enable the Picker.",
+  "No se seleccionó ningún archivo (acción del Picker: {action}).":
+    "No file was selected (Picker action: {action}).",
+  desconocida: "unknown",
+  "Abriendo Picker…": "Opening the Picker…",
+  "Seleccionar archivos": "Select files",
+  "{n} archivo(s) añadido(s).": "{n} file(s) added.",
+  "{n} archivo(s) elegido(s)": "{n} file(s) selected",
+  "Quitar archivo": "Remove file",
+  "Aún no has elegido archivos. Pulsa “Seleccionar archivos”.":
+    "You haven't selected any files yet. Press “Select files”.",
+  "Pendiente de credenciales": "Awaiting credentials",
+  "(Pronto)": "(Soon)",
+  "OpenExpert usa": "OpenExpert uses",
+  "(no sensible, archivo por archivo). Solo ves lo que elijas en el Picker. El contenido se envía al proveedor del modelo (por defecto local) para responderte.":
+    "(non-sensitive, file by file). You only see what you select in the Picker. Content is sent to the model provider (local by default) to answer you.",
+
+  // --- Drive consent dialog ---------------------------------------------------
+  "Conectar Google Drive": "Connect Google Drive",
+  "OpenExpert va a acceder a Google Drive con tu consentimiento. Antes de continuar, confirma que entiendes lo siguiente:":
+    "OpenExpert is going to access Google Drive with your consent. Before continuing, confirm that you understand the following:",
+  "Solo pedimos el scope": "We only ask for",
+  "(no sensible). El asistente no puede leer ni listar tu Drive completo.":
+    "(the non-sensitive scope). The assistant cannot read or list your whole Drive.",
+  "Con el Picker elegirás": "With the Picker you'll choose",
+  "archivo por archivo": "file by file",
+  "qué puede ver OpenExpert.": "what OpenExpert can see.",
+  "El contenido de los archivos elegidos se transmite al modelo para responderte; usa":
+    "The content of the files you select is sent to the model to answer you; use",
+  "Ollama local": "local Ollama",
+  "si no quieres que salga de tu equipo.": "if you don't want it to leave your machine.",
+  "No usamos tus datos para entrenar modelos. No los vendemos ni los cedemos a terceros.":
+    "We don't use your data to train models. We don't sell it or pass it on to third parties.",
+  "Los tokens se guardan cifrados (AES-GCM) en": "Tokens are stored encrypted (AES-GCM) in",
+  "con modo 0600.": "with mode 0600.",
+  "Entiendo y conecto": "I understand and connect",
+
   // --- Local files -----------------------------------------------------------
   "Archivos locales": "Local files",
   "Carpetas locales": "Local folders",
