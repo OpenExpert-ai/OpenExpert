@@ -310,6 +310,30 @@ describe("configuración avanzada", () => {
     expect(existsSync(join(cwd, "openexpert.json"))).toBe(before);
   });
 
+  it("saveRawConfig corta los límites facturables que el panel también rechaza", async () => {
+    await fns.saveRawConfig({
+      data: { content: JSON.stringify({ modelProvider: "google", chat: { maxSteps: 40 } }) },
+    });
+    const path = join(cwd, "openexpert.json");
+    const before = readFileSync(path, "utf8");
+    // Pegar el JSON a mano no puede saltarse los topes de la interfaz: `maxSteps` acaba en
+    // `stepCountIs` y cada paso es una llamada al proveedor.
+    await expect(
+      fns.saveRawConfig({ data: { content: JSON.stringify({ chat: { maxSteps: 100_000 } }) } }),
+    ).rejects.toThrow(/maxSteps va de 1 a 200/);
+    await expect(
+      fns.saveRawConfig({
+        data: { content: JSON.stringify({ chat: { retentionDays: 999_999 } }) },
+      }),
+    ).rejects.toThrow(/retentionDays va de 0 a 3650/);
+    await expect(
+      fns.saveRawConfig({
+        data: { content: JSON.stringify({ ai: { maxOutputTokens: 100_000_000 } }) },
+      }),
+    ).rejects.toThrow(/maxOutputTokens va de 1 a 200000/);
+    expect(readFileSync(path, "utf8")).toBe(before);
+  });
+
   it("resetConfig borra openexpert.json y devuelve ok", async () => {
     await fns.updateAiSettings({ data: aiPayload() });
     expect(existsSync(join(cwd, "openexpert.json"))).toBe(true);

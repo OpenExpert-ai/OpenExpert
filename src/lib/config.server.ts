@@ -474,6 +474,23 @@ const injectionPattern = z
       "El patrón repite un grupo que ya lleva un cuantificador o una alternación dentro (por ejemplo (a+)+, ((a+))+ o (a|aa)+): puede congelar el servidor",
   });
 
+/**
+ * Caps on the limits that reach a billable provider call. `openexpert.json` has two writers
+ * — the settings panel and the raw editor in Ajustes → Avanzado — and both validate through
+ * this module, so the numbers live here once: the raw editor used to accept any value and
+ * `chat.maxSteps` feeds `stepCountIs`, where 100000 steps are 100000 provider calls in a
+ * single request.
+ */
+export const MAX_STEPS_LIMIT = 200;
+export const RETENTION_DAYS_LIMIT = 3650;
+export const MAX_OUTPUT_TOKENS_LIMIT = 200_000;
+
+const MAX_STEPS_RANGE = { message: `maxSteps va de 1 a ${MAX_STEPS_LIMIT} pasos por consulta` };
+const RETENTION_DAYS_RANGE = { message: `retentionDays va de 0 a ${RETENTION_DAYS_LIMIT} días` };
+const MAX_OUTPUT_TOKENS_RANGE = {
+  message: `maxOutputTokens va de 1 a ${MAX_OUTPUT_TOKENS_LIMIT} tokens`,
+};
+
 export const fileConfigSchema = z.object({
   $schema: z.string().optional(),
   modelProvider: z.enum(PROVIDER_IDS).optional(),
@@ -486,19 +503,29 @@ export const fileConfigSchema = z.object({
     .object({
       temperature: z.number().min(0).max(2).optional(),
       topP: z.number().min(0).max(1).optional(),
-      maxOutputTokens: z.number().int().min(1).optional(),
+      maxOutputTokens: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_OUTPUT_TOKENS_LIMIT, MAX_OUTPUT_TOKENS_RANGE)
+        .optional(),
     })
     .optional(),
   chat: z
     .object({
-      maxSteps: z.number().int().min(1).optional(),
+      maxSteps: z.number().int().min(1).max(MAX_STEPS_LIMIT, MAX_STEPS_RANGE).optional(),
       injectionGuard: z.boolean().optional(),
       visionPdf: z.boolean().optional(),
       injectionExtraPatterns: z
         .array(injectionPattern)
         .refine(patternsAreValid, { message: "Patrón regular inválido" })
         .optional(),
-      retentionDays: z.number().int().min(0).optional(),
+      retentionDays: z
+        .number()
+        .int()
+        .min(0)
+        .max(RETENTION_DAYS_LIMIT, RETENTION_DAYS_RANGE)
+        .optional(),
     })
     .optional(),
 });
@@ -523,7 +550,7 @@ export function resetFileConfig(cwd: string = process.cwd()): void {
 }
 
 export const chatUpdateSchema = z.object({
-  maxSteps: z.number().int().min(1).max(200),
+  maxSteps: z.number().int().min(1).max(MAX_STEPS_LIMIT, MAX_STEPS_RANGE),
   injectionGuard: z.boolean(),
   // Off by default: a scanned PDF read with a model means the document leaves the machine, and
   // that is a decision for its owner, not a default.
@@ -532,7 +559,7 @@ export const chatUpdateSchema = z.object({
     .array(injectionPattern)
     .max(50)
     .refine(patternsAreValid, { message: "Patrón regular inválido" }),
-  retentionDays: z.number().int().min(0).max(3650),
+  retentionDays: z.number().int().min(0).max(RETENTION_DAYS_LIMIT, RETENTION_DAYS_RANGE),
 });
 
 export type ChatUpdateInput = z.infer<typeof chatUpdateSchema>;
@@ -553,7 +580,7 @@ export const aiUpdateSchema = z.object({
   endpoint: urlOrEmpty,
   temperature: z.number().min(0).max(2),
   topP: z.number().min(0).max(1),
-  maxOutputTokens: z.number().int().min(1).max(200_000),
+  maxOutputTokens: z.number().int().min(1).max(MAX_OUTPUT_TOKENS_LIMIT, MAX_OUTPUT_TOKENS_RANGE),
   /**
    * Keys to write, **by provider id**: each one lands in the variable that
    * provider's record declares, so saving the key of one provider never touches

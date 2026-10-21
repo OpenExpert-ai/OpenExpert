@@ -56,7 +56,8 @@
         "maxOutputTokens": {
           "type": "integer",
           "minimum": 1,
-          "description": "Maximum number of tokens the model may generate per step."
+          "maximum": 200000,
+          "description": "Maximum number of tokens the model may generate per step (1 to 200000)."
         }
       }
     },
@@ -68,7 +69,8 @@
         "maxSteps": {
           "type": "integer",
           "minimum": 1,
-          "description": "Maximum number of tool-calling steps per request."
+          "maximum": 200,
+          "description": "Maximum number of tool-calling steps per request (1 to 200)."
         },
         "injectionGuard": {
           "type": "boolean",
@@ -82,7 +84,8 @@
         "retentionDays": {
           "type": "integer",
           "minimum": 0,
-          "description": "Days to keep chat history before it is pruned."
+          "maximum": 3650,
+          "description": "Days to keep chat history before it is pruned (0 to 3650; 0 disables pruning)."
         }
       }
     }
