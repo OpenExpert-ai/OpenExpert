@@ -212,6 +212,34 @@ describe("windowed reads", () => {
     expect(r.sheets?.[0]?.columns).toEqual(["date", "client", "total"]);
     expect(r.sheets?.[0]?.rows).toBe(2);
   });
+
+  it("no cuenta como fila el salto de línea de una celda entrecomillada", async () => {
+    const fs = await import("./local-fs.server");
+    const csv = join(root, "clientes.csv");
+    writeFileSync(csv, 'nombre,direccion\nAna,"Calle Mayor 1\n2 B"\nLuis,"Plaza 3"\n');
+    const r = await fs.readLocalFile(csv, [root]);
+    expect(r.sheets?.[0]?.rows).toBe(2);
+    expect(r.sheets?.[0]?.columns).toEqual(["nombre", "direccion"]);
+  });
+
+  it("no parte una cabecera entrecomillada por la coma de dentro", async () => {
+    const fs = await import("./local-fs.server");
+    const csv = join(root, "ventas.csv");
+    writeFileSync(csv, '"cliente, nombre",importe\nAna,100\n');
+    const r = await fs.readLocalFile(csv, [root]);
+    expect(r.sheets?.[0]?.columns).toEqual(["cliente, nombre", "importe"]);
+    expect(r.sheets?.[0]?.rows).toBe(1);
+  });
+
+  it("mantiene el recuento con comillas escapadas, campos vacíos y líneas en blanco", async () => {
+    const fs = await import("./local-fs.server");
+    const csv = join(root, "notas.csv");
+    writeFileSync(csv, '"campo ""raro""",nota\n1,"Dijo ""hola"""\n2,\n\n3,""\n');
+    const r = await fs.readLocalFile(csv, [root]);
+    expect(r.sheets?.[0]?.columns).toEqual(['campo "raro"', "nota"]);
+    // La línea en blanco no es fila; el campo entrecomillado vacío sí, y el campo vacío final también.
+    expect(r.sheets?.[0]?.rows).toBe(3);
+  });
 });
 
 describe("searchLocalContent", () => {

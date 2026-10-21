@@ -253,16 +253,60 @@ const TEXT_EXT = new Set([
 ]);
 
 /**
+ * Splits CSV text into records. A quoted cell may hold the delimiter and line breaks, and `""`
+ * inside one is a literal quote, so counting lines or splitting on the delimiter gives the wrong
+ * table: an address written on two lines inflates the row count and `"cliente, nombre"` invents a
+ * column. A blank line is not a record; a quoted empty cell is.
+ */
+function csvRecords(text: string, delimiter: string): string[][] {
+  const records: string[][] = [];
+  let cells: string[] = [];
+  let cell = "";
+  let quoted = false;
+  let sawQuote = false;
+  const endRecord = () => {
+    const blank = !sawQuote && cells.length === 0 && cell.trim() === "";
+    cells.push(cell);
+    if (!blank) records.push(cells);
+    cells = [];
+    cell = "";
+    sawQuote = false;
+  };
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch !== '"') cell += ch;
+      else if (text[i + 1] === '"') {
+        cell += '"';
+        i += 1;
+      } else quoted = false;
+      continue;
+    }
+    if (ch === '"' && cell.trim() === "") {
+      quoted = true;
+      sawQuote = true;
+      cell = "";
+    } else if (ch === delimiter) {
+      cells.push(cell);
+      cell = "";
+    } else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i += 1;
+      endRecord();
+    } else cell += ch;
+  }
+  if (quoted || cells.length > 0 || cell !== "") endRecord();
+  return records;
+}
+
+/**
  * The shape of a CSV, read from the text itself: a CSV *is* its rows. The header is the first
- * non-empty line, and the data rows are the rest — counting the header as data would inflate
+ * non-empty record, and the data rows are the rest — counting the header as data would inflate
  * every table by one row.
  */
 function csvStructure(text: string, name: string, delimiter: string): SheetInfo {
-  const rows = text.split(/\r?\n/).filter((line) => line.trim() !== "");
-  const header = (rows[0] ?? "")
-    .split(delimiter)
-    .map((cell) => cell.trim().replace(/^"|"$/g, "").replace(/""/g, '"'));
-  return { name, rows: Math.max(0, rows.length - 1), columns: header };
+  const records = csvRecords(text, delimiter);
+  const header = (records[0] ?? []).map((cell) => cell.trim());
+  return { name, rows: Math.max(0, records.length - 1), columns: header };
 }
 
 async function extractText(
