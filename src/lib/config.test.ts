@@ -8,6 +8,7 @@ import {
   aiUpdateSchema,
   applyFileConfigToEnv,
   chatUpdateSchema,
+  fileConfigSchema,
   providerViews,
 } from "./config.server";
 
@@ -98,6 +99,29 @@ describe("chatUpdateSchema", () => {
 
   it("rejects an out-of-range maxSteps", () => {
     expect(() => chatUpdateSchema.parse({ ...chat, maxSteps: 0 })).toThrow();
+  });
+});
+
+describe("fileConfigSchema", () => {
+  // Ajustes → Avanzado escribe `openexpert.json` por este esquema y por el mismo camino que
+  // el panel: `chat.maxSteps` acaba en `stepCountIs`, y cada paso es una llamada al proveedor.
+  // Sin tope, pegar el JSON a mano se salta los límites que la interfaz sí aplica.
+  it("corta los límites facturables donde los corta el panel", () => {
+    expect(() => fileConfigSchema.parse({ chat: { maxSteps: 201 } })).toThrow(/1 a 200/);
+    expect(() => fileConfigSchema.parse({ chat: { retentionDays: 3651 } })).toThrow(/0 a 3650/);
+    expect(() => fileConfigSchema.parse({ ai: { maxOutputTokens: 200_001 } })).toThrow(
+      /1 a 200000/,
+    );
+  });
+
+  it("sigue aceptando el valor del tope y los de debajo", () => {
+    const parsed = fileConfigSchema.parse({
+      chat: { maxSteps: 200, retentionDays: 3650 },
+      ai: { maxOutputTokens: 200_000 },
+    });
+    expect(parsed.chat?.maxSteps).toBe(200);
+    expect(parsed.chat?.retentionDays).toBe(3650);
+    expect(parsed.ai?.maxOutputTokens).toBe(200_000);
   });
 });
 

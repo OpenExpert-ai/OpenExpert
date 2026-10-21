@@ -60,6 +60,25 @@ describe("openexpert.json", () => {
     resetFileConfig(cwd);
   });
 
+  it("no toca el fichero cuando un límite se pasa del tope del panel", async () => {
+    const { writeRawConfig, resetFileConfig, rawConfigText } = await import("./config.server");
+    writeRawConfig(JSON.stringify({ modelProvider: "google", chat: { maxSteps: 40 } }), cwd);
+    const before = rawConfigText(cwd);
+    // 100000 pasos son 100000 llamadas al proveedor en una sola consulta: el editor en
+    // crudo tiene que rechazarlos antes de escribir, no dejarlos en el fichero.
+    expect(() => writeRawConfig(JSON.stringify({ chat: { maxSteps: 100_000 } }), cwd)).toThrow(
+      /maxSteps/,
+    );
+    expect(() => writeRawConfig(JSON.stringify({ chat: { retentionDays: 999_999 } }), cwd)).toThrow(
+      /retentionDays/,
+    );
+    expect(() =>
+      writeRawConfig(JSON.stringify({ ai: { maxOutputTokens: 100_000_000 } }), cwd),
+    ).toThrow(/maxOutputTokens/);
+    expect(rawConfigText(cwd)).toBe(before);
+    resetFileConfig(cwd);
+  });
+
   it("reports the provider source from the file", async () => {
     const { writeFileConfig, aiSettings, resetFileConfig } = await import("./config.server");
     writeFileConfig({ modelProvider: "openai-compatible", modelId: "x" }, cwd);
