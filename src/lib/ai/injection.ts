@@ -136,6 +136,53 @@ export function detectInjection(input: string, extra: string[] = []): boolean {
   return compileExtra(extra).some((re) => re.test(input));
 }
 
+/**
+ * Characters of each message the gate reads. A request may carry 200 messages of
+ * any size and the regex runs on the request thread, so the scan is capped: a
+ * longer message is checked on its first `GATE_TEXT_LIMIT` characters, which is
+ * far more than the composer sends and than a single turn holds.
+ */
+export const GATE_TEXT_LIMIT = 32_000;
+
+/** What the gate needs from a message: both a `UIMessage` and a row read back from the database fit. */
+export type GateMessage = { role?: string; parts?: readonly { type?: string; text?: unknown }[] };
+
+/** Text of a message as the gate and the model read it: its text parts, joined. */
+export function messageText(message: GateMessage | null | undefined): string {
+  const parts = message?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .filter((part) => part && part.type === "text" && typeof part.text === "string")
+    .map((part) => part.text as string)
+    .join(" ");
+}
+
+/** A message the gate rejects, with the position that names it in the denial. */
+export type InjectionHit = { index: number; role: string; text: string };
+
+/**
+ * First message of a conversation that trips the gate, or null.
+ *
+ * Every message is checked, not only the last one: the model receives the whole
+ * array as history, so an attempt planted in an earlier turn — or in a message
+ * whose `role` the client forged as `assistant`, also client data — would reach
+ * the model with no audit event.
+ */
+export function firstInjection(
+  messages: readonly GateMessage[],
+  extra: string[] = [],
+): InjectionHit | null {
+  for (let index = 0; index < messages.length; index++) {
+    const message = messages[index];
+    if (!message) continue;
+    const text = messageText(message).slice(0, GATE_TEXT_LIMIT);
+    if (detectInjection(text, extra)) {
+      return { index, role: message.role ?? "", text };
+    }
+  }
+  return null;
+}
+
 /** Whether every pattern compiles. Used to validate the settings form. */
 export function patternsAreValid(patterns: string[]): boolean {
   return patterns.every((p) => {

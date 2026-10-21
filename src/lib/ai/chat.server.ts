@@ -21,7 +21,7 @@ import {
   modelLabel,
   selectedProvider,
 } from "@/lib/engine/model-provider.server";
-import { detectInjection as injectionMatch } from "@/lib/ai/injection";
+import { firstInjection, messageText } from "@/lib/ai/injection";
 import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
 import { effectiveConfig } from "@/lib/config.server";
 import { forbidden, isSameOrigin } from "@/lib/http.server";
@@ -40,14 +40,9 @@ export function domainAllowed(domains: string[], domain: string): boolean {
   return domains.includes(domain);
 }
 
-/** Plain text of the last message, used by the injection gate and the log. */
+/** Plain text of the last message, used by the log of a turn. */
 export function lastMessageText(messages: UIMessage[]): string {
-  const last = messages[messages.length - 1];
-  if (!last) return "";
-  return last.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join(" ");
+  return messageText(messages[messages.length - 1]);
 }
 
 /** Runtime shape of a chat message, used to reject malformed clients early. */
@@ -121,15 +116,22 @@ export async function handleChat(request: Request) {
   const last = messages[messages.length - 1]!;
   const lastText = lastMessageText(messages);
 
-  // Hard security gate before the model ever sees the message.
-  if (cfg.chat.injectionGuard && injectionMatch(lastText, cfg.chat.injectionExtraPatterns)) {
+  // Hard security gate before the model ever sees the conversation. It checks
+  // every message, not only the last one: the model receives the whole array as
+  // history, so an attempt planted in an earlier turn would otherwise travel
+  // with the conversation and leave no audit event behind.
+  const hit = cfg.chat.injectionGuard
+    ? firstInjection(messages, cfg.chat.injectionExtraPatterns)
+    : null;
+  if (hit) {
+    const where = `el mensaje ${hit.index + 1} de ${messages.length} (${hit.role || "sin rol"})`;
     await ee.logActivity({
       actor: "human",
       actor_name: OWNER.name,
       type: "Seguridad",
       expert_id: expertId,
       status: "denied",
-      summary: `Intento de evasión bloqueado: "${lastText.slice(0, 140)}"`,
+      summary: `Intento de evasión bloqueado en ${where}: "${hit.text.slice(0, 140)}"`,
       duration_ms: 40,
     });
     const stream = createUIMessageStream({
@@ -139,14 +141,14 @@ export async function handleChat(request: Request) {
         writer.write({
           type: "data-denied",
           data: {
-            reason:
-              "Se ha detectado un intento de evasión de controles (prompt injection / escalada de privilegios). Las reglas y los límites no pueden modificarse desde el chat. El evento ha quedado registrado en auditoría.",
+            reason: `Se ha detectado un intento de evasión de controles (prompt injection / escalada de privilegios) en ${where} de la conversación, y el modelo no lo ha visto. Las reglas y los límites no pueden modificarse desde el chat. El evento ha quedado registrado en auditoría y el turno no se ha guardado, así que la conversación no queda bloqueada: recarga el historial o empieza una nueva y sigue.`,
           },
         });
         writer.write({ type: "finish" });
       },
-      onFinish: async ({ responseMessage }) =>
-        save(expertId, [last, responseMessage], conversationId),
+      // Nothing is persisted on a denied turn on purpose: storing the blocked
+      // message would put it back in the history, and from then on every retry
+      // of that conversation would be denied with no way to recover.
     });
     return createUIMessageStreamResponse({ stream });
   }

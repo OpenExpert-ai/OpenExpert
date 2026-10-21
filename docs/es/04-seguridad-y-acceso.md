@@ -27,7 +27,11 @@ selector.
 
 1. **Filtro previo.** `src/lib/ai/injection.ts` bloquea patrones de inyección
    conocidos antes de que el modelo se ejecute y registra el intento con estado
-   `denied`.
+   `denied`, con el mensaje que lo ha disparado. Revisa toda la conversación y no
+   solo el último mensaje, porque el modelo recibe el historial entero y el rol de
+   cada mensaje lo pone el cliente. Un turno denegado no se guarda, y al releer el
+   historial se descarta cualquier mensaje que el filtro rechace: así una
+   conversación no queda bloqueada por un mensaje que ya está dentro.
 2. **Comprobaciones en servidor.** El aislamiento por dominio se aplica en
    `chat.server.ts`, no por el modelo.
 3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`);
