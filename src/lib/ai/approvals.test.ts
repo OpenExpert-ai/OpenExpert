@@ -145,4 +145,45 @@ describe("human approval on the write tools", () => {
 
     expect(localFs.createLocalFile).toHaveBeenCalledTimes(1);
   });
+
+  it("no ejecuta la herramienta si la llamada ya trae su resultado", async () => {
+    // Lo que hace el servidor cuando una pestaña vieja repite la aprobación: la
+    // respuesta se sustituye por el resultado que ya está guardado
+    // (`approval-history.ts`). Con el resultado delante, el SDK no vuelve a
+    // ejecutar la herramienta; eso es lo que impide duplicar una página de
+    // Notion o reescribir dos veces un archivo de Drive.
+    localFs.createLocalFile.mockClear();
+    const tools = catalog();
+    await generateText({
+      model: new MockLanguageModelV3({
+        doGenerate: {
+          content: [{ type: "text", text: "ya estaba hecho" }],
+          finishReason: { unified: "stop", raw: "stop" },
+          usage,
+          warnings: [],
+        },
+      }),
+      tools,
+      toolApproval: approvalMap(),
+      messages: await convertToModelMessages([
+        { id: "u1", role: "user", parts: [{ type: "text", text: "crea facturas.xlsx" }] },
+        {
+          id: "a1",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_local_file",
+              toolCallId: "call-1",
+              state: "output-available",
+              input: { folder: "/tmp", name: "facturas.xlsx", content: "hola" },
+              approval: { id: "ap-1", approved: true },
+              output: { name: "facturas.xlsx", path: "/tmp/facturas.xlsx" },
+            },
+          ],
+        },
+      ] as UIMessage[]),
+    });
+
+    expect(localFs.createLocalFile).not.toHaveBeenCalled();
+  });
 });
