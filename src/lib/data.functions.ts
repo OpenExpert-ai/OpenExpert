@@ -9,6 +9,7 @@ import { z } from "zod";
 import * as ee from "./ee.server";
 import { EXPERT_DOMAINS } from "./domains";
 import { firstInjection, type GateMessage } from "@/lib/ai/injection";
+import { settleHistory } from "@/lib/ai/approval-history";
 import { chatSettings } from "@/lib/config.server";
 import type { DriveGrant } from "@/lib/engine/local-secrets.server";
 import { getDb, now, persist } from "@/lib/db.server";
@@ -300,7 +301,16 @@ export const getChat = createServerFn({ method: "GET" })
           (row) => !firstInjection([row.message as GateMessage], chat.injectionExtraPatterns),
         )
       : rows;
-    return JSON.stringify(replayed.map((r) => r.message));
+    // A message that asked for approval and whose call is already decided in
+    // this same conversation is replayed with the stored outcome, not with its
+    // buttons alive: an answer saved before this was persisted left both copies
+    // in the history, and the pending one came back on every reload ready to
+    // run the write a second time.
+    const settled = settleHistory(
+      replayed.map((r) => r.message as { parts?: unknown }),
+      rows.map((r) => r.message),
+    );
+    return JSON.stringify(settled);
   });
 
 export const listConversations = createServerFn({ method: "GET" })

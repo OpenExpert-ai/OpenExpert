@@ -74,6 +74,14 @@ para volver a sembrar la configuración.
 **Retención: configurable (`chat.retentionDays`, por defecto 30 días; `0` la desactiva).**
 `listConversations` elimina los hilos anteriores al corte; con `0` no borra nada.
 
+Cada fila es un mensaje de UI completo y se identifica por el `id` que lleva dentro
+(`message.id`), no por la clave de la tabla: un turno que continúa —la aprobación de una
+escritura, por ejemplo— reenvía ese mensaje con la decisión y el resultado, así que se
+**actualiza la fila** en vez de añadir otra copia. La respuesta a la aprobación
+(`approval.approved`) y el desenlace de la herramienta viven en ese `message`, que es lo
+que impide que la tarjeta vuelva a salir al recargar y que la escritura se ejecute dos
+veces.
+
 ### `settings` — preferencias clave/valor
 
 | Columna      | Tipo        | Notas                               |

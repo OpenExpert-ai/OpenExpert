@@ -497,6 +497,74 @@ describe("getChat, clearChat y listConversations", () => {
     expect(orm.select().from(schema.chatMessages).all()).toHaveLength(2);
   });
 
+  it("reproduce una aprobación pendiente con el resultado que ya está guardado", async () => {
+    // Una versión anterior guardaba la continuación como otra fila, así que la
+    // copia pendiente sobrevivía al lado del resultado y la tarjeta volvía con
+    // los botones vivos en cada recarga. El historial ya trae la decisión.
+    const pendiente = {
+      id: "a-pend",
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-create_local_file",
+          toolCallId: "call-1",
+          state: "approval-requested",
+          input: { name: "notas.md" },
+          approval: { id: "ap-1" },
+        },
+      ],
+    };
+    const resuelto = {
+      id: "a-res",
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-create_local_file",
+          toolCallId: "call-1",
+          state: "output-available",
+          approval: { id: "ap-1", approved: true },
+          output: { path: "/tmp/notas.md" },
+        },
+      ],
+    };
+    await insertChat("general", "c1", "2026-01-01T00:00:01.000Z", userMessage("crea notas.md"));
+    await insertChat("general", "c1", "2026-01-01T00:00:02.000Z", pendiente);
+    await insertChat("general", "c1", "2026-01-01T00:00:03.000Z", resuelto);
+
+    const result = (await fns.getChat({
+      data: { expertId: "general", conversationId: "c1" },
+    })) as string;
+
+    const history = JSON.parse(result) as { id: string; parts: { state?: string }[] }[];
+    expect(history).toHaveLength(3);
+    expect(history[1]!.parts[0]?.state).toBe("output-available");
+    expect(result).not.toContain("approval-requested");
+  });
+
+  it("deja viva una tarjeta que nadie ha respondido", async () => {
+    // El control: sin un resultado posterior en la conversación, la tarjeta
+    // tiene que seguir ahí para poder decidir.
+    await insertChat("general", "c1", "2026-01-01T00:00:01.000Z", {
+      id: "a-pend",
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-create_local_file",
+          toolCallId: "call-1",
+          state: "approval-requested",
+          approval: { id: "ap-1" },
+        },
+      ],
+    });
+
+    const result = (await fns.getChat({
+      data: { expertId: "general", conversationId: "c1" },
+    })) as string;
+
+    const history = JSON.parse(result) as { parts: { state?: string }[] }[];
+    expect(history[0]!.parts[0]?.state).toBe("approval-requested");
+  });
+
   it("clearChat borra solo esa conversación", async () => {
     await insertChat("general", "c1", "2026-01-01T00:00:01.000Z", userMessage("primero"));
     await insertChat("general", "c2", "2026-01-01T00:00:02.000Z", userMessage("otra"));
