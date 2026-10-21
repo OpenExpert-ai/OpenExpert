@@ -11,6 +11,7 @@
 // it carries, and the panel says so.
 
 import {
+  chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
@@ -191,13 +192,67 @@ function modeFor(key: LogicalFile): number | undefined {
 }
 
 /**
+ * Where the content a file is about to lose waits while the swap runs. The
+ * database keeps the `.bak` name the panel has always advertised; the rest use
+ * `.pre-restore` and are dropped once the swap ends.
+ */
+function keepPathFor(key: LogicalFile, path: string): string {
+  return key === "db" ? `${path}.bak` : `${path}.pre-restore`;
+}
+
+type StagedFile = {
+  key: LogicalFile;
+  path: string;
+  tmp: string;
+  keep: string;
+  /** The target was already there, so there is an earlier content to put back. */
+  existed: boolean;
+};
+
+/**
+ * Cheap files first, the database last: its rename is the only one that makes
+ * the installation unreadable on its own, so it happens once the rest is in.
+ */
+function swapOrder(staged: StagedFile[]): StagedFile[] {
+  return [...staged].sort((a, b) => Number(a.key === "db") - Number(b.key === "db"));
+}
+
+/**
+ * What a failed swap says: which files went back to their previous content,
+ * which ones could not (and where that content still is), and that nothing
+ * else was touched. A message that only mentions the database is what made the
+ * half-applied installation invisible.
+ */
+function swapFailureMessage(detail: string, undone: LogicalFile[], stuck: StagedFile[]): string {
+  const parts = [`No se pudo aplicar la copia (${detail}).`];
+  if (undone.length) parts.push(`Se ha deshecho el cambio en ${undone.join(", ")}.`);
+  if (stuck.length) {
+    parts.push(
+      `No se ha podido devolver ${stuck.map((s) => s.key).join(", ")}; ` +
+        `su contenido anterior sigue en ${stuck.map((s) => s.keep).join(", ")}.`,
+    );
+  }
+  parts.push(
+    stuck.length
+      ? "El resto de la instalación está como estaba."
+      : undone.length
+        ? "La instalación está como estaba."
+        : "No se ha cambiado nada.",
+  );
+  return parts.join(" ");
+}
+
+/**
  * Restore a bundle, overwriting the database and canonical files.
  *
  * All or nothing: the database in the bundle is opened in memory first, every
- * file is staged next to its destination and only renamed once they all staged
- * successfully, and the previous database is copied to `<db>.bak` before it is
- * replaced. A bundle that fails any of those checks leaves the installation
- * exactly as it was.
+ * file is staged next to its destination, and the content each swap is about to
+ * replace is kept aside before anything is touched. The renames go cheap files
+ * first and the database last; if one of them fails, the ones already swapped go
+ * back to their previous content in reverse order. A bundle that fails halfway
+ * leaves the installation as it was — it used to leave yesterday's database next
+ * to the bundle's configuration and secrets, with a message that only mentioned
+ * the database.
  */
 export async function restoreBackup(content: string): Promise<RestoreResult> {
   const parsed = restoreSchema.parse(JSON.parse(content) as unknown);
@@ -207,7 +262,7 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
   mkdirSync(dataDir(), { recursive: true });
 
   // 1. Stage every file beside its target; nothing real is touched yet.
-  const staged: { key: LogicalFile; path: string; tmp: string }[] = [];
+  const staged: StagedFile[] = [];
   try {
     for (const key of BACKUP_FILES) {
       const b64 = parsed.files[key];
@@ -216,7 +271,7 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
       const mode = modeFor(key);
       const tmp = `${path}.restore-tmp`;
       writeFileSync(tmp, Buffer.from(b64, "base64"), mode ? { mode } : undefined);
-      staged.push({ key, path, tmp });
+      staged.push({ key, path, tmp, keep: keepPathFor(key, path), existed: false });
     }
   } catch (e) {
     for (const s of staged) rmSync(s.tmp, { force: true });
@@ -226,46 +281,86 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
     );
   }
 
-  // 2. Keep the current database, so a failed swap can be undone.
-  const currentDb = dbPath();
+  // 2. Keep what every swap is going to replace, so each file can be put back on
+  //    its own if a later rename fails. The database copy keeps its `<db>.bak`
+  //    name, which is the one the panel points at.
   let backupPath: string | null = null;
-  if (staged.some((s) => s.key === "db") && existsSync(currentDb)) {
-    backupPath = `${currentDb}.bak`;
-    try {
-      copyFileSync(currentDb, backupPath);
-    } catch (e) {
-      for (const s of staged) rmSync(s.tmp, { force: true });
-      throw new Error(
-        `No se pudo conservar la base de datos actual en ${backupPath}: ${e instanceof Error ? e.message : String(e)}. No se ha cambiado nada.`,
-        { cause: e },
-      );
-    }
-  }
-
-  // 3. Swap them in; if any rename fails, put the previous database back.
-  const applied: LogicalFile[] = [];
+  let current: StagedFile | undefined;
   try {
     for (const s of staged) {
-      renameSync(s.tmp, s.path);
-      applied.push(s.key);
+      current = s;
+      if (!existsSync(s.path)) continue;
+      const mode = modeFor(s.key);
+      copyFileSync(s.path, s.keep);
+      // copyFile does not carry the owner-only mode of the credentials, and this
+      // copy is what a rollback renames back into place.
+      if (mode) chmodSync(s.keep, mode);
+      s.existed = true;
+      if (s.key === "db") backupPath = s.keep;
     }
   } catch (e) {
+    for (const s of staged) {
+      rmSync(s.tmp, { force: true });
+      if (s.existed) rmSync(s.keep, { force: true });
+    }
+    const where = current ? ` de ${current.path} en ${current.keep}` : "";
+    throw new Error(
+      `No se pudo conservar el contenido actual${where}: ${e instanceof Error ? e.message : String(e)}. No se ha cambiado nada.`,
+      { cause: e },
+    );
+  }
+
+  // 3. Swap them in, the database last: its rename is the one that leaves an
+  //    installation that cannot start with what came before, so it only happens
+  //    once every other file is in place.
+  const swapped: StagedFile[] = [];
+  try {
+    for (const s of swapOrder(staged)) {
+      renameSync(s.tmp, s.path);
+      swapped.push(s);
+    }
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
     for (const s of staged) rmSync(s.tmp, { force: true });
-    if (backupPath && existsSync(backupPath)) {
+    // Put back everything already swapped, newest first, so the files of the
+    // bundle do not survive next to the ones of the installation.
+    const undone: LogicalFile[] = [];
+    const stuck: StagedFile[] = [];
+    for (const s of [...swapped].reverse()) {
       try {
-        copyFileSync(backupPath, currentDb);
+        if (s.existed) renameSync(s.keep, s.path);
+        else rmSync(s.path, { force: true });
+        undone.push(s.key);
       } catch {
-        // Nothing else to try: the message below names the copy that holds the data.
+        // Nothing else to try: the message names the copy that still holds it.
+        stuck.push(s);
+      }
+    }
+    // The copies of the files that were never swapped are just copies of what is
+    // still in place; only the stuck ones have to stay, and the database keeps its
+    // `.bak` like every other failure does.
+    const kept = new Set([...swapped, ...stuck].map((s) => s.key));
+    for (const s of staged) {
+      if (s.key === "db" || !s.existed || kept.has(s.key)) continue;
+      try {
+        rmSync(s.keep, { force: true });
+      } catch {
+        // Harmless: it is the same content as the file that never moved.
       }
     }
     resetDbHandle();
-    throw new Error(
-      `No se pudo aplicar la copia (${e instanceof Error ? e.message : String(e)}). ` +
-        (backupPath
-          ? `La base de datos anterior se ha restaurado desde ${backupPath}.`
-          : "La base de datos anterior no se ha tocado."),
-      { cause: e },
-    );
+    throw new Error(swapFailureMessage(detail, undone, stuck), { cause: e });
+  }
+
+  // The swap ended well: the copies it needed are worthless now. The database
+  // one stays, because that is the manual way back the panel announces.
+  for (const s of staged) {
+    if (s.key === "db" || !s.existed) continue;
+    try {
+      rmSync(s.keep, { force: true });
+    } catch {
+      // A leftover copy does not make the restore any less done.
+    }
   }
 
   // Drop the in-memory database so the next read loads the restored file.
@@ -284,7 +379,11 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
     }
   }
 
-  return { applied, missing: missingAfterRestore(parsed.version, parsed.files), backupPath };
+  return {
+    applied: swapped.map((s) => s.key),
+    missing: missingAfterRestore(parsed.version, parsed.files),
+    backupPath,
+  };
 }
 
 /* ---------------------------- maintenance ------------------------------- */
