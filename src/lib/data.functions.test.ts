@@ -397,8 +397,8 @@ describe("decideAction", () => {
 
     const event = (await activityRows()).find((a) => a.id === "evt-ok");
     expect(event?.status).toBe("ok");
-    expect(event?.summary).toBe("Enviadas 1 reclamaciones de cobro (ACME) · aprobado");
-    expect(event?.sources).toEqual(["Holded", "Gmail"]);
+    expect(event?.summary).toBe("1 reclamación de cobro registrada (ACME) · aprobado");
+    expect(event?.sources).toEqual(["Holded"]);
     expect(event?.snapshot).toMatchObject({
       entries: [{ table: "invoices", pk: { id: "inv-1" } }],
       pending: { kind: "invoice_reminders", ids: ["inv-1"] },

@@ -248,6 +248,11 @@ export const pendingActionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("pause_campaigns"), ids: z.array(z.string()).min(1) }),
 ]);
 
+/** Concordancia de número en los textos de la actividad: «1 reclamación» / «2 reclamaciones». */
+export function countPhrase(n: number, singular: string, plural: string): string {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
 export async function executePending(
   action: PendingAction,
 ): Promise<{ snapshot: SnapEntry[]; summary: string; sources: string[] }> {
@@ -258,10 +263,13 @@ export async function executePending(
     for (const r of rows)
       raw.run("UPDATE invoices SET reminders = reminders + 1 WHERE id = ?", [r["id"] as string]);
     await persist();
+    // Aprobar la reclamación solo la apunta en la factura: no hay envío de correo, así que
+    // el resumen no puede decir «Enviadas» («enviada» se reserva para cuando exista un envío
+    // real que devuelva ok) ni Gmail puede figurar como fuente si no ha intervenido.
     return {
       snapshot: snap,
-      summary: `Enviadas ${rows.length} reclamaciones de cobro (${rows.map((r) => r["client"]).join(", ")})`,
-      sources: ["Holded", "Gmail"],
+      summary: `${countPhrase(rows.length, "reclamación de cobro registrada", "reclamaciones de cobro registradas")} (${rows.map((r) => r["client"]).join(", ")})`,
+      sources: ["Holded"],
     };
   }
   if (action.kind === "pause_campaigns") {
@@ -272,7 +280,7 @@ export async function executePending(
     await persist();
     return {
       snapshot: snap,
-      summary: `Pausadas ${rows.length} campañas: ${rows.map((r) => r["name"]).join(", ")}`,
+      summary: `${countPhrase(rows.length, "campaña pausada", "campañas pausadas")}: ${rows.map((r) => r["name"]).join(", ")}`,
       sources: ["Meta Ads"],
     };
   }

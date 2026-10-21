@@ -317,7 +317,7 @@ describe("chat tool context", () => {
       invoiceIds: ["inv-chat"],
     });
     expect(out["status"]).toBe("pending");
-    expect(out["title"]).toMatch(/^Enviar 1 /);
+    expect(out["title"]).toBe("Registrar 1 reclamación de cobro");
 
     const schema = await import("../../../drizzle/schema");
     const { orm } = await getDb();
