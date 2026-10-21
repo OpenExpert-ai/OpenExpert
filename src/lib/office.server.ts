@@ -60,10 +60,14 @@ export async function extractOfficeText(buf: Uint8Array, ext: string): Promise<O
   try {
     let text: string;
     let sheets: SheetInfo[] | undefined;
+    let skipped = 0;
     if (fileType === "docx") text = await docxText(buf);
     else if (fileType === "xlsx") ({ text, sheets } = await xlsxText(buf));
-    else if (fileType === "pptx") text = await pptxText(buf);
-    else text = await odfText(buf);
+    else if (fileType === "pptx") ({ text, skipped } = pptxText(buf));
+    else ({ text, skipped } = odfText(buf));
+    // A document that needed more than the cap is not "a document without text": saying so would
+    // hide a bomb behind the same note as an empty file. The caller gets the reason instead.
+    if (skipped > 0) return { text: null, note: OFFICE_TOO_BIG_NOTE };
     const trimmed = text.trim();
     if (!trimmed) return { text: null, note: "El documento no contiene texto extraíble." };
     return { text: trimmed, ...(sheets?.length ? { sheets } : {}) };
@@ -176,9 +180,62 @@ function slideNumber(name: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
-function pptxText(buf: Uint8Array): string {
-  const { unzipSync, strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
-  const files = unzipSync(buf);
+/**
+ * Bytes a `.pptx` or OpenDocument may inflate to before it is refused.
+ *
+ * The size on disk says nothing about the size in memory: deflate over repeated data amplifies
+ * 1000x or more, so a 256 KiB `.odt` —a 256 MB `content.xml` of zeros, compressed— asked for a
+ * 256 MB allocation and grew the process RSS by 549 MB (measured). The cap is checked against the
+ * `originalSize` the central directory declares and applied **before** inflating, so such an entry
+ * is dropped without reserving memory. 64 MB leave room for any real document and cut the bad case.
+ *
+ * It covers the ZIPs we read ourselves (`.pptx` and OpenDocument). `.docx` and `.xlsx` are unzipped
+ * whole inside their library (mammoth, exceljs), which takes no filter, so they are outside this
+ * gate; capping them means replacing the reader.
+ */
+export const MAX_OFFICE_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
+
+/** Note for a document that asked for more than the cap allows. */
+const OFFICE_TOO_BIG_NOTE = `El documento se descomprimiría por encima de los ${Math.round(
+  MAX_OFFICE_UNCOMPRESSED_BYTES / 1024 / 1024,
+)} MB que se aceptan; no se lee para no agotar la memoria del proceso.`;
+
+/** Text read from a ZIP, plus how many relevant entries were left uninflated for size. */
+type ZipText = { text: string; skipped: number };
+
+/** Entries inflated from a ZIP and how many were dropped for going over the cap. */
+type ZipEntries = { files: Record<string, Uint8Array>; skipped: number };
+
+/**
+ * Inflates only the entries `wanted` accepts and never more than `MAX_OFFICE_UNCOMPRESSED_BYTES`.
+ *
+ * `fflate` calls the filter with the declared uncompressed size and, when it returns `false`, does
+ * not even inflate the entry. Without a filter `unzipSync` unzips the whole archive —images and the
+ * deck's media included— into memory before anyone looks at what is used.
+ */
+function zipEntries(buf: Uint8Array, wanted: (name: string) => boolean): ZipEntries {
+  const { unzipSync } = nodeRequire("fflate") as typeof import("fflate");
+  let budget = MAX_OFFICE_UNCOMPRESSED_BYTES;
+  let skipped = 0;
+  const files = unzipSync(buf, {
+    filter: (file) => {
+      if (!wanted(file.name)) return false;
+      if (file.originalSize > budget) {
+        skipped += 1;
+        return false;
+      }
+      budget -= file.originalSize;
+      return true;
+    },
+  });
+  return { files, skipped };
+}
+
+function pptxText(buf: Uint8Array): ZipText {
+  const { strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
+  // Only the slides are inflated: the deck's images and media are never read, and they are most of
+  // the weight of a real .pptx.
+  const { files, skipped } = zipEntries(buf, (name) => slideNumber(name) !== null);
   // Sort by the slide number, not by the entry name: as strings `slide10.xml`
   // lands between `slide1.xml` and `slide2.xml`, and in a deck the order is the
   // content, so the model would read slide 2 after slide 12 without any error.
@@ -186,16 +243,20 @@ function pptxText(buf: Uint8Array): string {
     .map((name) => ({ name, number: slideNumber(name) }))
     .filter((s): s is { name: string; number: number } => s.number !== null)
     .sort((a, b) => a.number - b.number);
-  return slides
+  const text = slides
     .map(({ name }) => collect(strFromU8(files[name]!), "a:t").map(decodeEntities).join(" "))
     .join("\n");
+  return { text, skipped };
 }
 
-function odfText(buf: Uint8Array): string {
-  const { unzipSync, strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
-  const files = unzipSync(buf);
+function odfText(buf: Uint8Array): ZipText {
+  const { strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
+  // `content.xml` is the only entry read from an OpenDocument: `styles.xml` and the embedded
+  // objects add weight and no text.
+  const { files, skipped } = zipEntries(buf, (name) => name === "content.xml");
   const content = files["content.xml"];
-  if (!content) return "";
+  if (!content) return { text: "", skipped };
   const xml = strFromU8(content);
-  return collect(xml, "text:p").concat(collect(xml, "text:h")).map(plainText).join("\n");
+  const text = collect(xml, "text:p").concat(collect(xml, "text:h")).map(plainText).join("\n");
+  return { text, skipped };
 }

@@ -16,6 +16,41 @@ const PPTX_B64 =
 const ODT_B64 =
   "UEsDBBQAAAAIAHEIRl1exjIMKQAAACcAAAAIAAAAbWltZXR5cGVLLCjIyUxOLMnMz9Mvy0vRy08szizWyy9IzUvJTy7NTc0r0StJrSgBAFBLAwQUAAAACABxCEZdt11FsKgAAABFAQAACwAAAGNvbnRlbnQueG1sjVBLDoIwEL1K0z1Wd6aBsjHGnQvxALUMpgnMkLYYPI5n8WLyEZSFiavJvO9k4rStSnYD5y1hwjerNWeAhnKL14Sfs3205amKqSisAZmTaSrAEBnC0E3WmdHLkU1441CS9tZL1BV4GYykGnByyW+1HKpGJEAb/nX32sE7H3Wh/D4vPa3iQVSrA5WaHXdZLN7ARJzg2nTBrH4+nNMFfQRikSMWFeLHF9QLUEsBAhQDFAAAAAgAcQhGXV7GMgwpAAAAJwAAAAgAAAAAAAAAAAAAAIABAAAAAG1pbWV0eXBlUEsBAhQDFAAAAAgAcQhGXbddRbCoAAAARQEAAAsAAAAAAAAAAAAAAIABTwAAAGNvbnRlbnQueG1sUEsFBgAAAAACAAIAbwAAACABAAAAAA==";
 
+/**
+ * ZIP whose entries declare a different uncompressed size than they carry.
+ *
+ * The size on disk never says what a document will cost in memory, and that declared size is what
+ * a reader has to check before inflating. Building the bomb by really compressing 256 MB of zeros
+ * spends seconds of CPU on a CI runner (fflate's deflate on zeros took 8 s there, past the test
+ * timeout), so the size is written into both headers instead: `fflate` sizes its output buffer from
+ * the central directory, so the old reader still allocated it, and the cap reads the same field.
+ */
+async function zipDeclaringSizes(
+  files: Record<string, Uint8Array>,
+  declared: Record<string, number>,
+): Promise<Uint8Array> {
+  const { zipSync } = await import("fflate");
+  const zip = zipSync(files);
+  const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  // End of central directory: 22 bytes of fixed fields when the archive has no comment.
+  const eocd = zip.byteLength - 22;
+  const entries = view.getUint16(eocd + 10, true);
+  let cd = view.getUint32(eocd + 16, true);
+  for (let i = 0; i < entries; i += 1) {
+    const nameLength = view.getUint16(cd + 28, true);
+    const extraLength = view.getUint16(cd + 30, true);
+    const commentLength = view.getUint16(cd + 32, true);
+    const name = new TextDecoder().decode(zip.subarray(cd + 46, cd + 46 + nameLength));
+    const size = declared[name];
+    if (size !== undefined) {
+      view.setUint32(cd + 24, size, true); // central directory: uncompressed size
+      view.setUint32(view.getUint32(cd + 42, true) + 22, size, true); // local header: same field
+    }
+    cd += 46 + nameLength + extraLength + commentLength;
+  }
+  return zip;
+}
+
 let dir: string;
 
 beforeAll(() => {
@@ -80,6 +115,39 @@ describe("extractOfficeText", () => {
     expect(out.text).toContain("a b c");
     expect(out.text).not.toContain("a <b c");
     expect(out.text).toContain("5 < 10");
+  });
+
+  it("refuses a document that declares more than the cap, without inflating it", async () => {
+    const { extractOfficeText } = await import("./office.server");
+    // The bomb is invisible in the file size: a few hundred bytes that declare 256 MB of
+    // `content.xml`. The cap reads that number from the central directory, so the decision is made
+    // before inflating; the old reader allocated the buffer and unzipped whatever came (the real
+    // 256 MB-of-zeros file took 2 s and +549 MB of RSS, measured on this machine).
+    const bomb = await zipDeclaringSizes(
+      { "content.xml": new Uint8Array(1024) },
+      { "content.xml": 256 * 1024 * 1024 },
+    );
+    expect(bomb.length).toBeLessThan(4096);
+    const out = await extractOfficeText(bomb, ".odt");
+    expect(out.text).toBeNull();
+    expect(out.note).toContain("no se lee para no agotar la memoria");
+  });
+
+  it("inflates only the slides of a .pptx, never its media", async () => {
+    const { strToU8 } = await import("fflate");
+    const { extractOfficeText, MAX_OFFICE_UNCOMPRESSED_BYTES } = await import("./office.server");
+    // A deck can carry a video bigger than the cap. It is never read, so it must neither be
+    // inflated nor turn the document into "too big": the slide text comes back with no note.
+    const deck = await zipDeclaringSizes(
+      {
+        "ppt/slides/slide1.xml": strToU8("<p:sld><a:t>Titulo diapositiva</a:t></p:sld>"),
+        "ppt/media/video.bin": new Uint8Array(1024),
+      },
+      { "ppt/media/video.bin": MAX_OFFICE_UNCOMPRESSED_BYTES + 1024 * 1024 },
+    );
+    const out = await extractOfficeText(deck, ".pptx");
+    expect(out.text).toContain("Titulo diapositiva");
+    expect(out.note).toBeUndefined();
   });
 
   it("reports a broken Office file instead of throwing", async () => {

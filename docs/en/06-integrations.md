@@ -48,7 +48,9 @@ to touch Google Cloud.
 Reads are bounded: **25 MB per file**. The size comes with the metadata, so a bigger file is
 refused with a clear note before it is downloaded; for plain text and for exports (Docs to text,
 Sheets to CSV) the cap is applied while reading, so a huge document never reaches process memory
-whole.
+whole. A `.pptx` or an OpenDocument also has a **64 MB decompressed** cap: a 256 KiB ZIP can ask for
+256 MB of memory when inflated, so a document declaring more is refused with a note instead of being
+unzipped.
 
 ### 2.2 Scopes
 
