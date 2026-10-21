@@ -13,6 +13,13 @@ su propia variable, y cambiar de proveedor no borra la del anterior. El asistent
 responde siempre en español, muestra su razonamiento y transmite token a token
 (hasta 50 pasos por turno).
 
+Cada paso tiene un plazo máximo (4 minutos, o lo que fije
+`OPENEXPERT_CHAT_TIMEOUT_MS`). El `fetch` de Node no trae plazo propio, así que un
+proveedor que acepta la conexión y no contesta dejaba el turno transmitiendo hasta
+que el usuario pulsaba Stop. El plazo cubre también las herramientas de ese paso,
+por eso es mayor que la más lenta (`run_python` corre hasta 120 s), y cuando vence
+el turno termina con un mensaje que lo explica en vez de pararse en silencio.
+
 ## 2. Catálogo de herramientas
 
 El asistente no accede directamente a la base de datos; solo puede invocar estas

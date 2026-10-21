@@ -47,8 +47,8 @@ import { delimiter, join } from "node:path";
 
 /** A run that is long enough for a real calculation and short enough to not look hung. */
 const DEFAULT_TIMEOUT_MS = 30_000;
-/** The ceiling a caller cannot raise, whatever it asks for. */
-const MAX_TIMEOUT_MS = 120_000;
+/** The ceiling a caller cannot raise, whatever it asks for. Exported so the chat deadline can be measured against it. */
+export const MAX_TIMEOUT_MS = 120_000;
 /** Output kept for the model; the rest is dropped with a note, never silently. */
 const MAX_OUTPUT = 20_000;
 /** Bytes held in memory while the script runs; beyond this it is killed. */

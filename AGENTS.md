@@ -57,6 +57,11 @@ disagree, the code is right and the docs are the bug.
 
 - Chat streams from `POST /api/chat` (`src/routes/api/chat.ts`,
   `src/lib/ai/chat.server.ts`).
+- A step has a hard deadline (`src/lib/ai/deadline.ts`, 4 min, overridable with
+  `OPENEXPERT_CHAT_TIMEOUT_MS`): `fetch` has no timeout of its own, so a provider
+  that accepts the connection and never answers ends the turn with an error the
+  interface shows. The deadline covers the tools of the step, so it outlasts
+  `run_python` (120 s).
 - Prompt injection is blocked by a regex gate (`src/lib/ai/injection.ts`) before
   the model runs, and the attempt is logged with status `denied`.
 - Tools are defined in `src/lib/ai/tools.ts`. Tools enforce **per-Expert domain
