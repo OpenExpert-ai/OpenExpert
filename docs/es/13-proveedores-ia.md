@@ -67,6 +67,22 @@ que no hay nada más que apuntar. **Listar**, en el panel, le pregunta al
 proveedor qué modelos admite esa clave y ofrece lo que responde, junto a los
 identificadores que el catálogo ya conoce.
 
+## 3.1 Probar sin guardar
+
+**Probar conexión** y **Listar** preguntan por **lo que hay escrito en el
+formulario**, no por lo que está guardado: eliges otro proveedor, escribes su
+clave y la pregunta va a ese proveedor con esa clave, aunque no hayas pulsado
+guardar. El aviso dice cuál de las dos cosas se ha preguntado.
+
+Si dejas la clave en blanco, la pregunta se hace con la que ya está guardada
+(un campo en blanco significa «no la cambies», no «no hay ninguna»). Probar
+**no guarda nada**: ni la clave, ni el endpoint, ni el proveedor.
+
+```sh
+# La configuración guardada es la que se pregunta cuando no hay nada escrito
+openexpert models
+```
+
 ## 4. Cualquier endpoint OpenAI-compatible (BYOK)
 
 ```sh

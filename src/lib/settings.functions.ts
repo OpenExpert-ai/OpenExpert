@@ -8,9 +8,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { listProviderModels } from "@openexpert/openexpert/provider-models";
 import {
+  endpointOf,
   endpointSourceOf,
   providerKeyEnvOf,
   PROVIDER_KEY_VARS,
+  type ModelProviderId,
 } from "@openexpert/openexpert/model-provider";
 import { APP_VERSION } from "./version";
 import * as ee from "./ee.server";
@@ -25,6 +27,7 @@ import {
   diagnostics,
   envReport,
   paths,
+  providerProbeSchema,
   providerViews,
   rawConfigText,
   resetFileConfig,
@@ -34,6 +37,7 @@ import {
   writeProviderEndpoint,
   writeRawConfig,
   writeSecret,
+  type ProviderProbeInput,
   type SecretName,
 } from "./config.server";
 
@@ -107,23 +111,97 @@ export const updateAiSettings = createServerFn({ method: "POST" })
  * Which models the active provider serves. The work is the engine's
  * (`listProviderModels`), so the panel, the CLI and the doctor ask the same
  * question the same way — including the provider's own way of taking the key.
+ *
+ * `probe` says **what to ask**: with nothing, the question is about the
+ * stored configuration, which is what the CLI and `doctor` ask. With values,
+ * the question is about those, which is what the panel asks when the owner
+ * has written a provider, an endpoint or a key that are not saved yet.
+ *
+ * The key is the delicate part: it is used for the question and dropped. It
+ * never reaches `secrets.json` nor `openexpert.json`, because probing is not
+ * saving. The engine reads the key from the environment it is handed, so the
+ * call gets a **copy** of the environment with that key in the variable the
+ * provider's record declares: the running process keeps the stored key, and
+ * the next call is about the stored configuration again.
+ *
+ * `source` tells the caller which of the two it was, so the panel can say so
+ * instead of leaving the owner guessing whether the answer was about what he
+ * just wrote or about what is on disk.
  */
-async function fetchModels(): Promise<{ ok: boolean; models: string[]; error?: string }> {
+async function fetchModels(probe?: ProviderProbeInput): Promise<{
+  ok: boolean;
+  models: string[];
+  error?: string;
+  provider: string;
+  source: "stored" | "probe";
+}> {
   const cfg = aiSettings();
-  const listed = await listProviderModels(cfg.provider);
+  const provider: ModelProviderId = probe?.provider ?? cfg.provider;
+
+  // The endpoint only counts for the providers whose address the owner points
+  // somewhere: a record with a fixed address keeps it, because that is where
+  // its own protocol lives.
+  const endpointEnv = endpointSourceOf(provider);
+  const storedEndpoint = endpointOf(provider);
+  const endpoint = probe?.endpoint && endpointEnv ? probe.endpoint : undefined;
+
+  // The key to ask with, and the variable that holds it for this provider.
+  const key = probe?.key ? probe.key : undefined;
+  const keyEnv = providerKeyEnvOf(provider);
+  const storedKey = keyEnv ? revealSecretValue(keyEnv) : null;
+
+  // The environment the engine will read: the running one, with the key that
+  // answers this question put in the variable the provider's record declares.
+  // A copy, so the running process keeps the stored key and the next call is
+  // about the stored configuration again. The key is read from the same place
+  // the panel reads it (the environment, or `secrets.json` behind it), so a
+  // probe with no key of its own asks with the stored one.
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  if (keyEnv) {
+    const answer = key ?? storedKey;
+    if (answer) env[keyEnv] = answer;
+  }
+
+  const listed = await listProviderModels(provider, {
+    env,
+    ...(endpoint ? { endpoint } : {}),
+  });
+
+  // Whether the question was about what the owner wrote or about what is
+  // stored: the same provider, the same endpoint and the same key (or none of
+  // them) means the stored configuration, and the panel says so.
+  const source =
+    provider !== cfg.provider ||
+    (endpoint !== undefined && endpoint !== storedEndpoint) ||
+    (key !== undefined && key !== storedKey)
+      ? "probe"
+      : "stored";
+
   return {
     ok: listed.ok,
     models: listed.models,
     ...(listed.error ? { error: listed.error } : {}),
+    provider,
+    source,
   };
 }
 
-export const listModels = createServerFn({ method: "GET" }).handler(async () => fetchModels());
+export const listModels = createServerFn({ method: "POST" })
+  .validator((d) => providerProbeSchema.parse(d))
+  .handler(async ({ data }) => fetchModels(data));
 
-export const testProvider = createServerFn({ method: "GET" }).handler(async () => {
-  const r = await fetchModels();
-  return { ok: r.ok, count: r.models.length, error: r.error ?? null };
-});
+export const testProvider = createServerFn({ method: "POST" })
+  .validator((d) => providerProbeSchema.parse(d))
+  .handler(async ({ data }) => {
+    const r = await fetchModels(data);
+    return {
+      ok: r.ok,
+      count: r.models.length,
+      error: r.error ?? null,
+      provider: r.provider,
+      source: r.source,
+    };
+  });
 
 /**
  * Returns a stored secret so the local settings panel can show it on demand.

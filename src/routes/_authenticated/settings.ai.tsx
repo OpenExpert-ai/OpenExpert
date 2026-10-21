@@ -16,6 +16,7 @@ import { Copy, ExternalLink, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import { SettingsCard as Card, SettingsField as Field } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
+import { probePayload } from "@/lib/provider-probe";
 import type { ModelProviderId } from "@openexpert/openexpert/model-provider";
 import {
   getSettings,
@@ -38,7 +39,19 @@ const SOURCE_LABEL: Record<string, string> = {
   default: "valor por defecto",
 };
 
-function AiSettings() {
+/**
+ * What the two buttons ask about. The panel keeps the provider, the endpoint
+ * and the key in its own state and only writes them when the owner saves, so
+ * "Probar conexión" and "Listar" have to say **what** they are asking about:
+ * with these values the question is about what is written in the form, and
+ * without them it is about what is stored.
+ */
+const SOURCE_HINT: Record<"stored" | "probe", string> = {
+  stored: "Preguntado por la configuración guardada.",
+  probe: "Preguntado por lo que has escrito, sin guardar.",
+};
+
+export function AiSettings() {
   const get = useServerFn(getSettings);
   const save = useServerFn(updateAiSettings);
   const list = useServerFn(listModels);
@@ -106,6 +119,14 @@ function AiSettings() {
   const currentDraft = view?.key ? (keyDrafts[view.id] ?? "") : "";
   const keyName = view?.key?.name ?? "";
 
+  /**
+   * What the two buttons ask about: the provider, the endpoint and the key
+   * that are written right now, not the ones on disk. The key travels only
+   * when the owner has written one — an empty field means "the stored key",
+   * because leaving it blank is how the panel says "do not change it".
+   */
+  const probe = () => probePayload(view, endpoint, currentDraft);
+
   const onSave = async () => {
     if (!view) return;
     setBusy("save");
@@ -139,12 +160,14 @@ function AiSettings() {
   const onList = async () => {
     setBusy("list");
     try {
-      const r = await list();
+      const r = await list({ data: probe() });
       if (!r.ok) toast.error(r.error ?? t("No se pudieron listar los modelos"));
       else if (!r.models.length) toast.info(t("El proveedor no devolvió modelos"));
       else {
         setListed(r.models);
-        toast.success(t("{n} modelos disponibles", { n: r.models.length }));
+        toast.success(t("{n} modelos disponibles", { n: r.models.length }), {
+          description: t(SOURCE_HINT[r.source]),
+        });
       }
     } finally {
       setBusy(null);
@@ -154,8 +177,11 @@ function AiSettings() {
   const onTest = async () => {
     setBusy("test");
     try {
-      const r = await test();
-      if (r.ok) toast.success(t("Conexión correcta · {n} modelos", { n: r.count }));
+      const r = await test({ data: probe() });
+      if (r.ok)
+        toast.success(t("Conexión correcta · {n} modelos", { n: r.count }), {
+          description: t(SOURCE_HINT[r.source]),
+        });
       else toast.error(r.error ?? t("No se pudo conectar"));
     } finally {
       setBusy(null);

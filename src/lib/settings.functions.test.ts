@@ -267,9 +267,23 @@ describe("updateAiSettings", () => {
 
 describe("listModels y testProvider", () => {
   it("piden los modelos del proveedor activo al motor", async () => {
-    expect(await fns.testProvider()).toEqual({ ok: true, count: 2, error: null });
-    expect(await fns.listModels()).toEqual({ ok: true, models: ["m1", "m2"] });
-    expect(providerModels.listProviderModels).toHaveBeenCalledWith(cfg.aiSettings().provider);
+    expect(await fns.testProvider()).toEqual({
+      ok: true,
+      count: 2,
+      error: null,
+      provider: "google",
+      source: "stored",
+    });
+    expect(await fns.listModels()).toEqual({
+      ok: true,
+      models: ["m1", "m2"],
+      provider: "google",
+      source: "stored",
+    });
+    expect(providerModels.listProviderModels).toHaveBeenCalledWith(
+      cfg.aiSettings().provider,
+      expect.objectContaining({ env: expect.anything() }),
+    );
   });
 
   it("propagan el error del proveedor sin inventarse modelos", async () => {
@@ -278,8 +292,116 @@ describe("listModels y testProvider", () => {
       models: [],
       error: "401 Unauthorized",
     });
-    expect(await fns.testProvider()).toEqual({ ok: false, count: 0, error: "401 Unauthorized" });
-    expect(await fns.listModels()).toEqual({ ok: false, models: [], error: "401 Unauthorized" });
+    expect(await fns.testProvider()).toEqual({
+      ok: false,
+      count: 0,
+      error: "401 Unauthorized",
+      provider: "google",
+      source: "stored",
+    });
+    expect(await fns.listModels()).toEqual({
+      ok: false,
+      models: [],
+      error: "401 Unauthorized",
+      provider: "google",
+      source: "stored",
+    });
+  });
+});
+
+/**
+ * The panel keeps the provider, the endpoint and the key in its own state and
+ * writes them only when the owner saves. "Probar conexión" and "Listar" used
+ * to ask about the **stored** configuration whatever was written in the form,
+ * so choosing another provider, typing a key and pressing the button gave the
+ * answer of the previous one — a wrong key could even answer "Conexión
+ * correcta" because the old one was still on disk.
+ *
+ * These tests pin the other half of it: what is written in the form is what
+ * gets asked, and asking does not save.
+ */
+describe("probar una configuración sin guardarla", () => {
+  it("pregunta por el proveedor escrito, no por el guardado", async () => {
+    await expect(fns.testProvider({ data: { provider: "anthropic" } })).resolves.toMatchObject({
+      provider: "anthropic",
+      source: "probe",
+    });
+    expect(providerModels.listProviderModels).toHaveBeenCalledWith(
+      "anthropic",
+      expect.objectContaining({ env: expect.anything() }),
+    );
+  });
+
+  it("pregunta con el endpoint escrito, no por el guardado", async () => {
+    await fns.listModels({
+      data: { provider: "openai-compatible", endpoint: "https://nuevo.test/v1" },
+    });
+    expect(providerModels.listProviderModels).toHaveBeenCalledWith(
+      "openai-compatible",
+      expect.objectContaining({ endpoint: "https://nuevo.test/v1" }),
+    );
+  });
+
+  it("pregunta con la clave escrita, sin tocar la que está guardada", async () => {
+    cfg.writeSecret("GOOGLE_API_KEY", "clave-guardada");
+    process.env["GOOGLE_API_KEY"] = "clave-guardada";
+
+    await fns.testProvider({ data: { provider: "google", key: "clave-nueva" } });
+
+    const [, opts] = providerModels.listProviderModels.mock.calls.at(-1)!;
+    expect(opts.env["GOOGLE_API_KEY"]).toBe("clave-nueva");
+    // El proceso sigue con la clave guardada: preguntar no es guardar.
+    expect(process.env["GOOGLE_API_KEY"]).toBe("clave-guardada");
+  });
+
+  it("sin clave escrita pregunta con la guardada", async () => {
+    cfg.writeSecret("GOOGLE_API_KEY", "clave-guardada");
+    process.env["GOOGLE_API_KEY"] = "clave-guardada";
+
+    await fns.testProvider({ data: { provider: "google" } });
+
+    const [, opts] = providerModels.listProviderModels.mock.calls.at(-1)!;
+    expect(opts.env["GOOGLE_API_KEY"]).toBe("clave-guardada");
+  });
+
+  it("probar no escribe ni en secrets.json ni en openexpert.json", async () => {
+    cfg.writeSecret("GOOGLE_API_KEY", "clave-guardada");
+    const secretsBefore = readFileSync(join(dataDir, "secrets.json"), "utf8");
+    const configBefore = existsSync(join(cwd, "openexpert.json"))
+      ? readFileSync(join(cwd, "openexpert.json"), "utf8")
+      : null;
+
+    await fns.testProvider({ data: { provider: "google", key: "clave-nueva" } });
+    await fns.listModels({
+      data: { provider: "openai-compatible", endpoint: "https://nuevo.test/v1", key: "k" },
+    });
+
+    expect(readFileSync(join(dataDir, "secrets.json"), "utf8")).toBe(secretsBefore);
+    const configAfter = existsSync(join(cwd, "openexpert.json"))
+      ? readFileSync(join(cwd, "openexpert.json"), "utf8")
+      : null;
+    expect(configAfter).toBe(configBefore);
+  });
+
+  it("dice si la pregunta fue por lo guardado o por lo escrito", async () => {
+    // Mismo proveedor, sin endpoint ni clave: la pregunta es por lo guardado.
+    await expect(fns.testProvider({ data: { provider: "google" } })).resolves.toMatchObject({
+      source: "stored",
+    });
+    // Con una clave escrita, es por lo escrito.
+    await expect(
+      fns.testProvider({ data: { provider: "google", key: "otra" } }),
+    ).resolves.toMatchObject({ source: "probe" });
+  });
+
+  it("rechaza un proveedor que el catálogo no conoce", async () => {
+    await expect(fns.testProvider({ data: { provider: "inventado" } })).rejects.toThrow();
+  });
+
+  it("rechaza un endpoint que no es una URL", async () => {
+    await expect(
+      fns.testProvider({ data: { provider: "openai-compatible", endpoint: "no-es-url" } }),
+    ).rejects.toThrow();
   });
 });
 
