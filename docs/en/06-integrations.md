@@ -107,6 +107,8 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 
 - Access is **only inside the granted folders**. Every path is resolved with
   `realpath` and checked against the roots, so symlink escapes are rejected.
+  Creating a file refuses a name that already exists, symlinks included — a
+  dangling one counts — so the write never follows an entry out of the folder.
 - Reads return text, PDF text and Office content (Word `.docx`, Excel `.xlsx`,
   PowerPoint `.pptx`, OpenDocument). Writes (`create_local_file`,
   `update_local_file`) require **human approval**, like Drive writes.

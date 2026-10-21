@@ -70,7 +70,9 @@ Rules:
   generated and stored on the local machine (`~/.openexpert/secret.key`).
 - Local files are read/written **only** inside the granted folders: every path
   is resolved with `realpath` and checked against the roots, so symlink escapes
-  are rejected. Dotfiles, `.git`, `node_modules` and secret files are skipped.
+  are rejected. Creating a file also refuses a name that already exists — a
+  symlink counts even when it dangles, so the write cannot follow it out of the
+  folder. Dotfiles, `.git`, `node_modules` and secret files are skipped.
 - Google user data is used only for the in-product features (chat, source
   list, backup). No training of non-personalised models. No sale or transfer to
   advertising platforms. See [`PRIVACY.md`](../../PRIVACY.md).

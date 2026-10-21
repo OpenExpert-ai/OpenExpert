@@ -75,8 +75,11 @@ Reglas:
   (`~/.openexpert/secret.key`).
 - Los archivos locales se leen/escriben **solo** dentro de las carpetas
   autorizadas: cada ruta se resuelve con `realpath` y se comprueba contra las
-  raíces, así que se rechazan los enlaces simbólicos que escapen. Se omiten
-  ficheros ocultos, `.git`, `node_modules` y ficheros de secretos.
+  raíces, así que se rechazan los enlaces simbólicos que escapen. Al crear un
+  archivo se rechaza además un nombre que ya exista, y un enlace simbólico
+  cuenta aunque esté roto, así que la escritura no puede seguirlo fuera de la
+  carpeta. Se omiten ficheros ocultos, `.git`, `node_modules` y ficheros de
+  secretos.
 - Los datos de Google se usan solo para funciones visibles del producto
   (chat, lista de fuentes, auditoría). No entrenamos modelos no
   personalizados. No vendemos ni cedemos los datos a terceros. Ver

@@ -1,5 +1,13 @@
 // SPDX-License-Identifier: MIT
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -89,6 +97,36 @@ describe("read / write / create", () => {
     expect(() => fs.createLocalFile(root, "new.txt", [root], "dup")).toThrow();
 
     expect(() => fs.createLocalFile(outside, "evil.txt", [root], "x")).toThrow();
+  });
+});
+
+describe("createLocalFile y los enlaces simbólicos", () => {
+  it("no escribe fuera de la raíz a través de un enlace roto", async () => {
+    const fs = await import("./local-fs.server");
+    const victima = join(outside, "victima.md");
+    // El enlace existe en la carpeta autorizada y apunta a un fichero de fuera que aún no existe:
+    // `existsSync` responde false (sigue el enlace) y el write lo creaba al otro lado.
+    symlinkSync(victima, join(root, "roto.md"));
+    expect(() => fs.createLocalFile(root, "roto.md", [root], "escrito")).toThrow(/Ya existe/);
+    expect(existsSync(victima)).toBe(false);
+  });
+
+  it("tampoco escribe fuera a través de un enlace válido", async () => {
+    const fs = await import("./local-fs.server");
+    const victima = join(outside, "secuestrado.md");
+    writeFileSync(victima, "original");
+    symlinkSync(victima, join(root, "valido.md"));
+    expect(() => fs.createLocalFile(root, "valido.md", [root], "escrito")).toThrow(
+      /fuera de las carpetas autorizadas/,
+    );
+    expect(readFileSync(victima, "utf8")).toBe("original");
+  });
+
+  it("sigue creando el archivo cuando el nombre está libre", async () => {
+    const fs = await import("./local-fs.server");
+    const created = fs.createLocalFile(root, "libre.txt", [root], "contenido");
+    expect(created.name).toBe("libre.txt");
+    expect(readFileSync(join(root, "libre.txt"), "utf8")).toBe("contenido");
   });
 });
 
