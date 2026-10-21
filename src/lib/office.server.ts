@@ -249,6 +249,20 @@ function pptxText(buf: Uint8Array): ZipText {
   return { text, skipped };
 }
 
+/**
+ * Paragraphs and headings of an OpenDocument, in the order the document has them.
+ *
+ * Two `collect` passes —every `text:p`, then every `text:h`— read a document as its body followed
+ * by all its titles: an `.odt` with «Capítulo 1 / párrafo / Capítulo 2 / párrafo» came out as the
+ * paragraphs and then `Capítulo 1`, `Capítulo 2`, so the model summarised the body with no idea
+ * which heading it belonged to and nothing failed. One pass over the alternation keeps the order
+ * the writer saw, and it still collects the cells of a spreadsheet and the text boxes of a slide.
+ */
+function odfParagraphs(xml: string): string[] {
+  const re = /<(text:p|text:h)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/g;
+  return [...xml.matchAll(re)].map((m) => plainText(m[2] ?? ""));
+}
+
 function odfText(buf: Uint8Array): ZipText {
   const { strFromU8 } = nodeRequire("fflate") as typeof import("fflate");
   // `content.xml` is the only entry read from an OpenDocument: `styles.xml` and the embedded
@@ -257,6 +271,6 @@ function odfText(buf: Uint8Array): ZipText {
   const content = files["content.xml"];
   if (!content) return { text: "", skipped };
   const xml = strFromU8(content);
-  const text = collect(xml, "text:p").concat(collect(xml, "text:h")).map(plainText).join("\n");
+  const text = odfParagraphs(xml).join("\n");
   return { text, skipped };
 }
