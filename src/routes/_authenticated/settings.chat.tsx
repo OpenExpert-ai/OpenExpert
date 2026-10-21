@@ -118,7 +118,7 @@ function ChatSettings() {
         <Field
           label={t("Patrones extra (uno por línea)")}
           hint={t(
-            "Expresiones regulares adicionales. Se ignoran las inválidas; al guardar se rechazan las que repiten un grupo que ya lleva un cuantificador o una alternación dentro (pueden congelar el servidor).",
+            "Expresiones regulares adicionales. Se ignoran las inválidas; al guardar se rechazan las que pueden congelar el servidor, comprobando lo que tardan en ejecutarse contra un mensaje largo (no solo las que repiten un grupo con un cuantificador o una alternación dentro).",
           )}
         >
           <textarea

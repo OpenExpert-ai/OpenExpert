@@ -38,6 +38,41 @@ describe("openexpert.json", () => {
     ).toEqual(["hola|adios"]);
   });
 
+  it("rejects a pattern that is slow although its shape looks harmless", async () => {
+    // The hole of T-0184: these have no repeated group, so the shape rule said
+    // yes. The guard now measures the cost, and these three are the ones the
+    // task measured: the first froze the app for 23.4 s on a sixty-character
+    // message, the second never came back.
+    const { parseRawConfig } = await import("./config.server");
+    expect(() =>
+      parseRawConfig(JSON.stringify({ chat: { injectionExtraPatterns: [".*.*.*.*.*.*b"] } })),
+    ).toThrow();
+    expect(() =>
+      parseRawConfig(JSON.stringify({ chat: { injectionExtraPatterns: [".*.*.*.*.*.*.*.*.*b"] } })),
+    ).toThrow();
+    expect(() =>
+      parseRawConfig(JSON.stringify({ chat: { injectionExtraPatterns: ["a*".repeat(14) + "b"] } })),
+    ).toThrow();
+  });
+
+  it("rejects a slow pattern in the settings panel too", async () => {
+    // The panel and the raw editor are two doors to the same file, so both
+    // have to refuse the same pattern.
+    const { chatUpdateSchema } = await import("./config.server");
+    const base = {
+      maxSteps: 50,
+      injectionGuard: true,
+      visionPdf: false,
+      retentionDays: 30,
+    };
+    expect(() =>
+      chatUpdateSchema.parse({ ...base, injectionExtraPatterns: [".*.*.*.*.*.*b"] }),
+    ).toThrow();
+    expect(() =>
+      chatUpdateSchema.parse({ ...base, injectionExtraPatterns: ["ignora (tus )?instrucciones"] }),
+    ).not.toThrow();
+  });
+
   it("writes, reads, edits and resets the file", async () => {
     const { writeFileConfig, readFileConfigRaw, resetFileConfig, effectiveConfig } =
       await import("./config.server");

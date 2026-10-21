@@ -30,6 +30,13 @@ restricted to the pages shared in Notion's picker.
    comes from the client. A denied turn is not stored, and the history is read
    back without the messages the filter rejects, so a conversation cannot stay
    locked by a message that is already inside it.
+   The owner's extra patterns are checked by **measuring how long they take**
+   against an adversarial input (`src/lib/ai/redos.server.ts`), not only by
+   their shape: an expression with catastrophic backtracking does not fail, it
+   freezes the process, and the check happens on the thread that serves the
+   application, for every message of the turn. The measurement runs inside a
+   `vm` context, whose timeout cuts the expression off if it does not come
+   back, so measuring a bad pattern does not freeze whoever measures it.
 2. **Server-side checks.** Domain isolation is enforced in `chat.server.ts`, not
    by the model.
 3. **Human approval.** The assistant only _proposes_ actions (`propose_*`);
