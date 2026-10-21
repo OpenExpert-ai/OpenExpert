@@ -483,7 +483,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         "Lee el contenido de un archivo local autorizado (texto, PDF, Word, Excel y PowerPoint). Pasa la ruta que devuelve list_local_files o search_local_files. " +
         "Devuelve el archivo en ventanas de 2000 líneas: si la respuesta trae `hasMore`, vuelve a llamar con `offset: nextOffset` para seguir por donde iba. " +
         "Si además trae `nextCharOffset`, mándalo en `charOffset` con ese mismo `offset`: una línea que no cabe en una lectura se continúa así, y sin ese dato su resto no se puede pedir. " +
-        "En hojas de cálculo y CSV devuelve además `sheets`, con el nombre de cada hoja, cuántas filas tiene y cómo se llaman sus columnas.",
+        "En hojas de cálculo y CSV devuelve además `sheets`, con el nombre de cada hoja, cuántas filas de datos tiene (la cabecera va en `columns` y no se cuenta como fila) y cómo se llaman esas columnas.",
       inputSchema: z.object({
         path: z.string(),
         offset: z.number().int().min(1).optional(),

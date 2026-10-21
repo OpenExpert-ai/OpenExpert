@@ -76,6 +76,35 @@ describe("extractOfficeText", () => {
     expect(out.text).toContain("Acme,42");
   });
 
+  it("no cuenta la cabecera como fila de datos", async () => {
+    const { extractOfficeText } = await import("./office.server");
+    // El fixture es cabecera (Nombre,Valor) + una fila (Acme,42): el mismo `rows` que el lector
+    // de CSV, que ya descuenta la cabecera. Contarla daba 2 y el modelo repetía un recuento que
+    // no coincide con lo que se ve en Excel.
+    const out = await extractOfficeText(Buffer.from(XLSX_B64, "base64"), ".xlsx");
+    expect(out.sheets?.[0]?.columns).toEqual(["Nombre", "Valor"]);
+    expect(out.sheets?.[0]?.rows).toBe(1);
+  });
+
+  it("cuenta cada hoja por separado y no cuenta la cabecera de ninguna", async () => {
+    const { createRequire } = await import("node:module");
+    const ExcelJS = createRequire(import.meta.url)("exceljs") as typeof import("exceljs");
+    const wb = new ExcelJS.Workbook();
+    const datos = wb.addWorksheet("Datos");
+    datos.addRow(["Nombre", "Valor"]);
+    datos.addRow(["Ana", 100]);
+    datos.addRow(["Luis", 200]);
+    wb.addWorksheet("SoloCabecera").addRow(["Total"]);
+    wb.addWorksheet("Vacia");
+    const { extractOfficeText } = await import("./office.server");
+    const out = await extractOfficeText(new Uint8Array(await wb.xlsx.writeBuffer()), ".xlsx");
+    expect(out.sheets?.map((s) => [s.name, s.rows])).toEqual([
+      ["Datos", 2],
+      ["SoloCabecera", 0],
+      ["Vacia", 0],
+    ]);
+  });
+
   it("reads slide text from a .pptx", async () => {
     const { extractOfficeText } = await import("./office.server");
     const out = await extractOfficeText(Buffer.from(PPTX_B64, "base64"), ".pptx");

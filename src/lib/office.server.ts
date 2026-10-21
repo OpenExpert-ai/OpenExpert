@@ -113,20 +113,20 @@ async function xlsxText(buf: Uint8Array): Promise<{ text: string; sheets: SheetI
   wb.eachSheet((ws) => {
     const sheetLines: string[] = [`# ${ws.name}`];
     let header: string[] | null = null;
+    let dataRows = 0;
     ws.eachRow({ includeEmpty: false }, (row) => {
       const cells: string[] = [];
       row.eachCell({ includeEmpty: true }, (cell) => cells.push(csvCell(cellText(cell.value))));
+      // The first row read is the header and lives only in `columns`: it is not a data row.
+      // Counting it as one inflates every table by one, and the model reports a row count that
+      // does not match what the user sees in Excel. The CSV path (`csvStructure`) counts the
+      // same way, so `rows` means the same thing for both formats.
       if (!header) header = cells;
+      else dataRows += 1;
       sheetLines.push(cells.join(","));
     });
     lines.push(...sheetLines);
-    // The header row is not a data row. Counting it as one would inflate every table by one,
-    // and the model would report a row count that does not match what the user sees in Excel.
-    sheets.push({
-      name: ws.name,
-      rows: Math.max(0, sheetLines.length - 1),
-      columns: header ?? [],
-    });
+    sheets.push({ name: ws.name, rows: dataRows, columns: header ?? [] });
   });
   return { text: lines.join("\n"), sheets };
 }
