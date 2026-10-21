@@ -49,7 +49,9 @@ necesitas entrar en Google Cloud.
 Las lecturas tienen tope: **25 MB por archivo**. El tamaño viaja en los metadatos, así que un
 archivo mayor se rechaza con una nota clara antes de descargarlo; en el texto suelto y en las
 exportaciones (Docs a texto, Sheets a CSV) el tope se aplica mientras se lee, de modo que un
-documento enorme nunca llega entero a la memoria del proceso.
+documento enorme nunca llega entero a la memoria del proceso. Un `.pptx` o un OpenDocument tiene
+además un tope de **64 MB ya descomprimido**: un ZIP de 256 KiB puede pedir 256 MB de memoria al
+inflarse, así que un documento que declare más se rechaza con una nota en vez de descomprimirse.
 
 ### 2.2 Scopes
 
