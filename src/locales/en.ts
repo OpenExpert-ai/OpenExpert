@@ -440,6 +440,9 @@ export const en: Record<string, string> = {
   "{n} modelos disponibles": "{n} models available",
   "Conexión correcta · {n} modelos": "Connection OK · {n} models",
   "No se pudo conectar": "Could not connect",
+  "Preguntado por la configuración guardada.": "Asked about the saved configuration.",
+  "Preguntado por lo que has escrito, sin guardar.":
+    "Asked about what you wrote, without saving it.",
   "No hay valor definido": "No value set",
   "Cargando configuración…": "Loading configuration…",
   "variable de entorno": "environment variable",

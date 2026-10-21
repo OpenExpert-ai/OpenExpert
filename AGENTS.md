@@ -113,6 +113,11 @@ disagree, the code is right and the docs are the bug.
 - `src/lib/config.server.ts` loads both files into `process.env` at startup; the
   `/settings` panel (`src/lib/settings.functions.ts`) writes the files and
   mirrors changes at runtime, so changes take effect without a restart.
+- **Probing is not saving.** "Probar conexión" and "Listar" ask about what the
+  form holds (`probePayload` in `src/lib/provider-probe.ts`), and the key they
+  carry is used for that question and dropped: it never reaches `secrets.json`.
+  Called with nothing, they ask about the stored configuration, which is what
+  the CLI's `models` asks.
 - The file schema is `packages/openexpert/schema/openexpert.schema.json`
   (`@openexpert/openexpert/config`).
 - Interface language (Spanish/English) is a `settings` preference; the client

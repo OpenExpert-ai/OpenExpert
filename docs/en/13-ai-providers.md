@@ -67,6 +67,22 @@ there is nothing else to point anywhere. **List** in the settings panel asks the
 provider which models that key can use and offers what it answers, next to the
 ids the catalogue already knows.
 
+## 3.1 Probing without saving
+
+**Probar conexión** and **List** ask about **what is written in the form**, not
+about what is stored: you pick another provider, type its key, and the question
+goes to that provider with that key, even if you have not pressed save. The
+notice says which of the two things was asked.
+
+If you leave the key blank, the question uses the stored one (a blank field
+means "do not change it", not "there is none"). Probing **saves nothing**: not
+the key, not the endpoint, not the provider.
+
+```sh
+# The saved configuration is what gets asked when nothing is written
+openexpert models
+```
+
 ## 4. Any OpenAI-compatible endpoint (BYOK)
 
 ```sh

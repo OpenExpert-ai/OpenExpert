@@ -566,7 +566,7 @@ export type ChatUpdateInput = z.infer<typeof chatUpdateSchema>;
 
 /* ------------------------------ validation ------------------------------ */
 
-const urlOrEmpty = z
+export const urlOrEmpty = z
   .string()
   .trim()
   .refine((v) => v === "" || /^https?:\/\/\S+$/.test(v), { message: "URL no válida" });
@@ -597,3 +597,28 @@ export const aiUpdateSchema = z.object({
 });
 
 export type AiUpdateInput = z.infer<typeof aiUpdateSchema>;
+
+/**
+ * What to ask a provider, and with what.
+ *
+ * Every field is optional and **nothing here is stored**: a probe is a
+ * question, not a save. What a field leaves out comes from the stored
+ * configuration, so a caller with no arguments keeps asking about the stored
+ * one (the CLI's `models` and `doctor` ask the engine directly, and the panel
+ * sends what its form holds).
+ */
+export const providerProbeSchema = z
+  .object({
+    /** Provider to ask. Absent → the stored one. */
+    provider: z.enum(PROVIDER_IDS).optional(),
+    /** Endpoint to ask. Absent or empty → the stored one. */
+    endpoint: urlOrEmpty.optional(),
+    /**
+     * Key to ask with. Absent or empty → the stored one. It is used for the
+     * question and dropped: it is never written to `secrets.json`.
+     */
+    key: z.string().max(4096).optional(),
+  })
+  .optional();
+
+export type ProviderProbeInput = z.infer<typeof providerProbeSchema>;
