@@ -44,6 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ExpertForm } from "./experts";
+import { ApprovalOutcome } from "@/components/chat/ApprovalOutcome";
 
 // react-markdown + remark-gfm + micromark weigh ~200 KB raw (~55 KB gzip). They
 // are only needed once there is assistant text to render, so they load on
@@ -682,19 +683,7 @@ function AssistantMsg({
             );
           }
           if (part.state === "approval-responded" || part.state === "output-denied") {
-            return (
-              <div
-                key={part.toolCallId + "dn"}
-                className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground"
-              >
-                <X className="size-3.5" />{" "}
-                {part.type.includes("notion")
-                  ? t("Escritura en Notion denegada")
-                  : part.type.includes("local")
-                    ? t("Escritura local denegada")
-                    : t("Acceso a Google Drive denegado")}
-              </div>
-            );
+            return <ApprovalOutcome key={part.toolCallId + "dn"} part={part} />;
           }
           if (part.state === "output-available") {
             return (
