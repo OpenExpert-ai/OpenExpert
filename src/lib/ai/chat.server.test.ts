@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { UIMessageChunk } from "ai";
 import { APPROVAL_REQUIRED } from "./tools";
 
 let dir: string;
@@ -23,14 +24,29 @@ afterAll(() => {
 const mocks = vi.hoisted(() => ({
   streamText: vi.fn(),
   convert: vi.fn(),
+  uiStream: vi.fn(),
+  uiResponse: vi.fn(),
   getLanguageModel: vi.fn(),
   modelKeyError: vi.fn(),
   selectedProvider: vi.fn(() => "google"),
 }));
 
+const real = vi.hoisted(() => ({
+  createUIMessageStreamResponse: null as
+    null | ((init: { stream: ReadableStream<UIMessageChunk> }) => Response),
+}));
+
 vi.mock("ai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("ai")>();
-  return { ...actual, streamText: mocks.streamText, convertToModelMessages: mocks.convert };
+  real.createUIMessageStreamResponse = actual.createUIMessageStreamResponse;
+  return {
+    ...actual,
+    streamText: mocks.streamText,
+    convertToModelMessages: mocks.convert,
+    toUIMessageStream: mocks.uiStream,
+    createUIMessageStreamResponse: (init: { stream: ReadableStream<UIMessageChunk> }) =>
+      mocks.uiResponse(init),
+  };
 });
 
 vi.mock("@/lib/engine/model-provider.server", () => ({
@@ -76,18 +92,29 @@ const validBody = () => ({
 
 type StreamOpts = {
   onError: (e: unknown) => string;
-  onFinish: (a: { responseMessage: unknown }) => Promise<void>;
+  onEnd: (a: { responseMessage: unknown }) => Promise<void>;
 };
+
+/** A chunk stream the real UI-message helpers can consume. */
+function chunkStream(): ReadableStream<UIMessageChunk> {
+  return new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      controller.enqueue({ type: "start" });
+      controller.enqueue({ type: "finish" });
+      controller.close();
+    },
+  });
+}
 
 /** A fake streamText result that captures the callbacks handleChat wires up. */
 function streamResult() {
   let opts!: StreamOpts;
-  const result = {
-    toUIMessageStreamResponse: (o: StreamOpts) => {
-      opts = o;
-      return new Response("streamed", { status: 200 });
-    },
-  };
+  const result = { stream: chunkStream() };
+  mocks.uiStream.mockImplementation((o: StreamOpts) => {
+    opts = o;
+    return chunkStream();
+  });
+  mocks.uiResponse.mockImplementation(() => new Response("streamed", { status: 200 }));
   return { result, opts: () => opts };
 }
 
@@ -96,6 +123,10 @@ beforeEach(() => {
   mocks.modelKeyError.mockReturnValue(null);
   mocks.convert.mockResolvedValue([]);
   mocks.selectedProvider.mockReturnValue("google");
+  // The denied-turn path builds its own response from a real chunk stream.
+  mocks.uiResponse.mockImplementation((init: { stream: ReadableStream<UIMessageChunk> }) =>
+    real.createUIMessageStreamResponse!(init),
+  );
 });
 
 describe("handleChat model wiring", () => {
@@ -241,7 +272,7 @@ describe("streaming persistence", () => {
     const { orm } = await getDb();
     const before = orm.select().from(schema.chatMessages).all().length;
 
-    await o.onFinish({
+    await o.onEnd({
       responseMessage: { id: "a1", role: "assistant", parts: [{ type: "text", text: "lista" }] },
     });
 
@@ -276,7 +307,7 @@ describe("streaming persistence", () => {
     const { orm } = await getDb();
     const before = orm.select().from(schema.chatMessages).all().length;
 
-    await opts().onFinish({
+    await opts().onEnd({
       responseMessage: { id: "a1", role: "assistant", parts: [{ type: "text", text: "hecho" }] },
     });
     const after = orm.select().from(schema.chatMessages).all();
@@ -514,11 +545,11 @@ describe("persistencia de una aprobación", () => {
   it("guarda la decisión y el resultado en la fila del mensaje que pidió permiso", async () => {
     // Turno 1: el modelo pide permiso.
     const t1 = await chat("aprobaciones", "c-ap", [userMessage("crea notas.md")]);
-    await t1.onFinish({ responseMessage: pedido });
+    await t1.onEnd({ responseMessage: pedido });
 
     // Turno 2: el usuario aprueba.
     const t2 = await chat("aprobaciones", "c-ap", [userMessage("crea notas.md"), aprobado]);
-    await t2.onFinish({ responseMessage: resuelto });
+    await t2.onEnd({ responseMessage: resuelto });
 
     const filas = await chatRows("aprobaciones", "c-ap");
     // Sin una segunda copia del mensaje: la fila se actualiza, no se duplica.

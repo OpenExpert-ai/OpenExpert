@@ -8,6 +8,7 @@ import {
   createUIMessageStreamResponse,
   stepCountIs,
   streamText,
+  toUIMessageStream,
   type UIMessage,
 } from "ai";
 import { and, eq } from "drizzle-orm";
@@ -22,6 +23,7 @@ import {
   selectedProvider,
 } from "@/lib/engine/model-provider.server";
 import { firstInjection, messageText } from "@/lib/ai/injection";
+import { deadlineAsError, stepDeadlineMs } from "@/lib/ai/deadline";
 import { settleHistory } from "@/lib/ai/approval-history";
 import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
 import { effectiveConfig } from "@/lib/config.server";
@@ -293,6 +295,12 @@ Formato (adáptalo a la pregunta):
     return json(500, (e as Error).message);
   }
 
+  // A provider that accepts the connection and never answers has to end the
+  // turn, not hang it: Node's fetch has no deadline of its own (see
+  // `http.server.ts`), and the adapters hand it the request. The step deadline
+  // also covers the tools of that step, so it is longer than `run_python`.
+  const stepMs = stepDeadlineMs();
+
   const result = streamText({
     model,
     system: `${system}\nProveedor activo: ${modelLabel()}.`,
@@ -310,13 +318,17 @@ Formato (adáptalo a la pregunta):
     maxOutputTokens: cfg.ai.maxOutputTokens,
     stopWhen: stepCountIs(cfg.chat.maxSteps),
     abortSignal: request.signal,
+    // Per step, not just the first chunk: `firstChunkMs` only starts once the
+    // response headers arrive, and a provider that never answers sends none.
+    timeout: { stepMs },
     providerOptions:
       selectedProvider() === "google"
         ? { google: { thinkingConfig: { includeThoughts: true } } }
         : {},
   });
 
-  return result.toUIMessageStreamResponse({
+  const uiStream = toUIMessageStream({
+    stream: result.stream,
     originalMessages: messages,
     sendReasoning: true,
     onError: (e) => {
@@ -332,7 +344,7 @@ Formato (adáptalo a la pregunta):
         .trim();
       return provider || "Error al generar la respuesta.";
     },
-    onFinish: async ({ responseMessage }) => {
+    onEnd: async ({ responseMessage }) => {
       // On an approval continuation the last incoming message is the assistant
       // message (already persisted), so only store the new assistant response.
       await save(
@@ -356,4 +368,9 @@ Formato (adáptalo a la pregunta):
         );
     },
   });
+
+  // The SDK reports the deadline as an abort and the browser drops aborts in
+  // silence —the turn just stops—, so it is rewritten as an error the interface
+  // can show.
+  return createUIMessageStreamResponse({ stream: deadlineAsError(uiStream, stepMs) });
 }
