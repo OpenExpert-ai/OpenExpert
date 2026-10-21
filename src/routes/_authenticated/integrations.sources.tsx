@@ -103,7 +103,7 @@ function SourcesPage() {
 
   useEffect(() => {
     if (search.notion === "ok") {
-      toast.success("Notion conectado.");
+      toast.success(t("Notion conectado."));
       nav({ search: {} as never });
       qc.invalidateQueries({ queryKey: ["notion-status"] });
       qc.invalidateQueries({ queryKey: ["workspace"] });
@@ -111,17 +111,17 @@ function SourcesPage() {
       toast.error(decodeURIComponent(search.notion));
       nav({ search: {} as never });
     }
-  }, [search.notion, nav, qc]);
+  }, [search.notion, nav, qc, t]);
 
   useEffect(() => {
     if (search.gdrive === "ok") {
-      toast.success("Google Drive conectado. Ahora selecciona archivos con el Picker.");
+      toast.success(t("Google Drive conectado. Ahora selecciona archivos con el Picker."));
       nav({ search: {} as never });
     } else if (search.gdrive) {
       toast.error(decodeURIComponent(search.gdrive));
       nav({ search: {} as never });
     }
-  }, [search.gdrive, nav]);
+  }, [search.gdrive, nav, t]);
 
   if (!ws) return null;
 
@@ -149,7 +149,7 @@ function SourcesPage() {
 
   const onPickFiles = async () => {
     if (!drive.data?.configured) {
-      toast.error("Falta configurar el cliente OAuth en el servidor.");
+      toast.error(t("Falta configurar el cliente OAuth en el servidor."));
       return;
     }
     setPickerLoading(true);
@@ -158,7 +158,7 @@ function SourcesPage() {
       const apiKey = (window as unknown as { __OPENEXPERT_PICKER_KEY__?: string })
         .__OPENEXPERT_PICKER_KEY__;
       if (!apiKey) {
-        toast.error(PICKER_KEY_HINT);
+        toast.error(t(PICKER_KEY_HINT));
         return;
       }
       const outcome = await pickDriveFiles({
@@ -170,7 +170,9 @@ function SourcesPage() {
       });
       if (!outcome.files.length) {
         toast.info(
-          `No se seleccionó ningún archivo (acción del Picker: ${outcome.action || "desconocida"}).`,
+          t("No se seleccionó ningún archivo (acción del Picker: {action}).", {
+            action: outcome.action || t("desconocida"),
+          }),
         );
         return;
       }
@@ -178,7 +180,7 @@ function SourcesPage() {
       await qc.invalidateQueries({ queryKey: ["drive-grants"] });
       await qc.invalidateQueries({ queryKey: ["drive-status"] });
       await qc.invalidateQueries({ queryKey: ["workspace"] });
-      toast.success(`${outcome.files.length} archivo(s) añadido(s).`);
+      toast.success(t("{n} archivo(s) añadido(s).", { n: outcome.files.length }));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -208,20 +210,20 @@ function SourcesPage() {
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="font-medium">Google Drive</div>
+              <div className="font-medium">{t("Google Drive")}</div>
               <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
                 <span
                   className={`size-1.5 rounded-full ${drive.data?.connected ? "bg-success" : "bg-muted-foreground/40"}`}
                 />
                 {drive.data?.connected ? t("conectado") : t("desconectado")}
                 {granted.data?.files.length
-                  ? ` · ${granted.data.files.length} archivo(s) elegido(s)`
+                  ? ` · ${t("{n} archivo(s) elegido(s)", { n: granted.data.files.length })}`
                   : ""}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {!drive.data?.configured && (
-                <span className="text-xs text-muted-foreground">{PICKER_KEY_HINT}</span>
+                <span className="text-xs text-muted-foreground">{t(PICKER_KEY_HINT)}</span>
               )}
               {drive.data?.configured && !drive.data.connected && (
                 <Button onClick={() => setConsentOpen(true)} disabled={connecting}>
@@ -231,7 +233,7 @@ function SourcesPage() {
               {drive.data?.connected && (
                 <>
                   <Button onClick={() => onPickFiles()} disabled={pickerLoading}>
-                    {pickerLoading ? "Abriendo Picker…" : "Seleccionar archivos"}
+                    {pickerLoading ? t("Abriendo Picker…") : t("Seleccionar archivos")}
                   </Button>
                   <Button
                     variant="outline"
@@ -254,9 +256,10 @@ function SourcesPage() {
           </div>
 
           <p className="mt-3 text-[0.7rem] text-muted-foreground">
-            OpenExpert usa <code className="rounded bg-muted px-1">drive.file</code> (no sensible,
-            archivo por archivo). Solo ves lo que elijas en el Picker. El contenido se envía al
-            proveedor del modelo (por defecto local) para responderte.
+            {t("OpenExpert usa")} <code className="rounded bg-muted px-1">drive.file</code>{" "}
+            {t(
+              "(no sensible, archivo por archivo). Solo ves lo que elijas en el Picker. El contenido se envía al proveedor del modelo (por defecto local) para responderte.",
+            )}
           </p>
           <p className="mt-2 text-[0.7rem] text-muted-foreground">
             <em>
@@ -290,7 +293,7 @@ function SourcesPage() {
                   </span>
                   <button
                     onClick={() => onRemoveGranted(f.id)}
-                    aria-label="Quitar archivo"
+                    aria-label={t("Quitar archivo")}
                     className="rounded p-1 text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Trash2 className="size-3.5" />
@@ -300,7 +303,7 @@ function SourcesPage() {
             </ul>
           ) : drive.data?.connected ? (
             <p className="mt-4 text-xs text-muted-foreground">
-              Aún no has elegido archivos. Pulsa “Seleccionar archivos”.
+              {t("Aún no has elegido archivos. Pulsa “Seleccionar archivos”.")}
             </p>
           ) : null}
         </div>
@@ -370,7 +373,7 @@ function SourcesPage() {
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="font-medium">Notion</div>
+              <div className="font-medium">{t("Notion")}</div>
               <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
                 <span
                   className={`size-1.5 rounded-full ${notion.data?.connected ? "bg-success" : "bg-muted-foreground/40"}`}
@@ -423,7 +426,9 @@ function SourcesPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{i.name}</div>
-                    <div className="text-xs text-muted-foreground">Pendiente de credenciales</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t("Pendiente de credenciales")}
+                    </div>
                   </div>
                   <span className="font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">
                     {t("Pendiente")}
@@ -440,7 +445,7 @@ function SourcesPage() {
                 </button>
                 {open === i.id && (
                   <div className="space-y-1 px-4 pb-4 text-sm text-muted-foreground">
-                    <p>(Pronto)</p>
+                    <p>{t("(Pronto)")}</p>
                   </div>
                 )}
               </div>
@@ -537,30 +542,34 @@ function SourcesPage() {
       <AlertDialog open={consentOpen} onOpenChange={setConsentOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Conectar Google Drive</AlertDialogTitle>
+            <AlertDialogTitle>{t("Conectar Google Drive")}</AlertDialogTitle>
             <AlertDialogDescription>
-              OpenExpert va a acceder a Google Drive con tu consentimiento. Antes de continuar,
-              confirma que entiendes lo siguiente:
+              {t(
+                "OpenExpert va a acceder a Google Drive con tu consentimiento. Antes de continuar, confirma que entiendes lo siguiente:",
+              )}
               <ul className="ml-4 mt-3 list-disc space-y-1 text-xs">
                 <li>
-                  Solo pedimos el scope <strong>drive.file</strong> (no sensible). El asistente no
-                  puede leer ni listar tu Drive completo.
+                  {t("Solo pedimos el scope")} <strong>drive.file</strong>{" "}
+                  {t("(no sensible). El asistente no puede leer ni listar tu Drive completo.")}
                 </li>
                 <li>
-                  Con el Picker elegirás <strong>archivo por archivo</strong> qué puede ver
-                  OpenExpert.
+                  {t("Con el Picker elegirás")} <strong>{t("archivo por archivo")}</strong>{" "}
+                  {t("qué puede ver OpenExpert.")}
                 </li>
                 <li>
-                  El contenido de los archivos elegidos se transmite al modelo para responderte; usa
-                  <strong> Ollama local</strong> si no quieres que salga de tu equipo.
+                  {t(
+                    "El contenido de los archivos elegidos se transmite al modelo para responderte; usa",
+                  )}{" "}
+                  <strong>{t("Ollama local")}</strong> {t("si no quieres que salga de tu equipo.")}
                 </li>
                 <li>
-                  No usamos tus datos para entrenar modelos. No los vendemos ni los cedemos a
-                  terceros.
+                  {t(
+                    "No usamos tus datos para entrenar modelos. No los vendemos ni los cedemos a terceros.",
+                  )}
                 </li>
                 <li>
-                  Los tokens se guardan cifrados (AES-GCM) en <code>~/.openexpert/</code> con modo
-                  0600.
+                  {t("Los tokens se guardan cifrados (AES-GCM) en")} <code>~/.openexpert/</code>{" "}
+                  {t("con modo 0600.")}
                 </li>
               </ul>
               <p className="mt-3 text-[0.7rem]">
@@ -572,14 +581,14 @@ function SourcesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setConsentOpen(false);
                 onAcceptConsentAndConnect().catch(() => {});
               }}
             >
-              Entiendo y conecto
+              {t("Entiendo y conecto")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

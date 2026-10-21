@@ -73,6 +73,12 @@ reads every literal `t("…")` in `src/` with the TypeScript parser and fails wh
 one of them has no entry, so the gap cannot come back unnoticed; keys computed at
 runtime are outside that check.
 
+The data-sources page (`src/routes/_authenticated/integrations.sources.tsx`) has a
+check of its own, `-integrations.sources.test.ts`: it walks the page's AST and
+fails on any visible text that does not go through `t()`, toasts and `aria-label`
+included. A literal written by hand never becomes a key, so the global check
+cannot see it, and it stays in Spanish with nothing to warn about it.
+
 ## 4. Scripts
 
 | Script                            | Function                                      |

@@ -73,6 +73,13 @@ con el parser de TypeScript cada `t("…")` literal de `src/` y falla cuando alg
 no tiene entrada, para que el hueco no vuelva sin que nadie lo note; las claves
 calculadas en tiempo de ejecución quedan fuera de esa comprobación.
 
+La página de Fuentes de datos
+(`src/routes/_authenticated/integrations.sources.tsx`) tiene además su propia
+comprobación, `-integrations.sources.test.ts`: recorre el AST de la página y falla
+ante cualquier texto visible que no pase por `t()`, toasts y `aria-label`
+incluidos. Un literal escrito a mano no entra en la comprobación global —nunca
+llega a ser una clave— y se queda en español sin que nada avise.
+
 ## 4. Scripts
 
 | Script                            | Función                                             |
