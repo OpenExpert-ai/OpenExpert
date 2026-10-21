@@ -68,6 +68,10 @@ disagree, the code is right and the docs are the bug.
   `run_python` (120 s).
 - Prompt injection is blocked by a regex gate (`src/lib/ai/injection.ts`) before
   the model runs, and the attempt is logged with status `denied`.
+- The owner's extra patterns are checked by **measuring their cost**
+  (`src/lib/ai/redos.server.ts`), not by their shape: catastrophic backtracking
+  does not fail, it freezes the thread that serves the app. The measurement runs
+  inside a `vm` context so a pattern that does not come back can be cut off.
 - Tools are defined in `src/lib/ai/tools.ts`. Tools enforce **per-Expert domain
   isolation** from the explicit `experts.domains` list
   (`ventas`/`finanzas`/`marketing`/`clientes`, see `src/lib/domains.ts`);

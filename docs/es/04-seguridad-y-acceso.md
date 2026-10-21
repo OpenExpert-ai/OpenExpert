@@ -32,6 +32,13 @@ selector.
    cada mensaje lo pone el cliente. Un turno denegado no se guarda, y al releer el
    historial se descarta cualquier mensaje que el filtro rechace: así una
    conversación no queda bloqueada por un mensaje que ya está dentro.
+   Los patrones extra que escribe el dueño se comprueban **midiendo lo que
+   tardan** contra una entrada adversa (`src/lib/ai/redos.server.ts`), no solo
+   mirando su forma: una expresión que provoca un retroceso catastrófico no
+   falla, congela el proceso, y la comprobación ocurre en el hilo que sirve la
+   aplicación, en el mensaje de cada turno. La medición va dentro de un contexto
+   `vm`, cuyo plazo corta la expresión si no vuelve, para que medir un patrón
+   malo no congele a quien lo mide.
 2. **Comprobaciones en servidor.** El aislamiento por dominio se aplica en
    `chat.server.ts`, no por el modelo.
 3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`);

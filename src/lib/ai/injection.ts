@@ -6,6 +6,8 @@
 // event in `activity` with status `denied`. The catalogue of patterns is
 // reviewed regularly; false positives are tolerated over false negatives.
 
+import { isPatternTooSlow } from "./redos.server";
+
 export const INJECTION_REGEX =
   /(modo dios|god ?mode|ignora (todas )?(las |tus )?(instrucciones|reglas)|ignore (all )?(previous |your )?(instructions|rules)|jailbreak|system prompt|prompt del sistema|sin restricciones|act[uú]a como (un )?admin|bypass|dan mode|desactiva (la )?seguridad|eleva(r)? (mis )?privilegios|hazme admin)/i;
 
@@ -112,13 +114,26 @@ export function hasNestedQuantifier(pattern: string): boolean {
 
 let cache: { key: string; res: RegExp[] } | null = null;
 
-/** Compile user-supplied patterns, ignoring any that are not valid regexes. */
+/**
+ * Compile user-supplied patterns, ignoring any that are not valid regexes.
+ *
+ * A pattern is skipped when it is **slow**, not only when it is invalid: the
+ * gate runs it against every message of the turn, on the thread that serves
+ * the app, and a pattern that backtracks catastrophically does not fail — it
+ * freezes the process. The cost is measured (`redos.server.ts`) instead of
+ * guessed from the shape, so a form nobody thought of is caught too.
+ *
+ * The two rules run in that order on purpose: the shape rule is instant and
+ * already knows the classic forms, and the measurement is what costs, so it
+ * is only paid for the patterns the shape rule does not recognise.
+ */
 function compileExtra(patterns: string[]): RegExp[] {
   const key = patterns.join("\u0000");
   if (cache && cache.key === key) return cache.res;
   const out: RegExp[] = [];
   for (const p of patterns) {
     if (hasNestedQuantifier(p)) continue;
+    if (isPatternTooSlow(p)) continue;
     try {
       out.push(new RegExp(p, "i"));
     } catch {

@@ -128,8 +128,8 @@ export const en: Record<string, string> = {
   "Recomendado. Si se desactiva, los intentos de evasión no se bloquean ni se registran.":
     "Recommended. If disabled, evasion attempts are neither blocked nor logged.",
   "Patrones extra (uno por línea)": "Extra patterns (one per line)",
-  "Expresiones regulares adicionales. Se ignoran las inválidas; al guardar se rechazan las que repiten un grupo que ya lleva un cuantificador o una alternación dentro (pueden congelar el servidor).":
-    "Additional regular expressions. Invalid ones are ignored; on save, any that repeat a group already carrying a quantifier or an alternation are rejected (they can freeze the server).",
+  "Expresiones regulares adicionales. Se ignoran las inválidas; al guardar se rechazan las que pueden congelar el servidor, comprobando lo que tardan en ejecutarse contra un mensaje largo (no solo las que repiten un grupo con un cuantificador o una alternación dentro).":
+    "Additional regular expressions. Invalid ones are ignored; on save, any that could freeze the server are rejected by measuring how long they take against a long message (not only those repeating a group already carrying a quantifier or an alternation).",
   Comportamiento: "Behaviour",
   "Límites de ejecución y conservación de conversaciones.":
     "Execution limits and conversation retention.",

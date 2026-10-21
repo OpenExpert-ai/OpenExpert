@@ -30,6 +30,7 @@ import {
   type ProviderKeyVar,
 } from "@openexpert/openexpert/model-provider";
 import { hasNestedQuantifier, patternsAreValid } from "./ai/injection";
+import { isPatternTooSlow } from "./ai/redos.server";
 import { configPath, dataDir, dbPath, secretsPath } from "./paths.server";
 
 export type ConfigSource = "env" | "file" | "secrets" | "default";
@@ -463,8 +464,16 @@ export function rawConfigText(cwd: string = process.cwd()): string {
  * An injection pattern supplied by the user (settings panel or `openexpert.json`).
  * It runs against every message on the main thread, so it is bounded and cannot
  * carry a repetition that backtracks catastrophically: `(a+)+` freezes the process for a
- * minute on a 29-character string, and `((a+))+` or `(a|aa)+` for four on 31. See
- * `hasNestedQuantifier`.
+ * minute on a 29-character string, and `((a+))+` or `(a|aa)+` for four on 31.
+ *
+ * Two rules apply, and the second is the one that closes the hole the first
+ * one left. The first rejects a **shape** — a group that repeats and holds
+ * another repetition or an alternation. The second **measures** the pattern:
+ * one that needs too long against an adversarial input is rejected whatever
+ * its shape, which is what catches the forms the shape rule never imagined
+ * (`.*.*.*.*.*.*b` is thirteen characters, half the size of the limit, and
+ * froze the app for twenty-three seconds on a sixty-character message).
+ * See `redos.server.ts`.
  */
 const injectionPattern = z
   .string()
@@ -472,6 +481,10 @@ const injectionPattern = z
   .refine((p) => !hasNestedQuantifier(p), {
     message:
       "El patrón repite un grupo que ya lleva un cuantificador o una alternación dentro (por ejemplo (a+)+, ((a+))+ o (a|aa)+): puede congelar el servidor",
+  })
+  .refine((p) => !isPatternTooSlow(p), {
+    message:
+      "El patrón tarda demasiado en ejecutarse y puede congelar el servidor al recibir un mensaje largo (por ejemplo .*.*.*.*.*.*b)",
   });
 
 /**
