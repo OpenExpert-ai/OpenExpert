@@ -5,13 +5,14 @@
 // directories (names only) for the folder picker and reads/writes files only
 // inside the folders the user explicitly granted. Every path is resolved with
 // `realpath` and checked against the granted roots, which also defeats symlink
-// escapes.
+// escapes; creating a file never follows an entry that is already there, not
+// even a dangling symlink.
 //
 // Limits are deliberately generous (local, single owner) but bounded so a
 // prompt cannot make the model walk an entire disk.
 
 import {
-  existsSync,
+  lstatSync,
   readFileSync,
   readdirSync,
   realpathSync,
@@ -68,6 +69,21 @@ function safeRealpath(p: string): string | null {
 
 function isWithin(root: string, target: string): boolean {
   return target === root || target.startsWith(root.endsWith(sep) ? root : root + sep);
+}
+
+/**
+ * Whether a directory entry with that name exists, **following nothing**: `existsSync` follows the
+ * link, so a symlink whose destination does not exist answers `false` and a write would follow it
+ * and create the file at the other end. `lstat` looks at the entry itself, so a symlink counts
+ * whether it dangles or not.
+ */
+function entryExists(p: string): boolean {
+  try {
+    lstatSync(p);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Resolve `target` and require it to live inside one of the granted roots. */
@@ -550,8 +566,26 @@ export function createLocalFile(
   if (!safeName || safeName === "." || safeName === "..")
     throw new Error("Nombre de archivo no válido.");
   const abs = join(dir, safeName);
-  if (existsSync(abs)) throw new Error(`Ya existe un archivo llamado "${safeName}".`);
-  writeFileSync(abs, content, "utf8");
+  // Where the name leads, when it leads anywhere: `abs` is built from an already resolved folder,
+  // so `realpath` on it follows a symlink and tells whether it points out of the granted roots. A
+  // valid link that leaves them is refused for what it is, and a link that dangles does not resolve
+  // at all, which the check below catches.
+  const resolvedDest = safeRealpath(abs);
+  const resolvedRoots = roots.map((r) => safeRealpath(r) ?? r);
+  if (resolvedDest && !resolvedRoots.some((r) => isWithin(r, resolvedDest)))
+    throw new Error("La ruta está fuera de las carpetas autorizadas.");
+  // An entry with that name is a reason to refuse, and a symlink counts even when it dangles: the
+  // write would follow it and land wherever it points, outside the folder the user granted.
+  if (entryExists(abs)) throw new Error(`Ya existe un archivo llamado "${safeName}".`);
+  // `wx` is the same refusal made atomic: it fails instead of following an entry that appeared
+  // between the lines above, so the bytes cannot land outside the folder.
+  try {
+    writeFileSync(abs, content, { encoding: "utf8", flag: "wx" });
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "EEXIST")
+      throw new Error(`Ya existe un archivo llamado "${safeName}".`, { cause: e });
+    throw e;
+  }
   const st = statSync(abs);
   return {
     path: abs,

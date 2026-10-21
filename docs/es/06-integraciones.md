@@ -110,7 +110,9 @@ absoluta. Las concesiones se guardan cifradas en
 
 - El acceso es **solo dentro de las carpetas autorizadas**. Cada ruta se resuelve
   con `realpath` y se comprueba contra las raíces, así que se rechazan los
-  enlaces simbólicos que escapen.
+  enlaces simbólicos que escapen. Al crear un archivo se rechaza un nombre que
+  ya exista, enlaces simbólicos incluidos (también uno roto), así que la
+  escritura no sigue nunca una entrada fuera de la carpeta.
 - Las lecturas devuelven texto, texto de PDFs y contenido de Office (Word
   `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, OpenDocument). Las escrituras
   (`create_local_file`, `update_local_file`) requieren **aprobación humana**,
