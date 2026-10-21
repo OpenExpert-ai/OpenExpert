@@ -89,6 +89,35 @@ function withSource<T extends object>(
   };
 }
 
+/**
+ * A list read that stopped before the end says so: `count` and `hasMore` travel
+ * with the results, and `nextCursor` is what the model passes back to continue.
+ * Without this, 500 rows out of 900 read as if they were all of them.
+ */
+type BoundedList = {
+  items: { id: string; object: string; title: string; url?: string }[];
+  count: number;
+  hasMore: boolean;
+  nextCursor?: string;
+};
+
+function boundedList(list: BoundedList) {
+  const next = list.nextCursor;
+  return {
+    results: list.items,
+    count: list.count,
+    hasMore: list.hasMore,
+    ...(next ? { nextCursor: next } : {}),
+    ...(list.hasMore
+      ? {
+          note: next
+            ? `Hay más resultados: repite la llamada con cursor: "${next}".`
+            : "Hay más resultados de los que se leen en una llamada: afina la búsqueda.",
+        }
+      : {}),
+  };
+}
+
 export function createChatTools(ctx: ChatToolsContext) {
   const { expert, expertId, used, allowed, proposePending } = ctx;
 
@@ -545,17 +574,19 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_notion: tool({
       description:
-        "Busca en el Notion del usuario (solo lo que compartió con OpenExpert): páginas, bases de datos y fuentes de datos. Devuelve [{id, object, title, url}]; fíjate en `object` (page / database / data_source).",
+        "Busca en el Notion del usuario (solo lo que compartió con OpenExpert): páginas, bases de datos y fuentes de datos. Devuelve {results, count, hasMore, nextCursor}; fíjate en `object` (page / database / data_source). Una llamada lee hasta 5 páginas de 100 resultados: si `hasMore` es true la lista no está completa y sigues con `cursor: nextCursor`.",
       inputSchema: z.object({
         query: z.string(),
         type: z.enum(["page", "data_source"]).nullish(),
+        cursor: z.string().optional().describe("El nextCursor de la llamada anterior."),
       }),
-      execute: async ({ query, type }) => {
+      execute: async ({ query, type, cursor }) => {
         if (!expert.sources.includes("notion")) return deny("con Notion");
         used.add("Notion");
         try {
           const n = await import("../notion.server");
-          return { results: await n.search(query, type ?? undefined) };
+          const list = await n.search(query, type ?? undefined, cursor ? { cursor } : {});
+          return boundedList(list);
         } catch (e) {
           return { error: (e as Error).message };
         }
@@ -563,23 +594,30 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     query_notion_database: tool({
       description:
-        "Lista las filas (páginas) de una fuente de datos de Notion por su id (el id que devuelve search_notion con object=data_source). Acepta filter/sorts en el formato de la API de Notion. Para 'tareas pendientes', usa antes describe_notion_data_source y filtra por la propiedad de estado. Devuelve [{id, title, url}].",
+        "Lista las filas (páginas) de una fuente de datos de Notion por su id (el id que devuelve search_notion con object=data_source). Acepta filter/sorts en el formato de la API de Notion. Para 'tareas pendientes', usa antes describe_notion_data_source y filtra por la propiedad de estado. Devuelve {results, count, hasMore, nextCursor}: `pageSize` son filas por petición (máx. 100) y una llamada recorre hasta 5 páginas; si `hasMore` es true, sigue con `cursor: nextCursor` en vez de dar la lista por completa.",
       inputSchema: z.object({
         databaseId: z.string(),
         filter: z.unknown().optional(),
         sorts: z.unknown().optional(),
         pageSize: z.coerce.number().int().min(1).max(100).optional(),
+        cursor: z.string().optional().describe("El nextCursor de la llamada anterior."),
       }),
-      execute: async ({ databaseId, filter, sorts, pageSize }) => {
+      execute: async ({ databaseId, filter, sorts, pageSize, cursor }) => {
         if (!expert.sources.includes("notion")) return deny("con Notion");
         used.add("Notion");
         try {
           const n = await import("../notion.server");
-          const opts: { filter?: unknown; sorts?: unknown; pageSize?: number } = {};
+          const opts: {
+            filter?: unknown;
+            sorts?: unknown;
+            pageSize?: number;
+            cursor?: string;
+          } = {};
           if (filter !== undefined) opts.filter = filter;
           if (sorts !== undefined) opts.sorts = sorts;
           if (pageSize !== undefined) opts.pageSize = pageSize;
-          return { results: await n.queryDataSource(databaseId, opts) };
+          if (cursor !== undefined) opts.cursor = cursor;
+          return boundedList(await n.queryDataSource(databaseId, opts));
         } catch (e) {
           return { error: (e as Error).message };
         }
@@ -602,18 +640,35 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_notion_page: tool({
       description:
-        "Lee el texto de una PÁGINA de Notion por su id (incluye bloques anidados). El id debe ser una página (una fila devuelta por query_notion_database, object=page); no pases un id de fuente de datos.",
-      inputSchema: z.object({ pageId: z.string() }),
-      execute: async ({ pageId }) => {
+        "Lee el texto de una PÁGINA de Notion por su id (incluye bloques anidados hasta dos niveles). El id debe ser una página (una fila devuelta por query_notion_database, object=page); no pases un id de fuente de datos. Devuelve content, blocks y hasMore: si `hasMore` es true la página es más larga que lo leído (300 bloques por defecto), el texto es parcial y sigues con `maxBlocks` mayor, hasta 1000.",
+      inputSchema: z.object({
+        pageId: z.string(),
+        maxBlocks: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(1000)
+          .optional()
+          .describe("Bloques que leer como máximo (300 por defecto)."),
+      }),
+      execute: async ({ pageId, maxBlocks }) => {
         if (!expert.sources.includes("notion")) return deny("con Notion");
         used.add("Notion");
         try {
           const n = await import("../notion.server");
-          const text = await n.readPage(pageId);
+          const page = await n.readPage(pageId, maxBlocks ? { maxBlocks } : {});
+          const notes: string[] = [];
+          if (!page.content) notes.push("La página no contiene texto.");
+          if (page.hasMore)
+            notes.push(
+              `Se han leído ${page.blocks} bloques y la página tiene más: repite la llamada con maxBlocks mayor (hasta 1000).`,
+            );
           return {
             pageId,
-            content: text || null,
-            ...(text ? {} : { note: "La página no contiene texto." }),
+            content: page.content || null,
+            blocks: page.blocks,
+            hasMore: page.hasMore,
+            ...(notes.length ? { note: notes.join(" ") } : {}),
           };
         } catch (e) {
           return { error: (e as Error).message };

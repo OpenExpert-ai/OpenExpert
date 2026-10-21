@@ -13,6 +13,18 @@ import { fetchWithTimeout } from "./http.server";
 
 const API = "https://api.notion.com/v1";
 
+/** Notion's own ceiling: a request never returns more than 100 results. */
+const PAGE_SIZE = 100;
+
+/**
+ * Pages a single list read follows before stopping. Notion has no count in a
+ * search or a query: a database of 400 rows answers one request with 100, and
+ * the model reads them as if they were all of them. Five pages (500 rows at
+ * PAGE_SIZE) bound what one call costs; whatever is left is said out loud
+ * instead of dropped.
+ */
+const MAX_PAGES = 5;
+
 /** Every Notion request gets a deadline: a host that never answers used to hang the chat turn. */
 const notionFetch = (url: string, init: RequestInit = {}) =>
   fetchWithTimeout(url, init, { service: "Notion" });
@@ -75,6 +87,21 @@ export function notionTitle(obj: Json): string {
 
 export type NotionItem = { id: string; object: string; title: string; url?: string };
 
+/**
+ * A bounded list read: what came back, and whether Notion still has more. Every
+ * list read returns one of these, so a short list is never mistaken for the
+ * whole list.
+ */
+export type NotionList = {
+  items: NotionItem[];
+  /** Items read in this call. */
+  count: number;
+  /** Notion has results after the last item read. */
+  hasMore: boolean;
+  /** Pass back as `cursor` to continue where this call stopped. */
+  nextCursor?: string;
+};
+
 function toItem(obj: Json): NotionItem {
   const item: NotionItem = {
     id: String(obj["id"] ?? ""),
@@ -122,29 +149,75 @@ async function resolveDataSource(id: string): Promise<string> {
   return first;
 }
 
+/**
+ * Follows `has_more`/`next_cursor` up to MAX_PAGES, then stops saying so. The
+ * caller always gets a count and a cursor when there is one: never a list that
+ * looks complete because the first page happened to be short.
+ */
+async function readPages(
+  fetchPage: (cursor: string | undefined) => Promise<Json>,
+  opts: { cursor?: string; maxPages?: number } = {},
+): Promise<NotionList> {
+  const items: NotionItem[] = [];
+  const maxPages = Math.min(Math.max(opts.maxPages ?? MAX_PAGES, 1), MAX_PAGES);
+  let cursor = opts.cursor;
+  let hasMore = false;
+  for (let page = 0; page < maxPages; page++) {
+    const data = await fetchPage(cursor);
+    for (const obj of (data["results"] ?? []) as Json[]) items.push(toItem(obj));
+    hasMore = data["has_more"] === true;
+    const next = typeof data["next_cursor"] === "string" ? data["next_cursor"] : undefined;
+    cursor = hasMore ? next : undefined;
+    if (!hasMore) break;
+  }
+  return {
+    items,
+    count: items.length,
+    hasMore,
+    ...(hasMore && cursor ? { nextCursor: cursor } : {}),
+  };
+}
+
 /* -------------------------------- reads --------------------------------- */
 
-export async function search(query: string, type?: "page" | "data_source"): Promise<NotionItem[]> {
-  const body: Json = { query, page_size: 25 };
-  if (type) body["filter"] = { property: "object", value: type };
-  const data = await call("/search", { method: "POST", body: JSON.stringify(body) });
-  return ((data["results"] ?? []) as Json[]).map(toItem);
+export async function search(
+  query: string,
+  type?: "page" | "data_source",
+  opts: { cursor?: string; maxPages?: number } = {},
+): Promise<NotionList> {
+  return readPages((cursor) => {
+    const body: Json = { query, page_size: PAGE_SIZE };
+    if (type) body["filter"] = { property: "object", value: type };
+    if (cursor) body["start_cursor"] = cursor;
+    return call("/search", { method: "POST", body: JSON.stringify(body) });
+  }, opts);
 }
 
 /** Rows (pages) of a data source. Accepts a data source or database id. */
 export async function queryDataSource(
   id: string,
-  opts: { filter?: unknown; sorts?: unknown; pageSize?: number } = {},
-): Promise<NotionItem[]> {
+  opts: {
+    filter?: unknown;
+    sorts?: unknown;
+    pageSize?: number;
+    cursor?: string;
+    maxPages?: number;
+  } = {},
+): Promise<NotionList> {
   const dsId = await resolveDataSource(id);
-  const body: Json = { page_size: Math.min(opts.pageSize ?? 50, 100) };
-  if (opts.filter) body["filter"] = opts.filter;
-  if (opts.sorts) body["sorts"] = opts.sorts;
-  const data = await call(`/data_sources/${encodeURIComponent(dsId)}/query`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  return ((data["results"] ?? []) as Json[]).map(toItem);
+  const pageOpts: { cursor?: string; maxPages?: number } = {};
+  if (opts.cursor) pageOpts.cursor = opts.cursor;
+  if (opts.maxPages) pageOpts.maxPages = opts.maxPages;
+  return readPages((cursor) => {
+    const body: Json = { page_size: Math.min(Math.max(opts.pageSize ?? PAGE_SIZE, 1), PAGE_SIZE) };
+    if (opts.filter) body["filter"] = opts.filter;
+    if (opts.sorts) body["sorts"] = opts.sorts;
+    if (cursor) body["start_cursor"] = cursor;
+    return call(`/data_sources/${encodeURIComponent(dsId)}/query`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }, pageOpts);
 }
 
 /** Property schema of a data source, so filters can use real property names. */
@@ -166,13 +239,37 @@ export async function describeDataSource(id: string): Promise<{
   };
 }
 
-/** Read a page's text, following one level of nested blocks, bounded. */
-export async function readPage(pageId: string, maxBlocks = 300): Promise<string> {
+/** Blocks a page read takes by default, and the ceiling a caller may ask for. */
+const BLOCK_BUDGET = 300;
+const BLOCK_BUDGET_MAX = 1000;
+/** Nested levels read: the page, its blocks and their children. */
+const MAX_DEPTH = 2;
+
+/** Text of a page, with how much of the page was read. */
+export type NotionPageText = {
+  content: string;
+  /** Blocks read in this call. */
+  blocks: number;
+  /** The page has blocks this read did not take. */
+  hasMore: boolean;
+};
+
+/**
+ * Read a page's text, following nested blocks up to MAX_DEPTH, bounded by the
+ * block budget. Returns the count and `hasMore` so a long page (an acta, a 400
+ * block document) is never handed over as if it were the whole page.
+ */
+export async function readPage(
+  pageId: string,
+  opts: { maxBlocks?: number } = {},
+): Promise<NotionPageText> {
+  const maxBlocks = Math.min(Math.max(opts.maxBlocks ?? BLOCK_BUDGET, 1), BLOCK_BUDGET_MAX);
   const lines: string[] = [];
   let count = 0;
+  let hasMore = false;
 
   async function walk(blockId: string, depth: number): Promise<void> {
-    if (depth > 2 || count >= maxBlocks) return;
+    if (depth > MAX_DEPTH || count >= maxBlocks) return;
     let cursor: string | undefined;
     do {
       const q = new URLSearchParams({ page_size: "100" });
@@ -180,18 +277,24 @@ export async function readPage(pageId: string, maxBlocks = 300): Promise<string>
       const data = await call(`/blocks/${encodeURIComponent(blockId)}/children?${q}`);
       const results = (data["results"] ?? []) as Json[];
       for (const b of results) {
-        if (count >= maxBlocks) break;
+        if (count >= maxBlocks) {
+          // This page has blocks left: the read stops at the budget, not at the end.
+          hasMore = true;
+          break;
+        }
         count++;
         const text = blockText(b);
         if (text) lines.push(text);
-        if (b["has_children"] && depth < 2) await walk(String(b["id"]), depth + 1);
+        if (b["has_children"] && depth < MAX_DEPTH) await walk(String(b["id"]), depth + 1);
       }
-      cursor = data["has_more"] ? String(data["next_cursor"]) : undefined;
+      const next = typeof data["next_cursor"] === "string" ? data["next_cursor"] : undefined;
+      cursor = data["has_more"] === true ? next : undefined;
+      if (cursor && count >= maxBlocks) hasMore = true;
     } while (cursor && count < maxBlocks);
   }
 
   await walk(pageId, 0);
-  return lines.join("\n");
+  return { content: lines.join("\n"), blocks: count, hasMore };
 }
 
 /* -------------------------------- writes -------------------------------- */

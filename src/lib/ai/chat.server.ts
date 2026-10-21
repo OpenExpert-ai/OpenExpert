@@ -216,9 +216,10 @@ ${
 - search_notion: busca páginas, bases y FUENTES DE DATOS. Fíjate en "object": las tablas son "data_source".
 - describe_notion_data_source: devuelve las propiedades (nombres y tipos) de una fuente de datos.
 - query_notion_database: lista las FILAS de una fuente de datos (usa el id con object=data_source), con filtros/orden en el formato de la API de Notion.
-- read_notion_page: lee el CONTENIDO de una página (id con object=page); nunca pases un id de fuente de datos.
+- read_notion_page: lee el CONTENIDO de una página (id con object=page); nunca pases un id de fuente de datos. Devuelve blocks y hasMore: si hasMore es true el texto es parcial y hay que subir maxBlocks (hasta 1000) antes de resumirlo.
 - create_notion_page / update_notion_page / append_notion_blocks: crean o editan; requieren aprobación humana.
 FLUJO para preguntas sobre una tabla (p. ej. "tareas pendientes"): 1) search_notion; 2) describe_notion_data_source para ver las propiedades; 3) query_notion_database filtrando por la propiedad de estado; 4) read_notion_page solo si necesitas el detalle de una fila. Encadena las herramientas tú mismo.
+PAGINACIÓN: una búsqueda o una consulta pueden venir cortadas (hasMore: true y nextCursor). Mientras hasMore sea true no has leído la lista entera: sigue con cursor: nextCursor antes de contar, sumar o decir que algo no está; si solo has leído una parte, dilo en la respuesta.
 Trabaja SIEMPRE dentro de lo compartido; si una búsqueda no devuelve nada, dilo.`
     : `Este Experto no tiene Notion conectado: si lo piden, sugiere conectarlo en Fuentes o activarlo en el Experto.`
 }

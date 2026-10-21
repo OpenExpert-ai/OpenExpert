@@ -618,21 +618,38 @@ describe("local file tools", () => {
 
 describe("Notion tools", () => {
   const item = { id: "p1", object: "page", title: "Tarea", url: "https://notion/p1" };
+  const list = (items = [item]) => ({ items, count: items.length, hasMore: false });
 
   it("search_notion forwards the type filter and labels the source", async () => {
-    svc.notionSearch.mockResolvedValue([item]);
+    svc.notionSearch.mockResolvedValue(list());
     const { tools, used } = await buildExpert([], ["notion"]);
     const out = await exec(tools.search_notion)({ query: "tarea", type: "page" });
     expect(out["results"]).toEqual([item]);
-    expect(svc.notionSearch).toHaveBeenCalledWith("tarea", "page");
+    expect(out["count"]).toBe(1);
+    expect(out["hasMore"]).toBe(false);
+    expect(svc.notionSearch).toHaveBeenCalledWith("tarea", "page", {});
     expect(used.has("Notion")).toBe(true);
   });
 
+  it("search_notion passes the cursor back and says there is more", async () => {
+    svc.notionSearch.mockResolvedValue({
+      items: [item],
+      count: 1,
+      hasMore: true,
+      nextCursor: "c2",
+    });
+    const { tools } = await buildExpert([], ["notion"]);
+    const out = await exec(tools.search_notion)({ query: "tarea", cursor: "c1" });
+    expect(svc.notionSearch).toHaveBeenCalledWith("tarea", undefined, { cursor: "c1" });
+    expect(out["nextCursor"]).toBe("c2");
+    expect(String(out["note"])).toMatch(/cursor: "c2"/);
+  });
+
   it("search_notion without a type passes undefined", async () => {
-    svc.notionSearch.mockResolvedValue([]);
+    svc.notionSearch.mockResolvedValue(list([]));
     const { tools } = await buildExpert([], ["notion"]);
     await exec(tools.search_notion)({ query: "x" });
-    expect(svc.notionSearch).toHaveBeenCalledWith("x", undefined);
+    expect(svc.notionSearch).toHaveBeenCalledWith("x", undefined, {});
   });
 
   it("search_notion surfaces a Notion rate-limit error", async () => {
@@ -643,7 +660,7 @@ describe("Notion tools", () => {
   });
 
   it("query_notion_database forwards only the options given", async () => {
-    svc.notionQuery.mockResolvedValue([item]);
+    svc.notionQuery.mockResolvedValue(list());
     const { tools } = await buildExpert([], ["notion"]);
     const full = await exec(tools.query_notion_database)({
       databaseId: "db",
@@ -661,6 +678,21 @@ describe("Notion tools", () => {
     const bare = await exec(tools.query_notion_database)({ databaseId: "db" });
     expect(bare["results"]).toEqual([item]);
     expect(svc.notionQuery).toHaveBeenLastCalledWith("db", {});
+  });
+
+  it("query_notion_database asks for the next page with the cursor", async () => {
+    svc.notionQuery.mockResolvedValue({
+      items: [item],
+      count: 1,
+      hasMore: true,
+      nextCursor: "c7",
+    });
+    const { tools } = await buildExpert([], ["notion"]);
+    const out = await exec(tools.query_notion_database)({ databaseId: "db", cursor: "c6" });
+    expect(svc.notionQuery).toHaveBeenCalledWith("db", { cursor: "c6" });
+    expect(out["count"]).toBe(1);
+    expect(out["nextCursor"]).toBe("c7");
+    expect(String(out["note"])).toMatch(/cursor: "c7"/);
   });
 
   it("query_notion_database surfaces an error", async () => {
@@ -690,15 +722,25 @@ describe("Notion tools", () => {
   });
 
   it("read_notion_page returns the text, and notes an empty page", async () => {
-    svc.notionRead.mockResolvedValue("contenido");
+    svc.notionRead.mockResolvedValue({ content: "contenido", blocks: 3, hasMore: false });
     const { tools } = await buildExpert([], ["notion"]);
     const out = await exec(tools.read_notion_page)({ pageId: "p1" });
-    expect(out).toEqual({ pageId: "p1", content: "contenido" });
+    expect(out).toEqual({ pageId: "p1", content: "contenido", blocks: 3, hasMore: false });
 
-    svc.notionRead.mockResolvedValue("");
+    svc.notionRead.mockResolvedValue({ content: "", blocks: 0, hasMore: false });
     const empty = await exec(tools.read_notion_page)({ pageId: "p1" });
     expect(empty["content"]).toBeNull();
     expect(String(empty["note"])).toMatch(/no contiene texto/);
+  });
+
+  it("read_notion_page says so when the page is longer than what it read", async () => {
+    svc.notionRead.mockResolvedValue({ content: "parcial", blocks: 300, hasMore: true });
+    const { tools } = await buildExpert([], ["notion"]);
+    const out = await exec(tools.read_notion_page)({ pageId: "p1", maxBlocks: 300 });
+    expect(svc.notionRead).toHaveBeenCalledWith("p1", { maxBlocks: 300 });
+    expect(out["hasMore"]).toBe(true);
+    expect(out["blocks"]).toBe(300);
+    expect(String(out["note"])).toMatch(/300 bloques y la página tiene más/);
   });
 
   it("read_notion_page surfaces an error", async () => {
