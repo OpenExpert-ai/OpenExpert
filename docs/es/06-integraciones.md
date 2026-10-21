@@ -83,6 +83,14 @@ nadie más ve tu token ni tu contenido. La versión de la API va fijada con la
 cabecera `Notion-Version` (`2026-03-11`); el límite es ~3 peticiones/segundo y se
 respeta `Retry-After`.
 
+Las lecturas llegan paginadas: una búsqueda o una consulta a una base devuelve
+como mucho 100 resultados por petición y un `has_more`. OpenExpert recorre hasta
+cinco páginas (500 resultados) por llamada y devuelve `count`, `hasMore` y
+`nextCursor`; si queda lista, el asistente sigue con ese cursor en vez de dar la
+lista por completa. Una página larga se lee hasta 300 bloques por defecto y la
+respuesta trae `blocks` y `hasMore`, así que un acta de 400 bloques no se entrega
+a medias sin decirlo: el asistente sube `maxBlocks` (hasta 1000) y continúa.
+
 ## 4. Carpetas locales
 
 El asistente también puede leer y escribir archivos en **carpetas del propio

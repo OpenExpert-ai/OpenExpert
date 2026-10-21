@@ -82,6 +82,14 @@ else sees your token or content. The API version is pinned with the
 `Notion-Version` header (`2026-03-11`); the rate limit is ~3 requests/second and
 `Retry-After` is respected.
 
+Reads arrive paginated: a search or a data source query returns at most 100
+results per request plus a `has_more`. OpenExpert follows up to five pages (500
+results) per call and returns `count`, `hasMore` and `nextCursor`; when there is
+more list, the assistant continues with that cursor instead of taking the list as
+complete. A long page is read up to 300 blocks by default and the answer carries
+`blocks` and `hasMore`, so a 400-block document is never handed over half-read
+without saying so: the assistant raises `maxBlocks` (up to 1000) and continues.
+
 ## 4. Local folders
 
 The assistant can read and write files in **folders on the same machine**,
