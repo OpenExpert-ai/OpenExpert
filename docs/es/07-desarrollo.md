@@ -66,7 +66,12 @@ densidad, idioma) viven en la tabla `settings` de la base SQLite.
 
 El idioma de la interfaz (español/inglés) es una de esas preferencias; la capa
 de i18n del cliente está en `src/lib/i18n.tsx` con el diccionario inglés en
-`src/locales/en.ts` (el español es el idioma fuente).
+`src/locales/en.ts` (el español es el idioma fuente). Una entrada que falte no es
+un error: `translate` cae al texto en español, así que un hueco se ve como español
+colándose en el modo inglés en vez de romper nada. `src/locales/en.test.ts` lee
+con el parser de TypeScript cada `t("…")` literal de `src/` y falla cuando alguno
+no tiene entrada, para que el hueco no vuelva sin que nadie lo note; las claves
+calculadas en tiempo de ejecución quedan fuera de esa comprobación.
 
 ## 4. Scripts
 

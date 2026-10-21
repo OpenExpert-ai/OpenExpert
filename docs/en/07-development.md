@@ -66,7 +66,12 @@ table of the SQLite database.
 
 The interface language (Spanish/English) is one of those preferences; the
 settings layer on the client is `src/lib/i18n.tsx` with the English dictionary
-in `src/locales/en.ts` (Spanish is the source language).
+in `src/locales/en.ts` (Spanish is the source language). A missing entry is not
+an error: `translate` falls back to the Spanish text, which is why a gap shows up
+as Spanish leaking into English mode instead of a crash. `src/locales/en.test.ts`
+reads every literal `t("…")` in `src/` with the TypeScript parser and fails when
+one of them has no entry, so the gap cannot come back unnoticed; keys computed at
+runtime are outside that check.
 
 ## 4. Scripts
 

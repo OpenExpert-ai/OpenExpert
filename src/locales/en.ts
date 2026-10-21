@@ -12,6 +12,20 @@ export const en: Record<string, string> = {
   Configuración: "Settings",
   Local: "Local",
   "Cargando espacio de trabajo…": "Loading workspace…",
+  Reintentar: "Try again",
+  "Experto activo": "Active expert",
+
+  // --- Errors ----------------------------------------------------------------
+  // The 404 and the root error boundary are the two screens a user reaches when
+  // something has already gone wrong, so they cannot be the ones left in
+  // Spanish.
+  "Página no encontrada": "Page not found",
+  "La página que buscas no existe o se ha movido.":
+    "The page you are looking for doesn't exist or has moved.",
+  "Volver al inicio": "Back to home",
+  "Esta página no se pudo cargar": "This page couldn't be loaded",
+  "Algo ha fallado. Prueba a recargar o vuelve al inicio.":
+    "Something went wrong. Try reloading or go back to the start.",
 
   // --- Settings layout -------------------------------------------------------
   Ajustes: "Settings",
@@ -66,6 +80,7 @@ export const en: Record<string, string> = {
   "Base URL": "Base URL",
   "API key": "API key",
   "API key de Gemini": "Gemini API key",
+  "Clave de API": "API key",
   "Dejar vacío para no cambiarla": "Leave empty to keep it unchanged",
   Revelar: "Reveal",
   Borrar: "Clear",
@@ -122,6 +137,9 @@ export const en: Record<string, string> = {
   "Número máximo de pasos con herramientas.": "Maximum number of tool-calling steps.",
   "Retención (días)": "Retention (days)",
   "0 desactiva la purga automática.": "0 disables automatic pruning.",
+  "Leer PDF escaneados con el modelo": "Read scanned PDFs with the model",
+  "Cuando un PDF no tiene texto (es la foto de una página), se transcribe con el modelo activo. Eso manda el documento al proveedor: actívalo solo si eso te parece bien. Necesita un proveedor que vea documentos.":
+    "When a PDF has no text (it is a photo of a page), it is transcribed with the active model. That sends the document to the provider: enable it only if that is fine by you. It needs a provider that can see documents.",
   "Aprobación por defecto": "Default approval",
   Requerida: "Required",
   Ninguna: "None",
@@ -179,6 +197,8 @@ export const en: Record<string, string> = {
   "Edición directa del fichero. Se valida antes de guardar.":
     "Direct file editing. Validated before saving.",
   "Restaurar por defecto": "Restore defaults",
+  "¿Eliminar openexpert.json y volver a los valores por defecto?":
+    "Delete openexpert.json and go back to the defaults?",
 
   // --- Settings: about -------------------------------------------------------
   Versión: "Version",
@@ -245,6 +265,9 @@ export const en: Record<string, string> = {
 
   // --- Integrations ----------------------------------------------------------
   "Fuentes de Datos": "Data sources",
+  "Fuentes de datos conectadas a tus Expertos.": "Data sources connected to your Experts.",
+  "Fuentes pendientes": "Pending sources",
+  Entidades: "Entities",
   Pendiente: "Pending",
   conectado: "connected",
   desconectado: "disconnected",
@@ -332,6 +355,7 @@ export const en: Record<string, string> = {
   "Habla con tu empresa.": "Talk to your company.",
   "Primeros pasos": "Getting started",
   "Analizando contexto…": "Analysing context…",
+  "Pensando…": "Thinking…",
   "La respuesta falló. Puedes volver a intentarlo.": "The response failed. You can try again.",
   Nueva: "New",
   Enviar: "Send",
