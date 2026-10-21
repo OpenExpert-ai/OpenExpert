@@ -55,6 +55,14 @@ export async function fetchRows(
   return rows;
 }
 
+/**
+ * Write a row in the activity log.
+ *
+ * `duration_ms` is the time the action really took, and only when it was
+ * measured: most events are not timed at all (creating an Expert, saving a
+ * setting, a Drive write). Those keep a null duration instead of a placeholder,
+ * because a number nobody measured reads in the audit trail as a real one.
+ */
 export async function logActivity(e: {
   actor: "human" | "agent";
   actor_name: string;
@@ -63,7 +71,7 @@ export async function logActivity(e: {
   status: string;
   summary: string;
   sources?: string[];
-  duration_ms?: number;
+  duration_ms?: number | null;
   snapshot?: unknown;
   id?: string;
 }): Promise<string> {
@@ -81,7 +89,7 @@ export async function logActivity(e: {
       status: e.status,
       summary: e.summary,
       sources: e.sources ?? [],
-      durationMs: e.duration_ms ?? 300,
+      durationMs: e.duration_ms ?? null,
       snapshot: (e.snapshot ?? null) as never,
     })
     .run();

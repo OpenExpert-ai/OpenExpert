@@ -168,6 +168,9 @@ export async function handleChat(request: Request) {
   // every message, not only the last one: the model receives the whole array as
   // history, so an attempt planted in an earlier turn would otherwise travel
   // with the conversation and leave no audit event behind.
+  // The gate is timed: the number filed is the one the check really took, not
+  // a constant that reads in the audit trail as a measurement.
+  const guardStartedAt = Date.now();
   const hit = cfg.chat.injectionGuard
     ? firstInjection(messages, cfg.chat.injectionExtraPatterns)
     : null;
@@ -180,7 +183,7 @@ export async function handleChat(request: Request) {
       expert_id: expertId,
       status: "denied",
       summary: `Intento de evasión bloqueado en ${where}: "${hit.text.slice(0, 140)}"`,
-      duration_ms: 40,
+      duration_ms: Date.now() - guardStartedAt,
     });
     const stream = createUIMessageStream({
       originalMessages: messages,

@@ -93,6 +93,15 @@ Every revertible change stores the prior rows in `snapshot.entries`; the
 activity screen can replay them. Revertible: `experts`, `integrations`,
 `invoices`, `campaigns`.
 
+The log only reports what it can back up: `duration_ms` holds the time an
+action really took, and it is **null** for the actions that are not timed
+(creating an Expert, saving a setting, a Drive write). The screen shows a dash
+there. The column used to carry a default of 300 ms, so every untimed event
+was filed — and displayed — as "0.30s", which read in an audit trail as a
+measurement nobody had made. Migration `0007` rebuilds the table without the
+`NOT NULL` and without that default; the rows already stored keep their value,
+because a past entry cannot be un-measured.
+
 ## 7. References
 
 - [Data model](./03-data-model.md) — tables.

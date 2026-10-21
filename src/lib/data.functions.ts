@@ -238,6 +238,9 @@ export const revertEvent = createServerFn({ method: "POST" })
     const ev = orm.select().from(schema.activity).where(eq(schema.activity.id, data.id)).all()[0];
     const entries = (ev?.snapshot as { entries?: ee.SnapEntry[] } | null)?.entries;
     ee.assert(ev && entries?.length && ev.status === "ok", "Este evento no se puede revertir");
+    // The revert is timed: the audit row carries the time the replay really
+    // took, not a constant.
+    const startedAt = Date.now();
     await ee.revertSnapshot(entries!);
     orm
       .update(schema.activity)
@@ -253,7 +256,7 @@ export const revertEvent = createServerFn({ method: "POST" })
       status: "ok",
       summary: `Revertido ${ev!.id}: ${ev!.summary}`,
       sources: ["Snapshot"],
-      duration_ms: 320,
+      duration_ms: Date.now() - startedAt,
     });
   });
 

@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS activity (
   status TEXT NOT NULL,
   summary TEXT NOT NULL,
   sources TEXT NOT NULL DEFAULT '[]',
-  duration_ms INTEGER NOT NULL DEFAULT 300,
+  duration_ms INTEGER,
   snapshot TEXT
 );
 
