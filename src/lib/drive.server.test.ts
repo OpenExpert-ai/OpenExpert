@@ -235,3 +235,107 @@ describe("drive.server readFile size limits", () => {
     expect(stream.pulled()).toBeLessThan(60);
   });
 });
+
+/** Just the fields the window tests look at: the union return has a shape per branch. */
+type WindowRead = {
+  content: string | null;
+  totalChars: number;
+  totalLines?: number;
+  truncated?: boolean;
+  hasMore?: boolean;
+  nextOffset?: number;
+  nextCharOffset?: number;
+  note?: string;
+};
+
+describe("drive.server readFile windows", () => {
+  beforeEach(() => vi.resetModules());
+  afterEach(() => vi.restoreAllMocks());
+
+  /** The document from the task: 35.000 characters, short lines, so the cap cuts inside one and
+   *  the cursor has both halves. */
+  const DOC = Array.from({ length: 400 }, (_, i) =>
+    `Párrafo ${i}: ${"texto de relleno ".repeat(5)}`.padEnd(100, "."),
+  )
+    .join("\n")
+    .slice(0, 35_000);
+
+  const stubDrive = (text: string) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) => {
+        const u = String(url);
+        if (u.includes("fields="))
+          return json({
+            id: "d1",
+            name: "acta",
+            mimeType: "application/vnd.google-apps.document",
+            modifiedTime: "2026-01-01",
+          });
+        if (u.includes("/export")) return new Response(text, { status: 200 });
+        throw new Error(`petición inesperada: ${u}`);
+      }),
+    );
+  };
+
+  it("reads a 35.000-character document whole in two calls", async () => {
+    stubDrive(DOC);
+    const { readFile } = await import("./drive.server");
+    const first = (await readFile("d1", ["d1"])) as unknown as WindowRead;
+    expect(DOC).toHaveLength(35_000);
+    expect(first.content).not.toBeNull();
+    expect(first.content!.length).toBeLessThanOrEqual(20_000);
+    expect(first.totalChars).toBe(35_000);
+    // The cap fell inside a line, so the cursor names the line and the character in it.
+    expect(first.truncated).toBe(true);
+    expect(first.hasMore).toBe(true);
+    expect(first.nextOffset).toBeGreaterThan(0);
+    expect(first.nextCharOffset).toBeGreaterThan(0);
+
+    const rest = (await readFile("d1", ["d1"], {
+      offset: first.nextOffset,
+      charOffset: first.nextCharOffset,
+    })) as unknown as WindowRead;
+    // Nothing repeated and nothing skipped: the two answers are the document.
+    expect(first.content! + rest.content).toBe(DOC);
+    expect(rest.hasMore).toBeUndefined();
+    expect(rest.nextOffset).toBeUndefined();
+    expect(rest.truncated).toBeUndefined();
+  });
+
+  it("returns a document that fits whole, with no cursor to follow", async () => {
+    stubDrive("Hola\nmundo");
+    const { readFile } = await import("./drive.server");
+    const out = (await readFile("d1", ["d1"])) as unknown as WindowRead;
+    expect(out.content).toBe("Hola\nmundo");
+    expect(out.totalLines).toBe(2);
+    expect(out.totalChars).toBe(10);
+    expect(out.hasMore).toBeUndefined();
+    expect(out.nextOffset).toBeUndefined();
+    expect(out.truncated).toBeUndefined();
+  });
+
+  it("says where the document ends when the offset is past the last line", async () => {
+    stubDrive("uno\ndos");
+    const { readFile } = await import("./drive.server");
+    const out = (await readFile("d1", ["d1"], { offset: 9 })) as unknown as WindowRead;
+    expect(out.content).toBeNull();
+    expect(String(out.note)).toContain("2 línea(s)");
+    expect(String(out.note)).toContain("9");
+  });
+
+  it("walks a one-line document by character, since lines cannot continue it", async () => {
+    const oneLine = "x".repeat(35_000);
+    stubDrive(oneLine);
+    const { readFile } = await import("./drive.server");
+    const first = (await readFile("d1", ["d1"])) as unknown as WindowRead;
+    expect(first.totalLines).toBe(1);
+    expect(first.content).toHaveLength(20_000);
+    expect(first.nextOffset).toBe(1);
+    const rest = (await readFile("d1", ["d1"], {
+      offset: 1,
+      charOffset: first.nextCharOffset,
+    })) as unknown as WindowRead;
+    expect(first.content! + rest.content).toBe(oneLine);
+  });
+});

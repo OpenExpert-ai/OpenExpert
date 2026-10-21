@@ -49,6 +49,17 @@ describe("tolerant tool inputs", () => {
     const schema = tools.propose_invoice_reminders.inputSchema as unknown as Parser;
     expect(schema.parse({ invoiceIds: "inv-1" })).toEqual({ invoiceIds: "inv-1" });
   });
+
+  it("keeps the read window of read_drive_file instead of dropping it", async () => {
+    const tools = await buildTools();
+    const schema = tools.read_drive_file.inputSchema as unknown as Parser;
+    // The schema only knew `fileId`, so an offset was silently discarded and the rest of a long
+    // document could not be asked for.
+    expect(schema.parse({ fileId: "f1", offset: 20_001 })).toMatchObject({
+      fileId: "f1",
+      offset: 20_001,
+    });
+  });
 });
 
 describe("provenance", () => {
@@ -429,6 +440,24 @@ describe("Google Drive tools", () => {
     const out = await exec(tools.read_drive_file)({ fileId: "f1" });
     expect(out["content"]).toBe("hola");
     expect(svc.driveRead).toHaveBeenCalledWith("f1", ["f1"]);
+  });
+
+  it("read_drive_file forwards the window instead of reading from the top again", async () => {
+    svc.loadGrantedFiles.mockReturnValue([{ id: "d1", name: "acta", mimeType: "text/plain" }]);
+    svc.driveRead.mockResolvedValue({ id: "d1", content: "resto", hasMore: false });
+    const { tools } = await buildExpert([], ["gdrive"]);
+    const out = await exec(tools.read_drive_file)({
+      fileId: "d1",
+      offset: 3,
+      limit: 2,
+      charOffset: 7,
+    });
+    expect(svc.driveRead).toHaveBeenCalledWith("d1", ["d1"], {
+      offset: 3,
+      limit: 2,
+      charOffset: 7,
+    });
+    expect(out["content"]).toBe("resto");
   });
 
   it("read_drive_file surfaces a service error", async () => {

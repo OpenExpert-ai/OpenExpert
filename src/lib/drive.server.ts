@@ -8,6 +8,7 @@ import { getAccessToken } from "./drive-tokens.server";
 import { logger } from "./logger.server";
 import { OFFICE_MIME, extractOfficeText } from "./office.server";
 import { fetchWithTimeout } from "./http.server";
+import { takeWindow } from "./text-window";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -97,8 +98,29 @@ export type DriveFile = {
   webViewLink?: string;
 };
 
+/**
+ * Ceiling for one read as it reaches the model, in characters. It is not the file ceiling: a
+ * document up to `MAX_DRIVE_BYTES` is readable, just not in a single answer.
+ */
+const READ_CHARS = 20_000;
+
+/** Lines a read returns when the caller does not ask for a window. */
+const DEFAULT_READ_LINES = 2_000;
+
+/**
+ * A read window, with the same meaning as the one in `read_local_file`: `offset` is a 1-based
+ * line and `charOffset` the point inside that line where the previous read stopped. The properties
+ * admit an explicit `undefined` because the tool layer forwards its optional arguments as-is, and
+ * this project type-checks with `exactOptionalPropertyTypes`.
+ */
+export type DriveReadOptions = {
+  offset?: number | undefined;
+  limit?: number | undefined;
+  charOffset?: number | undefined;
+};
+
 /** Read only if the ID is in the granted set. */
-export async function readFile(id: string, grantedIds: string[]) {
+export async function readFile(id: string, grantedIds: string[], opts: DriveReadOptions = {}) {
   if (!grantedIds.includes(id)) {
     return {
       id,
@@ -161,7 +183,41 @@ export async function readFile(id: string, grantedIds: string[]) {
     if (!r.text) return { ...meta, content: null, note: r.note };
     text = r.text;
   } else return { ...meta, content: null, note: "Tipo de archivo no legible como texto." };
-  return { ...meta, content: text.slice(0, 20000), truncated: text.length > 20000 };
+  // The text is returned in a **window of lines**, like a local file. Before, everything past
+  // character 20.000 was unreachable: the model got `truncated: true` and no way to ask for the
+  // rest, so a long Doc was answered with its first third and nothing said where it ended. The
+  // cursor is the same one `read_local_file` hands out — `nextOffset`, plus `nextCharOffset` when
+  // the cut fell inside a line — because a Sheet exported as CSV or a minified JSON is one line.
+  const lines = text.split("\n");
+  const totalLines = lines.length;
+  const offset = Math.max(1, Math.floor(opts.offset ?? 1));
+  const limit = Math.max(1, Math.floor(opts.limit ?? DEFAULT_READ_LINES));
+  if (offset > totalLines) {
+    return {
+      ...meta,
+      content: null,
+      note: `El archivo tiene ${totalLines} línea(s): el offset ${offset} queda fuera del final. Usa un offset entre 1 y ${totalLines}.`,
+    };
+  }
+  const wantedChar = Math.max(0, Math.floor(opts.charOffset ?? 0));
+  const win = takeWindow(lines, offset, wantedChar, limit, READ_CHARS);
+  return {
+    ...meta,
+    content: win.text,
+    totalLines,
+    totalChars: text.length,
+    offset,
+    limit,
+    ...(wantedChar > 0 ? { charOffset: wantedChar } : {}),
+    ...(win.truncated ? { truncated: true } : {}),
+    ...(win.more
+      ? {
+          hasMore: true,
+          nextOffset: win.line,
+          ...(win.char > 0 ? { nextCharOffset: win.char } : {}),
+        }
+      : {}),
+  };
 }
 
 const EXPORT: Record<string, string> = {

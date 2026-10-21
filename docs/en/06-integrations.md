@@ -52,6 +52,12 @@ whole. A `.pptx` or an OpenDocument also has a **64 MB decompressed** cap: a 256
 256 MB of memory when inflated, so a document declaring more is refused with a note instead of being
 unzipped.
 
+The file size and the answer size are two different things: a document that fits the cap arrives in
+**windows of lines** (2000 lines and 20.000 characters per read). When the answer carries
+`hasMore`, the rest is asked for with `offset: nextOffset`; when it also carries `nextCharOffset`,
+that goes in `charOffset` with the same `offset`, which is how a line that did not fit is
+continued. `totalChars` says how long the document is, so what is left is known instead of guessed.
+
 ### 2.2 Scopes
 
 | Scope        | Purpose                                                                                    |
@@ -111,19 +117,19 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 
 ## 5. AI tools
 
-| Tool                                                                                           | Behaviour                                                                                                           |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `search_drive`                                                                                 | Searches the granted files only                                                                                     |
-| `read_drive_file`                                                                              | Reads only within the grants                                                                                        |
-| `create_drive_file`                                                                            | Creates a new file the app owns                                                                                     |
-| `update_drive_file`                                                                            | Edits a granted file or a file the app created                                                                      |
-| `list_local_files` / `search_local_files`                                                      | Lists/searches the granted local folders                                                                            |
-| `search_inside_files`                                                                          | Finds text **inside** file contents, ignoring case and accents                                                      |
-| `read_local_file`                                                                              | Reads a granted local file; returns it in line windows (a long line continues by character) and describes the table |
-| `create_local_file` / `update_local_file`                                                      | Writes a local file, with human approval                                                                            |
-| `run_python`                                                                                   | Runs a short Python script for **calculations**, in a temporary directory                                           |
-| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Reads the shared Notion content                                                                                     |
-| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Writes to Notion, with human approval                                                                               |
+| Tool                                                                                           | Behaviour                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_drive`                                                                                 | Searches the granted files only                                                                                                               |
+| `read_drive_file`                                                                              | Reads only within the grants; returns it in windows of lines (`hasMore`/`nextOffset`, plus `nextCharOffset` when the cut falls inside a line) |
+| `create_drive_file`                                                                            | Creates a new file the app owns                                                                                                               |
+| `update_drive_file`                                                                            | Edits a granted file or a file the app created                                                                                                |
+| `list_local_files` / `search_local_files`                                                      | Lists/searches the granted local folders                                                                                                      |
+| `search_inside_files`                                                                          | Finds text **inside** file contents, ignoring case and accents                                                                                |
+| `read_local_file`                                                                              | Reads a granted local file; returns it in line windows (a long line continues by character) and describes the table                           |
+| `create_local_file` / `update_local_file`                                                      | Writes a local file, with human approval                                                                                                      |
+| `run_python`                                                                                   | Runs a short Python script for **calculations**, in a temporary directory                                                                     |
+| `search_notion` / `describe_notion_data_source` / `query_notion_database` / `read_notion_page` | Reads the shared Notion content                                                                                                               |
+| `create_notion_page` / `update_notion_page` / `append_notion_blocks`                           | Writes to Notion, with human approval                                                                                                         |
 
 Drive reads require `gdrive` in the Expert's `sources`; local reads require
 `local`; Notion reads require `notion`; and running code, `python`. All writes go through human
