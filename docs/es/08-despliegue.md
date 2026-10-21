@@ -92,6 +92,11 @@ copia en un único JSON (base de datos más `openexpert.json`, `secrets.json` y
 `credentials.json`), restaurarla, borrar el historial de chat y compactar la
 base de datos. Importar una copia reemplaza los datos actuales.
 
+La restauración es todo o nada: los ficheros se aplican de uno en uno y, si uno
+no se puede sustituir, los ya aplicados vuelven a su contenido anterior, así que
+una copia que falla a medias deja la instalación como estaba. La base que se
+reemplaza queda en `openexpert.db.bak` por si hay que volver atrás a mano.
+
 El JSON cubre la base de datos y los tres ficheros canónicos. Las concesiones de
 fuentes y el token de Notion (`drive-grants.json`, `local-roots.json`,
 `notion.json`) **no** van dentro: para conservarlos, copia el directorio entero.

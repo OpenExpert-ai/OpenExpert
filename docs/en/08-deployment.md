@@ -84,6 +84,12 @@ JSON backup (database plus `openexpert.json`, `secrets.json` and
 `credentials.json`), restore it, clear the chat history and compact the
 database. Importing a backup replaces the current data.
 
+A restore is all or nothing: the files are applied one by one, and if one of
+them cannot be replaced the ones already applied go back to their previous
+content, so a bundle that fails halfway leaves the installation as it was. The
+database that gets replaced is kept in `openexpert.db.bak` in case it has to be
+put back by hand.
+
 The JSON bundle covers the database and the three canonical files. The source
 grants and the Notion token (`drive-grants.json`, `local-roots.json`,
 `notion.json`) are **not** inside it: to keep them, copy the whole directory.

@@ -1,9 +1,121 @@
 // SPDX-License-Identifier: MIT
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildBackup, dataStats, resetData, restoreBackup } from "./backup.server";
+import { resetDbHandle } from "./db.server";
+
+/**
+ * Makes one rename fail while the restore is swapping files in. The copies the
+ * restore keeps beforehand work, so the failure happens exactly where a real
+ * destination that cannot be replaced fails: at the swap, with earlier files
+ * already in place.
+ */
+const renameControl = vi.hoisted(() => ({ failWhenSourceEndsWith: null as string | null }));
+
+vi.mock("node:fs", async (importOriginal) => {
+  const real = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...real,
+    renameSync: (
+      from: Parameters<typeof real.renameSync>[0],
+      to: Parameters<typeof real.renameSync>[1],
+    ) => {
+      if (
+        renameControl.failWhenSourceEndsWith &&
+        String(from).endsWith(renameControl.failWhenSourceEndsWith)
+      ) {
+        // The text POSIX gives for a file renamed over a directory.
+        throw Object.assign(
+          new Error(
+            `EISDIR: illegal operation on a directory, rename '${String(from)}' -> '${String(to)}'`,
+          ),
+          { code: "EISDIR" },
+        );
+      }
+      return real.renameSync(from, to);
+    },
+  };
+});
+
+/** The error the restore throws, for a case that has to fail. */
+async function rejectionOf(work: Promise<unknown>): Promise<Error> {
+  try {
+    await work;
+  } catch (e) {
+    return e as Error;
+  }
+  throw new Error("la restauración terminó bien cuando tenía que fallar");
+}
+
+/** A bundle with those files, base64-encoded the way `buildBackup` does it. */
+function bundleOf(files: Record<string, Buffer | string>): string {
+  const encoded: Record<string, string> = {};
+  for (const [key, value] of Object.entries(files)) {
+    encoded[key] = Buffer.from(value).toString("base64");
+  }
+  return JSON.stringify({ format: "openexpert-backup", version: 2, files: encoded });
+}
+
+/**
+ * An installation of its own in two temporary directories: a seeded database
+ * (whose bytes the bundle must not be carrying, so a chat message is written
+ * after the bundle is read), `openexpert.json` in the working directory and
+ * `secrets.json` in the data directory. The environment and the working
+ * directory end up pointing at it, so the caller has to restore them.
+ */
+async function installCurrent(): Promise<{ data: string; cwd: string; dbBlob: string }> {
+  const data = mkdtempSync(join(tmpdir(), "oe-restore-data-"));
+  const cwd = mkdtempSync(join(tmpdir(), "oe-restore-cwd-"));
+  process.env["OPENEXPERT_DATA_DIR"] = data;
+  process.chdir(cwd);
+  resetDbHandle();
+  await dataStats(); // creates and seeds the database here
+  // What a bundle built before this installation had its own chat would carry.
+  const dbBlob = buildBackup().files.db!;
+  const { getDb, persist } = await import("./db.server");
+  const schema = await import("../../drizzle/schema");
+  const { orm } = await getDb();
+  orm
+    .insert(schema.chatMessages)
+    .values({
+      id: "propia",
+      expertId: "general",
+      conversationId: "c1",
+      message: { role: "user" } as never,
+      createdAt: new Date().toISOString(),
+    })
+    .run();
+  await persist();
+  writeFileSync(
+    join(cwd, "openexpert.json"),
+    JSON.stringify({ modelProvider: "ollama", modelId: "viejo" }),
+  );
+  writeFileSync(join(data, "secrets.json"), JSON.stringify({ CLAVE: "vieja" }));
+  return { data, cwd, dbBlob };
+}
+
+/** Points the process back where it was and removes the installation. */
+function dropInstallation(
+  install: { data: string; cwd: string },
+  previous: { dir: string | undefined; cwd: string },
+): void {
+  process.chdir(previous.cwd);
+  if (previous.dir === undefined) delete process.env["OPENEXPERT_DATA_DIR"];
+  else process.env["OPENEXPERT_DATA_DIR"] = previous.dir;
+  resetDbHandle();
+  rmSync(install.cwd, { recursive: true, force: true });
+  rmSync(install.data, { recursive: true, force: true });
+}
 
 let dir: string;
 
@@ -201,6 +313,113 @@ describe("backups", () => {
 
     expect(result.missing).toEqual(["secretKey"]);
     rmSync(join(dir, "credentials.json"), { force: true });
+  });
+
+  it("deja la instalación como estaba si un fichero de la copia no se puede sustituir", async () => {
+    // The regression: the files were renamed one by one and the catch put only the
+    // database back, so a failure at the last one left the previous database next to
+    // the bundle's configuration and secrets, and the message named the database
+    // alone. A destination that cannot be replaced has to leave all four as they were.
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    const bundleDb = install.dbBlob;
+    try {
+      const db = join(install.data, "openexpert.db");
+      const config = join(install.cwd, "openexpert.json");
+      const secrets = join(install.data, "secrets.json");
+      const credentials = join(install.data, "credentials.json");
+      mkdirSync(credentials); // a directory: the staged file cannot be renamed over it
+      const before = {
+        db: readFileSync(db),
+        config: readFileSync(config),
+        secrets: readFileSync(secrets),
+      };
+      expect(before.db.equals(Buffer.from(bundleDb, "base64"))).toBe(false);
+
+      const error = await rejectionOf(
+        restoreBackup(
+          bundleOf({
+            db: Buffer.from(bundleDb, "base64"),
+            config: JSON.stringify({ modelProvider: "openai", modelId: "nuevo" }),
+            secrets: JSON.stringify({ CLAVE: "nueva" }),
+            credentials: JSON.stringify({ token: "nuevo" }),
+          }),
+        ),
+      );
+
+      expect(readFileSync(db).equals(before.db)).toBe(true);
+      expect(readFileSync(config).equals(before.config)).toBe(true);
+      expect(readFileSync(secrets).equals(before.secrets)).toBe(true);
+      expect(statSync(credentials).isDirectory()).toBe(true);
+      expect(error.message).toMatch(/credentials\.json/);
+      expect(error.message).toMatch(/No se ha cambiado nada/);
+      // Neither the staged copies nor the ones kept aside survive a restore that did
+      // not happen: a `secrets.json.pre-restore` left behind is a copy of the tokens.
+      for (const path of [db, config, secrets, credentials]) {
+        expect(existsSync(`${path}.restore-tmp`)).toBe(false);
+        expect(existsSync(`${path}.pre-restore`)).toBe(false);
+      }
+      expect(existsSync(`${db}.bak`)).toBe(false);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("devuelve a su contenido anterior lo ya aplicado cuando falla un rename", async () => {
+    // The failure can also land after some files are already swapped in: a
+    // destination that cannot be replaced at that moment. What was applied has to
+    // come back, newest first, or the installation stays half of each.
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    const bundleDb = install.dbBlob;
+    renameControl.failWhenSourceEndsWith = "credentials.json.restore-tmp";
+    try {
+      const db = join(install.data, "openexpert.db");
+      const config = join(install.cwd, "openexpert.json");
+      const secrets = join(install.data, "secrets.json");
+      const credentials = join(install.data, "credentials.json");
+      writeFileSync(credentials, JSON.stringify({ token: "viejo" }));
+      const before = {
+        db: readFileSync(db),
+        config: readFileSync(config),
+        secrets: readFileSync(secrets),
+        credentials: readFileSync(credentials),
+      };
+
+      const error = await rejectionOf(
+        restoreBackup(
+          bundleOf({
+            db: Buffer.from(bundleDb, "base64"),
+            config: JSON.stringify({ modelProvider: "openai", modelId: "nuevo" }),
+            secrets: JSON.stringify({ CLAVE: "nueva" }),
+            credentials: JSON.stringify({ token: "nuevo" }),
+          }),
+        ),
+      );
+
+      expect(readFileSync(db).equals(before.db)).toBe(true);
+      expect(readFileSync(config).equals(before.config)).toBe(true);
+      expect(readFileSync(secrets).equals(before.secrets)).toBe(true);
+      expect(readFileSync(credentials).equals(before.credentials)).toBe(true);
+      // The previous content is back in place, not only in a copy next to it.
+      expect(JSON.parse(readFileSync(config, "utf8"))).toEqual({
+        modelProvider: "ollama",
+        modelId: "viejo",
+      });
+      expect(error.message).toMatch(/No se pudo aplicar la copia \(EISDIR/);
+      // config and secrets are swapped in before the failure, so both go back, and
+      // the message says which ones instead of talking about the database alone.
+      expect(error.message).toMatch(/Se ha deshecho el cambio en secrets, config\./);
+      expect(error.message).toMatch(/La instalación está como estaba\./);
+      expect(error.message).not.toMatch(/La base de datos anterior se ha restaurado/);
+      for (const path of [config, secrets, credentials]) {
+        expect(existsSync(`${path}.pre-restore`)).toBe(false);
+        expect(existsSync(`${path}.restore-tmp`)).toBe(false);
+      }
+    } finally {
+      renameControl.failWhenSourceEndsWith = null;
+      dropInstallation(install, previous);
+    }
   });
 
   it("clears chat history and reports the count", async () => {
