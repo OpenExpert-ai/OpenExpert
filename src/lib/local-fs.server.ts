@@ -21,6 +21,7 @@ import {
 import { homedir } from "node:os";
 import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { OFFICE_EXT, extractOfficeText, type SheetInfo } from "./office.server";
+import { takeWindow } from "./text-window";
 
 /** Names never listed or walked, to avoid leaking secrets and huge trees. */
 const IGNORED = new Set([
@@ -326,53 +327,6 @@ export type ReadOptions = {
   /** Allow a scanned PDF to be read with a model. The caller decides: it is a cloud call. */
   vision?: boolean | undefined;
 };
-
-/**
- * The longest slice of the file that starts at `line` (1-based) and character `char` (0-based,
- * inside that line), takes at most `limit` lines and at most `budget` characters, plus the point
- * where the next read has to resume.
- *
- * The two caps are measured in different units on purpose — lines are what a person counts,
- * characters are what the context can hold — but they have to be reconciled at the same cursor.
- * When one line is bigger than the budget, the character cap decides, and only a cursor *inside*
- * the line lets the caller reach the rest.
- */
-function takeWindow(
-  lines: string[],
-  line: number,
-  char: number,
-  limit: number,
-  budget: number,
-): { text: string; line: number; char: number; more: boolean; truncated: boolean } {
-  let text = "";
-  let ln = line;
-  let ch = char;
-  let whole = 0;
-  for (;;) {
-    if (ln > lines.length) return { text, line: ln, char: 0, more: false, truncated: false };
-    if (whole >= limit) return { text, line: ln, char: ch, more: true, truncated: false };
-    const cur = lines[ln - 1] ?? "";
-    if (ch > cur.length) ch = cur.length;
-    // The newline that separates this line from the piece before it costs a character too.
-    const sep = text.length > 0 ? 1 : 0;
-    const room = budget - text.length - sep;
-    const rest = cur.length - ch;
-    if (room < rest) {
-      const take = Math.max(0, room);
-      return {
-        text: text + (sep ? "\n" : "") + cur.slice(ch, ch + take),
-        line: ln,
-        char: ch + take,
-        more: true,
-        truncated: true,
-      };
-    }
-    text += (sep ? "\n" : "") + cur.slice(ch);
-    whole++;
-    ch = 0;
-    ln++;
-  }
-}
 
 export async function readLocalFile(
   target: string,

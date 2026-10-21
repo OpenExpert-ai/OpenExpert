@@ -266,16 +266,32 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_drive_file: tool({
       description:
-        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker (Docs, Sheets como CSV, Slides, PDF, Word/Excel/PowerPoint y texto).",
-      inputSchema: z.object({ fileId: z.string() }),
-      execute: async ({ fileId }) => {
+        "Lee el contenido de texto de un archivo de Google Drive que el usuario eligió con el Picker (Docs, Sheets como CSV, Slides, PDF, Word/Excel/PowerPoint y texto). " +
+        "Devuelve el documento en ventanas de 2000 líneas: si la respuesta trae `hasMore`, vuelve a llamar con `offset: nextOffset` para seguir por donde iba. " +
+        "Si además trae `nextCharOffset`, mándalo en `charOffset` con ese mismo `offset`: una línea que no cabe en una lectura se continúa así, y sin ese dato su resto no se puede pedir. " +
+        "`totalChars` dice cuántos caracteres tiene el documento entero, para saber cuánto queda.",
+      inputSchema: z.object({
+        fileId: z.string(),
+        offset: z.number().int().min(1).optional(),
+        limit: z.number().int().min(1).max(20000).optional(),
+        charOffset: z.number().int().min(0).optional(),
+      }),
+      execute: async ({ fileId, offset, limit, charOffset }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
         used.add("Google Drive");
         try {
           const d = await import("../drive.server");
           const local = await import("../engine/local-secrets.server");
           const granted = local.loadGrantedFiles().map((g) => g.id);
-          return await d.readFile(fileId, granted);
+          // A plain read keeps calling with two arguments: the window is an addition, not a
+          // different way of reading.
+          const window =
+            offset === undefined && limit === undefined && charOffset === undefined
+              ? null
+              : { offset, limit, charOffset };
+          return window
+            ? await d.readFile(fileId, granted, window)
+            : await d.readFile(fileId, granted);
         } catch (e) {
           return { error: (e as Error).message };
         }
