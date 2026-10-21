@@ -103,6 +103,50 @@ describe("extractOfficeText", () => {
     expect(out.text).toContain("Segundo párrafo");
   });
 
+  it("reads .odt paragraphs and headings in document order", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { extractOfficeText } = await import("./office.server");
+    // The reader used to walk `content.xml` twice and concatenate —every paragraph, then every
+    // heading— so a document read as its body followed by all its titles: a section and its
+    // heading ended up far apart, with no error to show for it.
+    const xml =
+      "<office:document-content><office:body><office:text>" +
+      '<text:h text:style-name="Heading_20_1">Capitulo uno</text:h>' +
+      '<text:p text:style-name="Standard">Primer parrafo del capitulo uno.</text:p>' +
+      '<text:h text:style-name="Heading_20_1">Capitulo dos</text:h>' +
+      '<text:p text:style-name="Standard">Primer parrafo del capitulo dos.</text:p>' +
+      '<text:p text:style-name="Standard">Segundo parrafo del capitulo dos.</text:p>' +
+      "</office:text></office:body></office:document-content>";
+    const out = await extractOfficeText(zipSync({ "content.xml": strToU8(xml) }), ".odt");
+    const lines = (out.text ?? "").split(String.fromCharCode(10)).map((line) => line.trim());
+    expect(lines).toEqual([
+      "Capitulo uno",
+      "Primer parrafo del capitulo uno.",
+      "Capitulo dos",
+      "Primer parrafo del capitulo dos.",
+      "Segundo parrafo del capitulo dos.",
+    ]);
+  });
+
+  it("reads .ods cells in table order", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { extractOfficeText } = await import("./office.server");
+    // The same single reader serves .odt, .ods and .odp; a spreadsheet is its cells in order, so a
+    // pass that only kept the heading/paragraph pair and dropped cells would empty every table.
+    const xml =
+      "<office:document-content><office:body><office:spreadsheet>" +
+      '<table:table table:name="Hoja1"><table:table-row>' +
+      "<table:table-cell><text:p>Nombre</text:p></table:table-cell>" +
+      "<table:table-cell><text:p>Valor</text:p></table:table-cell>" +
+      "</table:table-row><table:table-row>" +
+      "<table:table-cell><text:p>Acme</text:p></table:table-cell>" +
+      "<table:table-cell><text:p>42</text:p></table:table-cell>" +
+      "</table:table-row></table:table></office:spreadsheet></office:body></office:document-content>";
+    const out = await extractOfficeText(zipSync({ "content.xml": strToU8(xml) }), ".ods");
+    const lines = (out.text ?? "").split(String.fromCharCode(10)).map((line) => line.trim());
+    expect(lines).toEqual(["Nombre", "Valor", "Acme", "42"]);
+  });
+
   it("keeps a stray `<` from malformed markup out of the text", async () => {
     const { zipSync, strToU8 } = await import("fflate");
     const { extractOfficeText } = await import("./office.server");
