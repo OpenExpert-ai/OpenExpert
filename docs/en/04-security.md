@@ -24,7 +24,12 @@ restricted to the pages shared in Notion's picker.
 ## 3. Guarantees against assistant misuse
 
 1. **Pre-filter.** `src/lib/ai/injection.ts` blocks known injection patterns
-   before the model runs and logs the attempt with status `denied`.
+   before the model runs and logs the attempt with status `denied`, naming the
+   message that tripped it. It checks the whole conversation, not just the last
+   message, because the model receives the full history and every message's role
+   comes from the client. A denied turn is not stored, and the history is read
+   back without the messages the filter rejects, so a conversation cannot stay
+   locked by a message that is already inside it.
 2. **Server-side checks.** Domain isolation is enforced in `chat.server.ts`, not
    by the model.
 3. **Human approval.** The assistant only _proposes_ actions (`propose_*`);

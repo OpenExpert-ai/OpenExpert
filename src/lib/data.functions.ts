@@ -8,6 +8,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
 import { EXPERT_DOMAINS } from "./domains";
+import { firstInjection, type GateMessage } from "@/lib/ai/injection";
 import { chatSettings } from "@/lib/config.server";
 import type { DriveGrant } from "@/lib/engine/local-secrets.server";
 import { getDb, now, persist } from "@/lib/db.server";
@@ -288,7 +289,18 @@ export const getChat = createServerFn({ method: "GET" })
       )
       .orderBy(schema.chatMessages.createdAt)
       .all();
-    return JSON.stringify(rows.map((r) => r.message));
+    // A message the chat gate rejects is not replayed. Rows written before the
+    // gate read the whole conversation — or by any path that skipped it — would
+    // otherwise deny every retry of that conversation with no way out. They stay
+    // in the database (the audit event names them) and are simply not sent back
+    // to the client, which is also what keeps them away from the model.
+    const chat = chatSettings();
+    const replayed = chat.injectionGuard
+      ? rows.filter(
+          (row) => !firstInjection([row.message as GateMessage], chat.injectionExtraPatterns),
+        )
+      : rows;
+    return JSON.stringify(replayed.map((r) => r.message));
   });
 
 export const listConversations = createServerFn({ method: "GET" })
