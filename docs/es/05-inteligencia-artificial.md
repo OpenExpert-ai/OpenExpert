@@ -20,13 +20,13 @@ herramientas.
 
 ### Lectura
 
-| Herramienta                | Contenido                                                   | Dominio     |
-| -------------------------- | ----------------------------------------------------------- | ----------- |
-| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados | `ventas`    |
-| `list_deals`               | Oportunidades abiertas, opcionalmente por etapa             | `ventas`    |
-| `list_overdue_invoices`    | Facturas vencidas con importe, días y recordatorios         | `finanzas`  |
-| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado           | `marketing` |
-| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `clientes`  |
+| Herramienta                | Contenido                                                       | Dominio     |
+| -------------------------- | --------------------------------------------------------------- | ----------- |
+| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados     | `ventas`    |
+| `list_deals`               | Oportunidades abiertas, opcionalmente por etapa                 | `ventas`    |
+| `list_overdue_invoices`    | Facturas vencidas con importe, días y reclamaciones registradas | `finanzas`  |
+| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado               | `marketing` |
+| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja            | `clientes`  |
 
 Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Una
 herramienta solo atribuye el dato a un proveedor cuando esa integración está
@@ -86,10 +86,14 @@ el selector de Notion.
 
 | Herramienta                 | Propone                                 |
 | --------------------------- | --------------------------------------- |
-| `propose_invoice_reminders` | Enviar reclamaciones de cobro           |
+| `propose_invoice_reminders` | Registrar reclamaciones de cobro        |
 | `propose_pause_campaigns`   | Pausar campañas por encima del objetivo |
 
-Crean una fila en `activity` con estado `pending`, mostrada como tarjeta de
+Aprobar una reclamación de cobro la apunta en la factura (sube `reminders`): no
+se envía ningún correo, y el resumen que queda en `activity` lo dice así («1
+reclamación de cobro registrada»), con Holded como única fuente.
+
+Los dos crean una fila en `activity` con estado `pending`, mostrada como tarjeta de
 confirmación. Nada cambia hasta que la apruebas.
 
 ### Utilidad

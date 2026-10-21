@@ -150,7 +150,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     list_overdue_invoices: tool({
       description:
-        "Facturas vencidas, con importe, días de retraso y recordatorios enviados. Filtra por importe mínimo en euros (opcional).",
+        "Facturas vencidas, con importe, días de retraso y reclamaciones ya registradas. Filtra por importe mínimo en euros (opcional).",
       inputSchema: z.object({ minAmount: z.coerce.number().nullish() }),
       execute: async ({ minAmount }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
@@ -183,7 +183,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     propose_invoice_reminders: tool({
       description:
-        "Propone enviar reclamaciones de cobro por email para facturas vencidas concretas. NO las envía: crea una tarjeta de confirmación humana obligatoria.",
+        "Propone registrar una reclamación de cobro en facturas vencidas concretas: al aprobarla, cada factura suma una reclamación. No envía ningún correo y exige confirmación humana.",
       inputSchema: z.object({ invoiceIds: z.union([z.array(z.string()), z.string()]) }),
       execute: async ({ invoiceIds }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
@@ -194,8 +194,8 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!rows.length) return { error: "Ninguna de esas facturas está vencida." };
         return proposePending(
           "finanzas",
-          `Enviar ${rows.length} reclamaciones de cobro`,
-          "Envío de correo",
+          `Registrar ${ee.countPhrase(rows.length, "reclamación de cobro", "reclamaciones de cobro")}`,
+          "Cobro",
           rows.map(
             (r) =>
               `${r.client} — ${r.amount.toLocaleString("es-ES")}€ · ${r.daysOverdue} días · ${r.id}`,
@@ -219,7 +219,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!rows.length) return { error: "No hay campañas activas con esos IDs." };
         return proposePending(
           "marketing",
-          `Pausar ${rows.length} campañas`,
+          `Pausar ${ee.countPhrase(rows.length, "campaña", "campañas")}`,
           "Cambio en campañas",
           rows.map((r) =>
             // A campaign with no conversions has no CPA: the old text rendered

@@ -87,14 +87,14 @@ const exec = (t: unknown) => (t as Executable).execute;
 async function buildExpert(domains: string[] = [], sources: string[] = []) {
   const { createChatTools } = await import("./tools");
   const used = new Set<string>();
-  const proposals: { domain: string; title: string }[] = [];
+  const proposals: { domain: string; title: string; risk: string }[] = [];
   const tools = createChatTools({
     expert: { name: "Experto de prueba", sources },
     expertId: "experto-test",
     used,
     allowed: (domain) => domains.includes(domain),
     proposePending: async (domain, title, risk, items) => {
-      proposals.push({ domain, title });
+      proposals.push({ domain, title, risk });
       return { eventId: "evt_test", title, risk, items, status: "pending" as const };
     },
   });
@@ -156,7 +156,20 @@ describe("per-Expert domain isolation", () => {
     expect(out["status"]).toBe("pending");
     expect(proposals).toHaveLength(1);
     expect(proposals[0]?.domain).toBe("finanzas");
-    expect(proposals[0]?.title).toMatch(/^Enviar 1 /);
+    expect(proposals[0]?.title).toBe("Registrar 1 reclamación de cobro");
+    expect(proposals[0]?.risk).toBe("Cobro");
+
+    // La tarjeta no promete un envío: con varias facturas el título concuerda en plural.
+    raw.run(
+      "INSERT OR REPLACE INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)",
+      ["inv-test-2", "Cliente Dos", 800, "2026-01-01", "overdue", 0],
+    );
+    await persist();
+    const both = await exec(tools.propose_invoice_reminders)({
+      invoiceIds: ["inv-test", "inv-test-2"],
+    });
+    expect(both["title"]).toBe("Registrar 2 reclamaciones de cobro");
+    expect(String(both["title"])).not.toMatch(/enviar/i);
   });
 });
 
