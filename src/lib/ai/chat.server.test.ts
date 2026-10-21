@@ -262,9 +262,12 @@ describe("streaming persistence", () => {
     const { result, opts } = streamResult();
     mocks.streamText.mockReturnValue(result);
     const { handleChat } = await import("./chat.server");
+    // Un hilo propio: los mensajes se guardan por su id de UI, así que repetir
+    // `a1` en la conversación de otro test lo actualizaría en vez de añadirlo.
     await handleChat(
       chatRequest({
         expertId: "ventas",
+        conversationId: "c-continuacion",
         messages: [{ id: "a0", role: "assistant", parts: [{ type: "text", text: "aprobado" }] }],
       }),
     );
@@ -421,5 +424,131 @@ describe("prompt-injection gate over the whole conversation", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("streamed");
     expect(mocks.streamText).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("persistencia de una aprobación", () => {
+  // El mensaje que el SDK entrega al terminar el turno en que el modelo pide
+  // permiso para escribir.
+  const pedido = {
+    id: "a-ap",
+    role: "assistant",
+    parts: [
+      {
+        type: "tool-create_local_file",
+        toolCallId: "call-ap",
+        state: "approval-requested",
+        input: { folder: "/tmp", name: "notas.md", content: "hola" },
+        approval: { id: "aprobacion-1" },
+      },
+    ],
+  };
+  // Lo que manda el navegador al aprobar: el mismo mensaje con la respuesta.
+  const aprobado = {
+    ...pedido,
+    parts: [
+      {
+        ...pedido.parts[0],
+        state: "approval-responded",
+        approval: { id: "aprobacion-1", approved: true },
+      },
+    ],
+  };
+  // Lo que entrega el SDK al terminar la continuación: el MISMO mensaje
+  // (`getResponseUIMessageId` reutiliza el id cuando el último es del
+  // asistente) con la decisión y el resultado de la herramienta.
+  const resuelto = {
+    ...pedido,
+    parts: [
+      {
+        ...pedido.parts[0],
+        state: "output-available",
+        approval: { id: "aprobacion-1", approved: true },
+        output: { name: "notas.md", path: "/tmp/notas.md" },
+      },
+    ],
+  };
+
+  type Row = { id?: string; parts?: { state?: string; output?: unknown }[] };
+
+  async function chatRows(expertId: string, conversationId: string): Promise<Row[]> {
+    const { getDb } = await import("@/lib/db.server");
+    const schema = await import("../../../drizzle/schema");
+    const { orm } = await getDb();
+    return orm
+      .select()
+      .from(schema.chatMessages)
+      .all()
+      .filter((r) => r.expertId === expertId && r.conversationId === conversationId)
+      .map((r) => r.message as Row);
+  }
+
+  /** Deja en la base un mensaje ya guardado (como lo dejaría un turno anterior). */
+  async function seed(expertId: string, conversationId: string, msgs: unknown[]) {
+    const { getDb } = await import("@/lib/db.server");
+    const schema = await import("../../../drizzle/schema");
+    const { orm } = await getDb();
+    msgs.forEach((m, i) => {
+      orm
+        .insert(schema.chatMessages)
+        .values({
+          id: crypto.randomUUID(),
+          expertId,
+          conversationId,
+          message: m as never,
+          createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+        })
+        .run();
+    });
+  }
+
+  async function chat(expertId: string, conversationId: string, messages: unknown[]) {
+    mocks.getLanguageModel.mockReturnValue({});
+    const { result, opts } = streamResult();
+    mocks.streamText.mockReturnValue(result);
+    const { handleChat } = await import("./chat.server");
+    await handleChat(chatRequest({ expertId, conversationId, messages }));
+    return opts();
+  }
+
+  it("guarda la decisión y el resultado en la fila del mensaje que pidió permiso", async () => {
+    // Turno 1: el modelo pide permiso.
+    const t1 = await chat("aprobaciones", "c-ap", [userMessage("crea notas.md")]);
+    await t1.onFinish({ responseMessage: pedido });
+
+    // Turno 2: el usuario aprueba.
+    const t2 = await chat("aprobaciones", "c-ap", [userMessage("crea notas.md"), aprobado]);
+    await t2.onFinish({ responseMessage: resuelto });
+
+    const filas = await chatRows("aprobaciones", "c-ap");
+    // Sin una segunda copia del mensaje: la fila se actualiza, no se duplica.
+    expect(filas.map((m) => m.id)).toEqual(["m1", "a-ap"]);
+    expect(
+      filas.flatMap((m) => m.parts ?? []).filter((p) => p.state === "approval-requested"),
+    ).toEqual([]);
+    const partes = filas.at(-1)?.parts ?? [];
+    expect(partes[0]?.state).toBe("output-available");
+    expect(JSON.stringify(partes[0])).toContain("notas.md");
+  });
+
+  it("no vuelve a ejecutar una llamada que ya está resuelta en el historial", async () => {
+    // Una pestaña abierta antes de la primera aprobación (o una recarga que
+    // llegó antes de guardar) manda la misma respuesta. Al modelo le llega el
+    // resultado guardado, no una aprobación nueva, así que la herramienta no se
+    // ejecuta por segunda vez.
+    await seed("replay", "c-replay", [userMessage("crea notas.md"), resuelto]);
+    await chat("replay", "c-replay", [userMessage("crea notas.md"), aprobado]);
+
+    const enviados = mocks.convert.mock.calls.at(-1)?.[0] as Row[];
+    expect(enviados.at(-1)?.parts?.[0]?.state).toBe("output-available");
+  });
+
+  it("deja pasar al modelo una aprobación que aún no está decidida", async () => {
+    // El control: una tarjeta que se acaba de pulsar tiene que ejecutarse.
+    await seed("pendiente", "c-pend", [userMessage("crea notas.md"), pedido]);
+    await chat("pendiente", "c-pend", [userMessage("crea notas.md"), aprobado]);
+
+    const enviados = mocks.convert.mock.calls.at(-1)?.[0] as Row[];
+    expect(enviados.at(-1)?.parts?.[0]?.state).toBe("approval-responded");
   });
 });

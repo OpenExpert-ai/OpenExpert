@@ -10,7 +10,7 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "../ee.server";
 import { getDb, now, persist } from "@/lib/db.server";
@@ -22,6 +22,7 @@ import {
   selectedProvider,
 } from "@/lib/engine/model-provider.server";
 import { firstInjection, messageText } from "@/lib/ai/injection";
+import { settleHistory } from "@/lib/ai/approval-history";
 import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
 import { effectiveConfig } from "@/lib/config.server";
 import { forbidden, isSameOrigin } from "@/lib/http.server";
@@ -61,18 +62,44 @@ const json = (status: number, error: string) =>
 async function save(expertId: string, msgs: UIMessage[], conversationId = "default") {
   if (!msgs.length) return;
   const { orm } = await getDb();
-  orm
-    .insert(schema.chatMessages)
-    .values(
-      msgs.map((m) => ({
-        id: crypto.randomUUID(),
-        expertId,
-        conversationId,
-        message: m as never,
-        createdAt: now(),
-      })),
+  // Chat messages are keyed by their UI id, not appended blind. The stream
+  // continues the assistant message that asked for approval — same id, now
+  // carrying the decision and the result — so inserting it again would leave
+  // the pending copy in the history and the card would come back alive on
+  // reload, ready to run the write a second time.
+  const stored = orm
+    .select()
+    .from(schema.chatMessages)
+    .where(
+      and(
+        eq(schema.chatMessages.expertId, expertId),
+        eq(schema.chatMessages.conversationId, conversationId),
+      ),
     )
-    .run();
+    .all();
+  const rowOf = new Map<string, string>();
+  for (const row of stored) {
+    const id = (row.message as { id?: string } | null)?.id;
+    if (id) rowOf.set(id, row.id);
+  }
+  const at = now();
+  for (const m of msgs) {
+    const existing = m.id ? rowOf.get(m.id) : undefined;
+    if (existing) {
+      orm
+        .update(schema.chatMessages)
+        .set({ message: m as never })
+        .where(eq(schema.chatMessages.id, existing))
+        .run();
+      continue;
+    }
+    const id = crypto.randomUUID();
+    orm
+      .insert(schema.chatMessages)
+      .values({ id, expertId, conversationId, message: m as never, createdAt: at })
+      .run();
+    if (m.id) rowOf.set(m.id, id);
+  }
   await persist();
 }
 
@@ -97,10 +124,29 @@ export async function handleChat(request: Request) {
     .safeParse(body);
   if (!parsed.success) return json(400, "Petición inválida");
   const expertId = parsed.data.expertId;
-  const messages = parsed.data.messages as unknown as UIMessage[];
   const conversationId = (parsed.data.conversationId || "default").slice(0, 64);
 
   const { orm } = await getDb();
+  // A write that already ran must not run again. A second tab, or a reload that
+  // beat the save, can send the same approval with a history that does not know
+  // it was answered: the SDK would execute it a second time —another Notion
+  // page, a Drive file written twice—. The outcome stored for that call
+  // replaces the answer, so the model reads what happened and the tool is not
+  // called again.
+  const stored = orm
+    .select()
+    .from(schema.chatMessages)
+    .where(
+      and(
+        eq(schema.chatMessages.expertId, expertId),
+        eq(schema.chatMessages.conversationId, conversationId),
+      ),
+    )
+    .all();
+  const messages = settleHistory(
+    parsed.data.messages as unknown as UIMessage[],
+    stored.map((row) => row.message),
+  );
   const found = orm.select().from(schema.experts).where(eq(schema.experts.id, expertId)).all()[0];
   const expert = found ?? {
     id: expertId,

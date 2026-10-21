@@ -74,6 +74,13 @@ configuration.
 **Retention: configurable (`chat.retentionDays`, default 30 days; `0` disables it).**
 `listConversations` prunes threads older than the window; with `0` it deletes nothing.
 
+Each row is one full UI message and is identified by the `id` it carries inside
+(`message.id`), not by the table key: a turn that continues —approving a write, for
+instance— sends that message back with the decision and the result, so the **row is
+updated** rather than duplicated. The approval answer (`approval.approved`) and the
+tool's outcome live in that `message`, which is what keeps the card from coming back on
+reload and the write from running twice.
+
 ### `settings` — key/value preferences
 
 | Column       | Type        | Notes                                  |
