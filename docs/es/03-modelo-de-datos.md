@@ -101,6 +101,13 @@ Pobladas por las integraciones correspondientes (ninguna conectada por defecto).
 | `campaigns` | `channel`, `spend_7d`, `conversions_7d`, `cpa_target`, `daily_budget`, `status` |
 | `accounts`  | `mrr`, `usage_trend`, `open_tickets`, `churn_risk`                              |
 
+`due_date` guarda un día de calendario tal cual (`2026-09-01`), no un instante.
+Los días que lleva vencida una factura se cuentan por el calendario, en la zona
+horaria local (`src/lib/calendar-day.ts`): lo que una deuda lleva corriendo es
+un número de días, y la hora del día no lo cambia. Una fecha que no se puede
+leer, o que todavía no ha llegado, cuenta como cero días — lo que una deuda
+lleva corriendo nunca es negativo ni desconocido.
+
 ## 3. Sin usuarios, roles ni RLS
 
 La edición es de propietario único, así que no hay tablas `profiles`,

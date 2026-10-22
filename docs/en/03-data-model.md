@@ -100,6 +100,13 @@ Populated by the corresponding integrations (none connected by default).
 | `campaigns` | `channel`, `spend_7d`, `conversions_7d`, `cpa_target`, `daily_budget`, `status` |
 | `accounts`  | `mrr`, `usage_trend`, `open_tickets`, `churn_risk`                              |
 
+`due_date` holds a plain calendar day (`2026-09-01`), not an instant. The days
+an invoice has been late are counted on the calendar, in the local timezone
+(`src/lib/calendar-day.ts`): the moment a debt has been running is a number of
+days, and the hour of the day does not change it. A date that cannot be read,
+or one that has not come yet, counts as zero days — how long a debt has been
+running is never negative and never unknown.
+
 ## 3. No users, roles or RLS
 
 The edition is single-owner, so there are no `profiles`, `user_roles`,
