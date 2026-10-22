@@ -702,3 +702,72 @@ describe("persistencia de una aprobación", () => {
     expect(enviados.at(-1)?.parts?.[0]?.state).toBe("approval-responded");
   });
 });
+
+describe("roles that the SDK does not take in `messages`", () => {
+  // `uiMessageSchema` accepted `system` and `data`. `convertToModelMessages`
+  // takes neither: `system` throws AI_InvalidPromptError (allowSystemInMessages
+  // is false in ai@7) and `data` has no case at all, so the turn died inside
+  // `handleChat` and the caller got the 500 error page —with the SDK trace in
+  // the body— instead of the 400 the same endpoint returns for a bad body.
+  // Every client role is user or assistant; nothing in the app sends the other
+  // two.
+  const asRole = (role: string) => ({ id: "r1", role, parts: [{ type: "text", text: "hola" }] });
+
+  function streamingTurn() {
+    mocks.getLanguageModel.mockReturnValue({ modelId: "fake" });
+    const { result } = streamResult();
+    mocks.streamText.mockReturnValue(result);
+  }
+
+  it("answers a system message with the 400 of an invalid body, not a 500", async () => {
+    streamingTurn();
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(
+      chatRequest({ expertId: "ventas", messages: [asRole("system"), userMessage("hola")] }),
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.text();
+    expect(JSON.parse(body)).toEqual({ error: "Petición inválida" });
+    // The SDK failure never reaches the client as a page with its trace.
+    expect(body).not.toContain("AI_InvalidPromptError");
+    expect(mocks.streamText).not.toHaveBeenCalled();
+  });
+
+  it("answers a data message with the same 400", async () => {
+    streamingTurn();
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(
+      chatRequest({ expertId: "ventas", messages: [asRole("data"), userMessage("hola")] }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Petición inválida" });
+    expect(mocks.streamText).not.toHaveBeenCalled();
+  });
+
+  it("keeps exactly the two roles the SDK takes from a UI message", async () => {
+    const { uiMessageSchema } = await import("./chat.server");
+
+    expect(uiMessageSchema.safeParse(asRole("user")).success).toBe(true);
+    expect(uiMessageSchema.safeParse(asRole("assistant")).success).toBe(true);
+    expect(uiMessageSchema.safeParse(asRole("system")).success).toBe(false);
+    expect(uiMessageSchema.safeParse(asRole("data")).success).toBe(false);
+    // Anything else is out too: the enum is a closed list, not a string.
+    expect(uiMessageSchema.safeParse(asRole("tool")).success).toBe(false);
+  });
+
+  it("still runs a turn whose history is user and assistant", async () => {
+    streamingTurn();
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(
+      chatRequest({
+        expertId: "ventas",
+        messages: [userMessage("hola"), asRole("assistant")],
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mocks.streamText).toHaveBeenCalledTimes(1);
+  });
+});

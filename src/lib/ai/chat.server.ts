@@ -48,10 +48,19 @@ export function lastMessageText(messages: UIMessage[]): string {
   return messageText(messages[messages.length - 1]);
 }
 
-/** Runtime shape of a chat message, used to reject malformed clients early. */
+/**
+ * Runtime shape of a chat message, used to reject malformed clients early.
+ * The roles are exactly the ones `convertToModelMessages` takes from a client
+ * message and `streamText` accepts in `messages`: `system` makes the SDK throw
+ * `AI_InvalidPromptError` (its `allowSystemInMessages` is off) and `data` has
+ * no case in the conversion. Accepting them here did not grant anything —the
+ * SDK still refused— but it moved the failure past the schema, so a client
+ * mistake came back as a 500 with the SDK trace instead of the 400 a bad body
+ * gets. Nothing in the app sends either of the two.
+ */
 export const uiMessageSchema = z.object({
   id: z.string().optional(),
-  role: z.enum(["user", "assistant", "system", "data"]),
+  role: z.enum(["user", "assistant"]),
   parts: z.array(z.object({ type: z.string() }).passthrough()).min(1),
 });
 
