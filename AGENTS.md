@@ -141,6 +141,12 @@ disagree, the code is right and the docs are the bug.
 
 - Uses the non-sensitive `drive.file` scope (per-file, no CASA) with PKCE; the
   user selects files through the Google Picker.
+- **A failed load is not remembered.** The Google API script is loaded lazily
+  (`src/lib/drive-picker.ts`) and a rejected promise is not cached: the cause
+  of a failure (the connection, a script blocker, the CSP) can be gone by the
+  time the user clicks again, and the dead `<script>` leaves the page so the
+  retry mounts a new one. Same rule as the database handle in
+  `src/lib/db.server.ts`: a cached rejection outlives the cause that produced it.
 - Tokens live AES-256-GCM encrypted in `~/.openexpert/credentials.json`
   (`0600`); the Picker grants live in `~/.openexpert/drive-grants.json`.
   Quitar un archivo en Ajustes → Fuentes lo revoca (`revokeGrantedFile`): el id

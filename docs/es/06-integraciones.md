@@ -46,6 +46,11 @@ necesitas entrar en Google Cloud.
    responde `(sin acceso)` y el cambio queda en el registro de actividad.
    `Desconectar` revoca todos los archivos de golpe.
 
+Si el script del Google Picker no se puede cargar —se cayó la conexión, un bloqueador de
+scripts lo paró, la CSP no lo permite— el intento se puede **reintentar**. El intento fallido no
+se recuerda: el siguiente clic vuelve a pedir el script, y el mensaje que explica el fallo dice
+qué comprobar. No hace falta recargar la página.
+
 Las lecturas tienen tope: **25 MB por archivo**. El tamaño viaja en los metadatos, así que un
 archivo mayor se rechaza con una nota clara antes de descargarlo; en el texto suelto y en las
 exportaciones (Docs a texto, Sheets a CSV) el tope se aplica mientras se lee, de modo que un
