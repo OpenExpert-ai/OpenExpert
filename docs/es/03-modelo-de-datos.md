@@ -61,6 +61,12 @@ para volver a sembrar la configuración.
 | `duration_ms` | INTEGER     | Duración medida en ms, o null si la acción no se cronometró |
 | `snapshot`    | TEXT (JSON) | `{ entries }` (para reversión) o `{ pending }`              |
 
+El registro no se sirve entero de una vez: `getWorkspace` trae los 300 eventos más recientes y el
+total real (`activityTotal`, un `COUNT(*)`), y `getActivityPage` pagina hacia atrás con `offset`, así
+que el evento más antiguo —y su snapshot, que es lo que necesita el botón de revertir— sigue siendo
+alcanzable desde el panel. Antes el recorte era mudo: la pantalla imprimía el tamaño de la ventana
+como si fuera el total.
+
 ### `chat_messages` — conversaciones
 
 | Columna           | Tipo        | Notas                        |
