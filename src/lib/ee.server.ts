@@ -3,6 +3,7 @@
 // used by the AI tools. Local SQLite, single owner (no RBAC).
 
 import { z } from "zod";
+import { daysSince } from "@/lib/calendar-day";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
@@ -189,7 +190,7 @@ export async function listDeals(stage: string | null) {
 
 export async function overdueInvoices(minAmount: number | null) {
   const { orm } = await getDb();
-  const today = Date.now();
+  const today = new Date();
   return orm
     .select()
     .from(schema.invoices)
@@ -200,7 +201,7 @@ export async function overdueInvoices(minAmount: number | null) {
       id: i.id,
       client: i.client,
       amount: Number(i.amount),
-      daysOverdue: Math.round((today - new Date(i.dueDate).getTime()) / 86400000),
+      daysOverdue: daysSince(i.dueDate, today),
       reminders: i.reminders,
     }));
 }

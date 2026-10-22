@@ -2,7 +2,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 let dir: string;
 
@@ -76,6 +76,47 @@ describe("overdueInvoices", () => {
     expect((await ee.overdueInvoices(null)).map((i) => i.client)).toEqual(["B", "A"]);
     expect((await ee.overdueInvoices(1000)).map((i) => i.client)).toEqual(["B"]);
     expect((await ee.overdueInvoices(null))[0]!.daysOverdue).toBeGreaterThan(0);
+  });
+
+  it("counts the days late on the calendar, not on the clock of the day", async () => {
+    const db = await raw();
+    db.run("DELETE FROM invoices");
+    const ins =
+      "INSERT INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)";
+    db.run(ins, ["i1", "A", 500, "2026-09-01", "overdue", 0]);
+    const ee = await import("./ee.server");
+
+    // The hour of the day must not change the answer: at half past eleven at
+    // night the invoice is still one day late, not two.
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 8, 2, 0, 5));
+      expect((await ee.overdueInvoices(null))[0]!.daysOverdue).toBe(1);
+
+      vi.setSystemTime(new Date(2026, 8, 2, 23, 30));
+      expect((await ee.overdueInvoices(null))[0]!.daysOverdue).toBe(1);
+
+      vi.setSystemTime(new Date(2026, 8, 10, 15, 0));
+      expect((await ee.overdueInvoices(null))[0]!.daysOverdue).toBe(9);
+
+      // The day it falls due: it is not late yet.
+      vi.setSystemTime(new Date(2026, 8, 1, 23, 59));
+      expect((await ee.overdueInvoices(null))[0]!.daysOverdue).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("never says that a debt has been running for a negative number of days", async () => {
+    const db = await raw();
+    db.run("DELETE FROM invoices");
+    const ins =
+      "INSERT INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)";
+    // Dirty data: the invoice is marked overdue but does not fall due until
+    // the end of the year.
+    db.run(ins, ["i1", "A", 500, "2026-12-01", "overdue", 0]);
+    const ee = await import("./ee.server");
+    expect((await ee.overdueInvoices(null))[0]!.daysOverdue).toBe(0);
   });
 });
 

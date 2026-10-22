@@ -41,6 +41,12 @@ conectada (`connected: true`); si no, devuelve un `note` indicando que no hay
 fuente conectada, de modo que el asistente nunca presenta datos locales como
 reales.
 
+Los días que lleva vencida una factura se cuentan por el calendario, en la zona
+horaria local: el día que vence y el día que se lee se comparan como días, así
+que la hora del día nunca suma un día a la cuenta. El mismo número es el que
+enseña la tarjeta de reclamación de cobro, porque los dos salen de la misma
+consulta.
+
 ### Google Drive (opcional)
 
 | Herramienta         | Requiere              |
