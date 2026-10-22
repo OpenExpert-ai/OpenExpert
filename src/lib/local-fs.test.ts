@@ -357,3 +357,57 @@ describe("searchLocalContent", () => {
     expect(capped.hasMore).toBe(true);
   });
 });
+
+/**
+ * El selector del panel no puede callarse un corte. `browseDirectory` para a las
+ * `MAX_BROWSE_ENTRIES` (2 000) entradas y hasta ahora lo hacia **antes** de
+ * ordenar y sin decirlo: en una carpeta de 2 120 entradas el dialogo enseñaba
+ * 2 000 en el orden del `readdir` —que no pone las carpetas primero— y podia
+ * dejar fuera las subcarpetas, que son la unica forma de navegar a lo que no
+ * salio en la lista. El usuario no tenia ni el dato ni el aviso.
+ */
+describe("browseDirectory en una carpeta grande", () => {
+  let big: string;
+  const FOLDERS = 20;
+  const FILES = 2_100;
+
+  beforeAll(() => {
+    big = join(dir, "carpeta-grande");
+    mkdirSync(big, { recursive: true });
+    for (let i = 1; i <= FILES; i += 1) {
+      writeFileSync(join(big, `doc-${String(i).padStart(4, "0")}.txt`), "x");
+    }
+    for (let i = 0; i < FOLDERS; i += 1) {
+      mkdirSync(join(big, `sub-${String(i).padStart(2, "0")}`));
+    }
+  });
+
+  type View = {
+    entries: { name: string; isDirectory: boolean }[];
+    truncated?: boolean;
+    total?: number;
+  };
+
+  it("dice que la lista viene cortada y cuántas entradas hay de verdad", async () => {
+    const fs = await import("./local-fs.server");
+    const view = fs.browseDirectory(big) as unknown as View;
+
+    expect(view.entries).toHaveLength(2_000);
+    expect(view.truncated).toBe(true);
+    expect(view.total).toBe(FILES + FOLDERS);
+  });
+
+  it("ordena antes de cortar, así que no se come las subcarpetas", async () => {
+    const fs = await import("./local-fs.server");
+    const view = fs.browseDirectory(big) as unknown as View;
+    const names = view.entries.map((e) => e.name);
+
+    // Las carpetas son lo navegable: el corte no puede dejarlas fuera.
+    expect(names.filter((n) => n.startsWith("sub-"))).toHaveLength(FOLDERS);
+    // Y la lista es estable entre dos peticiones iguales.
+    const again = (fs.browseDirectory(big) as unknown as View).entries.map((e) => e.name);
+    expect(again).toEqual(names);
+    // Con las carpetas delante, la primera entrada es una carpeta.
+    expect(view.entries[0]?.isDirectory).toBe(true);
+  });
+});
