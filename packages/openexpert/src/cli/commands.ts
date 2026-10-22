@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEFAULT_OLLAMA_URL, endpointOf, isProviderId, providerDef } from "../providers.js";
+import { loadConfigWithNotices } from "../config.js";
 import { providerKeyMessage } from "../model-provider.js";
 import { listProviderModels } from "../provider-models.js";
 import {
@@ -53,12 +54,32 @@ export function cmdDoctor(cwd = process.cwd()): number {
   const dataDir = resolvedDataDir(cwd);
   const secrets = readSecrets(cwd);
   const env = effectiveEnv(cwd);
+  // The same reader the application uses, so the CLI and the server agree on
+  // what a configuration file means. The notices are what the file had to
+  // give up to be used.
+  const { notices } = loadConfigWithNotices(cwd);
 
   console.log("OpenExpert doctor");
   console.log(`  provider: ${provider}${def ? ` (${def.name})` : ""}`);
   console.log(`  data dir: ${dataDir}`);
 
   const problems: string[] = [];
+
+  // A limit above the one the application accepts is not a problem the owner
+  // has to fix before starting: the value is brought back to the limit when
+  // the file is read. But it has to be said, because the file on disk and the
+  // running application do not agree and nothing else would say so.
+  for (const notice of notices) {
+    if (notice.kind === "patterns") {
+      console.log(
+        `  aviso:    ${notice.dropped} patrón(es) de inyección descartados (el máximo son ${notice.limit}).`,
+      );
+    } else {
+      console.log(
+        `  aviso:    ${notice.field}: ${notice.value} se recorta a ${notice.limit} (el límite).`,
+      );
+    }
+  }
 
   // One check for every provider: the catalogue says which variable holds its
   // key, so a record added tomorrow is covered without touching this function.

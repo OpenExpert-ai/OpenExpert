@@ -215,6 +215,18 @@ Drive and local folders in `src/lib/office.server.ts`.
   days, `ai.maxOutputTokens` at 200000 tokens) and the injection patterns are
   measured against an adversarial input, so their number is counted before any
   of them is measured.
+- **The limits are also applied when the file is read.** The three numbers live
+  in the package (`packages/openexpert/src/config.ts`), which is the reader
+  both the application and the CLI go through, and the panel and the raw
+  editor take the same numbers from there. A value above a limit is brought
+  back to it on read, because `openexpert.json` is a project file that can be
+  edited by hand and can also come from a version that did not have the
+  limits. The list of injection patterns is capped at fifty there too: each
+  pattern is measured before it is used, and five thousand of them cost thirty
+  seconds of blocked thread on the first chat. **A limit brought back is
+  announced, never silent**: `diagnostics()` in `src/lib/config.server.ts`
+  carries the notices (the settings screen shows them under Settings →
+  Advanced → Diagnostics) and `openexpert doctor` prints them.
 - **Desktop shell (Linux).** `src-tauri/` is a Tauri 2 app whose only job is to
   render the local server in a native WebKitGTK window; all logic stays in the
   web app. It is launched by the `openexpert desktop` CLI command

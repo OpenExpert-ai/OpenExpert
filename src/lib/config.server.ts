@@ -20,8 +20,20 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import { loadConfig } from "@openexpert/openexpert/config";
-import type { AiConfig, ChatConfig, OpenExpertConfig } from "@openexpert/openexpert/config";
+import {
+  MAX_INJECTION_PATTERNS,
+  MAX_OUTPUT_TOKENS_LIMIT,
+  MAX_STEPS_LIMIT,
+  RETENTION_DAYS_LIMIT,
+  loadConfig,
+  loadConfigWithNotices,
+} from "@openexpert/openexpert/config";
+import type {
+  AiConfig,
+  ChatConfig,
+  ConfigNotice,
+  OpenExpertConfig,
+} from "@openexpert/openexpert/config";
 import {
   providerCatalogue,
   PROVIDER_IDS,
@@ -187,6 +199,41 @@ export function setRuntimeEnv(key: string, value: string | null): void {
 
 export function effectiveConfig(cwd: string = process.cwd()): OpenExpertConfig {
   return loadConfig(cwd);
+}
+
+/**
+ * The notices of the last read: what had to be brought back to a legal value.
+ *
+ * The read itself returns only the configuration, and the panel shows the
+ * values it finds. So a file that says 100000 steps and a process that runs
+ * with 200 would look like a panel bug, and the owner would have no way of
+ * knowing that the file on disk and the running application disagree. The
+ * notices are what the panel shows and what the server logs.
+ */
+export function configNotices(cwd: string = process.cwd()): ConfigNotice[] {
+  return loadConfigWithNotices(cwd).notices;
+}
+
+/**
+ * The notices as sentences, in Spanish.
+ *
+ * This is the wording of the CLI, which is Spanish-only. The panel does not
+ * use it: the interface is bilingual, so the panel gets the **data** and
+ * translates it in the client's language.
+ */
+export function describeConfigNotices(notices: ConfigNotice[]): string[] {
+  return notices.map((notice) => {
+    if (notice.kind === "patterns") {
+      return `chat.injectionExtraPatterns: ${notice.dropped} patrones descartados (el máximo son ${notice.limit})`;
+    }
+    const limit =
+      notice.field === "chat.maxSteps"
+        ? `${notice.limit} pasos por consulta`
+        : notice.field === "chat.retentionDays"
+          ? `${notice.limit} días`
+          : `${notice.limit} tokens`;
+    return `${notice.field}: ${notice.value} traídos a ${limit}`;
+  });
 }
 
 function fileHas(key: keyof RawFileConfig, cwd: string): boolean {
@@ -409,8 +456,8 @@ export function envReport(): EnvVarReport[] {
   });
 }
 
-export function diagnostics() {
-  const cfg = effectiveConfig();
+export function diagnostics(cwd: string = process.cwd()) {
+  const cfg = effectiveConfig(cwd);
   const dir = dataDir();
   let writable = true;
   try {
@@ -436,8 +483,16 @@ export function diagnostics() {
     dataDirWritable: writable,
     dbPath: db,
     dbSize,
-    configExists: existsSync(configPath()),
+    configExists: existsSync(configPath(cwd)),
     secretsExists: existsSync(secretsPath()),
+    // What the configuration file had to give up to be used: a value above a
+    // limit comes back to the limit, and the owner has to know that the file
+    // on disk and the running application do not agree.
+    //
+    // The notices travel as **data**, not as sentences: the interface is
+    // bilingual, so the client writes them in its own language. The Spanish
+    // wording (`describeConfigNotices`) is the CLI's, which is Spanish-only.
+    notices: configNotices(cwd),
   };
 }
 
@@ -493,18 +548,13 @@ const injectionPattern = z
  * this module, so the numbers live here once: the raw editor used to accept any value and
  * `chat.maxSteps` feeds `stepCountIs`, where 100000 steps are 100000 provider calls in a
  * single request.
+ *
+ * They come from the package because they are **the same numbers on both doors**:
+ * the panel and the raw editor refuse to write a value above them, and the
+ * package's reader brings a value that arrives from anywhere else back to the
+ * same limit. A copy of the number here would be a copy that could drift.
  */
-export const MAX_STEPS_LIMIT = 200;
-export const RETENTION_DAYS_LIMIT = 3650;
-export const MAX_OUTPUT_TOKENS_LIMIT = 200_000;
-
-/**
- * How many injection patterns a configuration may carry. The panel's form caps
- * the list at fifty; the file schema now caps it at the same number, so a
- * configuration that the panel would refuse is also refused when it arrives
- * from outside (a restored copy).
- */
-export const MAX_INJECTION_PATTERNS = 50;
+export { MAX_STEPS_LIMIT, RETENTION_DAYS_LIMIT, MAX_OUTPUT_TOKENS_LIMIT, MAX_INJECTION_PATTERNS };
 
 const MAX_STEPS_RANGE = { message: `maxSteps va de 1 a ${MAX_STEPS_LIMIT} pasos por consulta` };
 const RETENTION_DAYS_RANGE = { message: `retentionDays va de 0 a ${RETENTION_DAYS_LIMIT} días` };

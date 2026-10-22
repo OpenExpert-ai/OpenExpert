@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: MIT
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+
+import {
+  MAX_INJECTION_PATTERNS,
+  MAX_OUTPUT_TOKENS_LIMIT,
+  MAX_STEPS_LIMIT,
+  RETENTION_DAYS_LIMIT,
+} from "./config.server";
 
 let cwd: string;
 
@@ -158,5 +165,88 @@ describe("openexpert.json", () => {
     writeFileConfig({ notionClientId: "notion-abc" }, cwd);
     expect(effectiveConfig(cwd).notionClientId).toBe("notion-abc");
     resetFileConfig(cwd);
+  });
+});
+
+/**
+ * The third door: the limits are enforced when the file is **written** (the
+ * panel and the raw editor) and when a copy is **restored**, but the read —
+ * the one that happens every time the application starts — took whatever the
+ * file said.
+ *
+ * A file written by hand, or one from a version that did not have the limits,
+ * therefore ran the application with 100000 steps per query (100000 billable
+ * calls to the provider in one request) and with the purge of the history
+ * switched off.
+ */
+describe("los límites al leer el fichero", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "oe-config-limites-"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  function writeFile(content: unknown): void {
+    writeFileSync(join(dir, "openexpert.json"), JSON.stringify(content));
+  }
+
+  it("trae los números fuera de rango a su tope", async () => {
+    const { effectiveConfig } = await import("./config.server");
+    writeFile({
+      chat: { maxSteps: 100_000, retentionDays: 999_999 },
+      ai: { maxOutputTokens: 100_000_000 },
+    });
+    const cfg = effectiveConfig(dir);
+    expect(cfg.chat.maxSteps).toBe(MAX_STEPS_LIMIT);
+    expect(cfg.chat.retentionDays).toBe(RETENTION_DAYS_LIMIT);
+    expect(cfg.ai.maxOutputTokens).toBe(MAX_OUTPUT_TOKENS_LIMIT);
+  });
+
+  it("acota la lista de patrones al leer", async () => {
+    // Every pattern is measured against an adversarial input before it is
+    // used, so a list of five thousand costs tens of seconds of blocked
+    // thread on the first chat.
+    const { effectiveConfig } = await import("./config.server");
+    writeFile({
+      chat: { injectionExtraPatterns: Array.from({ length: 5000 }, (_, i) => `p${i}`) },
+    });
+    expect(effectiveConfig(dir).chat.injectionExtraPatterns).toHaveLength(MAX_INJECTION_PATTERNS);
+  });
+
+  it("dice qué recorta, en vez de callarse", async () => {
+    // A limit broken in silence is a limit the owner does not know is broken.
+    const { configNotices, describeConfigNotices } = await import("./config.server");
+    writeFile({
+      chat: { maxSteps: 100_000, retentionDays: 999_999 },
+      ai: { maxOutputTokens: 100_000_000 },
+    });
+    const notices = configNotices(dir);
+    expect(notices).toHaveLength(3);
+    const sentences = describeConfigNotices(notices);
+    expect(sentences.join(" ")).toMatch(/chat\.maxSteps/);
+    expect(sentences.join(" ")).toMatch(/100000/);
+    expect(sentences.join(" ")).toMatch(/200/);
+    expect(sentences.join(" ")).toMatch(/chat\.retentionDays/);
+    expect(sentences.join(" ")).toMatch(/ai\.maxOutputTokens/);
+  });
+
+  it("el diagnóstico lleva los avisos, que es donde el panel los enseña", async () => {
+    // The notices travel as data, so the panel can write them in the language
+    // of the interface. The Spanish sentences are the CLI's.
+    const { diagnostics } = await import("./config.server");
+    writeFile({ chat: { maxSteps: 100_000 } });
+    const notices = diagnostics(dir).notices;
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({ kind: "limit", field: "chat.maxSteps", limit: 200 });
+  });
+
+  it("no dice nada cuando el fichero está dentro de los límites", async () => {
+    const { configNotices } = await import("./config.server");
+    writeFile({ chat: { maxSteps: 40, retentionDays: 7 } });
+    expect(configNotices(dir)).toEqual([]);
   });
 });

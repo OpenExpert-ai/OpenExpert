@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SettingsCard as Card } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
+import { noticeText } from "@/lib/config-notices";
 import { formatBytes } from "@/lib/format";
 import { getAdvanced, resetConfig, saveRawConfig } from "@/lib/settings.functions";
 
@@ -120,6 +121,21 @@ function AdvancedSettings() {
             <code className="break-all text-xs">{d.dbPath}</code> · {formatBytes(d.dbSize)}
           </div>
         </div>
+        {d.notices.length > 0 && (
+          <div className="rounded-md border border-destructive/40 p-3 text-sm">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {t("Límites del fichero")}
+            </div>
+            <p className="mt-1 text-muted-foreground">
+              {t("El fichero pide valores que la aplicación no usa: se han recortado al límite.")}
+            </p>
+            <ul className="mt-2 space-y-1 font-mono text-xs">
+              {d.notices.map((notice, i) => (
+                <li key={`${notice.kind}-${i}`}>{noticeText(notice, t)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Card>
 
       <Card
