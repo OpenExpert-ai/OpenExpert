@@ -498,15 +498,36 @@ export const MAX_STEPS_LIMIT = 200;
 export const RETENTION_DAYS_LIMIT = 3650;
 export const MAX_OUTPUT_TOKENS_LIMIT = 200_000;
 
+/**
+ * How many injection patterns a configuration may carry. The panel's form caps
+ * the list at fifty; the file schema now caps it at the same number, so a
+ * configuration that the panel would refuse is also refused when it arrives
+ * from outside (a restored copy).
+ */
+export const MAX_INJECTION_PATTERNS = 50;
+
 const MAX_STEPS_RANGE = { message: `maxSteps va de 1 a ${MAX_STEPS_LIMIT} pasos por consulta` };
 const RETENTION_DAYS_RANGE = { message: `retentionDays va de 0 a ${RETENTION_DAYS_LIMIT} días` };
 const MAX_OUTPUT_TOKENS_RANGE = {
   message: `maxOutputTokens va de 1 a ${MAX_OUTPUT_TOKENS_LIMIT} tokens`,
 };
+/**
+ * The message for a list of patterns that is too long. It is a plain string and
+ * not an object like the other two because Zod v4 **rewrites** the object it is
+ * given as the error parameter (it replaces `message` with `error`), so a
+ * shared object would lose its own message the moment the schema is built.
+ */
+const MAX_INJECTION_PATTERNS_MESSAGE = `no puede haber más de ${MAX_INJECTION_PATTERNS} patrones de inyección`;
 
 export const fileConfigSchema = z.object({
   $schema: z.string().optional(),
-  modelProvider: z.enum(PROVIDER_IDS).optional(),
+  // The provider is named by the catalogue, so the message says which ones
+  // exist instead of Zod's English «Invalid option».
+  modelProvider: z
+    .enum(PROVIDER_IDS, {
+      error: `modelProvider debe ser uno de: ${PROVIDER_IDS.join(", ")}`,
+    })
+    .optional(),
   modelId: z.string().min(1).optional(),
   ollamaBaseUrl: z.string().optional(),
   dataDir: z.string().min(1).optional(),
@@ -531,6 +552,7 @@ export const fileConfigSchema = z.object({
       visionPdf: z.boolean().optional(),
       injectionExtraPatterns: z
         .array(injectionPattern)
+        .max(MAX_INJECTION_PATTERNS, { error: MAX_INJECTION_PATTERNS_MESSAGE })
         .refine(patternsAreValid, { message: "Patrón regular inválido" })
         .optional(),
       retentionDays: z
@@ -547,6 +569,56 @@ export const fileConfigSchema = z.object({
 export function parseRawConfig(text: string): RawFileConfig {
   const obj = JSON.parse(text) as unknown;
   return fileConfigSchema.parse(obj) as RawFileConfig;
+}
+
+/**
+ * What is wrong with a configuration, in the words of the person who has to fix
+ * it: the field and the limit it breaks, one problem per line.
+ *
+ * `fileConfigSchema` already knows both — its messages say «maxSteps va de 1 a
+ * 200 pasos por consulta» — but Zod's own summary for a whole object is a JSON
+ * blob, and for an enum it is an English «Invalid option». This turns the
+ * issues into the same sentences the panel shows, prefixed with the path so
+ * two problems in different branches do not look alike.
+ *
+ * The path is the dotted one (`chat.maxSteps`, `chat.injectionExtraPatterns.0`),
+ * and the element of a list is named by its position, because «el patrón 2» is
+ * what the owner has to look for. The messages already name their own field,
+ * so the prefix is dropped when it would say the same thing twice.
+ */
+export function describeConfigProblems(error: z.ZodError): string[] {
+  return error.issues.map((issue) => {
+    const segments = issue.path.map((p) => String(p));
+    const path = segments.join(".");
+    const last = segments[segments.length - 1];
+    const message =
+      last && issue.message.startsWith(last)
+        ? issue.message.slice(last.length).trim()
+        : issue.message;
+    return path ? `${path}: ${message}` : message;
+  });
+}
+
+/**
+ * Check a configuration and say what is wrong with it.
+ *
+ * The order matters: the number of injection patterns is counted **before** any
+ * of them is measured, because measuring a pattern is expensive (a thousand of
+ * them cost five seconds) and a configuration with a thousand is not one
+ * anybody wrote.
+ */
+export function checkFileConfig(obj: unknown): { ok: true } | { ok: false; problems: string[] } {
+  const patterns = (obj as { chat?: { injectionExtraPatterns?: unknown } } | null)?.chat
+    ?.injectionExtraPatterns;
+  if (Array.isArray(patterns) && patterns.length > MAX_INJECTION_PATTERNS) {
+    return {
+      ok: false,
+      problems: [`chat.injectionExtraPatterns: ${MAX_INJECTION_PATTERNS_MESSAGE}`],
+    };
+  }
+  const result = fileConfigSchema.safeParse(obj);
+  if (result.success) return { ok: true };
+  return { ok: false, problems: describeConfigProblems(result.error) };
 }
 
 /** Replace openexpert.json with validated content and re-apply the env bridge. */

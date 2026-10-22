@@ -83,6 +83,14 @@ where you would keep a password. Bundles written before format 2 carried only
 the database, the configuration and the credential files without the key;
 importing one reports what it could not bring.
 
+A bundle is a file that arrives from outside, so the configuration it carries
+is checked before anything is written: the same limits the panel and the raw
+editor enforce. A copy whose `openexpert.json` asks for more than 200 steps per
+query, more than 3650 days of history or a pattern that can freeze the server
+is refused whole, and the message says which field breaks which limit. Nothing
+is changed when a copy is refused: the installation keeps the configuration it
+had.
+
 ## References
 
 - [Deployment](./08-deployment.md) — how to start it.

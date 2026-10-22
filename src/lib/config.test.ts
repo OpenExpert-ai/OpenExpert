@@ -8,6 +8,8 @@ import {
   aiUpdateSchema,
   applyFileConfigToEnv,
   chatUpdateSchema,
+  checkFileConfig,
+  describeConfigProblems,
   fileConfigSchema,
   providerViews,
 } from "./config.server";
@@ -122,6 +124,101 @@ describe("fileConfigSchema", () => {
     expect(parsed.chat?.maxSteps).toBe(200);
     expect(parsed.chat?.retentionDays).toBe(3650);
     expect(parsed.ai?.maxOutputTokens).toBe(200_000);
+  });
+
+  it("corta la lista de patrones donde la corta el panel", () => {
+    // El panel acepta fifty como mucho; el fichero llevaba la lista sin tope, y
+    // cada patrón se mide contra una entrada adversaria: una lista enorme
+    // costaba segundos solo en validarla.
+    const fifty = Array.from({ length: 50 }, (_, i) => `palabra${i}`);
+    expect(fileConfigSchema.safeParse({ chat: { injectionExtraPatterns: fifty } }).success).toBe(
+      true,
+    );
+    const many = Array.from({ length: 51 }, (_, i) => `palabra${i}`);
+    expect(() => fileConfigSchema.parse({ chat: { injectionExtraPatterns: many } })).toThrow(/50/);
+  });
+
+  it("el proveedor inválido se dice en español y con los que existen", () => {
+    // Zod's own message for an enum is an English «Invalid option», and the
+    // owner of the installation reads the panel, not the source of Zod.
+    const r = fileConfigSchema.safeParse({ modelProvider: "openai" });
+    expect(r.success).toBe(false);
+    if (r.success) return;
+    const message = r.error.issues[0]?.message ?? "";
+    expect(message).toMatch(/modelProvider/);
+    expect(message).toMatch(/openai-compatible/);
+    expect(message).not.toMatch(/Invalid option/);
+  });
+});
+
+describe("checkFileConfig", () => {
+  // The door the restore opens with: it says what is wrong with a
+  // configuration in the words of the person who has to fix it.
+  it("acepta una configuración válida", () => {
+    const r = checkFileConfig({ modelProvider: "ollama", chat: { maxSteps: 40 } });
+    expect(r.ok).toBe(true);
+  });
+
+  it("nombra el campo y el límite que se rompe", () => {
+    const r = checkFileConfig({ chat: { maxSteps: 100_000, retentionDays: 999_999 } });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.problems).toHaveLength(2);
+    expect(r.problems.join(" ")).toMatch(/chat\.maxSteps/);
+    expect(r.problems.join(" ")).toMatch(/1 a 200/);
+    expect(r.problems.join(" ")).toMatch(/chat\.retentionDays/);
+    expect(r.problems.join(" ")).toMatch(/0 a 3650/);
+  });
+
+  it("no repite el nombre del campo cuando el mensaje ya lo dice", () => {
+    // «chat.maxSteps: maxSteps va de 1 a 200» dice lo mismo dos veces.
+    const r = checkFileConfig({ chat: { maxSteps: 100_000 } });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.problems[0]).toBe("chat.maxSteps: va de 1 a 200 pasos por consulta");
+  });
+
+  it("cuenta los patrones antes de medirlos", () => {
+    // Medir un patrón es caro; una lista que nadie escribió no se mide.
+    const many = Array.from({ length: 200 }, (_, i) => `palabra${i}`);
+    const t0 = Date.now();
+    const r = checkFileConfig({ chat: { injectionExtraPatterns: many } });
+    const ms = Date.now() - t0;
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.problems[0]).toMatch(/injectionExtraPatterns/);
+    expect(r.problems[0]).toMatch(/50/);
+    expect(ms).toBeLessThan(500);
+  });
+
+  it("describeConfigProblems devuelve una línea por problema", () => {
+    const r = fileConfigSchema.safeParse({ chat: { maxSteps: 100_000 } });
+    expect(r.success).toBe(false);
+    if (r.success) return;
+    expect(describeConfigProblems(r.error)).toHaveLength(1);
+  });
+
+  it("el mensaje del tope de patrones sobrevive a que Zod reescriba el esquema", () => {
+    // Zod v4 **rewrites** the object it is given as the error parameter: it
+    // replaces `message` with `error`. A constant shared between the schema and
+    // the code that reads it therefore loses its message the moment the schema
+    // is built, and the check that counts the patterns before measuring them
+    // would say «undefined». The message is a plain string for that reason.
+    const r = checkFileConfig({
+      chat: { injectionExtraPatterns: Array.from({ length: 60 }, (_, i) => `p${i}`) },
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.problems[0]).toBe(
+      "chat.injectionExtraPatterns: no puede haber más de 50 patrones de inyección",
+    );
+    // And the schema says the same thing.
+    const s = fileConfigSchema.safeParse({
+      chat: { injectionExtraPatterns: Array.from({ length: 60 }, (_, i) => `p${i}`) },
+    });
+    expect(s.success).toBe(false);
+    if (s.success) return;
+    expect(s.error.issues[0]?.message).toBe("no puede haber más de 50 patrones de inyección");
   });
 });
 

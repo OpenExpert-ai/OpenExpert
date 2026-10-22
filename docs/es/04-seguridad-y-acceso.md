@@ -79,6 +79,13 @@ Reglas:
   El sobre es, por tanto, tan sensible como los propios tokens: se rechazan las
   descargas entre orígenes, pero aun así descarga copias solo en un equipo de
   confianza y guárdalas con cuidado.
+- Un `openexpert.json` restaurado se **valida antes de escribirse**: una copia
+  es un fichero que llega de fuera, así que la configuración que trae pasa por
+  el mismo esquema que usan el panel de ajustes y el editor en crudo. Una copia
+  que pida más de 200 pasos por consulta (cada paso es una llamada facturable
+  al proveedor), más de 3650 días de historial, más de 200000 tokens de salida
+  o un patrón de inyección que puede congelar el servidor se rechaza entera, y
+  el mensaje nombra el campo y el límite que rompe.
 - El `state` de OAuth lleva un verifier PKCE firmado con HMAC; el callback
   lo verifica en tiempo constante.
 - Los tokens de Drive y la lista de concesiones del Picker están cifrados

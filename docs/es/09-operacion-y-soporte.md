@@ -85,6 +85,14 @@ propios tokens: guárdalo donde guardarías una contraseña. Las copias anterior
 al formato 2 solo llevaban la base de datos, la configuración y los ficheros de
 credenciales sin la clave; al importarlas se avisa de lo que no pudieron traer.
 
+Una copia es un fichero que llega de fuera, así que la configuración que trae
+se comprueba antes de escribir nada: los mismos límites que aplican el panel y
+el editor en crudo. Una copia cuyo `openexpert.json` pide más de 200 pasos por
+consulta, más de 3650 días de historial o un patrón que puede congelar el
+servidor se rechaza entera, y el mensaje dice qué campo rompe qué límite. Cuando
+se rechaza una copia no se cambia nada: la instalación se queda con la
+configuración que tenía.
+
 ## Referencias
 
 - [Despliegue](./08-despliegue.md) — cómo arrancarlo.

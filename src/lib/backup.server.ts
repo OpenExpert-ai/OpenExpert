@@ -24,7 +24,7 @@ import {
 import { join } from "node:path";
 import type { Database } from "sql.js";
 import { z } from "zod";
-import { applyFileConfigToEnv, setRuntimeEnv } from "./config.server";
+import { applyFileConfigToEnv, checkFileConfig, setRuntimeEnv } from "./config.server";
 import { getDb, loadSqlJs, persist, resetDbHandle } from "./db.server";
 import { configPath, credentialsPath, dataDir, dbPath, secretsPath } from "./paths.server";
 import * as schema from "../../drizzle/schema";
@@ -113,6 +113,40 @@ const restoreSchema = z.object({
 });
 
 const SQLITE_HEADER = "SQLite format 3\u0000";
+
+/**
+ * Whether the bundled configuration is one the application can run with.
+ *
+ * The bundle is a file that arrives from outside, and `openexpert.json` has a
+ * schema in the repository: `fileConfigSchema`, the same one the settings panel
+ * and the raw editor go through, which caps `chat.maxSteps` at 200 steps (each
+ * step is a billable provider call), `chat.retentionDays` at 3650 days and
+ * `ai.maxOutputTokens` at 200000 tokens, and refuses an injection pattern that
+ * can freeze the server. The restore used to write the file as it came, which
+ * left those doors open for whoever made the bundle.
+ *
+ * The check is here, at the door, and not in whoever builds the bundle: the
+ * bundle may come from another machine, from an old version or from nowhere.
+ */
+function assertValidConfig(b64: string | undefined): void {
+  if (b64 === undefined) return;
+  const text = Buffer.from(b64, "base64").toString("utf8");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch (e) {
+    throw new Error(
+      `La copia trae un openexpert.json que no es JSON válido (${e instanceof Error ? e.message : String(e)}). No se ha cambiado nada.`,
+      { cause: e },
+    );
+  }
+  const check = checkFileConfig(parsed);
+  if (!check.ok) {
+    throw new Error(
+      `La copia trae un openexpert.json que la aplicación no puede usar: ${check.problems.join(" ")}. No se ha cambiado nada.`,
+    );
+  }
+}
 
 /**
  * Whether the bundled bytes are a database sql.js can actually open. A restored
@@ -258,6 +292,10 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
   const parsed = restoreSchema.parse(JSON.parse(content) as unknown);
   const dbB64 = parsed.files["db"];
   if (dbB64 !== undefined) await assertValidDatabase(Buffer.from(dbB64, "base64"));
+  // The configuration is checked before anything is staged: a bundle whose
+  // `openexpert.json` the application cannot use is refused whole, and the
+  // installation keeps the file it had.
+  assertValidConfig(parsed.files["config"]);
 
   mkdirSync(dataDir(), { recursive: true });
 

@@ -79,6 +79,7 @@
         "injectionExtraPatterns": {
           "type": "array",
           "items": { "type": "string" },
+          "maxItems": 50,
           "description": "Extra regular expressions added to the injection gate."
         },
         "retentionDays": {
