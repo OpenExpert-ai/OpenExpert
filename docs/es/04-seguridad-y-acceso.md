@@ -92,6 +92,20 @@ Reglas:
   al proveedor), más de 3650 días de historial, más de 200000 tokens de salida
   o un patrón de inyección que puede congelar el servidor se rechaza entera, y
   el mensaje nombra el campo y el límite que rompe.
+- La **lectura** de `openexpert.json` aplica los mismos límites. El fichero es
+  un fichero del proyecto que la documentación dice que se puede editar a
+  mano, y también puede venir de una versión que no tenía los límites, así que
+  un valor por encima de ellos se recorta al límite al leerlo —tanto el
+  servidor como el CLI, que comparten el mismo lector—. Nada corre con 100000
+  pasos por consulta porque el fichero lo diga. La lista de patrones de
+  inyección se acota a cincuenta por lo mismo: cada uno se mide antes de
+  usarse, y cinco mil costaban treinta segundos de hilo bloqueado en el primer
+  chat.
+- Un límite recortado se **anuncia, nunca en silencio**: la pantalla de
+  ajustes (Ajustes → Avanzado → Diagnóstico) lista lo que se cortó y a qué, y
+  `openexpert doctor` dice lo mismo. Un fichero que dice una cosa y una
+  aplicación en marcha que hace otra es algo que hay que contarle a quien lo
+  tiene.
 - El `state` de OAuth lleva un verifier PKCE firmado con HMAC; el callback
   lo verifica en tiempo constante.
 - Los tokens de Drive y la lista de concesiones del Picker están cifrados

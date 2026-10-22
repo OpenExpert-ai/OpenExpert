@@ -169,6 +169,49 @@ describe("cmdDoctor", () => {
     expect(cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("endpoint: http://localhost:11434");
   });
+
+  it("avisa de los límites que el fichero rompe, y no los deja pasar en silencio", () => {
+    // The CLI reads the file through the same reader the application uses, so
+    // a value above the limit is brought back to it in both. The owner has to
+    // be told: the file says one thing and the application does another.
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
+    vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
+    writeFileSync(
+      join(cwd, "openexpert.json"),
+      JSON.stringify({
+        chat: { maxSteps: 100_000, retentionDays: 999_999 },
+        ai: { maxOutputTokens: 100_000_000 },
+      }),
+    );
+    expect(cmdDoctor(cwd)).toBe(0);
+    expect(logs.join("\n")).toMatch(/chat\.maxSteps: 100000 se recorta a 200/);
+    expect(logs.join("\n")).toMatch(/chat\.retentionDays: 999999 se recorta a 3650/);
+    expect(logs.join("\n")).toMatch(/ai\.maxOutputTokens: 100000000 se recorta a 200000/);
+  });
+
+  it("avisa de los patrones de inyección que se descartan", () => {
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
+    vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
+    writeFileSync(
+      join(cwd, "openexpert.json"),
+      JSON.stringify({
+        chat: { injectionExtraPatterns: Array.from({ length: 200 }, (_, i) => `p${i}`) },
+      }),
+    );
+    expect(cmdDoctor(cwd)).toBe(0);
+    expect(logs.join("\n")).toMatch(/150 patrón\(es\) de inyección descartados/);
+  });
+
+  it("no avisa de nada cuando el fichero está dentro de los límites", () => {
+    vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
+    vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
+    writeFileSync(
+      join(cwd, "openexpert.json"),
+      JSON.stringify({ chat: { maxSteps: 40, retentionDays: 7 } }),
+    );
+    expect(cmdDoctor(cwd)).toBe(0);
+    expect(logs.join("\n")).not.toContain("aviso:");
+  });
 });
 
 describe("cmdFix", () => {

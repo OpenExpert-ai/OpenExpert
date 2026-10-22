@@ -185,6 +185,16 @@ export const en: Record<string, string> = {
   "Credenciales configuradas": "Credentials configured",
   "Sin credenciales OAuth": "No OAuth credentials",
   "Carpeta de datos": "Data folder",
+  "Límites del fichero": "File limits",
+  "El fichero pide valores que la aplicación no usa: se han recortado al límite.":
+    "The file asks for values the application does not use: they were cut back to the limit.",
+  "{field}: {dropped} patrones descartados (el máximo son {limit})":
+    "{field}: {dropped} patterns dropped (the maximum is {limit})",
+  "{field}: {value} traídos a {limit}": "{field}: {value} cut back to {limit}",
+  "{n} {unit}": "{n} {unit}",
+  "pasos por consulta": "steps per query",
+  días: "days",
+  tokens: "tokens",
   "Variable de entorno": "Environment variable",
   "Variables de entorno": "Environment variables",
   "Solo lectura. Las variables reales tienen prioridad.":

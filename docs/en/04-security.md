@@ -89,6 +89,18 @@ Rules:
   provider call), more than 3650 days of history, more than 200000 output
   tokens or an injection pattern that can freeze the server is refused whole,
   and the message names the field and the limit it breaks.
+- The **read** of `openexpert.json` applies the same limits. The file is a
+  project file that the documentation says can be edited by hand, and it can
+  also come from a version that did not have the limits, so a value above
+  them is brought back to the limit when the file is read — by the server and
+  by the CLI alike, which share one reader. Nothing runs with 100000 steps per
+  query because the file says so. The list of injection patterns is capped at
+  fifty for the same reason: each one is measured before it is used, and five
+  thousand of them cost thirty seconds of blocked thread on the first chat.
+- A limit brought back is **announced, never silent**: the settings screen
+  (Settings → Advanced → Diagnostics) lists what was cut and to what, and
+  `openexpert doctor` says the same. A file that says one thing and a running
+  application that does another is a thing the owner has to be told about.
 - The Drive OAuth `state` carries a PKCE verifier signed with HMAC; the
   callback verifies the MAC in constant time.
 - Drive tokens and the Picker grants are AES-256-GCM encrypted with a key
