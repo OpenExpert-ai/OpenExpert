@@ -32,6 +32,12 @@ selector.
    cada mensaje lo pone el cliente. Un turno denegado no se guarda, y al releer el
    historial se descarta cualquier mensaje que el filtro rechace: así una
    conversación no queda bloqueada por un mensaje que ya está dentro.
+   **Lo que escribió el modelo no es un intento.** El catálogo nombra palabras
+   que una respuesta técnica normal usa (`bypass`, `system prompt`), así que
+   una respuesta del modelo que las contenga se aceptaba. La base es lo que
+   sabe qué respuestas escribió el modelo: se comparan con las respuestas
+   guardadas, y un `assistant` cuyo texto no está en la base sigue contando
+   como intento, porque el rol lo pone el cliente.
    Los patrones extra que escribe el dueño se comprueban **midiendo lo que
    tardan** contra una entrada adversa (`src/lib/ai/redos.server.ts`), no solo
    mirando su forma: una expresión que provoca un retroceso catastrófico no

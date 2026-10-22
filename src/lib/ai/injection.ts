@@ -162,6 +162,35 @@ export const GATE_TEXT_LIMIT = 32_000;
 /** What the gate needs from a message: both a `UIMessage` and a row read back from the database fit. */
 export type GateMessage = { role?: string; parts?: readonly { type?: string; text?: unknown }[] };
 
+/**
+ * The replies the model itself wrote, as the base holds them.
+ *
+ * The role of a message does not say who wrote it: the client chooses the role
+ * of everything it sends, so an `assistant` that arrives in a request is data
+ * of the client until something else says otherwise. The base is the only
+ * place that knows which replies came out of the model, and it knows them by
+ * their text.
+ */
+export type ModelReplies = ReadonlySet<string>;
+
+/**
+ * The texts of the assistant messages of a stored conversation: the replies
+ * the model wrote.
+ *
+ * A text with no letters is left out: a message with no text carries no
+ * attempt, and matching it would exempt every message that has none.
+ */
+export function collectModelReplies(stored: readonly unknown[]): ModelReplies {
+  const replies = new Set<string>();
+  for (const message of stored) {
+    const role = (message as { role?: string } | null)?.role;
+    if (role !== "assistant") continue;
+    const text = messageText(message as GateMessage);
+    if (text) replies.add(text);
+  }
+  return replies;
+}
+
 /** Text of a message as the gate and the model read it: its text parts, joined. */
 export function messageText(message: GateMessage | null | undefined): string {
   const parts = message?.parts;
@@ -182,15 +211,29 @@ export type InjectionHit = { index: number; role: string; text: string };
  * array as history, so an attempt planted in an earlier turn — or in a message
  * whose `role` the client forged as `assistant`, also client data — would reach
  * the model with no audit event.
+ *
+ * The replies the model wrote are the exception. The catalogue names words
+ * that a normal technical answer uses (`bypass`, `system prompt`), so a reply
+ * that said one of them denied every later turn of that conversation, with the
+ * owner having done nothing. A reply the model wrote is not an attempt, and
+ * `modelReplies` says which ones are: it holds the texts the base has stored
+ * as replies of the model, so a forged `assistant` — whose text the base does
+ * not hold — still counts as an attempt.
  */
 export function firstInjection(
   messages: readonly GateMessage[],
   extra: string[] = [],
+  modelReplies: ModelReplies = new Set(),
 ): InjectionHit | null {
   for (let index = 0; index < messages.length; index++) {
     const message = messages[index];
     if (!message) continue;
     const text = messageText(message).slice(0, GATE_TEXT_LIMIT);
+    if (!text) continue;
+    // A reply of the model is not an attempt. The comparison is on the whole
+    // text, not on the truncated one: the base stored it whole, and a message
+    // cut at the limit is not the reply it came from.
+    if (message.role === "assistant" && modelReplies.has(messageText(message))) continue;
     if (detectInjection(text, extra)) {
       return { index, role: message.role ?? "", text };
     }
