@@ -16,6 +16,17 @@ function flushUntil(predicate: () => boolean, tries = 500): Promise<void> {
   });
 }
 
+/** The <script> of the Google API, as the DOM holds it. */
+type ScriptTag = {
+  src: string;
+  async: boolean;
+  onload: null | (() => void);
+  onerror: null | (() => void);
+  remove: () => void;
+};
+
+const APIS_URL = "https://apis.google.com/js/api.js";
+
 type EnvOpts = {
   scriptPresent?: boolean;
   scriptFails?: boolean;
@@ -29,6 +40,13 @@ function makeEnv(opts: EnvOpts = {}) {
   const calls = {
     gapiLoad: [] as string[],
     appended: false,
+    // How many <script> tags the page has been given, one per attempt.
+    appendCount: 0,
+    // The scripts the page holds right now, as the DOM would keep them.
+    scripts: [] as ScriptTag[],
+    // Flipped by the test between two attempts: the cause of a failed load may
+    // be gone by the time the user clicks again.
+    failScript: opts.scriptFails ?? false,
     setOAuthToken: undefined as string | undefined,
     setDeveloperKey: undefined as string | undefined,
     setAppId: undefined as string | undefined,
@@ -72,24 +90,44 @@ function makeEnv(opts: EnvOpts = {}) {
     }
   }
 
-  const script = {
-    src: "",
-    async: false,
-    onload: null as null | (() => void),
-    onerror: null as null | (() => void),
+  const makeTag = (): ScriptTag => {
+    const tag: ScriptTag = {
+      src: "",
+      async: false,
+      onload: null,
+      onerror: null,
+      remove: () => {
+        const i = calls.scripts.indexOf(tag);
+        if (i >= 0) calls.scripts.splice(i, 1);
+      },
+    };
+    return tag;
   };
+
   const head = {
-    appendChild: (s: typeof script) => {
+    appendChild: (s: ScriptTag) => {
       calls.appended = true;
-      if (opts.scriptFails) s.onerror?.();
+      calls.appendCount += 1;
+      calls.scripts.push(s);
+      if (calls.failScript) s.onerror?.();
       else s.onload?.();
     },
   };
   const document = {
-    querySelector: vi.fn(() => (opts.scriptPresent ? {} : null)),
-    createElement: vi.fn(() => script),
+    querySelector: vi.fn((selector: string) => {
+      const wanted = /script\[src="(.*)"\]/.exec(selector)?.[1];
+      return calls.scripts.find((s) => s.src === wanted) ?? null;
+    }),
+    createElement: vi.fn(() => makeTag()),
     head,
   };
+
+  // A script that was already in the page before the app asked for one.
+  if (opts.scriptPresent) {
+    const tag = makeTag();
+    tag.src = APIS_URL;
+    calls.scripts.push(tag);
+  }
 
   const picker = opts.pickerMissing
     ? undefined
@@ -290,5 +328,43 @@ describe("pickDriveFiles", () => {
     await expect(mod.pickDriveFiles({ accessToken: "t", apiKey: "k", appId: "a" })).rejects.toThrow(
       /apis\.google\.com/,
     );
+  });
+
+  it("loads the script again after a failed attempt instead of replaying the failure", async () => {
+    const { calls } = makeEnv({ scriptFails: true });
+    const mod = await importPicker();
+
+    await expect(mod.pickDriveFiles({ accessToken: "t", apiKey: "k", appId: "a" })).rejects.toThrow(
+      /apis\.google\.com/,
+    );
+    // The tag that failed is dead: it leaves the page, so the next attempt
+    // mounts a fresh one instead of waiting for a script that never loads.
+    expect(calls.scripts).toHaveLength(0);
+
+    // The user fixes the cause (the connection, a script blocker, the CSP) and
+    // clicks again.
+    calls.failScript = false;
+
+    const promise = mod.pickDriveFiles({ accessToken: "t", apiKey: "k", appId: "a" });
+    // The retry has to open the picker. A promise cached from the failed
+    // attempt rejects here with the error of the first one, and the picker
+    // never opens.
+    const opened = await Promise.race([
+      promise.then(
+        () => "settled",
+        (e: Error) => `failed: ${e.message}`,
+      ),
+      flushUntil(() => calls.visible === true).then(() => "opened"),
+    ]);
+    expect(opened).toBe("opened");
+
+    // The retry mounts a fresh <script>: the dead tag of the first attempt is
+    // not left in the page for the next one to wait for.
+    expect(calls.appendCount).toBe(2);
+    expect(calls.scripts).toHaveLength(1);
+    expect(calls.gapiLoad).toEqual(["picker"]);
+
+    calls.callback!({ action: "cancel" });
+    await expect(promise).resolves.toEqual({ files: [], action: "cancel" });
   });
 });

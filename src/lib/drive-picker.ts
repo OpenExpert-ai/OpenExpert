@@ -49,13 +49,18 @@ function loadScript(src: string): Promise<void> {
     s.src = src;
     s.async = true;
     s.onload = () => resolve();
-    s.onerror = () =>
+    s.onerror = () => {
+      // The tag is dead: it stays in the page and the next attempt would find
+      // it there and wait for a script that will never load. It leaves, so a
+      // retry mounts a fresh one.
+      s.remove();
       reject(
         new Error(
           "No se pudo cargar el Google Picker (apis.google.com). Comprueba tu conexión, " +
             "desactiva bloqueadores de scripts para localhost y que la CSP permita apis.google.com.",
         ),
       );
+    };
     document.head.appendChild(s);
   });
 }
@@ -63,7 +68,7 @@ function loadScript(src: string): Promise<void> {
 let readyP: Promise<void> | null = null;
 function ensureLoaded(): Promise<void> {
   if (readyP) return readyP;
-  readyP = loadScript(APIS_URL).then(
+  const attempt = loadScript(APIS_URL).then(
     () =>
       new Promise<void>((resolve, reject) => {
         if (!window.gapi) {
@@ -73,7 +78,16 @@ function ensureLoaded(): Promise<void> {
         window.gapi.load("picker", () => resolve());
       }),
   );
-  return readyP;
+  readyP = attempt;
+  // A rejected promise must not be cached: the cause of the failure (the
+  // connection, a script blocker, the CSP) can be gone by the time the user
+  // clicks again, and a cached rejection would replay the same error forever
+  // until the page is reloaded. The catch is a side branch: the rejection
+  // still reaches the caller through `attempt`.
+  void attempt.catch(() => {
+    if (readyP === attempt) readyP = null;
+  });
+  return attempt;
 }
 
 export async function pickDriveFiles(opts: {

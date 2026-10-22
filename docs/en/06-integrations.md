@@ -45,6 +45,11 @@ to touch Google Cloud.
    answers `(sin acceso)` and the change is recorded in the activity log.
    `Desconectar` revokes every file at once.
 
+If the Google Picker script cannot be loaded —the connection dropped, a script blocker
+stopped it, the CSP does not allow it— the attempt can be **retried**. The failed attempt is
+not remembered: the next click asks for the script again, and the message that explains the
+failure says what to check. Reloading the page is not needed.
+
 Reads are bounded: **25 MB per file**. The size comes with the metadata, so a bigger file is
 refused with a clear note before it is downloaded; for plain text and for exports (Docs to text,
 Sheets to CSV) the cap is applied while reading, so a huge document never reaches process memory
