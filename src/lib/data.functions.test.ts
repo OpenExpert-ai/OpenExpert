@@ -497,6 +497,26 @@ describe("getChat, clearChat y listConversations", () => {
     expect(orm.select().from(schema.chatMessages).all()).toHaveLength(2);
   });
 
+  it("reproduce una respuesta del modelo que el filtro acepta", async () => {
+    // El catálogo nombra palabras que una respuesta técnica normal usa
+    // ("bypass"), así que la respuesta del modelo desaparecía del historial
+    // que ve el usuario y que ve el modelo. La base es lo que dice que esa
+    // respuesta la escribió el modelo, y entonces sí se reproduce.
+    const respuesta = {
+      role: "assistant",
+      parts: [{ type: "text", text: "Para el permiso de Drive necesitas el bypass de la API." }],
+    };
+    await insertChat("general", "c1", "2026-01-01T00:00:01.000Z", userMessage("hola"));
+    await insertChat("general", "c1", "2026-01-01T00:00:02.000Z", respuesta);
+
+    const result = (await fns.getChat({
+      data: { expertId: "general", conversationId: "c1" },
+    })) as string;
+
+    expect(JSON.parse(result)).toEqual([userMessage("hola"), respuesta]);
+    expect(result).toContain("bypass");
+  });
+
   it("reproduce una aprobación pendiente con el resultado que ya está guardado", async () => {
     // Una versión anterior guardaba la continuación como otra fila, así que la
     // copia pendiente sobrevivía al lado del resultado y la tarjeta volvía con

@@ -22,7 +22,7 @@ import {
   modelLabel,
   selectedProvider,
 } from "@/lib/engine/model-provider.server";
-import { firstInjection, messageText } from "@/lib/ai/injection";
+import { collectModelReplies, firstInjection, messageText } from "@/lib/ai/injection";
 import { deadlineAsError, stepDeadlineMs } from "@/lib/ai/deadline";
 import { settleHistory } from "@/lib/ai/approval-history";
 import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
@@ -168,11 +168,20 @@ export async function handleChat(request: Request) {
   // every message, not only the last one: the model receives the whole array as
   // history, so an attempt planted in an earlier turn would otherwise travel
   // with the conversation and leave no audit event behind.
+  // The replies the model itself wrote are exempt, and only those: the base
+  // holds them, and the catalogue names words a normal technical answer uses
+  // ("bypass", "system prompt"), so a reply that said one of them used to deny
+  // every later turn of that conversation. A forged `assistant` — the role is
+  // the client's — is not in the base and still counts as an attempt.
   // The gate is timed: the number filed is the one the check really took, not
   // a constant that reads in the audit trail as a measurement.
   const guardStartedAt = Date.now();
   const hit = cfg.chat.injectionGuard
-    ? firstInjection(messages, cfg.chat.injectionExtraPatterns)
+    ? firstInjection(
+        messages,
+        cfg.chat.injectionExtraPatterns,
+        collectModelReplies(stored.map((row) => row.message)),
+      )
     : null;
   if (hit) {
     const where = `el mensaje ${hit.index + 1} de ${messages.length} (${hit.role || "sin rol"})`;

@@ -8,7 +8,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
 import { EXPERT_DOMAINS } from "./domains";
-import { firstInjection, type GateMessage } from "@/lib/ai/injection";
+import { collectModelReplies, firstInjection, type GateMessage } from "@/lib/ai/injection";
 import { settleHistory } from "@/lib/ai/approval-history";
 import { chatSettings } from "@/lib/config.server";
 import type { DriveGrant } from "@/lib/engine/local-secrets.server";
@@ -298,10 +298,18 @@ export const getChat = createServerFn({ method: "GET" })
     // otherwise deny every retry of that conversation with no way out. They stay
     // in the database (the audit event names them) and are simply not sent back
     // to the client, which is also what keeps them away from the model.
+    // The replies the model wrote are not attempts, so they are replayed: the
+    // base is what says they came from the model.
     const chat = chatSettings();
+    const modelReplies = collectModelReplies(rows.map((row) => row.message));
     const replayed = chat.injectionGuard
       ? rows.filter(
-          (row) => !firstInjection([row.message as GateMessage], chat.injectionExtraPatterns),
+          (row) =>
+            !firstInjection(
+              [row.message as GateMessage],
+              chat.injectionExtraPatterns,
+              modelReplies,
+            ),
         )
       : rows;
     // A message that asked for approval and whose call is already decided in

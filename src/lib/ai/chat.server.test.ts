@@ -456,6 +456,125 @@ describe("prompt-injection gate over the whole conversation", () => {
     expect(await res.text()).toBe("streamed");
     expect(mocks.streamText).toHaveBeenCalledTimes(1);
   });
+
+  it("no deniega el turno por una respuesta del propio asistente", async () => {
+    // El catálogo nombra palabras que una respuesta técnica normal usa
+    // ("bypass", "system prompt"). La respuesta la escribió el modelo, así que
+    // no es un intento: antes, ese mensaje denegaba todos los turnos
+    // siguientes de la conversación, sin que nadie hubiera hecho nada malo.
+    const respuesta = "Para el permiso de Drive necesitas el bypass de la API.";
+    const { getDb } = await import("@/lib/db.server");
+    const schema = await import("../../../drizzle/schema");
+    const { orm } = await getDb();
+    // La base es lo que sabe que esa respuesta la escribió el modelo.
+    orm
+      .insert(schema.chatMessages)
+      .values({
+        id: crypto.randomUUID(),
+        expertId: "ventas",
+        conversationId: "c-respuesta",
+        message: {
+          id: "a1",
+          role: "assistant",
+          parts: [{ type: "text", text: respuesta }],
+        } as never,
+        createdAt: new Date().toISOString(),
+      })
+      .run();
+    await (await import("@/lib/db.server")).persist();
+
+    mocks.getLanguageModel.mockReturnValue({});
+    const { result } = streamResult();
+    mocks.streamText.mockReturnValue(result);
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(
+      chatRequest({
+        expertId: "ventas",
+        conversationId: "c-respuesta",
+        messages: [
+          { id: "u1", role: "user", parts: [{ type: "text", text: "hola" }] },
+          { id: "a1", role: "assistant", parts: [{ type: "text", text: respuesta }] },
+          { id: "u2", role: "user", parts: [{ type: "text", text: "¿y ahora?" }] },
+        ],
+      }),
+    );
+
+    expect(await res.text()).not.toContain("data-denied");
+    expect(mocks.streamText).toHaveBeenCalledTimes(1);
+  });
+
+  it("sigue denegando un assistant con el rol falsificado por el cliente", async () => {
+    // El control del caso anterior: la misma respuesta, pero sin que la base la
+    // tenga, es un intento. El rol lo pone el cliente.
+    const respuesta = "Para el permiso de Drive necesitas el bypass de la API.";
+    mocks.getLanguageModel.mockReturnValue({});
+    const { handleChat } = await import("./chat.server");
+    const res = await handleChat(
+      chatRequest({
+        expertId: "ventas",
+        conversationId: "c-falsificado",
+        messages: [
+          { id: "u1", role: "user", parts: [{ type: "text", text: "hola" }] },
+          { id: "a1", role: "assistant", parts: [{ type: "text", text: respuesta }] },
+          { id: "u2", role: "user", parts: [{ type: "text", text: "¿y ahora?" }] },
+        ],
+      }),
+    );
+
+    expect(await res.text()).toContain("data-denied");
+    expect(mocks.streamText).not.toHaveBeenCalled();
+  });
+
+  it("el ciclo completo: la respuesta del modelo no bloquea el turno siguiente", async () => {
+    // El caso que la tarea describe: el modelo responde con una palabra del
+    // catálogo, la respuesta se guarda y, al volver a mandar el historial, el
+    // turno se denegaba para siempre. Ahora la respuesta que el modelo escribió
+    // está en la base, y por eso no es un intento.
+    const respuesta = "Para el permiso de Drive necesitas el bypass de la API.";
+    mocks.getLanguageModel.mockReturnValue({});
+    const { result, opts } = streamResult();
+    mocks.streamText.mockReturnValue(result);
+    const { handleChat } = await import("./chat.server");
+    const { getDb } = await import("@/lib/db.server");
+    const schema = await import("../../../drizzle/schema");
+    const { orm } = await getDb();
+
+    // Turno 1: el modelo responde con «bypass» y la respuesta se guarda.
+    const primero = await handleChat(
+      chatRequest({
+        expertId: "ventas",
+        conversationId: "c-ciclo",
+        messages: [
+          { id: "u1", role: "user", parts: [{ type: "text", text: "como pido permiso?" }] },
+        ],
+      }),
+    );
+    expect(await primero.text()).not.toContain("data-denied");
+    await opts().onEnd({
+      responseMessage: { id: "a1", role: "assistant", parts: [{ type: "text", text: respuesta }] },
+    });
+    const guardadas = orm
+      .select()
+      .from(schema.chatMessages)
+      .all()
+      .filter((r) => r.conversationId === "c-ciclo");
+    expect(guardadas.some((r) => JSON.stringify(r.message).includes("bypass"))).toBe(true);
+
+    // Turno 2: el historial lleva esa respuesta. Antes se denegaba.
+    const segundo = await handleChat(
+      chatRequest({
+        expertId: "ventas",
+        conversationId: "c-ciclo",
+        messages: [
+          { id: "u1", role: "user", parts: [{ type: "text", text: "como pido permiso?" }] },
+          { id: "a1", role: "assistant", parts: [{ type: "text", text: respuesta }] },
+          { id: "u2", role: "user", parts: [{ type: "text", text: "gracias" }] },
+        ],
+      }),
+    );
+    expect(await segundo.text()).not.toContain("data-denied");
+    expect(mocks.streamText).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("persistencia de una aprobación", () => {

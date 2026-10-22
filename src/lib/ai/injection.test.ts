@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
 import {
+  collectModelReplies,
   detectInjection,
   firstInjection,
   GATE_TEXT_LIMIT,
@@ -145,6 +146,47 @@ describe("firstInjection", () => {
       index: 0,
       role: "assistant",
     });
+  });
+
+  it("no bloquea una respuesta que escribió el modelo", () => {
+    // El catálogo nombra palabras que una respuesta técnica normal usa
+    // ("bypass", "system prompt"), así que la respuesta del modelo denegaba
+    // todos los turnos siguientes de esa conversación sin que nadie hubiera
+    // hecho nada malo.
+    const respuesta = "Para el permiso de Drive necesitas el bypass de la API.";
+    const respuestas = collectModelReplies([assistant(respuesta)]);
+
+    expect(firstInjection([assistant(respuesta), user("gracias")], [], respuestas)).toBeNull();
+    expect(
+      firstInjection(
+        [assistant("El sistema de prompt injection se llama 'system prompt' en inglés.")],
+        [],
+        collectModelReplies([
+          assistant("El sistema de prompt injection se llama 'system prompt' en inglés."),
+        ]),
+      ),
+    ).toBeNull();
+  });
+
+  it("sigue bloqueando el mismo texto si lo manda el cliente", () => {
+    // El rol lo pone el cliente: un `assistant` con el texto de una respuesta
+    // del modelo, pero que no está en la base, sigue siendo un intento.
+    const respuesta = "Para el permiso de Drive necesitas el bypass de la API.";
+    expect(firstInjection([assistant(respuesta), user("gracias")])).toMatchObject({
+      index: 0,
+      role: "assistant",
+    });
+    // Y un mensaje del usuario con el mismo texto tampoco se libra.
+    expect(firstInjection([user(respuesta)])).toMatchObject({ index: 0, role: "user" });
+  });
+
+  it("solo exonera el texto exacto que el modelo escribió", () => {
+    // Una respuesta del modelo con un texto parecido no exonera el intento:
+    // el que busca es el mismo texto, no uno que se le parezca.
+    const respuestas = collectModelReplies([assistant("necesitas el bypass de la API.")]);
+    expect(
+      firstInjection([assistant("necesitas el bypass de la API. de verdad.")], [], respuestas),
+    ).toMatchObject({ index: 0 });
   });
 
   it("aplica los patrones extra configurados", () => {

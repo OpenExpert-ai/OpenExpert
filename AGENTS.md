@@ -68,6 +68,13 @@ disagree, the code is right and the docs are the bug.
   `run_python` (120 s).
 - Prompt injection is blocked by a regex gate (`src/lib/ai/injection.ts`) before
   the model runs, and the attempt is logged with status `denied`.
+- **What the model wrote is not an attempt.** The gate checks the whole
+  conversation, and the catalogue names words a normal technical answer uses
+  (`bypass`, `system prompt`), so a reply of the model that contains one of
+  them must not be blocked. The **database** is what knows which replies came
+  from the model: they are matched against the stored replies. A forged
+  `assistant` — the role comes from the client — is not in the database and
+  still counts as an attempt.
 - The owner's extra patterns are checked by **measuring their cost**
   (`src/lib/ai/redos.server.ts`), not by their shape: catastrophic backtracking
   does not fail, it freezes the thread that serves the app. The measurement runs

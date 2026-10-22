@@ -30,6 +30,12 @@ restricted to the pages shared in Notion's picker.
    comes from the client. A denied turn is not stored, and the history is read
    back without the messages the filter rejects, so a conversation cannot stay
    locked by a message that is already inside it.
+   **What the model wrote is not an attempt.** The catalogue names words a
+   normal technical answer uses (`bypass`, `system prompt`), so a reply of the
+   model that contained one of them used to be accepted. The database is what
+   knows which replies came from the model: they are matched against the
+   stored replies, and an `assistant` whose text is not in the database still
+   counts as an attempt, because the role comes from the client.
    The owner's extra patterns are checked by **measuring how long they take**
    against an adversarial input (`src/lib/ai/redos.server.ts`), not only by
    their shape: an expression with catastrophic backtracking does not fail, it
