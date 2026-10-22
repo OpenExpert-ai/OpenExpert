@@ -191,6 +191,17 @@ Drive and local folders in `src/lib/office.server.ts`.
   the integrations connected. The key makes the bundle as sensitive as the
   tokens; restoring replaces the current data and reports what the bundle did
   not carry.
+- **A restored configuration is validated like a typed one.** The bundle is a
+  file that arrives from outside, so `restoreBackup` checks the
+  `openexpert.json` it carries with the same schema the panel and the raw
+  editor use (`fileConfigSchema`, `checkFileConfig` in
+  `src/lib/config.server.ts`) before anything is staged: a configuration the
+  application cannot run with is refused whole, with the field and the limit
+  it breaks, and the installation keeps the file it had. The limits are the
+  billable ones (`chat.maxSteps` at 200 steps, `chat.retentionDays` at 3650
+  days, `ai.maxOutputTokens` at 200000 tokens) and the injection patterns are
+  measured against an adversarial input, so their number is counted before any
+  of them is measured.
 - **Desktop shell (Linux).** `src-tauri/` is a Tauri 2 app whose only job is to
   render the local server in a native WebKitGTK window; all logic stays in the
   web app. It is launched by the `openexpert desktop` CLI command

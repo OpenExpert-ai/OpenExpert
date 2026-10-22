@@ -340,7 +340,11 @@ describe("backups", () => {
         restoreBackup(
           bundleOf({
             db: Buffer.from(bundleDb, "base64"),
-            config: JSON.stringify({ modelProvider: "openai", modelId: "nuevo" }),
+            // A provider the catalogue knows: the restore now validates the
+            // configuration, and `openai` was never an id of this catalogue
+            // (the one is `openai-compatible`), so the fixture would fail for
+            // the wrong reason.
+            config: JSON.stringify({ modelProvider: "openai-compatible", modelId: "nuevo" }),
             secrets: JSON.stringify({ CLAVE: "nueva" }),
             credentials: JSON.stringify({ token: "nuevo" }),
           }),
@@ -390,7 +394,11 @@ describe("backups", () => {
         restoreBackup(
           bundleOf({
             db: Buffer.from(bundleDb, "base64"),
-            config: JSON.stringify({ modelProvider: "openai", modelId: "nuevo" }),
+            // A provider the catalogue knows: the restore now validates the
+            // configuration, and `openai` was never an id of this catalogue
+            // (the one is `openai-compatible`), so the fixture would fail for
+            // the wrong reason.
+            config: JSON.stringify({ modelProvider: "openai-compatible", modelId: "nuevo" }),
             secrets: JSON.stringify({ CLAVE: "nueva" }),
             credentials: JSON.stringify({ token: "nuevo" }),
           }),
@@ -446,5 +454,186 @@ describe("backups", () => {
   it("vacuum runs without throwing", async () => {
     const { vacuumDb } = await import("./backup.server");
     await expect(vacuumDb()).resolves.toBeUndefined();
+  });
+});
+
+describe("la restauración valida la configuración que trae la copia", () => {
+  // The regression: `openexpert.json` has a schema in the repository — the one
+  // the settings panel and the raw editor go through — and the restore wrote
+  // the file as it came. A bundle could therefore put `chat.maxSteps` at
+  // 100000 (100000 billable provider calls in one request), `chat.retentionDays`
+  // at 999999 (the purge of the history, off) and a pattern that freezes the
+  // server, and the application loaded all of it as if the panel had accepted it.
+  //
+  // The check belongs at the door: a bundle may come from another machine, from
+  // an old version or from nowhere, so whoever builds it cannot be the one who
+  // validates it.
+
+  /** A bundle whose configuration is the one given, and nothing else. */
+  function bundleWithConfig(config: unknown): string {
+    return bundleOf({ config: JSON.stringify(config) });
+  }
+
+  it("rechaza un maxSteps fuera de rango y no toca el openexpert.json", async () => {
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const config = join(install.cwd, "openexpert.json");
+      const before = readFileSync(config);
+
+      const error = await rejectionOf(
+        restoreBackup(
+          bundleWithConfig({
+            modelProvider: "google",
+            modelId: "gemini-2.5-flash",
+            chat: { maxSteps: 100_000, retentionDays: 999_999 },
+          }),
+        ),
+      );
+
+      // The message names the field and the limit it breaks.
+      expect(error.message).toMatch(/maxSteps/);
+      expect(error.message).toMatch(/1 a 200/);
+      expect(error.message).toMatch(/retentionDays/);
+      expect(error.message).toMatch(/0 a 3650/);
+      expect(error.message).toMatch(/No se ha cambiado nada/);
+      // And the file is still the one the installation had.
+      expect(readFileSync(config).equals(before)).toBe(true);
+      expect(JSON.parse(readFileSync(config, "utf8")).modelProvider).toBe("ollama");
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("rechaza un patrón de inyección que la guardia de Ajustes rechaza", async () => {
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const config = join(install.cwd, "openexpert.json");
+      const before = readFileSync(config);
+
+      const error = await rejectionOf(
+        restoreBackup(
+          bundleWithConfig({
+            modelProvider: "google",
+            modelId: "gemini-2.5-flash",
+            // The pattern the task measured: thirteen characters, half the
+            // panel's limit, and it froze the app for twenty-three seconds.
+            chat: { injectionExtraPatterns: [".*.*.*.*.*.*b"] },
+          }),
+        ),
+      );
+
+      expect(error.message).toMatch(/injectionExtraPatterns/);
+      expect(error.message).toMatch(/congelar el servidor/);
+      expect(error.message).toMatch(/No se ha cambiado nada/);
+      expect(readFileSync(config).equals(before)).toBe(true);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("rechaza un openexpert.json que no es JSON y no toca nada", async () => {
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const config = join(install.cwd, "openexpert.json");
+      const before = readFileSync(config);
+
+      const error = await rejectionOf(restoreBackup(bundleOf({ config: "{no es json" })));
+
+      expect(error.message).toMatch(/no es JSON válido/);
+      expect(error.message).toMatch(/No se ha cambiado nada/);
+      expect(readFileSync(config).equals(before)).toBe(true);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("rechaza un proveedor que el catálogo no conoce", async () => {
+    // The installation is isolated like the others: a restore that (wrongly)
+    // succeeds writes `openexpert.json` into the working directory, and in
+    // the root of the repository that file poisons the next run.
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const error = await rejectionOf(
+        restoreBackup(bundleWithConfig({ modelProvider: "openai", modelId: "nuevo" })),
+      );
+      // The message is in Spanish and says which providers exist.
+      expect(error.message).toMatch(/modelProvider/);
+      expect(error.message).toMatch(/ollama/);
+      expect(error.message).toMatch(/opencode-go/);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("rechaza una lista de patrones más larga de la que el panel admite", async () => {
+    // A bundle with a thousand patterns would cost five seconds to validate
+    // (each one is measured against an adversarial input), and the panel caps
+    // the list at fifty. The count is checked before any pattern is measured.
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const patrones = Array.from({ length: 200 }, (_, i) => `palabra${i}`);
+      const t0 = Date.now();
+      const error = await rejectionOf(
+        restoreBackup(bundleWithConfig({ chat: { injectionExtraPatterns: patrones } })),
+      );
+      const ms = Date.now() - t0;
+      expect(error.message).toMatch(/patrones de inyección/);
+      expect(error.message).toMatch(/No se ha cambiado nada/);
+      // It was refused without measuring two hundred patterns.
+      expect(ms).toBeLessThan(2000);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("restaura una configuración válida y la deja escrita", async () => {
+    // The other half of the promise: a copy that the application can use still
+    // restores, and the file it writes is the one the bundle carried.
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const config = join(install.cwd, "openexpert.json");
+      const result = await restoreBackup(
+        bundleWithConfig({
+          modelProvider: "google",
+          modelId: "gemini-2.5-flash",
+          chat: {
+            maxSteps: 40,
+            retentionDays: 30,
+            injectionExtraPatterns: ["ignora (tus )?instrucciones"],
+          },
+          ai: { temperature: 0.5, topP: 1, maxOutputTokens: 4096 },
+        }),
+      );
+
+      expect(result.applied).toContain("config");
+      const escrito = JSON.parse(readFileSync(config, "utf8"));
+      expect(escrito.modelProvider).toBe("google");
+      expect(escrito.chat.maxSteps).toBe(40);
+      expect(escrito.chat.injectionExtraPatterns).toEqual(["ignora (tus )?instrucciones"]);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
+
+  it("una copia sin configuración se sigue restaurando", async () => {
+    // A bundle that does not carry `openexpert.json` is not a broken bundle:
+    // the configuration of the installation stays as it is.
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const config = join(install.cwd, "openexpert.json");
+      const before = readFileSync(config);
+      const result = await restoreBackup(bundleOf({ secrets: JSON.stringify({ CLAVE: "nueva" }) }));
+      expect(result.applied).toContain("secrets");
+      expect(readFileSync(config).equals(before)).toBe(true);
+    } finally {
+      dropInstallation(install, previous);
+    }
   });
 });

@@ -76,6 +76,13 @@ Rules:
   files and `secret.key`, the key that decrypts them. The bundle is therefore as
   sensitive as the tokens themselves: cross-origin downloads are rejected, but
   still download backups only on a trusted machine and store them safely.
+- A restored `openexpert.json` is **validated before it is written**: a bundle
+  is a file that arrives from outside, so the configuration it carries goes
+  through the same schema the settings panel and the raw editor use. A copy
+  that asks for more than 200 steps per query (each step is a billable
+  provider call), more than 3650 days of history, more than 200000 output
+  tokens or an injection pattern that can freeze the server is refused whole,
+  and the message names the field and the limit it breaks.
 - The Drive OAuth `state` carries a PKCE verifier signed with HMAC; the
   callback verifies the MAC in constant time.
 - Drive tokens and the Picker grants are AES-256-GCM encrypted with a key
