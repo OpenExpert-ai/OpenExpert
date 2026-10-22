@@ -176,6 +176,43 @@ describe("extractOfficeText", () => {
     expect(lines).toEqual(["Nombre", "Valor", "Acme", "42"]);
   });
 
+  it("keeps the spaces, tabs and line breaks an OpenDocument writes as empty elements", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { extractOfficeText } = await import("./office.server");
+    // An OpenDocument never carries two spaces in a row, an indentation or a tab as characters:
+    // it writes `<text:s/>` (with `text:c` for the count), `<text:tab/>` and `<text:line-break/>`,
+    // and a writer collapses runs of spaces precisely so the text is not ambiguous. The reader
+    // dropped every tag, so both sides of such an element came out glued together and the model
+    // read —and quoted back— words the document did not contain, with no error and no note.
+    const xml =
+      "<office:document-content><office:body><office:text>" +
+      '<text:p>Hola<text:s text:c="3"/>mundo</text:p>' +
+      "<text:p>Columna A<text:tab/>Columna B</text:p>" +
+      "<text:p>Primera<text:line-break/>Segunda</text:p>" +
+      "</office:text></office:body></office:document-content>";
+    const out = await extractOfficeText(zipSync({ "content.xml": strToU8(xml) }), ".odt");
+    expect(out.text).toBe("Hola   mundo\nColumna A\tColumna B\nPrimera\nSegunda");
+  });
+
+  it("gives one space to a `<text:s/>` with no count and never expands one past the cap", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { extractOfficeText } = await import("./office.server");
+    // `text:c` defaults to one and a document is free to carry any number: the count is bounded so
+    // a 30-byte element cannot ask for a gigabyte of spaces (the archive itself is capped at 64 MB
+    // uncompressed, which has nothing to say about how much text it turns into).
+    const xml =
+      "<office:document-content><office:body><office:text>" +
+      "<text:p>uno<text:s/>dos</text:p>" +
+      '<text:p>tres<text:s text:c="1000000000"/>cuatro</text:p>' +
+      '<text:p>cinco<text:s text:c="0"/>seis</text:p>' +
+      "</office:text></office:body></office:document-content>";
+    const out = await extractOfficeText(zipSync({ "content.xml": strToU8(xml) }), ".odt");
+    const [one, huge, zero] = (out.text ?? "").split(String.fromCharCode(10));
+    expect(one).toBe("uno dos");
+    expect(huge).toBe(`tres${" ".repeat(1000)}cuatro`);
+    expect(zero).toBe("cinco seis");
+  });
+
   it("keeps a stray `<` from malformed markup out of the text", async () => {
     const { zipSync, strToU8 } = await import("fflate");
     const { extractOfficeText } = await import("./office.server");

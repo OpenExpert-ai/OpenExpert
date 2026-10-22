@@ -148,6 +148,36 @@ function decodeEntities(s: string): string {
 }
 
 /**
+ * An OpenDocument writes whitespace as empty elements, never as characters in the text: a run of
+ * spaces —two in a row, an indentation— is `<text:s/>` repeated `text:c` times, a tab is
+ * `<text:tab/>` and a line break inside a paragraph is `<text:line-break/>`. They are the only
+ * tags whose content is the tag itself, so dropping them as markup glues the words on both sides
+ * together and the caller reads text the document does not contain.
+ */
+const ODF_SPACE_ELEMENT = /^<text:(s|tab|line-break)(\s[^>]*?)?\/?>/;
+
+/**
+ * Most spaces a single `<text:s/>` may stand for.
+ *
+ * `text:c` is the document's word and nothing caps it: a 30-byte element claiming a billion spaces
+ * would turn the 64 MB the archive is allowed to inflate into a string that does not fit in memory.
+ * A real document indents with tens of spaces at most, so the cap is far above any of them.
+ */
+const ODF_MAX_SPACES = 1000;
+
+/** What an ODF space element stands for, or null when the tag is ordinary markup. */
+function odfSpace(tag: string): string | null {
+  const element = ODF_SPACE_ELEMENT.exec(tag);
+  if (!element) return null;
+  if (element[1] === "tab") return "\t";
+  if (element[1] === "line-break") return "\n";
+  // `text:c` defaults to one when the attribute is missing, and a count below one means one.
+  const count = /\btext:c\s*=\s*["'](\d+)["']/.exec(element[2] ?? "");
+  const spaces = count ? Math.min(Number(count[1]), ODF_MAX_SPACES) : 1;
+  return " ".repeat(Math.max(spaces, 1));
+}
+
+/**
  * Plain text of an XML fragment: markup (inline `<text:span>`, `<text:a>`…) and
  * any partial tag left behind by malformed or truncated markup are dropped, so
  * no fragment of a tag reaches the caller.
@@ -165,7 +195,10 @@ function plainText(fragment: string): string {
   let i = 0;
   while (i < fragment.length) {
     if (fragment[i] === "<") {
-      i = i < lastClose ? fragment.indexOf(">", i + 1) + 1 : i + 1;
+      const end = i < lastClose ? fragment.indexOf(">", i + 1) + 1 : i + 1;
+      const space = odfSpace(fragment.slice(i, end));
+      if (space !== null) text += space;
+      i = end;
       continue;
     }
     text += fragment[i];
