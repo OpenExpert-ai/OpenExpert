@@ -315,12 +315,53 @@ function csvRecords(text: string, delimiter: string): string[][] {
 }
 
 /**
+ * Delimiters the shape is read with, in the order that settles a tie: a plain comma file keeps
+ * behaving exactly as it did before this list existed.
+ */
+const CSV_DELIMITERS = [",", ";", "\t", "|"] as const;
+
+/** How much of the file the delimiter is read from. The rows themselves are parsed in full. */
+const CSV_SAMPLE_CHARS = 8_000;
+
+/**
+ * Which separator the text uses, read from the text itself. A CSV *is* its rows, and the extension
+ * says nothing about the separator: Excel with a Spanish locale writes `;` (the system list
+ * separator) and numbers with a decimal comma. So each candidate splits the first records and the
+ * widest table that repeats across them wins; a candidate has to cover at least half the records,
+ * which is what leaves a one-column file as one column. Only separators outside quotes count, so
+ * `"cliente, nombre"` stays a single cell. `null` when no candidate gives a table.
+ */
+function detectDelimiter(text: string): string | null {
+  const sample = text.slice(0, CSV_SAMPLE_CHARS);
+  let best: { delimiter: string; columns: number; share: number } | null = null;
+  for (const delimiter of CSV_DELIMITERS) {
+    const records = csvRecords(sample, delimiter);
+    if (records.length === 0) continue;
+    const tally = new Map<number, number>();
+    for (const record of records) tally.set(record.length, (tally.get(record.length) ?? 0) + 1);
+    let columns = 0;
+    let repeats = 0;
+    for (const [count, times] of tally)
+      if (count > columns || (count === columns && times > repeats)) {
+        columns = count;
+        repeats = times;
+      }
+    const share = repeats / records.length;
+    if (columns < 2 || share < 0.5) continue;
+    if (!best || columns > best.columns || (columns === best.columns && share > best.share))
+      best = { delimiter, columns, share };
+  }
+  return best?.delimiter ?? null;
+}
+
+/**
  * The shape of a CSV, read from the text itself: a CSV *is* its rows. The header is the first
  * non-empty record, and the data rows are the rest — counting the header as data would inflate
- * every table by one row.
+ * every table by one row. The separator comes from the text, not from the extension; a file with
+ * no separator at all is a single column.
  */
-function csvStructure(text: string, name: string, delimiter: string): SheetInfo {
-  const records = csvRecords(text, delimiter);
+function csvStructure(text: string, name: string, fallback: string): SheetInfo {
+  const records = csvRecords(text, detectDelimiter(text) ?? fallback);
   const header = (records[0] ?? []).map((cell) => cell.trim());
   return { name, rows: Math.max(0, records.length - 1), columns: header };
 }

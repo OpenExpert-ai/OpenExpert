@@ -119,9 +119,12 @@ absoluta. Las concesiones se guardan cifradas en
   ya exista, enlaces simbólicos incluidos (también uno roto), así que la
   escritura no sigue nunca una entrada fuera de la carpeta.
 - Las lecturas devuelven texto, texto de PDFs y contenido de Office (Word
-  `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, OpenDocument). Las escrituras
-  (`create_local_file`, `update_local_file`) requieren **aprobación humana**,
-  igual que las de Drive.
+  `.docx`, Excel `.xlsx`, PowerPoint `.pptx`, OpenDocument). Un CSV o un TSV se
+  entrega además como **tabla** (columnas y filas de datos, no líneas), y el
+  separador se lee del propio texto —`,`, `;` (el que escribe Excel en
+  castellano), tabulador o `|`—, nunca de la extensión: un fichero de una sola
+  columna sigue teniendo una. Las escrituras (`create_local_file`,
+  `update_local_file`) requieren **aprobación humana**, igual que las de Drive.
 - Con límites: 25 MB por archivo, 200.000 caracteres devueltos, 5.000 archivos y
   profundidad 8 por listado; se omiten `.git`, `node_modules`, ficheros ocultos y
   ficheros de secretos.

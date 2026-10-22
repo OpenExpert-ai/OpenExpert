@@ -115,8 +115,12 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
   Creating a file refuses a name that already exists, symlinks included — a
   dangling one counts — so the write never follows an entry out of the folder.
 - Reads return text, PDF text and Office content (Word `.docx`, Excel `.xlsx`,
-  PowerPoint `.pptx`, OpenDocument). Writes (`create_local_file`,
-  `update_local_file`) require **human approval**, like Drive writes.
+  PowerPoint `.pptx`, OpenDocument). A CSV or a TSV also comes back as a
+  **table** (columns and data rows, not lines), and the separator is read from
+  the text itself —`,`, `;` (what Excel writes in Spanish), tab or `|`— never
+  from the extension: a single-column file still has one column. Writes
+  (`create_local_file`, `update_local_file`) require **human approval**, like
+  Drive writes.
 - Bounded: 25 MB per file, 200k characters returned, 5,000 files and depth 8 per
   listing; `.git`, `node_modules`, dotfiles and secret files are skipped.
 - Docker: the server sees the container filesystem, so mount the folder with

@@ -278,6 +278,56 @@ describe("windowed reads", () => {
     // La línea en blanco no es fila; el campo entrecomillado vacío sí, y el campo vacío final también.
     expect(r.sheets?.[0]?.rows).toBe(3);
   });
+  it("elige el separador por el contenido: un CSV con punto y coma da sus tres columnas", async () => {
+    const fs = await import("./local-fs.server");
+    const csv = join(root, "ventas-punto-y-coma.csv");
+    writeFileSync(
+      csv,
+      "Cliente;Importe;Fecha\nAcme;1.500,00;2026-01-02\nBeta;2.300,50;2026-01-03\nGamma;980,00;2026-01-04\n",
+    );
+    const r = await fs.readLocalFile(csv, [root]);
+    expect(r.sheets?.[0]?.columns).toEqual(["Cliente", "Importe", "Fecha"]);
+    expect(r.sheets?.[0]?.rows).toBe(3);
+
+    const pipes = join(root, "ventas-pipes.csv");
+    writeFileSync(pipes, "cliente|importe\nAcme|1500\nBeta|2300\n");
+    const p = await fs.readLocalFile(pipes, [root]);
+    expect(p.sheets?.[0]?.columns).toEqual(["cliente", "importe"]);
+    expect(p.sheets?.[0]?.rows).toBe(2);
+  });
+
+  it("mantiene el tabulador del .tsv como separador", async () => {
+    const fs = await import("./local-fs.server");
+    const tsv = join(root, "ventas-tabs.tsv");
+    writeFileSync(tsv, "cliente\timporte\nAcme\t1500\nBeta\t2300\n");
+    const r = await fs.readLocalFile(tsv, [root]);
+    expect(r.sheets?.[0]?.columns).toEqual(["cliente", "importe"]);
+    expect(r.sheets?.[0]?.rows).toBe(2);
+  });
+
+  it("deja en una columna un CSV sin separadores y no cambia por un «;» entre comillas", async () => {
+    const fs = await import("./local-fs.server");
+    const single = join(root, "una-columna.csv");
+    writeFileSync(single, "correo\nana@example.com\nluis@example.com\n");
+    const one = await fs.readLocalFile(single, [root]);
+    expect(one.sheets?.[0]?.columns).toEqual(["correo"]);
+    expect(one.sheets?.[0]?.rows).toBe(2);
+
+    const quoted = join(root, "alias.csv");
+    writeFileSync(quoted, '"nombre; alias",importe\nAna,100\n');
+    const two = await fs.readLocalFile(quoted, [root]);
+    expect(two.sheets?.[0]?.columns).toEqual(["nombre; alias", "importe"]);
+    expect(two.sheets?.[0]?.rows).toBe(1);
+  });
+
+  it("quita el BOM de la primera columna de un CSV exportado como «CSV UTF-8»", async () => {
+    const fs = await import("./local-fs.server");
+    const csv = join(root, "bom.csv");
+    writeFileSync(csv, "\ufeffcliente,importe\nAcme,1500\n");
+    const r = await fs.readLocalFile(csv, [root]);
+    expect(r.sheets?.[0]?.columns).toEqual(["cliente", "importe"]);
+    expect(r.sheets?.[0]?.rows).toBe(1);
+  });
 });
 
 describe("searchLocalContent", () => {
