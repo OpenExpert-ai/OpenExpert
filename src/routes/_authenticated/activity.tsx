@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Bot, User, Undo2, Check, X, Search, ScrollText } from "lucide-react";
 import { PageHeader, inputCls } from "@/components/AppShell";
 import { ActivityEventMeta } from "@/components/activity/ActivityEventMeta";
-import { useAct, useMe, useWorkspace } from "@/lib/store";
+import { useAct, useMe, useWorkspace, type Workspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
-import { decideAction, revertEvent } from "@/lib/data.functions";
+import { decideAction, getActivityPage, revertEvent } from "@/lib/data.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
@@ -27,7 +29,8 @@ export const Route = createFileRoute("/_authenticated/activity")({
       { title: "Registro de Actividad — OpenExpert" },
       {
         name: "description",
-        content: "Auditoría completa de acciones humanas y de agentes con reversión por snapshots.",
+        content:
+          "Registro de auditoría de acciones humanas y de agentes con reversión por snapshots.",
       },
       { property: "og:title", content: "Registro de Actividad — OpenExpert" },
       { property: "og:description", content: "Trazabilidad y reversión de cada acción." },
@@ -46,13 +49,18 @@ const statusCls: Record<string, string> = {
 
 const STATUSES = ["ok", "pending", "reverted", "denied", "failed"] as const;
 const PAGE = 40;
+type ActivityEvent = Workspace["activity"][number];
 
-function ActivityPage() {
+// Exported so a test can mount it: the whole route drags in the router and the
+// server functions, and what needs checking here is what the page does with the
+// events it has loaded.
+export function ActivityPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
   const { t } = useT();
   const revert = useAct(revertEvent, t("Estado restaurado desde snapshot"));
   const decide = useAct(decideAction);
+  const page = useServerFn(getActivityPage);
   const [actor, setActor] = useState("all");
   const [type, setType] = useState("all");
   const [expertFilter, setExpertFilter] = useState("all");
@@ -60,11 +68,53 @@ function ActivityPage() {
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [toRevert, setToRevert] = useState<string | null>(null);
-  const types = useMemo(() => [...new Set(ws?.activity.map((a) => a.type) ?? [])], [ws]);
+  // Older pages come from the server. The workspace only carries the latest
+  // window, and the page used to present that window as the whole log; these
+  // are the events behind it, the ones nobody could reach before.
+  const [older, setOlder] = useState<ActivityEvent[]>([]);
+  const [cursor, setCursor] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+
+  const events = useMemo(() => {
+    const seen = new Set<string>();
+    const out: ActivityEvent[] = [];
+    for (const ev of [...(ws?.activity ?? []), ...older]) {
+      // The workspace refreshes every 15 s: a new event pushes the window down
+      // and a page fetched just before that repeats a row.
+      if (seen.has(ev.id)) continue;
+      seen.add(ev.id);
+      out.push(ev);
+    }
+    return out;
+  }, [ws, older]);
+
+  const total = ws?.activityTotal ?? events.length;
+  const hasOlder = !exhausted && events.length < total;
+
+  const loadOlder = useCallback(async () => {
+    if (loading || !ws) return;
+    setLoading(true);
+    try {
+      const res = await page({ data: { offset: cursor ?? ws.activity.length, limit: PAGE * 2 } });
+      setOlder((prev) => [...prev, ...res.activity]);
+      setCursor(res.next_offset);
+      // Show what just arrived: otherwise the press loads rows the list is
+      // still hiding and it reads as if the button did nothing.
+      setLimit((n) => n + res.activity.length);
+      if (res.activity.length === 0) setExhausted(true);
+    } catch (e) {
+      toast.error((e as Error).message || t("No se pudieron cargar los eventos anteriores"));
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, ws, cursor, page, t]);
+
+  const types = useMemo(() => [...new Set(events.map((a) => a.type))], [events]);
   if (!ws || !me) return null;
 
   const needle = q.trim().toLowerCase();
-  const rows = ws.activity.filter(
+  const rows = events.filter(
     (a) =>
       (actor === "all" || a.actor === actor) &&
       (type === "all" || a.type === type) &&
@@ -138,9 +188,17 @@ function ActivityPage() {
           ))}
         </select>
         <span className="ml-auto self-center font-mono text-[0.7rem] text-muted-foreground">
-          {t("{a} / {b} eventos", { a: rows.length, b: ws.activity.length })}
+          {t("{a} de {b} eventos", { a: rows.length, b: total })}
         </span>
       </div>
+      {hasOlder && (
+        <p className="border-b border-border bg-card/40 px-6 py-2 text-xs text-muted-foreground">
+          {t(
+            "Se listan los {n} eventos más recientes de {total}. Los anteriores se cargan con «Cargar más».",
+            { n: events.length, total },
+          )}
+        </p>
+      )}
       <div className="divide-y divide-border">
         {visible.map((a) => (
           <div key={a.id} className="flex flex-wrap items-start gap-4 px-6 py-4 hover:bg-card/50">
@@ -216,13 +274,19 @@ function ActivityPage() {
           />
         )}
       </div>
-      {rows.length > visible.length && (
+      {(rows.length > visible.length || hasOlder) && (
         <div className="flex justify-center border-t border-border px-6 py-4">
           <button
-            onClick={() => setLimit((n) => n + PAGE)}
+            onClick={() => {
+              // First reveal what is already loaded, then ask the server for the
+              // events behind the window.
+              if (rows.length > visible.length) setLimit((n) => n + PAGE);
+              else void loadOlder();
+            }}
+            disabled={loading}
             className={buttonVariants({ variant: "outline" })}
           >
-            {t("Cargar más")}
+            {loading ? t("Cargando…") : t("Cargar más")}
           </button>
         </div>
       )}

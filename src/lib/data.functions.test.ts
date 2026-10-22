@@ -1078,3 +1078,110 @@ describe("Notion", () => {
     expect((await activityRows()).some((row) => row.summary === "Desconectado Notion")).toBe(true);
   });
 });
+
+/* --------------------- Registro de actividad: ventana -------------------- */
+
+/**
+ * The audit log used to be cut at 300 rows in silence: `getWorkspace` returned
+ * them, the page printed that length as the total, and everything older was
+ * unreachable — including its snapshot, which is what the revert button needs.
+ * These tests seed more than a window of events and walk to the oldest one.
+ */
+describe("el registro de actividad completo", () => {
+  const seedEvents = async (n: number) => {
+    const { orm } = await db.getDb();
+    const rows = Array.from({ length: n }, (_, i) => {
+      const id = `evt_${String(i).padStart(3, "0")}`;
+      return {
+        id,
+        // Oldest first: evt_000 is the event at the bottom of the log.
+        ts: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+        actor: "agent" as const,
+        actorName: "Experto",
+        type: "Consulta",
+        expertId: "general",
+        status: "ok",
+        summary: `evento ${id}`,
+        sources: [],
+        durationMs: null,
+        // Only the oldest one carries a snapshot: the row nobody could reach.
+        snapshot:
+          i === 0 ? { entries: [{ table: "experts", pk: { id: "x" }, before: null }] } : null,
+      };
+    });
+    orm.insert(schema.activity).values(rows).run();
+    await db.persist();
+  };
+
+  it("el total sale de un COUNT(*), no del tamaño de la ventana", async () => {
+    await seedEvents(305);
+    const ws = (await fns.getWorkspace()) as {
+      activity: { id: string }[];
+      activityTotal: number;
+    };
+    expect(ws.activity).toHaveLength(300);
+    expect(ws.activityTotal).toBe(305);
+    // Los más recientes sí y los más antiguos no: el recorte que la ficha midió.
+    expect(ws.activity[0]?.id).toBe("evt_304");
+    expect(ws.activity.some((a) => a.id === "evt_000")).toBe(false);
+  });
+
+  it("getActivityPage llega a evt_000 sin repetir ni saltarse ningún evento", async () => {
+    await seedEvents(305);
+    const seen: string[] = [];
+    let offset = 300;
+    let total = 0;
+    for (let i = 0; i < 10; i++) {
+      const page = (await fns.getActivityPage({ data: { offset, limit: 40 } })) as {
+        activity: { id: string; hasSnapshot: boolean }[];
+        total: number;
+        next_offset: number;
+      };
+      total = page.total;
+      if (page.activity.length === 0) break;
+      seen.push(...page.activity.map((a) => a.id));
+      offset = page.next_offset;
+    }
+    expect(total).toBe(305);
+    const ids = new Set(seen);
+    expect(ids.size).toBe(seen.length); // ni una fila repetida
+    expect(seen).toEqual(["evt_004", "evt_003", "evt_002", "evt_001", "evt_000"]);
+    expect(seen.at(-1)).toBe("evt_000");
+  });
+
+  it("el evento más antiguo llega con su snapshot, que es lo que permite revertirlo", async () => {
+    await seedEvents(305);
+    const page = (await fns.getActivityPage({ data: { offset: 300, limit: 300 } })) as {
+      activity: { id: string; hasSnapshot: boolean }[];
+      next_offset: number;
+    };
+    const oldest = page.activity.find((a) => a.id === "evt_000");
+    expect(oldest?.hasSnapshot).toBe(true);
+    expect(page.next_offset).toBe(305);
+  });
+
+  it("sin datos usa la ventana por defecto, y un offset pasado del final devuelve vacío sin repetirse", async () => {
+    await seedEvents(3);
+    const first = (await fns.getActivityPage({ data: {} })) as {
+      activity: { id: string }[];
+      total: number;
+      next_offset: number;
+    };
+    expect(first.activity.map((a) => a.id)).toEqual(["evt_002", "evt_001", "evt_000"]);
+    expect(first.total).toBe(3);
+    expect(first.next_offset).toBe(3);
+
+    const past = (await fns.getActivityPage({ data: { offset: 99, limit: 10 } })) as {
+      activity: unknown[];
+      next_offset: number;
+    };
+    expect(past.activity).toEqual([]);
+    // No vuelve a 99: el que pide la página siguiente no puede quedarse en bucle.
+    expect(past.next_offset).toBe(99);
+  });
+
+  it("rechaza una ventana mayor que el máximo y un offset negativo", async () => {
+    await expect(fns.getActivityPage({ data: { offset: 0, limit: 301 } })).rejects.toThrow();
+    await expect(fns.getActivityPage({ data: { offset: -1, limit: 10 } })).rejects.toThrow();
+  });
+});

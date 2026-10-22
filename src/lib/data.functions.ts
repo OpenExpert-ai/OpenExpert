@@ -4,7 +4,7 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
 import { EXPERT_DOMAINS } from "./domains";
@@ -12,12 +12,58 @@ import { collectModelReplies, firstInjection, type GateMessage } from "@/lib/ai/
 import { settleHistory } from "@/lib/ai/approval-history";
 import { chatSettings } from "@/lib/config.server";
 import type { DriveGrant } from "@/lib/engine/local-secrets.server";
-import { getDb, now, persist } from "@/lib/db.server";
+import { getDb, now, persist, type Db } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
 const OWNER_NAME = "Propietario local";
 
 /* ----------------------------- Workspace ----------------------------- */
+
+// The panel is where events get reverted, so the audit log has to be readable
+// to the end. The workspace used to `limit(300)` in silence and the page
+// printed that length as the total: a log with more than 300 entries claimed
+// to be complete, and the snapshot of anything older —the event you would want
+// to revert— could not be reached at all. The window keeps its size (the whole
+// log does not fit in one payload) but now travels with the real total, and
+// `getActivityPage` walks past it.
+const ACTIVITY_WINDOW = 300;
+const ACTIVITY_PAGE_MAX = 300;
+
+type ActivityRecord = typeof schema.activity.$inferSelect;
+
+function toActivityEvent(a: ActivityRecord) {
+  return {
+    id: a.id,
+    ts: a.ts,
+    actor: a.actor,
+    actor_name: a.actorName,
+    type: a.type,
+    expert_id: a.expertId,
+    status: a.status,
+    summary: a.summary,
+    sources: a.sources,
+    duration_ms: a.durationMs,
+    hasSnapshot: !!(a.snapshot as { entries?: unknown[] } | null)?.entries?.length,
+    pending: (a.snapshot as { pending?: unknown } | null)?.pending ?? null,
+  };
+}
+
+function countActivity(orm: Db): number {
+  return orm.select({ n: count() }).from(schema.activity).all()[0]?.n ?? 0;
+}
+
+// Newest first, with `id` breaking ties: two events written in the same
+// millisecond otherwise swap places between pages, so one row shows twice and
+// another never shows at all.
+function readActivity(orm: Db, offset: number, limit: number): ActivityRecord[] {
+  return orm
+    .select()
+    .from(schema.activity)
+    .orderBy(desc(schema.activity.ts), desc(schema.activity.id))
+    .limit(limit)
+    .offset(offset)
+    .all();
+}
 
 export const getWorkspace = createServerFn({ method: "GET" }).handler(async () => {
   const { orm } = await getDb();
@@ -27,7 +73,8 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
     .from(schema.integrations)
     .orderBy(schema.integrations.name)
     .all();
-  const act = orm.select().from(schema.activity).orderBy(desc(schema.activity.ts)).limit(300).all();
+  const act = readActivity(orm, 0, ACTIVITY_WINDOW);
+  const activityTotal = countActivity(orm);
   const invoices = orm.select().from(schema.invoices).all();
   const campaigns = orm.select().from(schema.campaigns).all();
 
@@ -52,20 +99,10 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
       entities: i.entities,
       last_sync: i.lastSync,
     })),
-    activity: act.map((a) => ({
-      id: a.id,
-      ts: a.ts,
-      actor: a.actor,
-      actor_name: a.actorName,
-      type: a.type,
-      expert_id: a.expertId,
-      status: a.status,
-      summary: a.summary,
-      sources: a.sources,
-      duration_ms: a.durationMs,
-      hasSnapshot: !!(a.snapshot as { entries?: unknown[] } | null)?.entries?.length,
-      pending: (a.snapshot as { pending?: unknown } | null)?.pending ?? null,
-    })),
+    activity: act.map(toActivityEvent),
+    // COUNT(*) and not `activity.length`: the page has to say how many events
+    // exist, not how many fit in the window.
+    activityTotal,
     invoices: invoices.map((i) => ({
       id: i.id,
       client: i.client,
@@ -76,6 +113,34 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
     campaigns: campaigns.map((c) => ({ id: c.id, name: c.name, status: c.status })),
   };
 });
+
+/**
+ * One page of the audit log, older than the workspace window. The page has to
+ * reach the oldest event —the revert buttons live on these rows— so it takes an
+ * offset instead of stopping at the first 300.
+ */
+export const getActivityPage = createServerFn({ method: "GET" })
+  .validator((d) =>
+    z
+      .object({
+        offset: z.number().int().min(0).max(1_000_000).default(0),
+        limit: z.number().int().min(1).max(ACTIVITY_PAGE_MAX).default(ACTIVITY_PAGE_MAX),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { orm } = await getDb();
+    const rows = readActivity(orm, data.offset, data.limit);
+    const total = countActivity(orm);
+    return {
+      activity: rows.map(toActivityEvent),
+      total,
+      offset: data.offset,
+      // Where the next page starts. Repeating the offset would rewrite the same
+      // rows forever when the request lands past the end of the log.
+      next_offset: data.offset + rows.length,
+    };
+  });
 
 export type WorkspaceData = Awaited<ReturnType<typeof getWorkspace>>;
 

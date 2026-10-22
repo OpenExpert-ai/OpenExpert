@@ -61,6 +61,11 @@ configuration.
 | `duration_ms` | INTEGER     | Measured duration in ms, or null when the action was not timed |
 | `snapshot`    | TEXT (JSON) | `{ entries }` (for revert) or `{ pending }`                    |
 
+The log is not served in one piece: `getWorkspace` returns the 300 most recent events plus the real
+total (`activityTotal`, a `COUNT(*)`), and `getActivityPage` pages backwards with `offset`, so the
+oldest event —and its snapshot, which is what the revert button needs— stays reachable from the
+panel. The cut used to be silent: the screen printed the size of the window as if it were the total.
+
 ### `chat_messages` — conversations
 
 | Column            | Type        | Notes                         |

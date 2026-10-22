@@ -229,7 +229,7 @@ export const en: Record<string, string> = {
   "Todos los tipos": "All types",
   "Todos los Experts": "All Experts",
   "Todos los estados": "All statuses",
-  "{a} / {b} eventos": "{a} / {b} events",
+  "{a} de {b} eventos": "{a} of {b} events",
   "fuentes:": "sources:",
   Aprobar: "Approve",
   Rechazar: "Reject",
@@ -555,6 +555,9 @@ export const en: Record<string, string> = {
   Abrir: "Open",
   "Buscar en el registro…": "Search the log…",
   "Cargar más": "Load more",
+  "Se listan los {n} eventos más recientes de {total}. Los anteriores se cargan con «Cargar más».":
+    "Showing the {n} most recent events out of {total}. Load the older ones with “Load more”.",
+  "No se pudieron cargar los eventos anteriores": "Couldn't load the older events",
   "No se encontraron eventos": "No events found",
   "No hay eventos todavía.": "No events yet.",
   "Sin resultados para «{q}».": "No results for “{q}”.",
