@@ -30,7 +30,9 @@ execution**: AI proposes, a person approves.
 - **Chat with real data** through tools that query the local database. It does
   not invent numbers.
 - **Governance:** an activity log of every relevant event and revert for
-  revertible changes.
+  revertible changes. The log is read in windows: the screen asks for the
+  window it shows, and the count comes from a real `COUNT(*)`, so the number
+  on screen is the number of events there are.
 - **Sources** (optional): Google Drive, local folders and Notion — read, create
   and edit files and documents from the chat.
 - **Configuration panel** (`/settings`): model & AI, chat & agents, data and

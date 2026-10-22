@@ -75,11 +75,32 @@ function loadSecretsIntoEnv(): void {
 applyFileConfigToEnv();
 loadSecretsIntoEnv();
 
+/**
+ * Registers the SQL helpers the application uses.
+ *
+ * `casefold` is SQLite's `lower()` done properly: SQLite only folds ASCII, so
+ * `lower('CONFIGURACIÓN')` leaves the accented letters alone and a search for
+ * "configuración" would miss the rows stored as "Configuración". The
+ * JavaScript `toLowerCase()` folds the whole Unicode range, which is what the
+ * search box of the activity log needs.
+ */
+function registerSqlHelpers(raw: Database): void {
+  raw.create_function("casefold", (value: unknown) =>
+    value == null ? null : String(value).toLowerCase(),
+  );
+}
+
 /** Write the in-memory database to disk atomically (tmp + rename). */
 function writeDbFile(file: string, raw: Database): void {
   const tmp = `${file}.tmp`;
   writeFileSync(tmp, Buffer.from(raw.export()));
   renameSync(tmp, file);
+  // `export()` drops the custom functions it does not know about: sql.js
+  // serializes the database and forgets everything that was registered in
+  // JavaScript. Without this, the first write after the boot left the
+  // database without `casefold` and every search after it failed with "no
+  // such function".
+  registerSqlHelpers(raw);
 }
 
 /**
@@ -108,6 +129,7 @@ async function init(): Promise<Handle> {
   const file = dbPath();
   mkdirSync(dirname(file), { recursive: true });
   const raw = existsSync(file) ? new SQL.Database(readFileSync(file)) : new SQL.Database();
+  registerSqlHelpers(raw);
   raw.exec(schemaSql);
   applyMigrations(raw);
   const orm = drizzle(raw, { schema });

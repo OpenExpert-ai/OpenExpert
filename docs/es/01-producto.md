@@ -30,7 +30,9 @@ pero **no la ejecución**: la IA propone y la persona aprueba.
 - **Chat con datos reales** mediante herramientas que consultan la base de datos
   local. No inventa cifras.
 - **Gobierno:** registro de actividad de cada evento relevante y reversión de los
-  cambios reversibles.
+  cambios reversibles. El registro se lee en ventanas: la pantalla pide la
+  ventana que enseña y el total sale de un `COUNT(*)` real, no del tamaño de la
+  ventana, así que el número que se ve es el número de eventos que hay.
 - **Fuentes** (opcional): Google Drive, carpetas locales y Notion — leer, crear
   y editar archivos y documentos desde el chat.
 - **Panel de configuración** (`/settings`): modelo e IA, chat y agentes, datos y

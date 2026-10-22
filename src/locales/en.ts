@@ -230,6 +230,8 @@ export const en: Record<string, string> = {
   "Todos los Experts": "All Experts",
   "Todos los estados": "All statuses",
   "{a} / {b} eventos": "{a} / {b} events",
+  "{a} de {b} eventos": "{a} of {b} events",
+  "Cargando el registro…": "Loading the log…",
   "fuentes:": "sources:",
   Aprobar: "Approve",
   Rechazar: "Reject",

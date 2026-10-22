@@ -212,6 +212,248 @@ describe("getWorkspace", () => {
       pending: null,
     });
   });
+
+  it("dice cuántos eventos hay en el registro, no cuántos caben en la ventana", async () => {
+    // El número que la pantalla pintaba era `ws.activity.length`, y eso era el
+    // tamaño de la ventana de 300 eventos, no el tamaño del registro: con 305
+    // filas la pantalla decía «300 eventos» y no había manera de llegar a las
+    // cinco últimas.
+    await seedActivity(305);
+    const ws = (await fns.getWorkspace()) as {
+      activity: unknown[];
+      activity_total: number;
+    };
+    expect(ws.activity).toHaveLength(300);
+    expect(ws.activity_total).toBe(305);
+  });
+});
+
+/* ----------------------------- listActivity ----------------------------- */
+
+/**
+ * Siembra `n` eventos: el más reciente es el último, así que el orden por
+ * fecha es el orden en que se insertaron. Los ids son los del repro de la
+ * tarea (`evt_000`…`evt_304`).
+ */
+async function seedActivity(n: number) {
+  const { orm } = await db.getDb();
+  const base = Date.parse("2026-01-01T00:00:00.000Z");
+  for (let i = 0; i < n; i++) {
+    orm
+      .insert(schema.activity)
+      .values({
+        id: `evt_${String(i).padStart(3, "0")}`,
+        ts: new Date(base + i * 1000).toISOString(),
+        actor: "human",
+        actorName: "Propietario local",
+        type: "Configuración",
+        expertId: "general",
+        status: "ok",
+        summary: `Evento ${i}`,
+        sources: [],
+      })
+      .run();
+  }
+  await db.persist();
+}
+
+describe("listActivity", () => {
+  it("devuelve el total real y una ventana, no la lista entera", async () => {
+    await seedActivity(305);
+    const page = (await fns.listActivity({ data: { limit: 40 } })) as {
+      events: { id: string }[];
+      total: number;
+      returned: number;
+      hasMore: boolean;
+    };
+    expect(page.total).toBe(305);
+    expect(page.returned).toBe(40);
+    expect(page.hasMore).toBe(true);
+    // Los más recientes primero.
+    expect(page.events[0]?.id).toBe("evt_304");
+  });
+
+  it("llega al evento más antiguo con el desplazamiento", async () => {
+    // El repro de la tarea: con 305 filas, `evt_000` no llegaba. La ventana
+    // camina con `offset`, así que el evento más antiguo del registro es
+    // alcanzable —y con él, su snapshot, que es lo que la reversión necesita.
+    await seedActivity(305);
+    const page = (await fns.listActivity({ data: { offset: 300, limit: 40 } })) as {
+      events: { id: string }[];
+      total: number;
+      hasMore: boolean;
+      nextOffset: number | null;
+    };
+    expect(page.events.map((e) => e.id)).toContain("evt_000");
+    expect(page.total).toBe(305);
+    expect(page.hasMore).toBe(false);
+    // No hay ventana siguiente: el registro se ha terminado.
+    expect(page.nextOffset).toBeNull();
+  });
+
+  it("dice dónde empieza la ventana siguiente", async () => {
+    // La ventana que sigue empieza donde acabó la anterior, así que las
+    // ventanas tiled el registro sin repetir ni saltarse un evento.
+    await seedActivity(305);
+    const first = (await fns.listActivity({ data: { limit: 40 } })) as {
+      events: { id: string }[];
+      nextOffset: number | null;
+    };
+    expect(first.nextOffset).toBe(40);
+    const second = (await fns.listActivity({ data: { offset: 40, limit: 40 } })) as {
+      events: { id: string }[];
+      nextOffset: number | null;
+    };
+    expect(second.events[0]?.id).toBe("evt_264");
+    expect(second.nextOffset).toBe(80);
+  });
+
+  it("filtra por actor, tipo, estado y Experto, y el total cuenta lo filtrado", async () => {
+    const { orm } = await db.getDb();
+    const rows = [
+      { id: "evt-a", actor: "human", type: "Configuración", status: "ok", expertId: "general" },
+      { id: "evt-b", actor: "agent", type: "Consulta", status: "ok", expertId: "ventas" },
+      { id: "evt-c", actor: "agent", type: "Consulta", status: "failed", expertId: "ventas" },
+    ];
+    for (const r of rows) {
+      orm
+        .insert(schema.activity)
+        .values({
+          id: r.id,
+          ts: "2026-01-01T00:00:00.000Z",
+          actor: r.actor,
+          actorName: "Propietario local",
+          type: r.type,
+          expertId: r.expertId,
+          status: r.status,
+          summary: r.id,
+          sources: [],
+        })
+        .run();
+    }
+    await db.persist();
+
+    const agents = (await fns.listActivity({ data: { actor: "agent" } })) as {
+      events: { id: string }[];
+      total: number;
+    };
+    expect(agents.total).toBe(2);
+    expect(agents.events.map((e) => e.id).sort()).toEqual(["evt-b", "evt-c"]);
+
+    const failed = (await fns.listActivity({ data: { status: "failed" } })) as {
+      events: { id: string }[];
+      total: number;
+    };
+    expect(failed.total).toBe(1);
+    expect(failed.events[0]?.id).toBe("evt-c");
+
+    const ventas = (await fns.listActivity({ data: { expertId: "ventas" } })) as {
+      total: number;
+    };
+    expect(ventas.total).toBe(2);
+  });
+
+  it("busca en el resumen, el tipo, el actor y el id, sin distinguir mayúsculas", async () => {
+    const { orm } = await db.getDb();
+    orm
+      .insert(schema.activity)
+      .values({
+        id: "evt-busca",
+        ts: "2026-01-01T00:00:00.000Z",
+        actor: "human",
+        actorName: "Propietario local",
+        type: "Configuración",
+        expertId: "general",
+        status: "ok",
+        summary: "Creado Experto «Operaciones»",
+        sources: [],
+      })
+      .run();
+    await db.persist();
+
+    // La búsqueda ignora mayúsculas y acentos: el tipo se guarda como
+    // «Configuración» y se busca como «configuración».
+    for (const term of [
+      "operaciones",
+      "OPERACIONES",
+      "configuración",
+      "CONFIGURACIÓN",
+      "evt-busca",
+    ]) {
+      const found = (await fns.listActivity({ data: { q: term } })) as {
+        events: { id: string }[];
+        total: number;
+      };
+      expect(found.total, `la búsqueda «${term}» debe encontrar el evento`).toBe(1);
+      expect(found.events[0]?.id).toBe("evt-busca");
+    }
+  });
+
+  it("trata el término de búsqueda de forma literal: el % no es un comodín", async () => {
+    const { orm } = await db.getDb();
+    for (const [id, summary] of [
+      ["evt-pct", "Descuento del 100% aplicado"],
+      ["evt-otro", "Descuento del 1000 aplicado"],
+    ] as const) {
+      orm
+        .insert(schema.activity)
+        .values({
+          id,
+          ts: "2026-01-01T00:00:00.000Z",
+          actor: "human",
+          actorName: "Propietario local",
+          type: "Configuración",
+          expertId: "general",
+          status: "ok",
+          summary,
+          sources: [],
+        })
+        .run();
+    }
+    await db.persist();
+
+    const found = (await fns.listActivity({ data: { q: "100%" } })) as {
+      events: { id: string }[];
+      total: number;
+    };
+    expect(found.total).toBe(1);
+    expect(found.events[0]?.id).toBe("evt-pct");
+  });
+
+  it("no enseña como decidible un pending que el servidor no sabe ejecutar", async () => {
+    // Un snapshot escrito a mano (o por una versión vieja) puede llevar un
+    // `pending` que no es ninguna de las dos acciones que `decideAction`
+    // ejecuta. Mostrarlo con los botones invitaría a aprobar algo que va a
+    // fallar, así que la pantalla no lo enseña como decisión.
+    const { orm } = await db.getDb();
+    orm
+      .insert(schema.activity)
+      .values({
+        id: "evt-basura",
+        ts: "2026-01-01T00:00:00.000Z",
+        actor: "agent",
+        actorName: "Asistente",
+        type: "Cobro",
+        expertId: "general",
+        status: "pending",
+        summary: "Algo raro",
+        sources: [],
+        snapshot: { pending: { kind: "borrar_todo" } } as never,
+      })
+      .run();
+    await db.persist();
+
+    const page = (await fns.listActivity({ data: {} })) as {
+      events: { id: string; pending: unknown }[];
+    };
+    expect(page.events.find((e) => e.id === "evt-basura")?.pending).toBeNull();
+  });
+
+  it("rechaza un desplazamiento o un límite que no tienen sentido", async () => {
+    await expect(fns.listActivity({ data: { offset: -1 } })).rejects.toThrow();
+    await expect(fns.listActivity({ data: { limit: 0 } })).rejects.toThrow();
+    await expect(fns.listActivity({ data: { limit: 1000 } })).rejects.toThrow();
+  });
 });
 
 /* ------------------------------- Experts -------------------------------- */

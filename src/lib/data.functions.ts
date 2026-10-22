@@ -4,10 +4,12 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
 import { EXPERT_DOMAINS } from "./domains";
+import { ACTIVITY_PAGE_SIZE } from "./activity-page";
+import { queryActivity, type ActivityFilter } from "./activity-query";
 import { collectModelReplies, firstInjection, type GateMessage } from "@/lib/ai/injection";
 import { settleHistory } from "@/lib/ai/approval-history";
 import { chatSettings } from "@/lib/config.server";
@@ -30,6 +32,10 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
   const act = orm.select().from(schema.activity).orderBy(desc(schema.activity.ts)).limit(300).all();
   const invoices = orm.select().from(schema.invoices).all();
   const campaigns = orm.select().from(schema.campaigns).all();
+  // The window above is a window, not the log: the screen that shows it needs
+  // to know how many events there really are, and the events older than the
+  // window are reached through `listActivity`, which pages towards them.
+  const activityTotal = orm.select({ n: count() }).from(schema.activity).all()[0]?.n ?? 0;
 
   return {
     me: {
@@ -66,6 +72,9 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
       hasSnapshot: !!(a.snapshot as { entries?: unknown[] } | null)?.entries?.length,
       pending: (a.snapshot as { pending?: unknown } | null)?.pending ?? null,
     })),
+    // How many events the log holds, from a real COUNT(*): the number the
+    // screen shows next to the list is this one, not the size of the window.
+    activity_total: activityTotal,
     invoices: invoices.map((i) => ({
       id: i.id,
       client: i.client,
@@ -78,6 +87,45 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export type WorkspaceData = Awaited<ReturnType<typeof getWorkspace>>;
+
+/**
+ * A window of the activity log.
+ *
+ * The screen used to receive the 300 most recent events and present that
+ * number as the total of the log, and the events older than the window could
+ * not be reached at all — not to be read, and not to be reverted, which is
+ * what the screen promises ("reversión por snapshots"). This one pages
+ * through the whole log: `offset` walks the window towards the older events
+ * and `total` says how many there really are.
+ */
+export const listActivity = createServerFn({ method: "GET" })
+  .validator((d) =>
+    z
+      .object({
+        actor: z.string().max(20).optional(),
+        type: z.string().max(60).optional(),
+        expertId: z.string().max(80).optional(),
+        status: z.string().max(20).optional(),
+        q: z.string().max(200).optional(),
+        offset: z.number().int().min(0).max(1_000_000).optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+      })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { orm } = await getDb();
+    // The filter is built field by field: a filter that was not set is not
+    // the same as one that was set to nothing.
+    const filter: ActivityFilter = {};
+    if (data.actor) filter.actor = data.actor;
+    if (data.type) filter.type = data.type;
+    if (data.expertId) filter.expertId = data.expertId;
+    if (data.status) filter.status = data.status;
+    if (data.q) filter.q = data.q;
+    return queryActivity(orm, filter, data.offset ?? 0, data.limit ?? ACTIVITY_PAGE_SIZE);
+  });
+
+export type ActivityPageData = Awaited<ReturnType<typeof listActivity>>;
 
 /* ------------------------------ Experts ------------------------------ */
 

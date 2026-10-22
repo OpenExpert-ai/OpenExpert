@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 import { createFileRoute } from "@tanstack/react-router";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { Bot, User, Undo2, Check, X, Search, ScrollText } from "lucide-react";
 import { PageHeader, inputCls } from "@/components/AppShell";
 import { ActivityEventMeta } from "@/components/activity/ActivityEventMeta";
 import { useAct, useMe, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
-import { decideAction, revertEvent } from "@/lib/data.functions";
+import { decideAction, listActivity, revertEvent } from "@/lib/data.functions";
+import { ACTIVITY_PAGE_SIZE } from "@/lib/activity-page";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
+import { Spinner } from "@/components/ui/spinner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/activity")({
       { title: "Registro de Actividad — OpenExpert" },
       {
         name: "description",
-        content: "Auditoría completa de acciones humanas y de agentes con reversión por snapshots.",
+        content: "Auditoría de acciones humanas y de agentes con reversión por snapshots.",
       },
       { property: "og:title", content: "Registro de Actividad — OpenExpert" },
       { property: "og:description", content: "Trazabilidad y reversión de cada acción." },
@@ -45,7 +49,6 @@ const statusCls: Record<string, string> = {
 };
 
 const STATUSES = ["ok", "pending", "reverted", "denied", "failed"] as const;
-const PAGE = 40;
 
 function ActivityPage() {
   const { data: ws } = useWorkspace();
@@ -58,22 +61,41 @@ function ActivityPage() {
   const [expertFilter, setExpertFilter] = useState("all");
   const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
-  const [limit, setLimit] = useState(PAGE);
   const [toRevert, setToRevert] = useState<string | null>(null);
+  // The log is read in windows, and the window that comes next starts where
+  // the last one ended. The screen used to slice the 300 events the workspace
+  // carried: the events older than those 300 could not be reached at all — not
+  // to be read, and not to be reverted, which is what the screen promises.
+  const fetchActivity = useServerFn(listActivity);
   const types = useMemo(() => [...new Set(ws?.activity.map((a) => a.type) ?? [])], [ws]);
+
+  const log = useInfiniteQuery({
+    queryKey: ["activity", actor, type, expertFilter, status, q],
+    queryFn: ({ pageParam }) =>
+      fetchActivity({
+        data: {
+          actor: actor === "all" ? undefined : actor,
+          type: type === "all" ? undefined : type,
+          expertId: expertFilter === "all" ? undefined : expertFilter,
+          status: status === "all" ? undefined : status,
+          q: q.trim() === "" ? undefined : q.trim(),
+          offset: pageParam,
+          limit: ACTIVITY_PAGE_SIZE,
+        },
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.nextOffset,
+  });
+
   if (!ws || !me) return null;
 
-  const needle = q.trim().toLowerCase();
-  const rows = ws.activity.filter(
-    (a) =>
-      (actor === "all" || a.actor === actor) &&
-      (type === "all" || a.type === type) &&
-      (expertFilter === "all" || a.expert_id === expertFilter) &&
-      (status === "all" || a.status === status) &&
-      (needle === "" ||
-        `${a.summary} ${a.type} ${a.actor_name} ${a.id}`.toLowerCase().includes(needle)),
-  );
-  const visible = rows.slice(0, limit);
+  const pages = log.data?.pages ?? [];
+  const rows = pages.flatMap((p) => p.events);
+  // The count that is shown is the one the server counted with a real
+  // COUNT(*), not the size of the window: with 305 events in the log and 40 on
+  // screen it says «40 de 305», not «40 de 40».
+  const total = pages[0]?.total ?? 0;
+  const loading = pages.length === 0 && log.isLoading;
   const sel = inputCls + " w-auto py-1.5 text-xs";
   const canDecide = () => me.role === "ADMIN";
 
@@ -138,11 +160,11 @@ function ActivityPage() {
           ))}
         </select>
         <span className="ml-auto self-center font-mono text-[0.7rem] text-muted-foreground">
-          {t("{a} / {b} eventos", { a: rows.length, b: ws.activity.length })}
+          {t("{a} de {b} eventos", { a: rows.length, b: total })}
         </span>
       </div>
       <div className="divide-y divide-border">
-        {visible.map((a) => (
+        {rows.map((a) => (
           <div key={a.id} className="flex flex-wrap items-start gap-4 px-6 py-4 hover:bg-card/50">
             <div
               className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded border ${a.actor === "agent" ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}
@@ -204,22 +226,28 @@ function ActivityPage() {
             )}
           </div>
         ))}
-        {rows.length === 0 && (
+        {loading && (
+          <div className="flex items-center justify-center gap-2 px-6 py-16 font-mono text-xs text-muted-foreground">
+            <Spinner label={t("Cargando el registro…")} /> {t("Cargando el registro…")}
+          </div>
+        )}
+        {!loading && rows.length === 0 && (
           <Empty
             icon={ScrollText}
-            title={needle ? t("No se encontraron eventos") : t("No hay eventos todavía.")}
+            title={needleTitle(q, t)}
             description={
-              needle
-                ? t("Sin resultados para «{q}».", { q })
-                : t("Cuando converses con un Experto, aparecerá aquí.")
+              q.trim() === ""
+                ? t("Cuando converses con un Experto, aparecerá aquí.")
+                : t("Sin resultados para «{q}».", { q })
             }
           />
         )}
       </div>
-      {rows.length > visible.length && (
+      {log.hasNextPage && (
         <div className="flex justify-center border-t border-border px-6 py-4">
           <button
-            onClick={() => setLimit((n) => n + PAGE)}
+            onClick={() => void log.fetchNextPage()}
+            disabled={log.isFetchingNextPage}
             className={buttonVariants({ variant: "outline" })}
           >
             {t("Cargar más")}
@@ -250,4 +278,9 @@ function ActivityPage() {
       </AlertDialog>
     </div>
   );
+}
+
+/** The title of the empty state: it depends on whether there is a search term. */
+function needleTitle(q: string, t: (s: string) => string): string {
+  return q.trim() === "" ? t("No hay eventos todavía.") : t("No se encontraron eventos");
 }

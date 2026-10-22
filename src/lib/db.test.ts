@@ -51,6 +51,19 @@ describe("local SQLite database", () => {
     expect(indexes.some((row) => row.includes("activity_expert"))).toBe(true);
   });
 
+  it("keeps the SQL helpers registered after a write", async () => {
+    // `raw.export()` serializes the database and forgets the functions that
+    // were registered in JavaScript, so a write took them away with it. The
+    // search of the activity log failed with "no such function: casefold"
+    // from the first write onwards.
+    const { getDb, persist } = await import("./db.server");
+    const { raw } = await getDb();
+    await persist();
+    expect(raw.exec("select casefold('CONFIGURACIÓN') as c")[0]?.values[0]?.[0]).toBe(
+      "configuración",
+    );
+  });
+
   it("persists writes across calls", async () => {
     const { getDb, persist } = await import("./db.server");
     const schema = await import("../../drizzle/schema");

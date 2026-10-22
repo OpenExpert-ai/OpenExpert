@@ -53,6 +53,18 @@ disagree, the code is right and the docs are the bug.
   actions that are not timed. Do not fill it with a constant: a number nobody
   measured reads in the audit trail as a real one. The screen shows a dash
   (`formatDuration` in `src/lib/format.ts`) when there is none.
+- **The activity log is read in windows, and the count is a real count.** The
+  screen asks the server for the window it shows (`listActivity`), and the
+  number next to the list comes from a `COUNT(*)` with the same filters — not
+  from the size of the window. A number that says "300 events" when the log
+  holds 305 is a lie about an audit trail, and the events older than the
+  window must stay reachable: the screen promises the revert by snapshot, and
+  a snapshot the screen cannot show cannot be replayed from it. The window
+  walks the log with `offset` (`nextOffset` says where the next one starts),
+  and the search term is escaped so `LIKE` treats `%` and `_` literally.
+  `casefold` is a SQL helper registered in `db.server.ts` that folds the whole
+  Unicode range (SQLite's `lower()` only folds ASCII, so "Configuración"
+  would never match a search for "configuración").
 - A date stored as plain text (`invoices.due_date` is `2026-09-01`) names a
   **calendar day**, not an instant: `new Date` reads it as UTC midnight, which
   is the previous day in every timezone behind UTC. The days between two such
