@@ -446,4 +446,18 @@ describe("browseDirectory en una carpeta grande", () => {
     // Con las carpetas delante, la primera entrada es una carpeta.
     expect(view.entries[0]?.isDirectory).toBe(true);
   });
+
+  it("una carpeta que cabe entera no se marca como cortada", async () => {
+    const fs = await import("./local-fs.server");
+    const small = join(dir, "carpeta-pequena");
+    mkdirSync(join(small, "dentro"), { recursive: true });
+    writeFileSync(join(small, "uno.txt"), "x");
+
+    const view = fs.browseDirectory(small) as unknown as View;
+
+    // Sin corte, el aviso no se pinta: `total` es el recuento y nada falta.
+    expect(view.truncated).toBe(false);
+    expect(view.total).toBe(2);
+    expect(view.entries.map((e) => e.name)).toEqual(["dentro", "uno.txt"]);
+  });
 });

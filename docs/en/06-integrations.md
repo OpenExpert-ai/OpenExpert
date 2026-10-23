@@ -125,6 +125,11 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
   listing; `.git`, `node_modules`, dotfiles and secret files are skipped. The listing
   caps bound the walk, not the folder: when one of them cuts it short the answer says
   so (`truncated`) instead of passing the cap off as the number of files there.
+- The settings panel's folder navigator shows at most 2,000 entries per folder,
+  subfolders first, and says so when there are more: “Showing 2,000 of 2,120
+  entries”. The cut is taken **after** sorting, so the subfolders —the only thing
+  you can click to keep navigating— are never left out by the order in which the
+  system returns the directory.
 - Docker: the server sees the container filesystem, so mount the folder with
   `-v /host/folder:/data/folder`.
 

@@ -358,6 +358,7 @@ export const en: Record<string, string> = {
   Ir: "Go",
   Subir: "Up",
   "Sin subcarpetas": "No subfolders",
+  "Se muestran {shown} de {total} entradas": "Showing {shown} of {total} entries",
   "Añadiendo…": "Adding…",
   "Añadir esta carpeta": "Add this folder",
   "Solo se listan carpetas; no se lee ningún archivo al elegirlas.":
