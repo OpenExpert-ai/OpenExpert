@@ -439,20 +439,21 @@ describe("configuración avanzada", () => {
     const path = join(cwd, "openexpert.json");
     const before = readFileSync(path, "utf8");
     // Pegar el JSON a mano no puede saltarse los topes de la interfaz: `maxSteps` acaba en
-    // `stepCountIs` y cada paso es una llamada al proveedor.
+    // `stepCountIs` y cada paso es una llamada al proveedor. El rechazo nombra el campo con su
+    // ruta completa y el límite, que es lo que se lee en el toast del editor.
     await expect(
       fns.saveRawConfig({ data: { content: JSON.stringify({ chat: { maxSteps: 100_000 } }) } }),
-    ).rejects.toThrow(/maxSteps va de 1 a 200/);
+    ).rejects.toThrow(/^chat\.maxSteps: va de 1 a 200 pasos por consulta$/);
     await expect(
       fns.saveRawConfig({
         data: { content: JSON.stringify({ chat: { retentionDays: 999_999 } }) },
       }),
-    ).rejects.toThrow(/retentionDays va de 0 a 3650/);
+    ).rejects.toThrow(/^chat\.retentionDays: va de 0 a 3650 días$/);
     await expect(
       fns.saveRawConfig({
         data: { content: JSON.stringify({ ai: { maxOutputTokens: 100_000_000 } }) },
       }),
-    ).rejects.toThrow(/maxOutputTokens va de 1 a 200000/);
+    ).rejects.toThrow(/^ai\.maxOutputTokens: va de 1 a 200000 tokens$/);
     expect(readFileSync(path, "utf8")).toBe(before);
   });
 
@@ -672,5 +673,84 @@ describe("config.server y el fichero de secretos", () => {
     expect(cfg.readSecrets()).toEqual({ GOOGLE_API_KEY: "uno", ANTHROPIC_API_KEY: "dos" });
     cfg.writeSecret("GOOGLE_API_KEY", null);
     expect(cfg.readSecrets()).toEqual({ ANTHROPIC_API_KEY: "dos" });
+  });
+});
+
+describe("el error de configuración se lee como una frase", () => {
+  // El usuario ve el mensaje de estas dos puertas en un toast, así que el
+  // mensaje es la interfaz: el volcado JSON de Zod (`origin`, `code`,
+  // `maximum`, `inclusive`, `path` en inglés) no es una frase que se pueda
+  // arreglar. `describeConfigProblems` ya lo hace bien en la restauración de
+  // una copia, y las tres puertas comparten esquema; aquí se exige que digan
+  // lo mismo y con la ruta completa del campo.
+  const panelError = async (data: unknown): Promise<Error> => {
+    try {
+      await fns.updateChatSettings({ data });
+    } catch (e) {
+      return e as Error;
+    }
+    throw new Error("el panel aceptó un valor que debía rechazar");
+  };
+
+  const rawEditorError = async (content: string): Promise<Error> => {
+    try {
+      await fns.saveRawConfig({ data: { content } });
+    } catch (e) {
+      return e as Error;
+    }
+    throw new Error("el editor en crudo aceptó un valor que debía rechazar");
+  };
+
+  it("el panel de chat dice el campo y el límite, no el volcado de Zod", async () => {
+    const error = await panelError({
+      maxSteps: 100_000,
+      injectionGuard: true,
+      visionPdf: false,
+      injectionExtraPatterns: [],
+      retentionDays: 30,
+    });
+    expect(error.message).toBe("chat.maxSteps: va de 1 a 200 pasos por consulta");
+    expect(error.message).not.toContain('"origin"');
+    expect(error.message).not.toContain('"code":');
+    expect(error.message).not.toContain('"maximum"');
+    expect(error.message).not.toContain('"inclusive"');
+  });
+
+  it("el editor en crudo dice lo mismo que el panel para el mismo problema", async () => {
+    const error = await rawEditorError(JSON.stringify({ chat: { maxSteps: 100_000 } }));
+    expect(error.message).toBe("chat.maxSteps: va de 1 a 200 pasos por consulta");
+    expect(error.message).not.toContain('"origin"');
+    expect(error.message).not.toContain('"code":');
+    expect(error.message).not.toContain('"maximum"');
+    expect(error.message).not.toContain('"inclusive"');
+  });
+
+  it("las tres puertas dicen lo mismo, y la restauración no cambia", async () => {
+    const panel = await panelError({
+      maxSteps: 40,
+      injectionGuard: true,
+      visionPdf: false,
+      injectionExtraPatterns: [],
+      retentionDays: 9_999,
+    });
+    const raw = await rawEditorError(JSON.stringify({ chat: { retentionDays: 9_999 } }));
+    const restored = cfg.checkFileConfig({ chat: { retentionDays: 9_999 } });
+    expect(restored.ok).toBe(false);
+    if (restored.ok) return;
+    expect(restored.problems).toEqual(["chat.retentionDays: va de 0 a 3650 días"]);
+    expect(panel.message).toBe(restored.problems[0]);
+    expect(raw.message).toBe(restored.problems[0]);
+  });
+
+  it("una lista anuncia su tope con la ruta del elemento, no con el nombre suelto", async () => {
+    const error = await rawEditorError(
+      JSON.stringify({ chat: { maxSteps: 100_000, retentionDays: 999_999 } }),
+    );
+    expect(error.message).toBe(
+      [
+        "chat.maxSteps: va de 1 a 200 pasos por consulta",
+        "chat.retentionDays: va de 0 a 3650 días",
+      ].join("\n"),
+    );
   });
 });
