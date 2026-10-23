@@ -47,6 +47,24 @@ describe("pdfTextWithVision", () => {
     expect(failed.note).toContain("429");
   });
 
+  it("dice que la transcripción se ha recortado cuando el documento pasa del tope", async () => {
+    // 200.000 es `MAX_TEXT` en `vision-pdf.server.ts`. Un escaneo largo lo rebasa, y lo que queda
+    // fuera no se puede volver a pedir: `read_local_file` devuelve la transcripción ventaneada, así
+    // que el modelo tiene que saber que el final del documento no está en lo que lee.
+    generate.mockResolvedValue({ text: "x".repeat(200_001) });
+    const r = await pdfTextWithVision(new Uint8Array([1, 2, 3]));
+    expect(r.text).toHaveLength(200_000);
+    expect(r.note).toMatch(/200\.000/);
+    expect(r.note).toMatch(/recort|cort|trunc/i);
+  });
+
+  it("no inventa el aviso cuando lo transcrito cabe entero en el tope", async () => {
+    generate.mockResolvedValue({ text: "y".repeat(200_000) });
+    const r = await pdfTextWithVision(new Uint8Array([1, 2, 3]));
+    expect(r.text).toHaveLength(200_000);
+    expect(r.note).toBeUndefined();
+  });
+
   it("reports availability as a shape, not a throw", () => {
     expect(visionAvailable().ok).toBe(true);
     provider.current = "openai-compatible";
