@@ -127,7 +127,14 @@ absoluta. Las concesiones se guardan cifradas en
   `update_local_file`) requieren **aprobación humana**, igual que las de Drive.
 - Con límites: 25 MB por archivo, 200.000 caracteres devueltos, 5.000 archivos y
   profundidad 8 por listado; se omiten `.git`, `node_modules`, ficheros ocultos y
-  ficheros de secretos.
+  ficheros de secretos. Los límites del listado son del recorrido, no de la carpeta:
+  cuando se corta en ellos la respuesta lo dice (`truncated`), en vez de presentar el
+  tope como el número de archivos que hay.
+- El navegador de carpetas del panel enseña como mucho 2.000 entradas por carpeta,
+  con las subcarpetas delante, y cuando hay más lo dice: «Se muestran 2.000 de
+  2.120 entradas». El corte se hace **después** de ordenar, así que las
+  subcarpetas —lo único que se puede pulsar para seguir navegando— no se quedan
+  fuera por el orden en que el sistema devuelve el directorio.
 - Docker: el servidor ve el sistema de archivos del contenedor, así que hay que
   montar la carpeta con `-v /ruta/host:/data/ruta`.
 
@@ -139,8 +146,8 @@ absoluta. Las concesiones se guardan cifradas en
 | `read_drive_file`                                                                              | Lee solo dentro de las concesiones; lo devuelve por ventanas de líneas (`hasMore`/`nextOffset` y, si el corte cae en una línea, `nextCharOffset`) |
 | `create_drive_file`                                                                            | Crea un nuevo archivo propiedad de la app                                                                                                         |
 | `update_drive_file`                                                                            | Edita un archivo concedido o creado por la app                                                                                                    |
-| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas                                                                                                   |
-| `search_inside_files`                                                                          | Busca texto **dentro** del contenido, sin mayúsculas ni tildes                                                                                    |
+| `list_local_files` / `search_local_files`                                                      | Lista/busca en las carpetas locales autorizadas; dice cuántos hay de verdad (`total`) y si el recorrido se cortó (`truncated`)                    |
+| `search_inside_files`                                                                          | Busca texto **dentro** del contenido, sin mayúsculas ni tildes; si se para por el tope de archivos dice cuántos quedan sin revisar                |
 | `read_local_file`                                                                              | Lee un archivo local; lo devuelve por ventanas de líneas (una línea larga se continúa por carácter) y describe la tabla                           |
 | `create_local_file` / `update_local_file`                                                      | Escribe un archivo local, con aprobación humana                                                                                                   |
 | `run_python`                                                                                   | Ejecuta un script corto de Python para **cálculos**, en un directorio temporal                                                                    |

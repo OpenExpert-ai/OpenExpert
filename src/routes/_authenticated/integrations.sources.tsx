@@ -24,6 +24,7 @@ import {
 } from "@/lib/data.functions";
 import { useAct, useDriveStatus, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Modal, btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import {
@@ -62,7 +63,7 @@ function SourcesPage() {
   const drive = useDriveStatus();
   const nav = useNavigate();
   const search = useSearch({ strict: false }) as { gdrive?: string; notion?: string };
-  const { t } = useT();
+  const { t, locale } = useT();
   const qc = useQueryClient();
   const sync = useAct(syncIntegration, t("Google Drive sincronizado"));
   const disconnect = useAct(disconnectDrive, t("Google Drive desconectado"));
@@ -486,6 +487,14 @@ function SourcesPage() {
                   {browse.data.path}
                 </span>
               </div>
+              {browse.data.truncated ? (
+                <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
+                  {t("Se muestran {shown} de {total} entradas", {
+                    shown: formatNumber(browse.data.entries.length, locale),
+                    total: formatNumber(browse.data.total, locale),
+                  })}
+                </p>
+              ) : null}
               <ul className="max-h-64 overflow-y-auto">
                 {browse.data.entries.filter((e) => e.isDirectory).length === 0 && (
                   <li className="px-3 py-2 text-xs text-muted-foreground">

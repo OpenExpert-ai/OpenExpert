@@ -5,7 +5,7 @@
 
 import { eq } from "drizzle-orm";
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { listProviderModels } from "@openexpert/openexpert/provider-models";
 import {
   endpointOf,
@@ -24,8 +24,10 @@ import {
   aiUpdateSchema,
   chatSettings,
   chatUpdateSchema,
+  configProblemsMessage,
   diagnostics,
   envReport,
+  parseOrExplain,
   paths,
   providerProbeSchema,
   providerViews,
@@ -239,7 +241,12 @@ export const getChatSettings = createServerFn({ method: "GET" }).handler(async (
 );
 
 export const updateChatSettings = createServerFn({ method: "POST" })
-  .validator((d) => chatUpdateSchema.parse(d))
+  // El panel imprime el `message` del error en el toast (`settings.chat.tsx`),
+  // así que el rechazo tiene que ser una frase con la ruta del campo, no el
+  // volcado de Zod. El `chat` va como raíz porque este formulario valida esa
+  // rama del fichero y el mensaje tiene que nombrar el campo igual que la
+  // restauración de una copia (`chat.maxSteps`).
+  .validator((d) => parseOrExplain(chatUpdateSchema, d, "chat"))
   .handler(async ({ data }) => {
     writeFileConfig({ chat: data });
     await ee.logActivity({
@@ -268,7 +275,18 @@ export const saveRawConfig = createServerFn({ method: "POST" })
     try {
       writeRawConfig(data.content);
     } catch (e) {
-      throw new Error(e instanceof Error ? e.message : "JSON inválido", { cause: e });
+      // `writeRawConfig` valida con `fileConfigSchema`, y el `ZodError` trae el
+      // volcado JSON en su `message`. Este texto es el que el editor en crudo
+      // enseña en el toast (`settings.advanced.tsx`), así que se sustituye por
+      // las mismas frases que da la restauración de una copia.
+      throw new Error(
+        e instanceof ZodError
+          ? configProblemsMessage(e)
+          : e instanceof Error
+            ? e.message
+            : "JSON inválido",
+        { cause: e },
+      );
     }
     await ee.logActivity({
       actor: "human",

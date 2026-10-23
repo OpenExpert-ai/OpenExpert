@@ -53,6 +53,33 @@ export function isDeadlineAbort(reason: string | undefined): boolean {
 }
 
 /**
+ * What the audit summary adds when the deadline cut the turn short. Shorter
+ * than `deadlineMessage`, which is written for the reader of the broken turn;
+ * the log already says which query it was.
+ */
+export function deadlineNote(ms: number): string {
+  return `el proveedor no respondió en ${deadlineLabel(ms)} y el turno se ha cortado`;
+}
+
+/**
+ * How a turn ended, as the audit trail records it. `onEnd` of the UI stream
+ * fires the same way whatever happened to the turn, so the status has to be
+ * read from the two signals it does give: whether the stream aborted, and
+ * whether the request itself was cancelled — a Stop from the user aborts
+ * `request.signal`, while our deadline is the SDK's own timeout and leaves it
+ * untouched. A turn that ends any way other than completed is not a correct
+ * query, and the log said "ok" for all of them.
+ */
+export function turnStatus(s: {
+  aborted: boolean;
+  requestAborted: boolean;
+  failed: boolean;
+}): "ok" | "cancelled" | "failed" {
+  if (s.aborted) return s.requestAborted ? "cancelled" : "failed";
+  return s.failed ? "failed" : "ok";
+}
+
+/**
  * Rewrites the SDK's deadline abort as an error chunk. Any other abort (the
  * user pressing Stop) travels untouched: that is a cancellation, not a failure.
  */

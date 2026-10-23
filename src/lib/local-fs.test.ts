@@ -66,12 +66,30 @@ describe("resolveWithinRoots", () => {
 describe("listLocalFiles", () => {
   it("walks recursively but skips dotfiles, ignored dirs and symlink escapes", async () => {
     const fs = await import("./local-fs.server");
-    const names = fs.listLocalFiles([root]).map((f) => f.name);
+    const names = fs.listLocalFiles([root]).files.map((f) => f.name);
     expect(names).toContain("a.txt");
     expect(names).toContain("b.md");
     expect(names).not.toContain(".hidden");
     expect(names).not.toContain("x.js");
     expect(names).not.toContain("secret.txt");
+  });
+
+  it("says the walk was cut in the cap instead of passing it off as the folder size", async () => {
+    const fs = await import("./local-fs.server");
+    const capped = fs.listLocalFiles([root], { maxFiles: 2 });
+    expect(capped.files).toHaveLength(2);
+    expect(capped.truncated).toBe(true);
+
+    const whole = fs.listLocalFiles([root]);
+    expect(whole.truncated).toBe(false);
+    expect(whole.files.length).toBeGreaterThan(2);
+  });
+
+  it("counts the depth cap as a cut: the folders below it stay unvisited", async () => {
+    const fs = await import("./local-fs.server");
+    const shallow = fs.listLocalFiles([root], { maxDepth: 0 });
+    expect(shallow.files.map((f) => f.name)).not.toContain("b.md");
+    expect(shallow.truncated).toBe(true);
   });
 });
 
@@ -151,7 +169,7 @@ describe("browseDirectory", () => {
 describe("XDG trash", () => {
   it("does not walk the trash but walks other Trash folders", async () => {
     const fs = await import("./local-fs.server");
-    const names = fs.listLocalFiles([root]).map((f) => f.name);
+    const names = fs.listLocalFiles([root]).files.map((f) => f.name);
     expect(names).not.toContain("deleted.txt");
     expect(names).toContain("keep.txt");
   });
@@ -355,5 +373,91 @@ describe("searchLocalContent", () => {
     const capped = await fs.searchLocalContent([root], "needle", { maxHits: 3 });
     expect(capped.hits).toHaveLength(3);
     expect(capped.hasMore).toBe(true);
+  });
+
+  it("keeps «hay más coincidencias» for the hit cap and says what it skipped for the file cap", async () => {
+    const fs = await import("./local-fs.server");
+    const many = join(dir, "busqueda");
+    mkdirSync(many, { recursive: true });
+    writeFileSync(join(many, "a.txt"), Array.from({ length: 20 }, () => "needle").join("\n"));
+    const byHits = await fs.searchLocalContent([many], "needle", { maxHits: 3 });
+    expect(String(byHits.note)).toContain("Hay más coincidencias");
+    expect(byHits.unscanned).toBeUndefined();
+
+    for (let i = 0; i < 5; i += 1) writeFileSync(join(many, `vacio-${i}.txt`), "sin la palabra\n");
+    const byFiles = await fs.searchLocalContent([many], "ausente", { maxFiles: 2 });
+    expect(byFiles.scanned).toBe(2);
+    expect(byFiles.unscanned).toBe(4);
+    expect(byFiles.hasMore).toBe(true);
+    expect(String(byFiles.note)).toContain("quedan 4 sin revisar");
+    expect(String(byFiles.note)).not.toContain("Hay más coincidencias");
+  });
+});
+
+/**
+ * El selector del panel no puede callarse un corte. `browseDirectory` para a las
+ * `MAX_BROWSE_ENTRIES` (2 000) entradas y hasta ahora lo hacia **antes** de
+ * ordenar y sin decirlo: en una carpeta de 2 120 entradas el dialogo enseñaba
+ * 2 000 en el orden del `readdir` —que no pone las carpetas primero— y podia
+ * dejar fuera las subcarpetas, que son la unica forma de navegar a lo que no
+ * salio en la lista. El usuario no tenia ni el dato ni el aviso.
+ */
+describe("browseDirectory en una carpeta grande", () => {
+  let big: string;
+  const FOLDERS = 20;
+  const FILES = 2_100;
+
+  beforeAll(() => {
+    big = join(dir, "carpeta-grande");
+    mkdirSync(big, { recursive: true });
+    for (let i = 1; i <= FILES; i += 1) {
+      writeFileSync(join(big, `doc-${String(i).padStart(4, "0")}.txt`), "x");
+    }
+    for (let i = 0; i < FOLDERS; i += 1) {
+      mkdirSync(join(big, `sub-${String(i).padStart(2, "0")}`));
+    }
+  });
+
+  type View = {
+    entries: { name: string; isDirectory: boolean }[];
+    truncated?: boolean;
+    total?: number;
+  };
+
+  it("dice que la lista viene cortada y cuántas entradas hay de verdad", async () => {
+    const fs = await import("./local-fs.server");
+    const view = fs.browseDirectory(big) as unknown as View;
+
+    expect(view.entries).toHaveLength(2_000);
+    expect(view.truncated).toBe(true);
+    expect(view.total).toBe(FILES + FOLDERS);
+  });
+
+  it("ordena antes de cortar, así que no se come las subcarpetas", async () => {
+    const fs = await import("./local-fs.server");
+    const view = fs.browseDirectory(big) as unknown as View;
+    const names = view.entries.map((e) => e.name);
+
+    // Las carpetas son lo navegable: el corte no puede dejarlas fuera.
+    expect(names.filter((n) => n.startsWith("sub-"))).toHaveLength(FOLDERS);
+    // Y la lista es estable entre dos peticiones iguales.
+    const again = (fs.browseDirectory(big) as unknown as View).entries.map((e) => e.name);
+    expect(again).toEqual(names);
+    // Con las carpetas delante, la primera entrada es una carpeta.
+    expect(view.entries[0]?.isDirectory).toBe(true);
+  });
+
+  it("una carpeta que cabe entera no se marca como cortada", async () => {
+    const fs = await import("./local-fs.server");
+    const small = join(dir, "carpeta-pequena");
+    mkdirSync(join(small, "dentro"), { recursive: true });
+    writeFileSync(join(small, "uno.txt"), "x");
+
+    const view = fs.browseDirectory(small) as unknown as View;
+
+    // Sin corte, el aviso no se pinta: `total` es el recuento y nada falta.
+    expect(view.truncated).toBe(false);
+    expect(view.total).toBe(2);
+    expect(view.entries.map((e) => e.name)).toEqual(["dentro", "uno.txt"]);
   });
 });

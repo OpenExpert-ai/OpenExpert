@@ -55,7 +55,7 @@ configuration.
 | `actor_name`  | TEXT        | Display name                                                   |
 | `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, …     |
 | `expert_id`   | TEXT        | Affected Expert                                                |
-| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `reverted`                |
+| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `cancelled`, `reverted`   |
 | `summary`     | TEXT        | One-line description                                           |
 | `sources`     | TEXT (JSON) | Information sources                                            |
 | `duration_ms` | INTEGER     | Measured duration in ms, or null when the action was not timed |

@@ -122,7 +122,14 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
   (`create_local_file`, `update_local_file`) require **human approval**, like
   Drive writes.
 - Bounded: 25 MB per file, 200k characters returned, 5,000 files and depth 8 per
-  listing; `.git`, `node_modules`, dotfiles and secret files are skipped.
+  listing; `.git`, `node_modules`, dotfiles and secret files are skipped. The listing
+  caps bound the walk, not the folder: when one of them cuts it short the answer says
+  so (`truncated`) instead of passing the cap off as the number of files there.
+- The settings panel's folder navigator shows at most 2,000 entries per folder,
+  subfolders first, and says so when there are more: “Showing 2,000 of 2,120
+  entries”. The cut is taken **after** sorting, so the subfolders —the only thing
+  you can click to keep navigating— are never left out by the order in which the
+  system returns the directory.
 - Docker: the server sees the container filesystem, so mount the folder with
   `-v /host/folder:/data/folder`.
 
@@ -134,8 +141,8 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 | `read_drive_file`                                                                              | Reads only within the grants; returns it in windows of lines (`hasMore`/`nextOffset`, plus `nextCharOffset` when the cut falls inside a line) |
 | `create_drive_file`                                                                            | Creates a new file the app owns                                                                                                               |
 | `update_drive_file`                                                                            | Edits a granted file or a file the app created                                                                                                |
-| `list_local_files` / `search_local_files`                                                      | Lists/searches the granted local folders                                                                                                      |
-| `search_inside_files`                                                                          | Finds text **inside** file contents, ignoring case and accents                                                                                |
+| `list_local_files` / `search_local_files`                                                      | Lists/searches the granted local folders; reports how many there really are (`total`) and when the walk was cut (`truncated`)                 |
+| `search_inside_files`                                                                          | Finds text **inside** file contents, ignoring case and accents; when the file cap stops it, says how many files it left unread                |
 | `read_local_file`                                                                              | Reads a granted local file; returns it in line windows (a long line continues by character) and describes the table                           |
 | `create_local_file` / `update_local_file`                                                      | Writes a local file, with human approval                                                                                                      |
 | `run_python`                                                                                   | Runs a short Python script for **calculations**, in a temporary directory                                                                     |

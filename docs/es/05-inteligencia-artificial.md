@@ -18,7 +18,10 @@ Cada paso tiene un plazo máximo (4 minutos, o lo que fije
 proveedor que acepta la conexión y no contesta dejaba el turno transmitiendo hasta
 que el usuario pulsaba Stop. El plazo cubre también las herramientas de ese paso,
 por eso es mayor que la más lenta (`run_python` corre hasta 120 s), y cuando vence
-el turno termina con un mensaje que lo explica en vez de pararse en silencio.
+el turno termina con un mensaje que lo explica en vez de pararse en silencio. El
+registro de actividad anota ese turno como `failed` y nombra el plazo en el resumen
+(solo un turno que contesta se anota `ok`), y el mensaje del asistente vacío no se
+guarda en el historial: un turno sin respuesta no deja burbuja.
 
 ## 2. Catálogo de herramientas
 

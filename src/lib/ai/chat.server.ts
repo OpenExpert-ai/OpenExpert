@@ -23,7 +23,7 @@ import {
   selectedProvider,
 } from "@/lib/engine/model-provider.server";
 import { collectModelReplies, firstInjection, messageText } from "@/lib/ai/injection";
-import { deadlineAsError, stepDeadlineMs } from "@/lib/ai/deadline";
+import { deadlineAsError, deadlineNote, stepDeadlineMs, turnStatus } from "@/lib/ai/deadline";
 import { settleHistory } from "@/lib/ai/approval-history";
 import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
 import { effectiveConfig } from "@/lib/config.server";
@@ -322,6 +322,10 @@ Formato (adáptalo a la pregunta):
   // also covers the tools of that step, so it is longer than `run_python`.
   const stepMs = stepDeadlineMs();
 
+  // The provider's own message, kept for the audit row: `onEnd` is not told
+  // why a turn failed, and the log used to say "ok" whatever had happened.
+  let providerError = "";
+
   const result = streamText({
     model,
     system: `${system}\nProveedor activo: ${modelLabel()}.`,
@@ -363,24 +367,43 @@ Formato (adáptalo a la pregunta):
           "",
         )
         .trim();
-      return provider || "Error al generar la respuesta.";
+      providerError = provider || "Error al generar la respuesta.";
+      return providerError;
     },
-    onEnd: async ({ responseMessage }) => {
+    onEnd: async ({ responseMessage, isAborted, outcome }) => {
+      // `onEnd` fires the same way for a turn that answered and for one the
+      // deadline cut, so the status is read from what the stream does report
+      // instead: an abort leaves `request.signal` alone when our deadline
+      // fires it, and aborted when the user pressed Stop.
+      const requestAborted = request.signal.aborted;
+      const status = turnStatus({
+        aborted: isAborted,
+        requestAborted,
+        failed: outcome.status === "failed",
+      });
+      const note =
+        status === "failed"
+          ? isAborted && !requestAborted
+            ? ` — ${deadlineNote(stepMs)}`
+            : ` — ${providerError.slice(0, 140) || "error del proveedor"}`
+          : status === "cancelled"
+            ? " — turno cancelado antes de terminar"
+            : "";
+      // An aborted turn leaves an `assistant` message with no parts, and an
+      // empty bubble in the history is not a failed turn: it is a turn that
+      // never happened. The user's message did happen and is still stored.
+      const replies = responseMessage.parts.length > 0 ? [responseMessage] : [];
       // On an approval continuation the last incoming message is the assistant
       // message (already persisted), so only store the new assistant response.
-      await save(
-        expertId,
-        last.role === "user" ? [last, responseMessage] : [responseMessage],
-        conversationId,
-      );
+      await save(expertId, last.role === "user" ? [last, ...replies] : replies, conversationId);
       await ee
         .logActivity({
           actor: "human",
           actor_name: OWNER.name,
           type: "Consulta",
           expert_id: expertId,
-          status: "ok",
-          summary: `Consulta: ${lastText.slice(0, 160)}`,
+          status,
+          summary: `Consulta: ${lastText.slice(0, 160)}${note}`,
           sources: [...used],
           duration_ms: Date.now() - startedAt,
         })

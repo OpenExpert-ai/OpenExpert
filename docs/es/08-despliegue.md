@@ -33,9 +33,11 @@ el de escucha) y responde 403 al resto.
 El comodín dice **dónde escuchar, no qué nombres atiende**: los nombres con los
 que vas a abrir la app — la IP de la LAN, o el dominio público si hay un proxy
 inverso delante — van en `OPENEXPERT_ALLOWED_ORIGINS`, separados por comas, con
-el puerto que lleve el `Host` (si no lo llevan, el de escucha). Sin esa lista el
-`Origin` que manda el navegador es un nombre desconocido y `POST /api/chat`
-responde 403: el chat no funciona.
+el puerto que lleve el `Host` (si no lo llevan, el de escucha). Sin esa lista,
+cualquier `Host` que no sea de bucle local se responde 403 en todas las rutas,
+los estáticos incluidos: la app no se abre por esa dirección. Y el `Origin` que
+manda el navegador es también un nombre desconocido, así que `POST /api/chat`
+contesta 403 aunque el `Host` esté en la lista.
 
 ```sh
 OPENEXPERT_HOST=0.0.0.0 OPENEXPERT_ALLOWED_ORIGINS=http://192.168.1.10:3000 \

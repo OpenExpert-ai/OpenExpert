@@ -9,7 +9,18 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    // The gate command is `npx vitest run`, and it has to run every test of the
+    // repo: the 14 files of `packages/openexpert/test` (config loader, provider
+    // catalogue, local server, CLI) used to be reached only by `npm test`, whose
+    // workspace chain appended them. A broken config loader could ship green
+    // because the gate never loaded it. src/puertas-cobertura.test.ts keeps this
+    // list and the files on disk in agreement.
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "packages/*/test/**/*.test.ts",
+      "packages/*/test/**/*.test.tsx",
+    ],
     environment: "node",
     coverage: {
       provider: "v8",
