@@ -7,6 +7,22 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### A local folder is not 5 000 files
+
+- **The walk cap no longer travels as the folder size.** `listLocalFiles` stops at 5 000 files and
+  8 levels deep — a guard, not a fact about the folder — and `list_local_files` was reporting
+  `total: 5000` for a folder with 20 000, so the model answered «there is no file that mentions
+  that» with the file inside the folder. The walk now returns `{ files, truncated }`, the tool sends
+  `truncated: true` and `scanned` when it stopped early (and keeps `total` only when it is a real
+  count), and its note names the cap.
+- **`search_local_files` counts every match, not the 200 it shows.** It used to filter and
+  `.slice(0, 200)` without a count, so 900 matches read as 200. Now it travels `total` and a note
+  with «200 de 250 coincidencias».
+- **`search_inside_files` tells the two reasons to stop apart.** Running out of hits means «there
+  are more matches»; running out of files means «there are files I did not read». It said the first
+  for both, so the model announced more matches when the rest were unopened files. Now the second
+  case says how many files are left unread (`unscanned`) and, if the walk itself was cut, says so.
+
 ### The wildcard says where to listen, not which names are served
 
 - **`OPENEXPERT_HOST=0.0.0.0` stops accepting any `Host`.** The name check had a
