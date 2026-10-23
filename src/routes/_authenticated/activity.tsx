@@ -8,6 +8,7 @@ import { PageHeader, inputCls } from "@/components/AppShell";
 import { ActivityEventMeta } from "@/components/activity/ActivityEventMeta";
 import { useAct, useMe, useWorkspace, type Workspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { pluralize } from "@/lib/translate";
 import { decideAction, getActivityPage, revertEvent } from "@/lib/data.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -58,7 +59,7 @@ type ActivityEvent = Workspace["activity"][number];
 export function ActivityPage() {
   const { data: ws } = useWorkspace();
   const me = useMe(ws);
-  const { t } = useT();
+  const { t, locale } = useT();
   const revert = useAct(revertEvent, t("Estado restaurado desde snapshot"));
   const decide = useAct(decideAction);
   const page = useServerFn(getActivityPage);
@@ -189,7 +190,10 @@ export function ActivityPage() {
           ))}
         </select>
         <span className="ml-auto self-center font-mono text-[0.7rem] text-muted-foreground">
-          {t("{a} de {b} eventos", { a: rows.length, b: total })}
+          {pluralize(locale, total, "{a} de {b} evento", "{a} de {b} eventos", {
+            a: rows.length,
+            b: total,
+          })}
         </span>
       </div>
       {hasOlder && (

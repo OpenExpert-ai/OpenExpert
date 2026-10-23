@@ -936,7 +936,7 @@ describe("disconnectDrive y syncIntegration", () => {
     });
     expect(ws.activity[0]).toMatchObject({
       type: "Integración",
-      summary: "Sincronizado Google Drive (1 archivos concedidos)",
+      summary: "Sincronizado Google Drive (1 archivo concedido)",
       sources: ["Google Drive"],
     });
   });

@@ -61,6 +61,20 @@ function literalKeys(): KeyAt[] {
           found.push({ key: first.text, where: where(node) });
         }
       }
+      // `pluralize(locale, n, "{n} mensaje", "{n} mensajes")`: las dos formas son
+      // claves del diccionario igual que las de `t()`. Sin esto, un texto nuevo
+      // con recuento se quedaría en español con la interfaz en inglés.
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === "pluralize"
+      ) {
+        for (const arg of node.arguments.slice(2, 4)) {
+          if (arg && (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg))) {
+            found.push({ key: arg.text, where: where(node) });
+          }
+        }
+      }
       ts.forEachChild(node, visit);
     };
     visit(ast);

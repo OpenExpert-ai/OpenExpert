@@ -16,6 +16,7 @@ import { Copy, ExternalLink, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import { SettingsCard as Card, SettingsField as Field } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
+import { pluralize } from "@/lib/translate";
 import { probePayload } from "@/lib/provider-probe";
 import type { ModelProviderId } from "@openexpert/openexpert/model-provider";
 import {
@@ -58,7 +59,7 @@ export function AiSettings() {
   const test = useServerFn(testProvider);
   const reveal = useServerFn(revealSecret);
   const qc = useQueryClient();
-  const { t } = useT();
+  const { t, locale } = useT();
 
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => get() });
 
@@ -165,9 +166,12 @@ export function AiSettings() {
       else if (!r.models.length) toast.info(t("El proveedor no devolvió modelos"));
       else {
         setListed(r.models);
-        toast.success(t("{n} modelos disponibles", { n: r.models.length }), {
-          description: t(SOURCE_HINT[r.source]),
-        });
+        toast.success(
+          pluralize(locale, r.models.length, "{n} modelo disponible", "{n} modelos disponibles"),
+          {
+            description: t(SOURCE_HINT[r.source]),
+          },
+        );
       }
     } finally {
       setBusy(null);
@@ -179,9 +183,17 @@ export function AiSettings() {
     try {
       const r = await test({ data: probe() });
       if (r.ok)
-        toast.success(t("Conexión correcta · {n} modelos", { n: r.count }), {
-          description: t(SOURCE_HINT[r.source]),
-        });
+        toast.success(
+          pluralize(
+            locale,
+            r.count,
+            "Conexión correcta · {n} modelo",
+            "Conexión correcta · {n} modelos",
+          ),
+          {
+            description: t(SOURCE_HINT[r.source]),
+          },
+        );
       else toast.error(r.error ?? t("No se pudo conectar"));
     } finally {
       setBusy(null);

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SettingsCard as Card } from "@/components/ui/settings";
 import { useT } from "@/lib/i18n";
+import { pluralize } from "@/lib/translate";
 import { formatBytes } from "@/lib/format";
 import {
   clearChatHistory,
@@ -65,7 +66,7 @@ function DataSettings() {
   const doVacuum = useServerFn(vacuumDb);
   const doReset = useServerFn(resetData);
   const qc = useQueryClient();
-  const { t } = useT();
+  const { t, locale } = useT();
   const { data } = useQuery({ queryKey: ["data-stats"], queryFn: () => get() });
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -111,7 +112,14 @@ function DataSettings() {
     setBusy("chat");
     try {
       const r = await doClearChat();
-      toast.success(t("Historial borrado ({n} mensajes)", { n: r.removed }));
+      toast.success(
+        pluralize(
+          locale,
+          r.removed,
+          "Historial borrado ({n} mensaje)",
+          "Historial borrado ({n} mensajes)",
+        ),
+      );
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);

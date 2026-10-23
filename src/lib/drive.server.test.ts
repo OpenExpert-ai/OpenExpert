@@ -320,8 +320,18 @@ describe("drive.server readFile windows", () => {
     const { readFile } = await import("./drive.server");
     const out = (await readFile("d1", ["d1"], { offset: 9 })) as unknown as WindowRead;
     expect(out.content).toBeNull();
-    expect(String(out.note)).toContain("2 línea(s)");
+    expect(String(out.note)).toContain("2 líneas");
+    expect(String(out.note)).not.toContain("línea(s)");
     expect(String(out.note)).toContain("9");
+  });
+
+  it("concuerda en singular cuando el documento tiene una sola línea", async () => {
+    stubDrive("solo esta");
+    const { readFile } = await import("./drive.server");
+    const out = (await readFile("d1", ["d1"], { offset: 9 })) as unknown as WindowRead;
+    expect(out.content).toBeNull();
+    expect(String(out.note)).toContain("1 línea:");
+    expect(String(out.note)).not.toContain("línea(s)");
   });
 
   it("walks a one-line document by character, since lines cannot continue it", async () => {

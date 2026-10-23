@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { pluralize } from "@/lib/translate";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -284,7 +285,8 @@ function ChatWindow({
                   >
                     <div className="truncate">{c.title || t("Conversación")}</div>
                     <div className="font-mono text-[0.7rem] opacity-70">
-                      {formatDateTime(c.updatedAt, locale)} · {t("{n} mensajes", { n: c.count })}
+                      {formatDateTime(c.updatedAt, locale)} ·{" "}
+                      {pluralize(locale, c.count, "{n} mensaje", "{n} mensajes")}
                     </div>
                   </button>
                   <button

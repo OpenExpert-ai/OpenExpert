@@ -73,6 +73,14 @@ con el parser de TypeScript cada `t("…")` literal de `src/` y falla cuando alg
 no tiene entrada, para que el hueco no vuelva sin que nadie lo note; las claves
 calculadas en tiempo de ejecución quedan fuera de esa comprobación.
 
+Un texto con recuento pasa por `pluralize(locale, n, singular, plural, params)` en
+`src/lib/translate.ts`, que elige la forma y después la traduce: `t()` interpola
+pero no pluraliza, así que un plural fijo decía «1 mensajes». Las dos formas son
+claves del diccionario y esa misma comprobación las recoge de cada llamada a
+`pluralize(...)`. Los textos de servidor que no llegan a la ventana (la actividad,
+las notas que recibe el modelo) usan `countPhrase(n, singular, plural)`, que no
+tiene diccionario detrás.
+
 La página de Fuentes de datos
 (`src/routes/_authenticated/integrations.sources.tsx`) tiene además su propia
 comprobación, `-integrations.sources.test.ts`: recorre el AST de la página y falla

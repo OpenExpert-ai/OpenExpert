@@ -23,6 +23,7 @@ import { homedir } from "node:os";
 import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { OFFICE_EXT, extractOfficeText, type SheetInfo } from "./office.server";
 import { takeWindow } from "./text-window";
+import { countPhrase } from "./translate";
 
 /** Names never listed or walked, to avoid leaking secrets and huge trees. */
 const IGNORED = new Set([
@@ -544,7 +545,7 @@ export async function readLocalFile(
       totalLines,
       offset,
       limit,
-      note: `El archivo tiene ${totalLines} línea(s): el offset ${offset} queda fuera del final. Usa un offset entre 1 y ${totalLines}.`,
+      note: `El archivo tiene ${countPhrase(totalLines, "línea", "líneas")}: el offset ${offset} queda fuera del final. Usa un offset entre 1 y ${totalLines}.`,
     };
   }
   // The window is bounded by lines **and** by characters, and where it ends is one cursor: the
@@ -662,7 +663,9 @@ export async function searchLocalContent(
     );
   } else if (unscanned > 0) {
     notes.push(
-      `Se han revisado ${scanned} de ${files.length} archivos: quedan ${unscanned} sin revisar. Acota la búsqueda a una subcarpeta o usa un término más concreto.`,
+      `Se han revisado ${scanned} de ${files.length} archivos: ${
+        unscanned === 1 ? "queda 1 sin revisar" : `quedan ${unscanned} sin revisar`
+      }. Acota la búsqueda a una subcarpeta o usa un término más concreto.`,
     );
   }
   if (walk.truncated) {

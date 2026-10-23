@@ -392,6 +392,18 @@ describe("searchLocalContent", () => {
     expect(String(byFiles.note)).toContain("quedan 4 sin revisar");
     expect(String(byFiles.note)).not.toContain("Hay más coincidencias");
   });
+
+  it("concuerda en singular cuando solo queda un archivo sin revisar", async () => {
+    const fs = await import("./local-fs.server");
+    const many = join(dir, "busqueda-singular");
+    mkdirSync(many, { recursive: true });
+    for (let i = 0; i < 3; i += 1) writeFileSync(join(many, `vacio-${i}.txt`), "sin la palabra\n");
+    const out = await fs.searchLocalContent([many], "ausente", { maxFiles: 2 });
+    expect(out.scanned).toBe(2);
+    expect(out.unscanned).toBe(1);
+    expect(String(out.note)).toContain("queda 1 sin revisar");
+    expect(String(out.note)).not.toContain("quedan 1 sin revisar");
+  });
 });
 
 /**

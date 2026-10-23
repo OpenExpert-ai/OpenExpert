@@ -24,6 +24,7 @@ import {
 } from "@/lib/data.functions";
 import { useAct, useDriveStatus, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { pluralize } from "@/lib/translate";
 import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Modal, btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
@@ -181,7 +182,9 @@ function SourcesPage() {
       await qc.invalidateQueries({ queryKey: ["drive-grants"] });
       await qc.invalidateQueries({ queryKey: ["drive-status"] });
       await qc.invalidateQueries({ queryKey: ["workspace"] });
-      toast.success(t("{n} archivo(s) añadido(s).", { n: outcome.files.length }));
+      toast.success(
+        pluralize(locale, outcome.files.length, "{n} archivo añadido.", "{n} archivos añadidos."),
+      );
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -218,7 +221,7 @@ function SourcesPage() {
                 />
                 {drive.data?.connected ? t("conectado") : t("desconectado")}
                 {granted.data?.files.length
-                  ? ` · ${t("{n} archivo(s) elegido(s)", { n: granted.data.files.length })}`
+                  ? ` · ${pluralize(locale, granted.data.files.length, "{n} archivo elegido", "{n} archivos elegidos")}`
                   : ""}
               </div>
             </div>
@@ -320,7 +323,12 @@ function SourcesPage() {
               <div className="font-medium">{t("Carpetas locales")}</div>
               <div className="mt-1 text-[0.7rem] text-muted-foreground">
                 {roots.data?.roots.length
-                  ? t("{n} carpeta(s) autorizada(s)", { n: roots.data.roots.length })
+                  ? pluralize(
+                      locale,
+                      roots.data.roots.length,
+                      "{n} carpeta autorizada",
+                      "{n} carpetas autorizadas",
+                    )
                   : t("Ninguna carpeta autorizada")}
               </div>
             </div>
