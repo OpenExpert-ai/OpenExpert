@@ -215,6 +215,7 @@ export async function campaignPerformance() {
     .sort((a, b) => b.spend7d - a.spend7d)
     .map((c) => {
       const cpa = c.conversions7d ? Number(c.spend7d) / c.conversions7d : null;
+      const cpaTarget = Number(c.cpaTarget);
       return {
         id: c.id,
         name: c.name,
@@ -222,9 +223,13 @@ export async function campaignPerformance() {
         status: c.status,
         spend7d: Number(c.spend7d),
         conversions7d: c.conversions7d,
-        cpa: cpa ? Math.round(cpa) : null,
-        cpaTarget: Number(c.cpaTarget),
-        overTargetPct: cpa ? Math.round((cpa / Number(c.cpaTarget) - 1) * 100) : null,
+        // A CPA of 0 € is a CPA: only "no conversions" leaves it without value.
+        cpa: cpa === null ? null : Math.round(cpa),
+        cpaTarget,
+        // cpa_target defaults to 0, which means "no goal declared": dividing by
+        // it yielded Infinity and the campaign counted as over target.
+        overTargetPct:
+          cpa === null || cpaTarget <= 0 ? null : Math.round((cpa / cpaTarget - 1) * 100),
         dailyBudget: Number(c.dailyBudget),
       };
     });
