@@ -115,11 +115,23 @@ export function rootInfo(path: string): { path: string; name: string } {
 
 /* ------------------------------ browsing ------------------------------- */
 
-/** Directory listing for the picker. No file contents, only names. */
+/**
+ * Directory listing for the picker. No file contents, only names.
+ *
+ * `entries` stops at `MAX_BROWSE_ENTRIES`, and the answer says so: `total` is
+ * what the folder really has and `truncated` is `true` when the list stops
+ * short. The cut is taken **after** sorting, because `readdirSync` returns
+ * neither folders first nor names in order: cutting there is not deterministic
+ * and can drop every subfolder, which is the only way to navigate to the rest.
+ */
 export function browseDirectory(path?: string | null): {
   path: string;
   parent: string | null;
   entries: DirEntry[];
+  /** Every entry the folder has (ignored ones aside), not just the returned ones. */
+  total: number;
+  /** `true` when `entries` stops at `MAX_BROWSE_ENTRIES` with entries left out. */
+  truncated: boolean;
 } {
   const target = resolve(path && path.trim() ? path.trim() : homedir());
   const real = safeRealpath(target);
@@ -141,13 +153,20 @@ export function browseDirectory(path?: string | null): {
       }
     }
     entries.push({ name: e.name, path: join(real, e.name), isDirectory });
-    if (entries.length >= MAX_BROWSE_ENTRIES) break;
   }
   entries.sort((a, b) =>
     a.isDirectory === b.isDirectory ? a.name.localeCompare(b.name) : a.isDirectory ? -1 : 1,
   );
+  const total = entries.length;
+  const truncated = total > MAX_BROWSE_ENTRIES;
   const parent = dirname(real);
-  return { path: real, parent: parent === real ? null : parent, entries };
+  return {
+    path: real,
+    parent: parent === real ? null : parent,
+    entries: truncated ? entries.slice(0, MAX_BROWSE_ENTRIES) : entries,
+    total,
+    truncated,
+  };
 }
 
 /* ------------------------------ listing -------------------------------- */

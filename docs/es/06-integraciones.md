@@ -130,6 +130,11 @@ absoluta. Las concesiones se guardan cifradas en
   ficheros de secretos. Los límites del listado son del recorrido, no de la carpeta:
   cuando se corta en ellos la respuesta lo dice (`truncated`), en vez de presentar el
   tope como el número de archivos que hay.
+- El navegador de carpetas del panel enseña como mucho 2.000 entradas por carpeta,
+  con las subcarpetas delante, y cuando hay más lo dice: «Se muestran 2.000 de
+  2.120 entradas». El corte se hace **después** de ordenar, así que las
+  subcarpetas —lo único que se puede pulsar para seguir navegando— no se quedan
+  fuera por el orden en que el sistema devuelve el directorio.
 - Docker: el servidor ve el sistema de archivos del contenedor, así que hay que
   montar la carpeta con `-v /ruta/host:/data/ruta`.
 
