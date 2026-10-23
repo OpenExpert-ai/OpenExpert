@@ -443,6 +443,48 @@ describe("Google Drive tools", () => {
     expect(String(out["note"])).toMatch(/No hay archivos/);
   });
 
+  it("search_drive says how many matches it left out instead of passing the cut as the list", async () => {
+    // 150 grants matching the query. The tool sliced at 100 and answered `{ files }` with no
+    // count, so the model read 100 as the complete list and replied that file 101 did not exist.
+    // The count is the piece that makes the page honest: `list_local_files` already sends
+    // `total` plus a note, and `read_drive_file` sends `hasMore`.
+    svc.loadGrantedFiles.mockReturnValue(
+      Array.from({ length: 150 }, (_, i) => ({
+        id: `f${i + 1}`,
+        name: `Informe ${String(i + 1).padStart(3, "0")} de marzo`,
+        mimeType: "application/pdf",
+      })),
+    );
+    const { tools } = await buildExpert([], ["gdrive"]);
+    const out = await exec(tools.search_drive)({ query: "informe" });
+
+    const files = out["files"] as { id: string }[];
+    // Whatever page size it keeps, the page is smaller than the matches and says so.
+    expect(files.length).toBeGreaterThan(0);
+    expect(files.length).toBeLessThan(150);
+    expect(out["total"]).toBe(150);
+    expect(out["hasMore"]).toBe(true);
+    const note = String(out["note"]);
+    expect(note).toContain("150");
+    expect(note).toContain(String(files.length));
+    // And the description tells the model the list can come cut, so it narrows the query.
+    expect(String(tools.search_drive.description)).toMatch(/total/i);
+  });
+
+  it("search_drive keeps quiet when every match fits", async () => {
+    svc.loadGrantedFiles.mockReturnValue([
+      { id: "f1", name: "Informe Q1", mimeType: "application/pdf" },
+      { id: "f2", name: "Informe Q2", mimeType: "application/pdf" },
+      { id: "f3", name: "Notas", mimeType: "text/plain" },
+    ]);
+    const { tools } = await buildExpert([], ["gdrive"]);
+    const out = await exec(tools.search_drive)({ query: "informe" });
+    expect(out["files"]).toHaveLength(2);
+    expect(out["total"]).toBe(2);
+    expect(out["hasMore"]).toBeUndefined();
+    expect(out["note"]).toBeUndefined();
+  });
+
   it("search_drive surfaces an unreadable-grants error", async () => {
     svc.loadGrantedFiles.mockImplementation(() => {
       throw new Error("No se pudo leer drive-grants.json");

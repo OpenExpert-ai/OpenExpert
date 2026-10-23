@@ -137,7 +137,7 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 
 | Tool                                                                                           | Behaviour                                                                                                                                     |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search_drive`                                                                                 | Searches the granted files only                                                                                                               |
+| `search_drive`                                                                                 | Searches the granted files only and reports how many match (`total`), even when it returns just the first 100 (`hasMore`)                     |
 | `read_drive_file`                                                                              | Reads only within the grants; returns it in windows of lines (`hasMore`/`nextOffset`, plus `nextCharOffset` when the cut falls inside a line) |
 | `create_drive_file`                                                                            | Creates a new file the app owns                                                                                                               |
 | `update_drive_file`                                                                            | Edits a granted file or a file the app created                                                                                                |
