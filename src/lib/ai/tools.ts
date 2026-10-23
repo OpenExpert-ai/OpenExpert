@@ -240,7 +240,10 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_drive: tool({
       description:
-        "Busca por nombre entre los archivos de Google Drive que el usuario eligió con el Picker. Devuelve [{id, name, mimeType}].",
+        "Busca por nombre entre los archivos de Google Drive que el usuario eligió con el Picker. " +
+        "Devuelve [{id, name, mimeType}] y `total` con cuántas coincidencias hay, aunque solo devuelva las primeras 100: " +
+        "si la respuesta trae `hasMore`, la lista viene cortada y hay que acotarla con un `query` más preciso. " +
+        "`total` es el número que se cita al usuario, nunca el de los archivos devueltos.",
       inputSchema: z.object({ query: z.string().nullish() }),
       execute: async ({ query }) => {
         if (!expert.sources.includes("gdrive")) return deny("con Google Drive");
@@ -249,15 +252,24 @@ export function createChatTools(ctx: ChatToolsContext) {
           const local = await import("../engine/local-secrets.server");
           const grants = local.loadGrantedFiles();
           const q = (query ?? "").trim().toLowerCase();
-          const files = grants
-            .filter((f) => !q || f.name.toLowerCase().includes(q))
-            .slice(0, 100)
+          // The grants are picked one by one, so a broad query («informe») can match more than
+          // fits. The cut used to travel as the list: the model read 100 entries, called them
+          // the answer and replied that file 101 did not exist.
+          const MAX_LISTED = 100;
+          const matched = grants.filter((f) => !q || f.name.toLowerCase().includes(q));
+          const files = matched
+            .slice(0, MAX_LISTED)
             .map((f) => ({ id: f.id, name: f.name, mimeType: f.mimeType }));
+          const note = !matched.length
+            ? "No hay archivos que coincidan entre los que elegiste con el Picker."
+            : matched.length > files.length
+              ? `Se listan ${files.length} de ${matched.length} coincidencias. Acota la búsqueda con un nombre más preciso.`
+              : undefined;
           return {
             files,
-            note: files.length
-              ? undefined
-              : "No hay archivos que coincidan entre los que elegiste con el Picker.",
+            total: matched.length,
+            ...(matched.length > files.length ? { hasMore: true } : {}),
+            ...(note ? { note } : {}),
           };
         } catch (e) {
           return { error: (e as Error).message };

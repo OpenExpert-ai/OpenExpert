@@ -7,6 +7,15 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### A Drive search is 100 files, not all of them
+
+- **`search_drive` says how many matches it left out.** It filtered the files granted with the Picker
+  and `.slice(0, 100)` returned `{ files }` with no count, so the model read 100 entries as the whole
+  list and answered that the 101st file did not exist. The response now carries `total` with every
+  match and, when the page is shorter than them, `hasMore: true` plus a note («Se listan 100 de 150
+  coincidencias»); the tool description and the system prompt say so too, like `list_local_files`
+  already did.
+
 ### A rejected setting is a sentence, not a JSON blob
 
 - **The chat panel and the raw editor say which field broke which limit.** Both validate through

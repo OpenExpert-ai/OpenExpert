@@ -257,7 +257,7 @@ Contexto activo: Experto "${expert.name}" — ${expert.description}. Fuentes: ${
 ${
   hasDrive
     ? `GOOGLE DRIVE CONECTADO (solo los archivos que el usuario eligió con el Picker):
-- search_drive: busca por NOMBRE entre esos archivos y devuelve [{id, name, mimeType}].
+- search_drive: busca por NOMBRE entre esos archivos y devuelve [{id, name, mimeType}] y \`total\` con cuántas coincidencias hay. Si trae \`hasMore\`, la lista viene cortada: acota con una búsqueda más precisa en vez de dar esos archivos por todos.
 - read_drive_file: lee el CONTENIDO de un archivo por su id (Docs→texto, Sheets→CSV, Slides, PDF, texto).
 - create_drive_file / update_drive_file: crean o reescriben un archivo.
 FLUJO OBLIGATORIO para preguntas sobre un archivo, documento, tema o contenido:
