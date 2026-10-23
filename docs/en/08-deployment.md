@@ -26,8 +26,10 @@ The wildcard says **where to listen, not which names are served**: the names you
 will actually open the app with — the LAN address, or the public domain when a
 reverse proxy sits in front — go in `OPENEXPERT_ALLOWED_ORIGINS`, comma separated,
 with the port the `Host` carries (the listening one when it carries none). Without
-that list the browser's `Origin` is an unknown name and `POST /api/chat` returns
-403: the chat does not work.
+that list, any `Host` that is not a loopback name is answered with 403 on every
+route, static files included: the app does not open at that address. And the
+browser's `Origin` is an unknown name too, so `POST /api/chat` returns 403 even
+when the `Host` is listed.
 
 ```sh
 OPENEXPERT_HOST=0.0.0.0 OPENEXPERT_ALLOWED_ORIGINS=http://192.168.1.10:3000 \
