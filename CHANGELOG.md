@@ -7,6 +7,17 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### A rejected setting is a sentence, not a JSON blob
+
+- **The chat panel and the raw editor say which field broke which limit.** Both validate through
+  `chatUpdateSchema` / `fileConfigSchema`, and both showed the `ZodError`'s own message in a toast:
+  a JSON dump with `origin`, `code`, `maximum`, `inclusive` and the path in English, sitting on a
+  screen that is otherwise in Spanish. The useful sentence (`maxSteps va de 1 a 200 pasos por
+consulta`) travelled **inside** that dump, and the field was named without its branch
+  (`maxSteps` on the panel, `["chat","maxSteps"]` on the editor). They now go through
+  `describeConfigProblems` — the helper the backup restore already used — so the owner reads
+  «chat.maxSteps: va de 1 a 200 pasos por consulta» on all three doors, with the same path.
+
 ### A local folder is not 5 000 files
 
 - **The walk cap no longer travels as the folder size.** `listLocalFiles` stops at 5 000 files and

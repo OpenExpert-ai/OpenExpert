@@ -635,11 +635,17 @@ export function parseRawConfig(text: string): RawFileConfig {
  * and the element of a list is named by its position, because «el patrón 2» is
  * what the owner has to look for. The messages already name their own field,
  * so the prefix is dropped when it would say the same thing twice.
+ *
+ * `root` is for the doors that validate a **branch** of the file: the chat
+ * panel parses `chat` alone, so its issues carry `maxSteps` and not
+ * `chat.maxSteps`, and the same limit would read differently on the two
+ * screens. Naming the branch here makes the three doors (restore, panel, raw
+ * editor) say the same sentence for the same problem.
  */
-export function describeConfigProblems(error: z.ZodError): string[] {
+export function describeConfigProblems(error: z.ZodError, root?: string): string[] {
   return error.issues.map((issue) => {
     const segments = issue.path.map((p) => String(p));
-    const path = segments.join(".");
+    const path = (root ? [root, ...segments] : segments).join(".");
     const last = segments[segments.length - 1];
     const message =
       last && issue.message.startsWith(last)
@@ -647,6 +653,35 @@ export function describeConfigProblems(error: z.ZodError): string[] {
         : issue.message;
     return path ? `${path}: ${message}` : message;
   });
+}
+
+/**
+ * The whole message of a rejected configuration: `describeConfigProblems` gives
+ * one sentence per problem, and a form has a single place to show them.
+ */
+export function configProblemsMessage(error: z.ZodError, root?: string): string {
+  return describeConfigProblems(error, root).join("\n");
+}
+
+/**
+ * Parse a payload whose rejection **reaches the interface**, and throw the
+ * sentence instead of the `ZodError`.
+ *
+ * A server function's validator rejects with the `ZodError` itself, whose
+ * `message` is Zod's JSON dump (`origin`, `code`, `maximum`, `inclusive`, the
+ * path in English): the panel prints that in a toast, so the owner read a JSON
+ * blob where there should be «chat.maxSteps: va de 1 a 200 pasos por consulta».
+ */
+export function parseOrExplain<S extends z.ZodType>(
+  schema: S,
+  input: unknown,
+  root?: string,
+): z.output<S> {
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    throw new Error(configProblemsMessage(result.error, root), { cause: result.error });
+  }
+  return result.data;
 }
 
 /**
