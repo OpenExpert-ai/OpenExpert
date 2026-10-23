@@ -66,12 +66,30 @@ describe("resolveWithinRoots", () => {
 describe("listLocalFiles", () => {
   it("walks recursively but skips dotfiles, ignored dirs and symlink escapes", async () => {
     const fs = await import("./local-fs.server");
-    const names = fs.listLocalFiles([root]).map((f) => f.name);
+    const names = fs.listLocalFiles([root]).files.map((f) => f.name);
     expect(names).toContain("a.txt");
     expect(names).toContain("b.md");
     expect(names).not.toContain(".hidden");
     expect(names).not.toContain("x.js");
     expect(names).not.toContain("secret.txt");
+  });
+
+  it("says the walk was cut in the cap instead of passing it off as the folder size", async () => {
+    const fs = await import("./local-fs.server");
+    const capped = fs.listLocalFiles([root], { maxFiles: 2 });
+    expect(capped.files).toHaveLength(2);
+    expect(capped.truncated).toBe(true);
+
+    const whole = fs.listLocalFiles([root]);
+    expect(whole.truncated).toBe(false);
+    expect(whole.files.length).toBeGreaterThan(2);
+  });
+
+  it("counts the depth cap as a cut: the folders below it stay unvisited", async () => {
+    const fs = await import("./local-fs.server");
+    const shallow = fs.listLocalFiles([root], { maxDepth: 0 });
+    expect(shallow.files.map((f) => f.name)).not.toContain("b.md");
+    expect(shallow.truncated).toBe(true);
   });
 });
 
@@ -151,7 +169,7 @@ describe("browseDirectory", () => {
 describe("XDG trash", () => {
   it("does not walk the trash but walks other Trash folders", async () => {
     const fs = await import("./local-fs.server");
-    const names = fs.listLocalFiles([root]).map((f) => f.name);
+    const names = fs.listLocalFiles([root]).files.map((f) => f.name);
     expect(names).not.toContain("deleted.txt");
     expect(names).toContain("keep.txt");
   });
@@ -355,6 +373,24 @@ describe("searchLocalContent", () => {
     const capped = await fs.searchLocalContent([root], "needle", { maxHits: 3 });
     expect(capped.hits).toHaveLength(3);
     expect(capped.hasMore).toBe(true);
+  });
+
+  it("keeps «hay más coincidencias» for the hit cap and says what it skipped for the file cap", async () => {
+    const fs = await import("./local-fs.server");
+    const many = join(dir, "busqueda");
+    mkdirSync(many, { recursive: true });
+    writeFileSync(join(many, "a.txt"), Array.from({ length: 20 }, () => "needle").join("\n"));
+    const byHits = await fs.searchLocalContent([many], "needle", { maxHits: 3 });
+    expect(String(byHits.note)).toContain("Hay más coincidencias");
+    expect(byHits.unscanned).toBeUndefined();
+
+    for (let i = 0; i < 5; i += 1) writeFileSync(join(many, `vacio-${i}.txt`), "sin la palabra\n");
+    const byFiles = await fs.searchLocalContent([many], "ausente", { maxFiles: 2 });
+    expect(byFiles.scanned).toBe(2);
+    expect(byFiles.unscanned).toBe(4);
+    expect(byFiles.hasMore).toBe(true);
+    expect(String(byFiles.note)).toContain("quedan 4 sin revisar");
+    expect(String(byFiles.note)).not.toContain("Hay más coincidencias");
   });
 });
 

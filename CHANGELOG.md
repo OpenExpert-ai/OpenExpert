@@ -5,6 +5,51 @@ OpenExpert follows [Semantic Versioning](https://semver.org/) and uses
 notes. This file is the reader's summary of notable changes per release; the
 per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
+## Unreleased
+
+### A rejected setting is a sentence, not a JSON blob
+
+- **The chat panel and the raw editor say which field broke which limit.** Both validate through
+  `chatUpdateSchema` / `fileConfigSchema`, and both showed the `ZodError`'s own message in a toast:
+  a JSON dump with `origin`, `code`, `maximum`, `inclusive` and the path in English, sitting on a
+  screen that is otherwise in Spanish. The useful sentence (`maxSteps va de 1 a 200 pasos por
+consulta`) travelled **inside** that dump, and the field was named without its branch
+  (`maxSteps` on the panel, `["chat","maxSteps"]` on the editor). They now go through
+  `describeConfigProblems` — the helper the backup restore already used — so the owner reads
+  «chat.maxSteps: va de 1 a 200 pasos por consulta» on all three doors, with the same path.
+
+### A local folder is not 5 000 files
+
+- **The walk cap no longer travels as the folder size.** `listLocalFiles` stops at 5 000 files and
+  8 levels deep — a guard, not a fact about the folder — and `list_local_files` was reporting
+  `total: 5000` for a folder with 20 000, so the model answered «there is no file that mentions
+  that» with the file inside the folder. The walk now returns `{ files, truncated }`, the tool sends
+  `truncated: true` and `scanned` when it stopped early (and keeps `total` only when it is a real
+  count), and its note names the cap.
+- **`search_local_files` counts every match, not the 200 it shows.** It used to filter and
+  `.slice(0, 200)` without a count, so 900 matches read as 200. Now it travels `total` and a note
+  with «200 de 250 coincidencias».
+- **`search_inside_files` tells the two reasons to stop apart.** Running out of hits means «there
+  are more matches»; running out of files means «there are files I did not read». It said the first
+  for both, so the model announced more matches when the rest were unopened files. Now the second
+  case says how many files are left unread (`unscanned`) and, if the walk itself was cut, says so.
+
+### The wildcard says where to listen, not which names are served
+
+- **`OPENEXPERT_HOST=0.0.0.0` stops accepting any `Host`.** The name check had a
+  wildcard branch that took every request whose `Host` ended in the listening
+  port, so the server answered names nobody had declared — the opposite of what
+  `SECURITY.md` and the deployment guide promise, and what the name allowlist was
+  added for. A safe request that carries no `Origin` (every same-origin request a
+  page makes, which is the whole DNS-rebinding shape) passed the origin check
+  too, so a page served from `evil.test:3000` and re-pointed at loopback could
+  ask for `GET /api/backup` and read the full bundle: `secrets.json`, the
+  encrypted credentials and the `secret.key` that decrypts them. Names now come
+  only from the configuration — loopback, the listen address and
+  `OPENEXPERT_ALLOWED_ORIGINS` — and anything else is a 403, on every route. An
+  installation that exposed the app on `0.0.0.0` without that list has to add it
+  to keep opening the app from another machine.
+
 ## 0.5.0 — 2026-10-18
 
 ### One name and one version

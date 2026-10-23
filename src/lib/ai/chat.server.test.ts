@@ -92,8 +92,23 @@ const validBody = () => ({
 
 type StreamOpts = {
   onError: (e: unknown) => string;
-  onEnd: (a: { responseMessage: unknown }) => Promise<void>;
+  onEnd: (a: {
+    responseMessage: unknown;
+    isAborted: boolean;
+    outcome: { status: "completed" | "failed" | "aborted" | "unknown" };
+  }) => Promise<void>;
 };
+
+/**
+ * The end-callback payload the SDK sends for a turn that answered: the double
+ * has to pass what the real `toUIMessageStream` passes, or the handler's
+ * reading of the outcome is never exercised.
+ */
+const ended = (responseMessage: unknown) => ({
+  responseMessage,
+  isAborted: false,
+  outcome: { status: "completed" as const },
+});
 
 /** A chunk stream the real UI-message helpers can consume. */
 function chunkStream(): ReadableStream<UIMessageChunk> {
@@ -272,9 +287,7 @@ describe("streaming persistence", () => {
     const { orm } = await getDb();
     const before = orm.select().from(schema.chatMessages).all().length;
 
-    await o.onEnd({
-      responseMessage: { id: "a1", role: "assistant", parts: [{ type: "text", text: "lista" }] },
-    });
+    await o.onEnd(ended({ id: "a1", role: "assistant", parts: [{ type: "text", text: "lista" }] }));
 
     const after = orm.select().from(schema.chatMessages).all();
     expect(after.length).toBe(before + 2); // the user message + the assistant reply
@@ -307,9 +320,9 @@ describe("streaming persistence", () => {
     const { orm } = await getDb();
     const before = orm.select().from(schema.chatMessages).all().length;
 
-    await opts().onEnd({
-      responseMessage: { id: "a1", role: "assistant", parts: [{ type: "text", text: "hecho" }] },
-    });
+    await opts().onEnd(
+      ended({ id: "a1", role: "assistant", parts: [{ type: "text", text: "hecho" }] }),
+    );
     const after = orm.select().from(schema.chatMessages).all();
     expect(after.length).toBe(before + 1);
   });
@@ -550,9 +563,9 @@ describe("prompt-injection gate over the whole conversation", () => {
       }),
     );
     expect(await primero.text()).not.toContain("data-denied");
-    await opts().onEnd({
-      responseMessage: { id: "a1", role: "assistant", parts: [{ type: "text", text: respuesta }] },
-    });
+    await opts().onEnd(
+      ended({ id: "a1", role: "assistant", parts: [{ type: "text", text: respuesta }] }),
+    );
     const guardadas = orm
       .select()
       .from(schema.chatMessages)
@@ -664,11 +677,11 @@ describe("persistencia de una aprobación", () => {
   it("guarda la decisión y el resultado en la fila del mensaje que pidió permiso", async () => {
     // Turno 1: el modelo pide permiso.
     const t1 = await chat("aprobaciones", "c-ap", [userMessage("crea notas.md")]);
-    await t1.onEnd({ responseMessage: pedido });
+    await t1.onEnd(ended(pedido));
 
     // Turno 2: el usuario aprueba.
     const t2 = await chat("aprobaciones", "c-ap", [userMessage("crea notas.md"), aprobado]);
-    await t2.onEnd({ responseMessage: resuelto });
+    await t2.onEnd(ended(resuelto));
 
     const filas = await chatRows("aprobaciones", "c-ap");
     // Sin una segunda copia del mensaje: la fila se actualiza, no se duplica.

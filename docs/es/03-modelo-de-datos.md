@@ -47,19 +47,19 @@ para volver a sembrar la configuración.
 
 ### `activity` — registro de actividad
 
-| Columna       | Tipo        | Notas                                                       |
-| ------------- | ----------- | ----------------------------------------------------------- |
-| `id`          | TEXT PK     | `evt_` + 8 caracteres                                       |
-| `ts`          | TEXT        | Fecha ISO                                                   |
-| `actor`       | TEXT        | `human` o `agent`                                           |
-| `actor_name`  | TEXT        | Nombre visible                                              |
-| `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, …  |
-| `expert_id`   | TEXT        | Experto afectado                                            |
-| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `reverted`             |
-| `summary`     | TEXT        | Descripción en una frase                                    |
-| `sources`     | TEXT (JSON) | Fuentes de la información                                   |
-| `duration_ms` | INTEGER     | Duración medida en ms, o null si la acción no se cronometró |
-| `snapshot`    | TEXT (JSON) | `{ entries }` (para reversión) o `{ pending }`              |
+| Columna       | Tipo        | Notas                                                        |
+| ------------- | ----------- | ------------------------------------------------------------ |
+| `id`          | TEXT PK     | `evt_` + 8 caracteres                                        |
+| `ts`          | TEXT        | Fecha ISO                                                    |
+| `actor`       | TEXT        | `human` o `agent`                                            |
+| `actor_name`  | TEXT        | Nombre visible                                               |
+| `type`        | TEXT        | `Configuración`, `Consulta`, `Integración`, `Seguridad`, …   |
+| `expert_id`   | TEXT        | Experto afectado                                             |
+| `status`      | TEXT        | `ok`, `pending`, `denied`, `failed`, `cancelled`, `reverted` |
+| `summary`     | TEXT        | Descripción en una frase                                     |
+| `sources`     | TEXT (JSON) | Fuentes de la información                                    |
+| `duration_ms` | INTEGER     | Duración medida en ms, o null si la acción no se cronometró  |
+| `snapshot`    | TEXT (JSON) | `{ entries }` (para reversión) o `{ pending }`               |
 
 El registro no se sirve entero de una vez: `getWorkspace` trae los 300 eventos más recientes y el
 total real (`activityTotal`, un `COUNT(*)`), y `getActivityPage` pagina hacia atrás con `offset`, así
