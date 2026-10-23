@@ -34,7 +34,10 @@ by naming the variable that is missing, not by trying somebody else's.
 Ollama listens on `http://localhost:11434`; OpenExpert uses its
 OpenAI-compatible endpoint (`/v1`). `OLLAMA_BASE_URL` accepts either the native
 root (`http://localhost:11434`) or the `/v1` URL, and normalises it for both the
-chat model and model listing. No data leaves your machine.
+chat model and model listing. An empty endpoint — what the panel leaves behind
+when another provider is selected, or a variable with no value — reads as the
+default (`http://localhost:11434`), never as an empty address. No data leaves
+your machine.
 
 ## 2. Google Gemini (free API key)
 
