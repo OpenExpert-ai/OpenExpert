@@ -133,6 +133,43 @@ describe("campaignPerformance", () => {
     expect(c!.cpa).toBe(100);
     expect(c!.overTargetPct).toBe(100);
   });
+
+  it("does not divide by a CPA target that nobody set", async () => {
+    const db = await raw();
+    db.run("DELETE FROM campaigns");
+    const ins =
+      "INSERT INTO campaigns (id,name,channel,status,spend_7d,conversions_7d,cpa_target,daily_budget) VALUES (?,?,?,?,?,?,?,?)";
+    // cpa_target is real with default 0: the value of every campaign that
+    // declares no goal. Dividing by it gave Infinity, which travelled to the
+    // campaign panel as "over target" and to the human card as "+Infinity%".
+    db.run(ins, ["c-sin-objetivo", "Sin objetivo", "Meta", "active", 500, 10, 0, 100]);
+    db.run(ins, ["c-negativo", "Objetivo negativo", "Meta", "active", 300, 10, -5, 100]);
+
+    const ee = await import("./ee.server");
+    const rows = await ee.campaignPerformance();
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get("c-sin-objetivo")!.overTargetPct).toBeNull();
+    expect(byId.get("c-negativo")!.overTargetPct).toBeNull();
+    // The CPA itself is still a real number and must keep travelling.
+    expect(byId.get("c-sin-objetivo")!.cpa).toBe(50);
+    expect(byId.get("c-negativo")!.cpa).toBe(30);
+  });
+
+  it("keeps a CPA of 0 € instead of reading it as «no CPA»", async () => {
+    const db = await raw();
+    db.run("DELETE FROM campaigns");
+    const ins =
+      "INSERT INTO campaigns (id,name,channel,status,spend_7d,conversions_7d,cpa_target,daily_budget) VALUES (?,?,?,?,?,?,?,?)";
+    db.run(ins, ["c-gasto-cero", "Gasto cero", "Meta", "active", 0, 5, 40, 100]);
+
+    const ee = await import("./ee.server");
+    const [row] = await ee.campaignPerformance();
+    // Zero spend with conversions is a CPA of 0 €, not a missing CPA: the
+    // falsy check turned it into null and the card said "sin conversiones".
+    expect(row!.cpa).toBe(0);
+    expect(row!.cpa).not.toBeNull();
+    expect(row!.overTargetPct).toBe(-100);
+  });
 });
 
 describe("churnRisk", () => {

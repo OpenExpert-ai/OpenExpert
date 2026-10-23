@@ -413,6 +413,33 @@ describe("propose_pause_campaigns", () => {
     expect(item).not.toContain("null");
     expect(proposals).toHaveLength(1);
   });
+
+  it("says a campaign has no CPA target instead of printing an infinite percentage", async () => {
+    const { getDb, persist } = await import("../db.server");
+    const { raw } = await getDb();
+    raw.run(
+      "INSERT OR REPLACE INTO integrations (id,name,category,connected,entities) VALUES (?,?,?,?,?)",
+      ["meta", "Meta", "marketing", 1, "[]"],
+    );
+    // cpa_target 0 is what the schema writes for any campaign that declares no
+    // goal, so this is the common case, not a rare one.
+    raw.run(
+      "INSERT OR REPLACE INTO campaigns (id,name,channel,status,spend_7d,conversions_7d,cpa_target,daily_budget) VALUES (?,?,?,?,?,?,?,?)",
+      ["c-sin-objetivo", "Sin objetivo", "meta", "active", 500, 10, 0, 20],
+    );
+    await persist();
+
+    const { tools, proposals } = await buildExpert(["marketing"]);
+    const out = await exec(tools.propose_pause_campaigns)({ campaignIds: ["c-sin-objetivo"] });
+    expect(out["status"]).toBe("pending");
+    const item = (out["items"] as string[])[0] ?? "";
+    expect(item).toContain("Sin objetivo");
+    expect(item).toContain("CPA 50€");
+    expect(item).toContain("sin objetivo");
+    expect(item).not.toContain("Infinity");
+    expect(item).not.toContain("NaN");
+    expect(proposals).toHaveLength(1);
+  });
 });
 
 describe("Google Drive tools", () => {

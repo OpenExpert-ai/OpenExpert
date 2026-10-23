@@ -221,13 +221,17 @@ export function createChatTools(ctx: ChatToolsContext) {
           "marketing",
           `Pausar ${ee.countPhrase(rows.length, "campaña", "campañas")}`,
           "Cambio en campañas",
-          rows.map((r) =>
-            // A campaign with no conversions has no CPA: the old text rendered
-            // "CPA null€ (null%)" in the human approval card.
-            r.cpa === null || r.overTargetPct === null
-              ? `${r.name} — sin conversiones en 7 días (gasto ${r.spend7d.toLocaleString("es-ES")}€)`
-              : `${r.name} — CPA ${r.cpa}€ (${r.overTargetPct > 0 ? "+" : ""}${r.overTargetPct}%)`,
-          ),
+          rows.map((r) => {
+            // Neither a missing CPA nor a missing target may reach the human
+            // card as "CPA null€" or "+Infinity%": each one says what it is.
+            if (r.cpa === null) {
+              return `${r.name} — sin conversiones en 7 días (gasto ${r.spend7d.toLocaleString("es-ES")}€)`;
+            }
+            if (r.overTargetPct === null) {
+              return `${r.name} — CPA ${r.cpa}€, sin objetivo de CPA`;
+            }
+            return `${r.name} — CPA ${r.cpa}€ (${r.overTargetPct > 0 ? "+" : ""}${r.overTargetPct}%)`;
+          }),
           { kind: "pause_campaigns", ids: rows.map((r) => r.id) },
         );
       },
