@@ -260,6 +260,10 @@ export type LocalRead = {
   size: number;
   modifiedTime: string;
   content: string | null;
+  /**
+   * `true` when what is returned is not the whole file: the window hit the character cap, or the
+   * scanned PDF's transcription was cut at its own ceiling (which `note` says).
+   */
   truncated?: boolean;
   note?: string;
   /** Total lines in the file, so a caller knows whether there is more to ask for. */
@@ -427,7 +431,7 @@ function csvStructure(text: string, name: string, fallback: string): SheetInfo {
 async function extractText(
   abs: string,
   opts: { vision?: boolean } = {},
-): Promise<{ text: string | null; note?: string; sheets?: SheetInfo[] }> {
+): Promise<{ text: string | null; note?: string; sheets?: SheetInfo[]; truncated?: boolean }> {
   const size = statSync(abs).size;
   if (size > MAX_READ_BYTES)
     return { text: null, note: `Archivo demasiado grande (${size} bytes > 25 MB).` };
@@ -448,7 +452,15 @@ async function extractText(
       if (opts.vision) {
         const vision = await import("./vision-pdf.server");
         const seen = await vision.pdfTextWithVision(new Uint8Array(buf));
-        if (seen.text) return { text: seen.text };
+        // The transcription's own warning travels with the text: a cut transcription that arrives
+        // without its note reads as the whole document, and the read below windows this text
+        // (never the file), so `truncated` is the only thing that says the file goes on.
+        if (seen.text)
+          return {
+            text: seen.text,
+            ...(seen.note ? { note: seen.note } : {}),
+            ...(seen.truncated ? { truncated: true } : {}),
+          };
         if (seen.note) return { text: null, note: seen.note };
       }
       return { text: null, note: "PDF escaneado sin texto seleccionable." };
@@ -495,7 +507,14 @@ export async function readLocalFile(
   const abs = resolveWithinRoots(target, roots);
   const st = statSync(abs);
   if (!st.isFile()) throw new Error("Eso no es un archivo.");
-  const { text, note, sheets } = await extractText(abs, { vision: opts.vision === true });
+  const {
+    text,
+    note,
+    sheets,
+    truncated: cutSource,
+  } = await extractText(abs, {
+    vision: opts.vision === true,
+  });
   const base: LocalRead = {
     path: abs,
     name: basename(abs),
@@ -503,6 +522,10 @@ export async function readLocalFile(
     modifiedTime: st.mtime.toISOString(),
     content: null,
     ...(note ? { note } : {}),
+    // A transcription that was cut at its ceiling is not the whole file, and this flag is the only
+    // thing that says so: the window below counts lines of the transcription, so `totalLines` ends
+    // where the transcription ends, not where the document does.
+    ...(cutSource ? { truncated: true } : {}),
   };
   if (!text) return base;
   // The file is returned in a **window of lines**, not as one slab. Before this, any file past the

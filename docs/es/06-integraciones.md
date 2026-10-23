@@ -172,7 +172,10 @@ Un **PDF escaneado** no tiene capa de texto: es la foto de una página. Si el aj
 «Leer PDF escaneados con el modelo» está activado —viene **apagado**—, se transcribe con
 el modelo activo, que tiene que poder ver documentos. Se hace **solo al leer un archivo a
 propósito**, nunca mientras una búsqueda recorre una carpeta, y la transcripción es literal
-(no un resumen), porque alimenta la búsqueda y la lectura por partes.
+(no un resumen), porque alimenta la búsqueda y la lectura por partes. La transcripción tiene
+un tope de 200.000 caracteres: cuando un documento lo rebasa, la lectura trae `truncated` y
+una nota que dice cuánto se transcribió, porque el final no se puede volver a pedir —nunca
+se transcribió— y, sin ese aviso, la primera mitad pasaría por el documento entero.
 
 ### 5.1 Proveedores de modelo
 
