@@ -45,9 +45,10 @@ const statusCls: Record<string, string> = {
   reverted: "text-muted-foreground line-through",
   denied: "border-destructive/40 text-destructive",
   failed: "border-destructive/40 text-destructive",
+  cancelled: "text-muted-foreground",
 };
 
-const STATUSES = ["ok", "pending", "reverted", "denied", "failed"] as const;
+const STATUSES = ["ok", "pending", "reverted", "denied", "failed", "cancelled"] as const;
 const PAGE = 40;
 type ActivityEvent = Workspace["activity"][number];
 
