@@ -251,17 +251,21 @@ describe("updateAiSettings", () => {
     ).rejects.toThrow();
   });
 
-  // Bug observado, no arreglado (la tarea es solo tests): vaciar el endpoint de
-  // Ollama escribe `ollamaBaseUrl: ""` en openexpert.json, y `loadConfig` trata
-  // la cadena vacía como valor (`??`), así que `aiSettings().ollamaBaseUrl`
-  // vuelve vacío en vez de caer al valor por defecto. El panel y el motor sí
-  // cogen el defecto (`stored || default` / `env[key] || default`), pero
-  // `getSettings().ai.ollamaBaseUrl` informa de "". Debería quedar como el
-  // defecto: http://localhost:11434.
-  it.fails("vaciar el endpoint de Ollama vuelve al valor por defecto", async () => {
+  // El fichero guarda `ollamaBaseUrl: ""` a propósito cuando el proveedor
+  // elegido no es Ollama, así que el defecto tiene que salir de la lectura y no
+  // de la escritura: `getSettings().ai.ollamaBaseUrl` informaba de "" mientras
+  // el panel y el motor ya usaban el defecto.
+  it("vaciar el endpoint de Ollama vuelve al valor por defecto", async () => {
     await fns.updateAiSettings({ data: aiPayload({ provider: "ollama", endpoint: "" }) });
-    const settings = (await fns.getSettings()) as { ai: { ollamaBaseUrl: string } };
+
+    expect(readJson(join(cwd, "openexpert.json"))["ollamaBaseUrl"]).toBe("");
+    expect(process.env["OLLAMA_BASE_URL"]).toBeUndefined();
+
+    const settings = (await fns.getSettings()) as {
+      ai: { ollamaBaseUrl: string; ollamaSource: string };
+    };
     expect(settings.ai.ollamaBaseUrl).toBe("http://localhost:11434");
+    expect(settings.ai.ollamaSource).toBe("default");
   });
 });
 

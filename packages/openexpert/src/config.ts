@@ -106,6 +106,19 @@ function num(value: unknown, fallback: number): number {
 }
 
 /**
+ * The first candidate that says something.
+ *
+ * A blank endpoint is not an address: the settings panel writes
+ * `ollamaBaseUrl: ""` when the owner selects another provider, and an empty
+ * variable is a variable that was not set. Both used to travel on as the value
+ * (`??` only skips null and undefined), so the panel read an empty endpoint and
+ * the model layer would hand `fetch` a relative URL.
+ */
+function firstFilled(...values: (string | undefined)[]): string | undefined {
+  return values.find((v) => typeof v === "string" && v.trim() !== "");
+}
+
+/**
  * Something that had to be brought back to a legal value when the
  * configuration was read.
  *
@@ -239,7 +252,8 @@ export function loadConfigWithNotices(cwd: string = process.cwd()): LoadedConfig
         env["OPENEXPERT_MODEL_ID"] ??
         file.modelId ??
         (defaultModelOf(provider) || DEFAULTS.modelId),
-      ollamaBaseUrl: env["OLLAMA_BASE_URL"] ?? file.ollamaBaseUrl ?? DEFAULTS.ollamaBaseUrl,
+      ollamaBaseUrl:
+        firstFilled(env["OLLAMA_BASE_URL"], file.ollamaBaseUrl) ?? DEFAULTS.ollamaBaseUrl,
       dataDir: expandHome(env["OPENEXPERT_DATA_DIR"] ?? file.dataDir ?? DEFAULTS.dataDir),
       googleClientId:
         env["OPENEXPERT_GOOGLE_CLIENT_ID"] ?? file.googleClientId ?? DEFAULTS.googleClientId,

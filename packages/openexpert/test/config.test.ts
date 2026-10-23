@@ -234,3 +234,57 @@ describe("los límites al leer el fichero", () => {
     }
   });
 });
+
+/**
+ * The settings panel writes `ollamaBaseUrl: ""` when the owner picks another
+ * provider, and an empty variable is a variable that was not set. Both mean
+ * "no value": the default has to answer, not an empty address that would be
+ * handed to `fetch` as a relative URL.
+ */
+describe("el endpoint de Ollama en blanco", () => {
+  function withFile(content: unknown): string {
+    const dir = mkdtempSync(join(tmpdir(), "oe-config-endpoint-"));
+    writeFileSync(join(dir, "openexpert.json"), JSON.stringify(content));
+    return dir;
+  }
+
+  it("un endpoint vacío en el fichero cae al valor por defecto", () => {
+    const dir = withFile({ ollamaBaseUrl: "" });
+    try {
+      expect(loadConfig(dir).ollamaBaseUrl).toBe(DEFAULTS.ollamaBaseUrl);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("un endpoint de solo espacios tampoco es un endpoint", () => {
+    const dir = withFile({ ollamaBaseUrl: "   " });
+    try {
+      expect(loadConfig(dir).ollamaBaseUrl).toBe(DEFAULTS.ollamaBaseUrl);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("un endpoint vacío no tapa el valor guardado", () => {
+    const dir = withFile({ ollamaBaseUrl: "http://otro:1234" });
+    const prev = process.env["OLLAMA_BASE_URL"];
+    process.env["OLLAMA_BASE_URL"] = "";
+    try {
+      expect(loadConfig(dir).ollamaBaseUrl).toBe("http://otro:1234");
+    } finally {
+      process.env["OLLAMA_BASE_URL"] = prev;
+      if (prev === undefined) delete process.env["OLLAMA_BASE_URL"];
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("un endpoint escrito sigue mandando sobre el valor por defecto", () => {
+    const dir = withFile({ ollamaBaseUrl: "http://otro:1234" });
+    try {
+      expect(loadConfig(dir).ollamaBaseUrl).toBe("http://otro:1234");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
