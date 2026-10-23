@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { pluralize } from "@/lib/translate";
+import { TOOL_LABELS } from "@/lib/ai/tool-labels";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -542,33 +543,6 @@ const Avatar = () => (
   </div>
 );
 
-const TOOL_LABEL: Record<string, string> = {
-  get_pipeline_summary: "Consultando pipeline comercial",
-  list_deals: "Listando oportunidades del CRM",
-  list_overdue_invoices: "Leyendo facturas vencidas",
-  get_campaign_performance: "Extrayendo métricas de campañas",
-  get_churn_risk: "Evaluando riesgo de churn",
-  propose_invoice_reminders: "Preparando reclamaciones de cobro",
-  propose_pause_campaigns: "Preparando pausa de campañas",
-  open_expert_form: "Cargando plantilla de Experto",
-  search_drive: "Buscando en Google Drive",
-  read_drive_file: "Leyendo documento de Drive",
-  create_drive_file: "Creando archivo en Google Drive",
-  update_drive_file: "Actualizando archivo en Google Drive",
-  list_local_files: "Listando archivos locales",
-  search_local_files: "Buscando archivos locales",
-  read_local_file: "Leyendo archivo local",
-  create_local_file: "Creando archivo local",
-  update_local_file: "Actualizando archivo local",
-  search_notion: "Buscando en Notion",
-  query_notion_database: "Consultando base de Notion",
-  describe_notion_data_source: "Consultando esquema de Notion",
-  read_notion_page: "Leyendo página de Notion",
-  create_notion_page: "Creando página en Notion",
-  update_notion_page: "Actualizando página de Notion",
-  append_notion_blocks: "Añadiendo contenido en Notion",
-};
-
 type ToolPart = {
   type: string;
   toolCallId: string;
@@ -760,7 +734,7 @@ function ExecutionTimeline({ tools }: { tools: ToolPart[] }) {
               </span>
               <div className="flex items-center gap-3 py-1.5">
                 <span className={done || err ? "text-foreground/90" : "text-foreground"}>
-                  {t(TOOL_LABEL[name] ?? name)}
+                  {t(TOOL_LABELS[name] ?? name)}
                 </span>
                 <span
                   className={`ml-auto font-mono text-[10px] ${err ? "text-destructive" : done ? "text-success" : "text-primary"}`}

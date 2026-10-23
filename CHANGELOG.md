@@ -7,6 +7,27 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### A status is not a word, and «pending» is not Spanish
+
+- **The activity log is translated in both directions.** The page printed the event `type` raw — it
+  never went through `t()`, so with the interface in English the log read «Consulta», «Seguridad»,
+  «Integración», «Drive · creación»… — and its status went to `t()` carrying the identifier stored in
+  the database (`ok`, `pending`, `reverted`), which is English already: the English page was right by
+  accident and the Spanish one showed English codes. The type is the Spanish source string, so it now
+  goes through `t()` and its 13 values are dictionary keys; the status takes its label from
+  `src/lib/activity-labels.ts` («Hecho», «Pendiente», «Revertido», «Denegado», «Fallido»,
+  «Cancelado») before `t()`. The type filter keeps the raw value in `option value`, because with the
+  translated text as the value the filter compared «Query» with «Consulta» and matched nothing.
+- **The chat tool list has a label for every tool.** `TOOL_LABELS` had 24 entries for a 26-tool
+  catalog, so `run_python` and `search_inside_files` were shown with their technical name in both
+  languages; `Actualizando página en Notion` was in the map while the dictionary key said «de», so it
+  also stayed in Spanish. The map moved to `src/lib/ai/tool-labels.ts` and `tool-labels.test.ts`
+  crosses it with `Object.keys(createChatTools(...))` in both directions, so the next tool cannot
+  ship without one.
+- **The hole has a check.** `src/locales/activity-i18n.test.ts` collects the event types from the
+  `logActivity({ type })` and `proposePending` calls with the TypeScript parser and fails when one of
+  them has no English entry — the global check only reads literal `t(…)` keys and could not see them.
+
 ### «1 mensajes» is not a sentence
 
 - **Every text with a count agrees in number, in both languages.** `countPhrase` already existed,

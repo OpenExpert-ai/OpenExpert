@@ -73,6 +73,18 @@ con el parser de TypeScript cada `t("…")` literal de `src/` y falla cuando alg
 no tiene entrada, para que el hueco no vuelva sin que nadie lo note; las claves
 calculadas en tiempo de ejecución quedan fuera de esa comprobación.
 
+Un valor que viene de la base es el mismo en las dos lenguas, así que no puede ser
+clave del diccionario por sí solo: el registro de actividad guarda el `type` del
+evento («Consulta», «Drive · creación») y su `status` (`ok`, `pending`,
+`reverted`…). El tipo ya es la cadena fuente en español y pasa por `t()` tal cual;
+el estado lleva un identificador en inglés, así que toma su etiqueta de
+`src/lib/activity-labels.ts` antes de `t()`. Las dos partes están cubiertas: los
+tipos se recogen de las llamadas a `logActivity({ type })` y a `proposePending` en
+`src/locales/activity-i18n.test.ts`, y las etiquetas de las herramientas del chat
+(`src/lib/ai/tool-labels.ts`) se cruzan con el catálogo real en
+`src/lib/ai/tool-labels.test.ts`, que es como una herramienta nueva deja de salir
+con su nombre técnico en pantalla.
+
 Un texto con recuento pasa por `pluralize(locale, n, singular, plural, params)` en
 `src/lib/translate.ts`, que elige la forma y después la traduce: `t()` interpola
 pero no pluraliza, así que un plural fijo decía «1 mensajes». Las dos formas son
