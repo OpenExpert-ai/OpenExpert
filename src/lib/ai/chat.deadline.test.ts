@@ -14,9 +14,11 @@ import { MAX_TIMEOUT_MS } from "../python.server";
 import {
   deadlineAsError,
   deadlineMessage,
+  deadlineNote,
   isDeadlineAbort,
   STEP_DEADLINE_MS,
   stepDeadlineMs,
+  turnStatus,
 } from "./deadline";
 
 const DEADLINE_MS = 1_500;
@@ -129,6 +131,28 @@ describe("deadline value", () => {
     expect(stepDeadlineMs({ OPENEXPERT_CHAT_TIMEOUT_MS: "10" })).toBe(1_000);
     expect(stepDeadlineMs({ OPENEXPERT_CHAT_TIMEOUT_MS: "99999999" })).toBe(900_000);
     expect(stepDeadlineMs({ OPENEXPERT_CHAT_TIMEOUT_MS: "7500.9" })).toBe(7_500);
+  });
+});
+
+describe("how a turn ended, for the audit trail", () => {
+  it("files a completed turn as ok, and everything else as what it was", () => {
+    const done = { aborted: false, requestAborted: false, failed: false };
+    expect(turnStatus(done)).toBe("ok");
+    // The deadline aborts the stream but never the request: the user is still
+    // there waiting, so the turn failed.
+    expect(turnStatus({ aborted: true, requestAborted: false, failed: false })).toBe("failed");
+    // A Stop from the user aborts the request itself: cancelled, not failed.
+    expect(turnStatus({ aborted: true, requestAborted: true, failed: false })).toBe("cancelled");
+    // A provider that answers with an error chunk ends the stream without an
+    // abort, and that is a failure too.
+    expect(turnStatus({ aborted: false, requestAborted: false, failed: true })).toBe("failed");
+  });
+
+  it("names the deadline in the summary without repeating the whole message", () => {
+    expect(deadlineNote(2_000)).toBe("el proveedor no respondió en 2 s y el turno se ha cortado");
+    expect(deadlineNote(240_000)).toBe(
+      "el proveedor no respondió en 4 min y el turno se ha cortado",
+    );
   });
 });
 
