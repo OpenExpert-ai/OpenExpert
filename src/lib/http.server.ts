@@ -75,9 +75,11 @@ export function allowedHosts(): string[] {
     if (host) hosts.add(host);
   }
   const configured = (process.env["OPENEXPERT_HOST"] ?? process.env["HOST"] ?? "").trim();
-  // A wildcard is a deliberate decision to answer on every interface: there is
-  // no hostname to allow in advance, so every `Host` on the configured port is
-  // accepted and the operator is the one who opened the door.
+  // A wildcard says where to listen, not which names are served: there is no
+  // hostname to derive from `0.0.0.0`, so the names have to come from
+  // `OPENEXPERT_ALLOWED_ORIGINS`. Deriving them from the port instead (the old
+  // `host.endsWith(":3000")`) made the list unnecessary and turned every name
+  // into a known one.
   if (configured !== "0.0.0.0" && configured !== "::") {
     const host = normalizeHost(configured);
     if (host) hosts.add(host);
@@ -89,7 +91,10 @@ export function allowedHosts(): string[] {
 /**
  * Whether the request names a host this server was configured to serve. A
  * request for `evil.test:3000` — resolved to loopback by the attacker's DNS —
- * fails here even though its `Origin` matches its own `Host`.
+ * fails here even though its `Origin` matches its own `Host`. Binding a
+ * wildcard does not widen this: `0.0.0.0` says where to listen, so a LAN name
+ * only gets through here once the operator lists it in
+ * `OPENEXPERT_ALLOWED_ORIGINS`.
  */
 export function isAllowedHost(request: Request): boolean {
   // The header is the normal source; a constructed `Request` (tests, an
@@ -106,13 +111,7 @@ export function isAllowedHost(request: Request): boolean {
   }
   const host = normalizeHost(value);
   if (!host) return false;
-  if (allowedHosts().includes(host)) return true;
-  const configured = (process.env["OPENEXPERT_HOST"] ?? process.env["HOST"] ?? "").trim();
-  if (configured === "0.0.0.0" || configured === "::") {
-    // Wildcard binding: any name on our port, as documented above.
-    return host.endsWith(`:${listenPort()}`);
-  }
-  return false;
+  return allowedHosts().includes(host);
 }
 
 /**

@@ -41,7 +41,9 @@ describe("el comodín no convierte cualquier nombre en nombre conocido", () => {
     // 127.0.0.1 y su `fetch("/api/backup")` ya es same-origin: no manda Origin.
     expect(isSameOrigin(request("evil.test:3000"))).toBe(false);
     // Y con Origin, tampoco.
-    expect(isSameOrigin(request("evil.test:3000", { origin: "http://evil.test:3000" }))).toBe(false);
+    expect(isSameOrigin(request("evil.test:3000", { origin: "http://evil.test:3000" }))).toBe(
+      false,
+    );
   });
 
   it("sigue sirviendo el nombre que el operador declaró", () => {

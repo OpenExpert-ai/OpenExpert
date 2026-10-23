@@ -5,6 +5,24 @@ OpenExpert follows [Semantic Versioning](https://semver.org/) and uses
 notes. This file is the reader's summary of notable changes per release; the
 per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
+## Unreleased
+
+### The wildcard says where to listen, not which names are served
+
+- **`OPENEXPERT_HOST=0.0.0.0` stops accepting any `Host`.** The name check had a
+  wildcard branch that took every request whose `Host` ended in the listening
+  port, so the server answered names nobody had declared — the opposite of what
+  `SECURITY.md` and the deployment guide promise, and what the name allowlist was
+  added for. A safe request that carries no `Origin` (every same-origin request a
+  page makes, which is the whole DNS-rebinding shape) passed the origin check
+  too, so a page served from `evil.test:3000` and re-pointed at loopback could
+  ask for `GET /api/backup` and read the full bundle: `secrets.json`, the
+  encrypted credentials and the `secret.key` that decrypts them. Names now come
+  only from the configuration — loopback, the listen address and
+  `OPENEXPERT_ALLOWED_ORIGINS` — and anything else is a 403, on every route. An
+  installation that exposed the app on `0.0.0.0` without that list has to add it
+  to keep opening the app from another machine.
+
 ## 0.5.0 — 2026-10-18
 
 ### One name and one version
