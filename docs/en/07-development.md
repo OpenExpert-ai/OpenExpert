@@ -88,7 +88,7 @@ cannot see it, and it stays in Spanish with nothing to warn about it.
 | `npm run preview`                 | Serve the build                               |
 | `npm run lint` / `lint:fix`       | ESLint                                        |
 | `npm run format` / `format:check` | Prettier                                      |
-| `npm run typecheck`               | TypeScript without emit                       |
+| `npm run typecheck`               | TypeScript without emit (app + package)       |
 | `npm run test:run` / `npm test`   | Tests (app + package)                         |
 | `npm run openexpert:doctor`       | CLI diagnostics                               |
 | `npm run openexpert:serve`        | Boot the app through the CLI                  |
@@ -139,6 +139,12 @@ npm run lint
 npm run test:run
 npm run build
 ```
+
+`typecheck` chains the package too (`npm run typecheck --workspaces`, the same
+command CI runs) and `test:run` runs the app's tests and `packages/openexpert/test`
+in one pass. A new test needs no registration anywhere:
+`src/puertas-cobertura.test.ts` walks the repo and fails naming any
+`*.test.ts(x)` the root vitest project does not execute.
 
 ## 8. Continuous integration and releases
 

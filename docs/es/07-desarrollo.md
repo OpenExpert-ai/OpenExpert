@@ -89,7 +89,7 @@ llega a ser una clave— y se queda en español sin que nada avise.
 | `npm run preview`                 | Sirve el build                                      |
 | `npm run lint` / `lint:fix`       | ESLint                                              |
 | `npm run format` / `format:check` | Prettier                                            |
-| `npm run typecheck`               | TypeScript sin emitir                               |
+| `npm run typecheck`               | TypeScript sin emitir (app + paquete)               |
 | `npm run test:run` / `npm test`   | Tests (app + paquete)                               |
 | `npm run openexpert:doctor`       | Diagnóstico del CLI                                 |
 | `npm run openexpert:serve`        | Arranca la app con el CLI                           |
@@ -141,6 +141,12 @@ npm run lint
 npm run test:run
 npm run build
 ```
+
+`typecheck` encadena también el paquete (`npm run typecheck --workspaces`, lo mismo
+que corre CI) y `test:run` ejecuta en una sola pasada los tests de la app y los de
+`packages/openexpert/test`. Un test nuevo no hay que registrarlo en ningún sitio:
+`src/puertas-cobertura.test.ts` recorre el repo y falla nombrando cualquier
+`*.test.ts(x)` que el proyecto raíz de vitest no ejecute.
 
 ## 8. Integración continua y publicaciones
 
