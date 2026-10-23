@@ -6,6 +6,11 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to this schema so editors validate the file. The application writes it on every save."
+    },
     "modelProvider": {
       "type": "string",
       "enum": ["ollama", "google", "anthropic", "openai-compatible", "opencode-go"],
@@ -75,6 +80,10 @@
         "injectionGuard": {
           "type": "boolean",
           "description": "Enable the prompt-injection security gate."
+        },
+        "visionPdf": {
+          "type": "boolean",
+          "description": "Read a scanned PDF with the model. Off by default: it sends the document to the provider."
         },
         "injectionExtraPatterns": {
           "type": "array",
