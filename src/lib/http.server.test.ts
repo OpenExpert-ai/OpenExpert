@@ -144,10 +144,15 @@ describe("isAllowedHost", () => {
     );
   });
 
-  it("accepts any name on its port when the operator bound every interface", () => {
-    // `OPENEXPERT_HOST=0.0.0.0` is the documented way to expose the app; at that
-    // point the operator owns the decision and there is no name to allow.
+  it("rejects a name it was not told to serve even when the operator bound every interface", () => {
+    // `OPENEXPERT_HOST=0.0.0.0` says where to listen, not which names are
+    // served: the LAN address has to be listed in `OPENEXPERT_ALLOWED_ORIGINS`,
+    // because a wildcard has no hostname to derive one from. Accepting any name
+    // on the port instead let a DNS-rebinding request through to `/api/backup`,
+    // which hands out `secrets.json` and the key that decrypts the credentials.
     vi.stubEnv("OPENEXPERT_HOST", "0.0.0.0");
+    expect(isAllowedHost(fake(null, "192.168.1.10:3000"))).toBe(false);
+    vi.stubEnv("OPENEXPERT_ALLOWED_ORIGINS", "http://192.168.1.10:3000");
     expect(isAllowedHost(fake(null, "192.168.1.10:3000"))).toBe(true);
     expect(isAllowedHost(fake(null, "192.168.1.10:4000"))).toBe(false);
   });
