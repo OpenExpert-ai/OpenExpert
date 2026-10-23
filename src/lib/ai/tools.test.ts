@@ -215,7 +215,12 @@ const svc = vi.hoisted(() => ({
   driveUpdate: vi.fn(),
   loadGrantedFiles: vi.fn(() => [] as { id: string; name: string; mimeType: string }[]),
   loadLocalRoots: vi.fn(() => [] as { path: string; name: string }[]),
-  listLocalFiles: vi.fn(() => [] as { path: string; name: string; size: number }[]),
+  listLocalFiles: vi.fn(
+    (): { files: { path: string; name: string; size: number }[]; truncated: boolean } => ({
+      files: [],
+      truncated: false,
+    }),
+  ),
   readLocalFile: vi.fn(),
   searchLocalContent: vi.fn(
     () =>
@@ -249,6 +254,7 @@ vi.mock("../engine/local-secrets.server", () => ({
   loadLocalRoots: svc.loadLocalRoots,
 }));
 vi.mock("../local-fs.server", () => ({
+  MAX_WALK_FILES_TEXT: "5.000",
   listLocalFiles: svc.listLocalFiles,
   readLocalFile: svc.readLocalFile,
   searchLocalContent: svc.searchLocalContent,
@@ -260,7 +266,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   svc.loadGrantedFiles.mockReturnValue([]);
   svc.loadLocalRoots.mockReturnValue([]);
-  svc.listLocalFiles.mockReturnValue([]);
+  svc.listLocalFiles.mockReturnValue({ files: [], truncated: false });
 });
 
 const FsFile = { path: "/r/a.txt", name: "a.txt", size: 4 };
@@ -543,7 +549,7 @@ describe("Google Drive tools", () => {
 describe("local file tools", () => {
   it("list_local_files returns the granted roots and the listed files", async () => {
     svc.loadLocalRoots.mockReturnValue([{ path: "/home/u/docs", name: "docs" }]);
-    svc.listLocalFiles.mockReturnValue([FsFile]);
+    svc.listLocalFiles.mockReturnValue({ files: [FsFile], truncated: false });
     const { tools, used } = await buildExpert([], ["local"]);
     const out = await exec(tools.list_local_files)({});
     expect(out["roots"]).toEqual(["/home/u/docs"]);
@@ -564,10 +570,13 @@ describe("local file tools", () => {
 
   it("search_local_files filters by name, case-insensitively", async () => {
     svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
-    svc.listLocalFiles.mockReturnValue([
-      { path: "/r/Informe.md", name: "Informe.md", size: 10 },
-      { path: "/r/otro.txt", name: "otro.txt", size: 5 },
-    ]);
+    svc.listLocalFiles.mockReturnValue({
+      files: [
+        { path: "/r/Informe.md", name: "Informe.md", size: 10 },
+        { path: "/r/otro.txt", name: "otro.txt", size: 5 },
+      ],
+      truncated: false,
+    });
     const { tools } = await buildExpert([], ["local"]);
     const out = await exec(tools.search_local_files)({ query: "informe" });
     expect(out["files"]).toEqual([{ path: "/r/Informe.md", name: "Informe.md", size: 10 }]);
@@ -917,11 +926,52 @@ describe("propose_invoice_reminders guard rails", () => {
 describe("file content tools", () => {
   it("list_local_files caps the listing and still reports the total", async () => {
     svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
-    svc.listLocalFiles.mockReturnValue(
-      Array.from({ length: 250 }, (_, i) => ({ path: `/r/f${i}.txt`, name: `f${i}.txt`, size: 1 })),
-    );
+    svc.listLocalFiles.mockReturnValue({
+      files: Array.from({ length: 250 }, (_, i) => ({
+        path: `/r/f${i}.txt`,
+        name: `f${i}.txt`,
+        size: 1,
+      })),
+      truncated: false,
+    });
     const { tools } = await buildExpert([], ["local"]);
     const out = await exec(tools.list_local_files)({});
+    expect(out["total"]).toBe(250);
+    expect((out["files"] as unknown[]).length).toBe(200);
+    expect(String(out["note"])).toContain("200 de 250");
+  });
+
+  it("list_local_files says when the walk was cut and does not sell the cap as the total", async () => {
+    svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
+    svc.listLocalFiles.mockReturnValue({
+      files: Array.from({ length: 5_000 }, (_, i) => ({
+        path: `/r/f${i}.txt`,
+        name: `f${i}.txt`,
+        size: 1,
+      })),
+      truncated: true,
+    });
+    const { tools } = await buildExpert([], ["local"]);
+    const out = await exec(tools.list_local_files)({});
+    expect(out["truncated"]).toBe(true);
+    expect(out["total"]).toBeUndefined();
+    expect(out["scanned"]).toBe(5_000);
+    expect(String(out["note"])).toContain("5.000");
+    expect((out["files"] as unknown[]).length).toBe(200);
+  });
+
+  it("search_local_files counts every match, not only the 200 it shows", async () => {
+    svc.loadLocalRoots.mockReturnValue([{ path: "/r", name: "r" }]);
+    svc.listLocalFiles.mockReturnValue({
+      files: Array.from({ length: 250 }, (_, i) => ({
+        path: `/r/factura-${i}.txt`,
+        name: `factura-${i}.txt`,
+        size: 1,
+      })),
+      truncated: false,
+    });
+    const { tools } = await buildExpert([], ["local"]);
+    const out = await exec(tools.search_local_files)({ query: "factura" });
     expect(out["total"]).toBe(250);
     expect((out["files"] as unknown[]).length).toBe(200);
     expect(String(out["note"])).toContain("200 de 250");

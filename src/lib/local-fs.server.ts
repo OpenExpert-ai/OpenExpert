@@ -55,6 +55,14 @@ const MAX_WALK_FILES = 5_000;
 const MAX_WALK_DEPTH = 8;
 const MAX_BROWSE_ENTRIES = 2_000;
 
+/** `5000` → «5.000», because the walk cap is quoted to the model and to the person reading it. */
+function groupThousands(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/** The walk cap written out, so the tools name it instead of hard-coding a second 5 000. */
+export const MAX_WALK_FILES_TEXT = groupThousands(MAX_WALK_FILES);
+
 export type DirEntry = { name: string; path: string; isDirectory: boolean };
 
 export type ListedFile = { path: string; name: string; size: number };
@@ -144,14 +152,42 @@ export function browseDirectory(path?: string | null): {
 
 /* ------------------------------ listing -------------------------------- */
 
-/** Recursively list files under a granted folder, bounded in depth and count. */
-export function listLocalFiles(roots: string[]): ListedFile[] {
+/** What a walk returns: the files, and whether a cap cut it short. */
+export type LocalWalk = {
+  files: ListedFile[];
+  /** `true` when the walk stopped at `maxFiles` or `maxDepth` with entries left unvisited. */
+  truncated: boolean;
+};
+
+/**
+ * Recursively list files under a granted folder, bounded in depth and count.
+ *
+ * The caps protect the caller (a mounted disk, a virtual `~` with thirty thousand files); they say
+ * nothing about the folder. A walk that stopped early must say so, because `files.length` is then a
+ * floor and not a count: reporting it as the folder size is how «el archivo no existe» was answered
+ * with the file inside the folder.
+ */
+export function listLocalFiles(
+  roots: string[],
+  opts: { maxFiles?: number; maxDepth?: number } = {},
+): LocalWalk {
+  const maxFiles = Math.max(1, Math.floor(opts.maxFiles ?? MAX_WALK_FILES));
+  const maxDepth = Math.max(0, Math.floor(opts.maxDepth ?? MAX_WALK_DEPTH));
   const out: ListedFile[] = [];
+  let truncated = false;
   const seen = new Set<string>();
   const resolvedRoots = roots.map((r) => safeRealpath(r) ?? r);
   const insideRoots = (p: string) => resolvedRoots.some((r) => isWithin(r, p));
   const walk = (dir: string, depth: number) => {
-    if (depth > MAX_WALK_DEPTH || out.length >= MAX_WALK_FILES) return;
+    if (depth > maxDepth) {
+      // Subdirectories below this one exist — we were called to enter them — and stay unvisited.
+      truncated = true;
+      return;
+    }
+    if (out.length >= maxFiles) {
+      truncated = true;
+      return;
+    }
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
@@ -159,7 +195,10 @@ export function listLocalFiles(roots: string[]): ListedFile[] {
       return;
     }
     for (const e of entries) {
-      if (out.length >= MAX_WALK_FILES) return;
+      if (out.length >= maxFiles) {
+        truncated = true;
+        return;
+      }
       if (IGNORED.has(e.name) || isXdgTrash(dir, e.name) || e.name.startsWith(".")) continue;
       const full = join(dir, e.name);
       let target = full;
@@ -191,7 +230,7 @@ export function listLocalFiles(roots: string[]): ListedFile[] {
     }
   };
   for (const r of resolvedRoots) walk(r, 0);
-  return out;
+  return { files: out, truncated };
 }
 
 /* ------------------------------- reading ------------------------------- */
@@ -516,6 +555,10 @@ export type SearchResult = {
   scanned: number;
   skipped: number;
   hasMore: boolean;
+  /** Files the walk listed but the file cap left unread. Absent when the search saw every file. */
+  unscanned?: number;
+  /** `true` when the folder walk itself stopped at its cap, so the listing is a floor. */
+  truncated?: boolean;
   note?: string;
 };
 
@@ -533,15 +576,17 @@ export async function searchLocalContent(
   if (!needle) return { hits: [], scanned: 0, skipped: 0, hasMore: false, note: "Búsqueda vacía." };
   const maxFiles = Math.max(1, Math.floor(opts.maxFiles ?? MAX_SEARCH_FILES));
   const maxHits = Math.max(1, Math.floor(opts.maxHits ?? MAX_HITS));
+  const walk = listLocalFiles(roots);
+  const files = walk.files;
   const hits: ContentHit[] = [];
   let scanned = 0;
   let skipped = 0;
-  let hasMore = false;
-  for (const file of listLocalFiles(roots)) {
-    if (scanned >= maxFiles || hits.length >= maxHits) {
-      hasMore = true;
-      break;
-    }
+  // Two different reasons to stop, and they are not the same message: running out of hits means
+  // «hay más coincidencias», running out of files means «no he mirado todo». The old code said the
+  // first for both, so the model announced more hits when there were none and files left unread.
+  for (const file of files) {
+    if (hits.length >= maxHits) break;
+    if (scanned >= maxFiles) break;
     // An unreadable file (permissions, a broken archive) is not a failure of the search: it counts
     // as skipped and the loop keeps going.
     const extracted = await extractText(file.path).catch(() => null);
@@ -560,22 +605,37 @@ export async function searchLocalContent(
         line: i + 1,
         text: line.trim().slice(0, MAX_HIT_TEXT),
       });
-      if (hits.length >= maxHits) {
-        hasMore = true;
-        break;
-      }
+      if (hits.length >= maxHits) break;
     }
+  }
+  // The hit cap is reached and not passed (`hits.length` never exceeds it), so this is the flag —
+  // setting it inside the loop missed the case where the last file filled the cap and the loop ended.
+  const stoppedByHits = hits.length >= maxHits;
+  const unscanned = files.length - scanned;
+  const hasMore = stoppedByHits || unscanned > 0 || walk.truncated;
+  const notes: string[] = [];
+  if (stoppedByHits) {
+    notes.push(
+      "Hay más coincidencias de las que se devuelven. Acota la búsqueda, o elige un archivo de la lista y léelo por partes.",
+    );
+  } else if (unscanned > 0) {
+    notes.push(
+      `Se han revisado ${scanned} de ${files.length} archivos: quedan ${unscanned} sin revisar. Acota la búsqueda a una subcarpeta o usa un término más concreto.`,
+    );
+  }
+  if (walk.truncated) {
+    notes.push(
+      `Además, el recorrido de la carpeta se ha cortado en el tope de ${MAX_WALK_FILES_TEXT} archivos, así que puede haber más sin listar.`,
+    );
   }
   return {
     hits,
     scanned,
     skipped,
     hasMore,
-    ...(hasMore
-      ? {
-          note: "Hay más coincidencias de las que se devuelven. Acota la búsqueda, o elige un archivo de la lista y léelo por partes.",
-        }
-      : {}),
+    ...(unscanned > 0 ? { unscanned } : {}),
+    ...(walk.truncated ? { truncated: true } : {}),
+    ...(notes.length ? { note: notes.join(" ") } : {}),
   };
 }
 

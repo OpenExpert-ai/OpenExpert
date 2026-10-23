@@ -368,7 +368,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     list_local_files: tool({
       description:
-        "Lista los archivos de las carpetas locales que el usuario autorizó (ruta, nombre y tamaño). Devuelve los primeros 200 y el total; si hay más, acota con search_local_files.",
+        "Lista los archivos de las carpetas locales que el usuario autorizó (ruta, nombre y tamaño). Devuelve los primeros 200 y el total; si el recorrido se corta en su tope, lo dice (`truncated: true`) y el total no es el de la carpeta. Si hay más, acota con search_local_files.",
       inputSchema: z.object({}),
       execute: async () => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
@@ -378,20 +378,24 @@ export function createChatTools(ctx: ChatToolsContext) {
           const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
-          const all = fs.listLocalFiles(roots);
+          const walk = fs.listLocalFiles(roots);
+          const all = walk.files;
           // A folder with thousands of files used to dump every entry into the context, where it
           // costs tokens and buries the one file the question is about. The total still travels, so
           // nothing is hidden — only paged.
           const files = all.slice(0, MAX_LISTED);
+          // The walk has caps too, and they are not the size of the folder: `total` on a truncated
+          // walk would be «5000 archivos» for a folder of 20 000, and the model repeated it.
+          const note = walk.truncated
+            ? `Se listan ${files.length} archivos de los ${all.length} recorridos, y el recorrido se ha cortado en el tope de ${fs.MAX_WALK_FILES_TEXT}: la carpeta puede tener más. Acota con search_local_files.`
+            : all.length > files.length
+              ? `Se listan ${files.length} de ${all.length} archivos. Acota con search_local_files.`
+              : null;
           return {
             roots,
-            total: all.length,
+            ...(walk.truncated ? { truncated: true, scanned: all.length } : { total: all.length }),
             files,
-            ...(all.length > files.length
-              ? {
-                  note: `Se listan ${files.length} de ${all.length} archivos. Acota con search_local_files.`,
-                }
-              : {}),
+            ...(note ? { note } : {}),
           };
         } catch (e) {
           return { error: (e as Error).message };
@@ -400,21 +404,38 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     search_local_files: tool({
       description:
-        "Busca archivos por NOMBRE en las carpetas locales autorizadas. Devuelve [{path, name, size}].",
+        "Busca archivos por NOMBRE en las carpetas locales autorizadas. Devuelve [{path, name, size}] y `total` con cuántos coinciden, aunque solo enseñe los primeros 200.",
       inputSchema: z.object({ query: z.string() }),
       execute: async ({ query }) => {
         if (!expert.sources.includes("local")) return deny("con archivos locales");
         used.add("Archivos locales");
         try {
+          const MAX_LISTED = 200;
           const local = await import("../engine/local-secrets.server");
           const fs = await import("../local-fs.server");
           const roots = local.loadLocalRoots().map((r) => r.path);
           const q = query.trim().toLowerCase();
-          const files = fs
-            .listLocalFiles(roots)
-            .filter((f) => f.name.toLowerCase().includes(q))
-            .slice(0, 200);
-          return { files };
+          const walk = fs.listLocalFiles(roots);
+          // Count every match in the walk, not just the ones that fit: «200» read as the answer is
+          // how the 201st file became «no existe».
+          const matched = walk.files.filter((f) => f.name.toLowerCase().includes(q));
+          const files = matched.slice(0, MAX_LISTED);
+          const notes: string[] = [];
+          if (walk.truncated) {
+            notes.push(
+              `Se listan ${files.length} de ${matched.length} coincidencias dentro del recorrido, que se ha cortado en el tope de ${fs.MAX_WALK_FILES_TEXT} archivos: puede haber más archivos sin mirar. Acota con una subcarpeta.`,
+            );
+          } else if (matched.length > files.length) {
+            notes.push(
+              `Se listan ${files.length} de ${matched.length} coincidencias. Acota la búsqueda.`,
+            );
+          }
+          return {
+            files,
+            // On a truncated walk the count is a floor, so it does not travel as `total`.
+            ...(walk.truncated ? { truncated: true } : { total: matched.length }),
+            ...(notes.length ? { note: notes.join(" ") } : {}),
+          };
         } catch (e) {
           return { error: (e as Error).message };
         }
