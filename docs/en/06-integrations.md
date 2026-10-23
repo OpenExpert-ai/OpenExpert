@@ -167,7 +167,11 @@ A **scanned PDF** has no text layer: it is a photograph of a page. When the sett
 scanned PDFs with the model" is on —it ships **off**—, the document is transcribed by the
 active model, which has to be able to see documents. That happens **only on an explicit read
 of a file**, never while a search walks a folder, and the transcription is literal rather
-than a summary, because it feeds the search and the windowed read.
+than a summary, because it feeds the search and the windowed read. The transcription has a
+ceiling of 200,000 characters: when a document goes past it, the read carries `truncated`
+and a note saying how much was transcribed, because the end cannot be asked for again —it
+was never transcribed— and, without that warning, the first half would pass for the whole
+document.
 
 ### 5.1 Model providers
 
