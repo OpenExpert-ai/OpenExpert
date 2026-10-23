@@ -9,6 +9,7 @@ import { ActivityEventMeta } from "@/components/activity/ActivityEventMeta";
 import { useAct, useMe, useWorkspace, type Workspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { pluralize } from "@/lib/translate";
+import { activityStatusLabel } from "@/lib/activity-labels";
 import { decideAction, getActivityPage, revertEvent } from "@/lib/data.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -166,7 +167,12 @@ export function ActivityPage() {
         <select className={sel} value={type} onChange={(e) => setType(e.target.value)}>
           <option value="all">{t("Todos los tipos")}</option>
           {types.map((tp) => (
-            <option key={tp}>{tp}</option>
+            // El texto se traduce y el valor sigue siendo el dato: con el
+            // texto dentro del `value`, el filtro compararía «Query» con
+            // «Consulta» y no casaría ningún evento.
+            <option key={tp} value={tp}>
+              {t(tp)}
+            </option>
           ))}
         </select>
         <select
@@ -185,7 +191,7 @@ export function ActivityPage() {
           <option value="all">{t("Todos los estados")}</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {t(s)}
+              {t(activityStatusLabel(s))}
             </option>
           ))}
         </select>
@@ -215,7 +221,7 @@ export function ActivityPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="font-medium">{a.actor_name}</span>
-                <span className="text-muted-foreground">· {a.type}</span>
+                <span className="text-muted-foreground">· {t(a.type)}</span>
                 <span className="rounded border border-border px-1.5 font-mono text-[0.7rem]">
                   expert::{a.expert_id}
                 </span>
@@ -223,7 +229,7 @@ export function ActivityPage() {
                   variant="outline"
                   className={`font-mono text-[0.7rem] uppercase ${statusCls[a.status] ?? ""}`}
                 >
-                  {t(a.status)}
+                  {t(activityStatusLabel(a.status))}
                 </Badge>
               </div>
               <p className="mt-1 text-sm">{a.summary}</p>

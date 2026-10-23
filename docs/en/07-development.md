@@ -73,6 +73,18 @@ reads every literal `t("…")` in `src/` with the TypeScript parser and fails wh
 one of them has no entry, so the gap cannot come back unnoticed; keys computed at
 runtime are outside that check.
 
+A value that comes from the database is the same in both languages, so it cannot
+be a dictionary key on its own: the activity log stores the event `type`
+(«Consulta», «Drive · creación») and its `status` (`ok`, `pending`, `reverted`…).
+The type is already the Spanish source string and goes through `t()` as it is;
+the status carries an English identifier, so it gets its label from
+`src/lib/activity-labels.ts` before `t()`. Both sides are covered: the types are
+collected from the `logActivity({ type })` and `proposePending` calls in
+`src/locales/activity-i18n.test.ts`, and the chat tool labels
+(`src/lib/ai/tool-labels.ts`) are crossed against the real catalog in
+`src/lib/ai/tool-labels.test.ts`, which is how a new tool stops shipping with its
+technical name on screen.
+
 A text that carries a count goes through `pluralize(locale, n, one, other, params)`
 in `src/lib/translate.ts`, which picks the singular or the plural form and then
 translates it: `t()` interpolates but does not pluralise, so a fixed plural read
