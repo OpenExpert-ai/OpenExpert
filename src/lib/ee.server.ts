@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { daysSince } from "@/lib/calendar-day";
+import { countPhrase } from "@/lib/translate";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
 
@@ -263,9 +264,7 @@ export const pendingActionSchema = z.discriminatedUnion("kind", [
 ]);
 
 /** Concordancia de número en los textos de la actividad: «1 reclamación» / «2 reclamaciones». */
-export function countPhrase(n: number, singular: string, plural: string): string {
-  return `${n} ${n === 1 ? singular : plural}`;
-}
+export { countPhrase };
 
 export async function executePending(
   action: PendingAction,

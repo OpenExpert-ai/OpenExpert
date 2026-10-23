@@ -352,7 +352,7 @@ export const clearChatHistory = createServerFn({ method: "POST" }).handler(async
     type: "Configuración",
     expert_id: "general",
     status: "ok",
-    summary: `Historial de chat borrado (${n} mensajes)`,
+    summary: `Historial de chat borrado (${ee.countPhrase(n, "mensaje", "mensajes")})`,
     sources: ["Configuración"],
   });
   return { removed: n };

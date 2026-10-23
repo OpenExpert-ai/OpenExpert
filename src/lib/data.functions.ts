@@ -539,7 +539,7 @@ export const revokeGrantedFile = createServerFn({ method: "POST" })
       type: "Integración",
       expert_id: "general",
       status: "ok",
-      summary: `Retirado el acceso a «${target.name}» de Google Drive (${next.length} archivo(s) concedido(s))`,
+      summary: `Retirado el acceso a «${target.name}» de Google Drive (${ee.countPhrase(next.length, "archivo concedido", "archivos concedidos")})`,
       sources: ["Google Drive"],
     });
     return { ok: true, revoked: true, count: next.length };
@@ -653,7 +653,7 @@ export const syncIntegration = createServerFn({ method: "POST" })
       type: "Integración",
       expert_id: "general",
       status: "ok",
-      summary: `Sincronizado Google Drive (${grants.length} archivos concedidos)`,
+      summary: `Sincronizado Google Drive (${ee.countPhrase(grants.length, "archivo concedido", "archivos concedidos")})`,
       sources: ["Google Drive"],
     });
   });

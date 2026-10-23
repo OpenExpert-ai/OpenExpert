@@ -73,6 +73,14 @@ reads every literal `t("…")` in `src/` with the TypeScript parser and fails wh
 one of them has no entry, so the gap cannot come back unnoticed; keys computed at
 runtime are outside that check.
 
+A text that carries a count goes through `pluralize(locale, n, one, other, params)`
+in `src/lib/translate.ts`, which picks the singular or the plural form and then
+translates it: `t()` interpolates but does not pluralise, so a fixed plural read
+«1 mensajes». Both forms are dictionary keys, and the same coverage check collects
+them from every `pluralize(...)` call. Server messages that never reach the
+window (the activity log, the notes handed to the model) use `countPhrase(n,
+singular, plural)`, which has no dictionary behind it.
+
 The data-sources page (`src/routes/_authenticated/integrations.sources.tsx`) has a
 check of its own, `-integrations.sources.test.ts`: it walks the page's AST and
 fails on any visible text that does not go through `t()`, toasts and `aria-label`

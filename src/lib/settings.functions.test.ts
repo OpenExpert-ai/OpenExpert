@@ -516,6 +516,24 @@ describe("datos", () => {
     expect(orm.select().from(schema.chatMessages).all()).toEqual([]);
   });
 
+  it("el resumen del historial borrado concuerda cuando solo había un mensaje", async () => {
+    const { orm } = await db.getDb();
+    orm
+      .insert(schema.chatMessages)
+      .values({
+        id: "m1",
+        expertId: "general",
+        conversationId: "c1",
+        message: { role: "user", parts: [] },
+        createdAt: new Date().toISOString(),
+      })
+      .run();
+    await expect(fns.clearChatHistory()).resolves.toEqual({ removed: 1 });
+    expect(orm.select().from(schema.activity).all()[0]?.summary).toBe(
+      "Historial de chat borrado (1 mensaje)",
+    );
+  });
+
   it("resetData vuelve al estado sembrado y lo deja registrado", async () => {
     const { orm } = await db.getDb();
     orm

@@ -142,4 +142,17 @@ describe("ActivityPage y el recorte del registro", () => {
     expect(screen.queryByText(/Se listan los/)).toBeNull();
     expect(screen.queryByText("Cargar más")).toBeNull();
   });
+
+  it("concuerda en singular cuando el registro tiene un solo evento", async () => {
+    state.ws = {
+      me: { name: "Propietario local", role: "ADMIN" as const },
+      experts: [],
+      activity: [event("evt_unico")],
+      activityTotal: 1,
+    };
+    render(<ActivityPage />);
+
+    expect(screen.getByText("1 de 1 evento")).toBeTruthy();
+    expect(screen.queryByText("1 de 1 eventos")).toBeNull();
+  });
 });

@@ -7,6 +7,19 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### «1 mensajes» is not a sentence
+
+- **Every text with a count agrees in number, in both languages.** `countPhrase` already existed,
+  but only the two summaries of `executePending` used it: clearing one message logged «Historial de
+  chat borrado (1 mensajes)» and a single granted file read «(1 archivos concedidos)», while the
+  window said «1 mensajes», «1 eventos», «1 modelos», «1 archivo(s)», «1 carpeta(s)» and
+  «1 línea(s)». The plural now lives in one place: `pluralize(locale, n, one, other)` in
+  `src/lib/translate.ts` picks the form and then translates it — both forms are dictionary keys, and
+  the English coverage check collects them from every call — while messages that never reach the
+  window (the activity log, the notes handed to the model) use `countPhrase`, moved to the same file
+  and re-exported from `ee.server`. `src/locales/en.ts` gained the singular entries, the «(s)»
+  spellings are gone, and the file-window note now says «1 línea».
+
 ### A Drive search is 100 files, not all of them
 
 - **`search_drive` says how many matches it left out.** It filtered the files granted with the Picker

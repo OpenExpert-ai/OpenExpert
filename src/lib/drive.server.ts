@@ -9,6 +9,7 @@ import { logger } from "./logger.server";
 import { OFFICE_MIME, extractOfficeText } from "./office.server";
 import { fetchWithTimeout } from "./http.server";
 import { takeWindow } from "./text-window";
+import { countPhrase } from "./translate";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -196,7 +197,7 @@ export async function readFile(id: string, grantedIds: string[], opts: DriveRead
     return {
       ...meta,
       content: null,
-      note: `El archivo tiene ${totalLines} línea(s): el offset ${offset} queda fuera del final. Usa un offset entre 1 y ${totalLines}.`,
+      note: `El archivo tiene ${countPhrase(totalLines, "línea", "líneas")}: el offset ${offset} queda fuera del final. Usa un offset entre 1 y ${totalLines}.`,
     };
   }
   const wantedChar = Math.max(0, Math.floor(opts.charOffset ?? 0));
