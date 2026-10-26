@@ -7,6 +7,26 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### Una base de una versión más nueva no se abre en silencio
+
+- **La versión del esquema se comprueba antes de migrar, no después.** `applyMigrations`
+  (`src/lib/db.server.ts`) se salta toda migración que la base da por aplicada, así que un
+  `PRAGMA user_version` por delante de la última migración de esta build (hoy la 7) significaba que
+  no se aplicaba ninguna y la aplicación seguía leyendo y escribiendo un esquema que nunca había
+  visto: el fallo salía como un error de SQLite suelto («table experts has no column named
+  domains»), que nombra el síntoma y no la causa. `getDb()` rechaza ahora esa base antes de tocar
+  nada, y el mensaje dice las dos versiones (la de la base y hasta cuál entiende esta build) y qué
+  hacer; el fichero queda byte a byte como estaba.
+- **La restauración comprueba lo mismo, antes de escribir.** `assertValidDatabase`
+  (`src/lib/backup.server.ts`) miraba la cabecera de SQLite y que sql.js leyera el esquema, pero
+  nunca `user_version`; el `version` que sí rechazaba es el del **formato del paquete**, no el del
+  esquema de la base. Como las copias viajan entre máquinas a propósito, una copia hecha con una
+  build posterior entraba entera: ahora se rechaza con el mismo mensaje y sin tocar el destino —ni
+  el `openexpert.db` ni su `.bak`—.
+- **La puerta es un test.** `src/lib/db.future-schema.test.ts` marca una base real en 9999 y
+  comprueba el rechazo de `getDb()` y de `restoreBackup` con el sha256 del fichero antes y después,
+  más un control de que una base en la versión actual se sigue abriendo y migrando.
+
 ### A status is not a word, and «pending» is not Spanish
 
 - **The activity log is translated in both directions.** The page printed the event `type` raw — it

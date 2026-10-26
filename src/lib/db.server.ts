@@ -22,6 +22,55 @@ const migrations = import.meta.glob("../../drizzle/migrations/*.sql", {
   eager: true,
 }) as Record<string, string>;
 
+type Migration = { version: number; sql: string };
+
+/** The numbered migrations this build ships, in application order. */
+const knownMigrations: Migration[] = Object.entries(migrations)
+  .map(([path, sql]) => {
+    const match = /(?:^|\/)(\d+)_/.exec(path);
+    return { version: match ? Number(match[1]) : 0, sql };
+  })
+  .filter((m) => m.version > 0)
+  .sort((a, b) => a.version - b.version);
+
+/**
+ * The newest schema version this build knows: the last migration it ships.
+ *
+ * `PRAGMA user_version` says how far a database has come, so a database above
+ * this number was written by a newer OpenExpert whose DDL this build has never
+ * seen.
+ */
+export const SCHEMA_VERSION = knownMigrations.at(-1)?.version ?? 0;
+
+/** The schema version a database reports (`PRAGMA user_version`). */
+export function schemaVersionOf(raw: Database): number {
+  return Number(raw.exec("PRAGMA user_version")[0]?.values[0]?.[0] ?? 0);
+}
+
+/**
+ * A database written by a newer OpenExpert, whose schema this build has never
+ * read. Its own class so a caller that already wraps every failure in its own
+ * message (`assertValidDatabase`) can let this one through as it is.
+ */
+export class SchemaTooNewError extends Error {}
+
+/**
+ * Refuse to work with a database newer than this build.
+ *
+ * `applyMigrations` skips every migration a database reports as applied, so a
+ * version from the future meant that no migration ran at all and the app went
+ * on reading and writing a schema it had never seen — the failure surfaced as a
+ * stray SQLite error about a missing column, which names the symptom and not
+ * the cause. The check runs before anything is written, so the file stays
+ * exactly as it was.
+ */
+export function assertKnownSchema(version: number): void {
+  if (version <= SCHEMA_VERSION) return;
+  throw new SchemaTooNewError(
+    `La base de datos viene de una versión más nueva de OpenExpert (esquema ${version}; esta versión entiende hasta el ${SCHEMA_VERSION}). Actualiza OpenExpert para abrirla. No se ha cambiado nada.`,
+  );
+}
+
 export { expandHome, dataDir, dbPath };
 
 const require = createRequire(import.meta.url);
@@ -88,15 +137,8 @@ function writeDbFile(file: string, raw: Database): void {
  * existing one converge.
  */
 function applyMigrations(raw: Database): void {
-  const current = Number(raw.exec("PRAGMA user_version")[0]?.values[0]?.[0] ?? 0);
-  const pending = Object.entries(migrations)
-    .map(([path, sql]) => {
-      const match = /(?:^|\/)(\d+)_/.exec(path);
-      return { version: match ? Number(match[1]) : 0, sql };
-    })
-    .filter((m) => m.version > 0)
-    .sort((a, b) => a.version - b.version);
-  for (const migration of pending) {
+  const current = schemaVersionOf(raw);
+  for (const migration of knownMigrations) {
     if (migration.version <= current) continue;
     raw.exec(migration.sql);
     raw.exec(`PRAGMA user_version = ${migration.version}`);
@@ -108,6 +150,10 @@ async function init(): Promise<Handle> {
   const file = dbPath();
   mkdirSync(dirname(file), { recursive: true });
   const raw = existsSync(file) ? new SQL.Database(readFileSync(file)) : new SQL.Database();
+  // A database from a newer build is refused here, before `init.sql` or any
+  // migration touches it: running them would skip everything it already has and
+  // leave the app working over a schema it does not know.
+  assertKnownSchema(schemaVersionOf(raw));
   raw.exec(schemaSql);
   applyMigrations(raw);
   const orm = drizzle(raw, { schema });
