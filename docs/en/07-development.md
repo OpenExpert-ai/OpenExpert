@@ -219,3 +219,34 @@ the run → _Approve and run_) before its checks mean anything.
 - [Architecture](./02-architecture.md) — code map.
 - [Data model](./03-data-model.md) — tables.
 - [Deployment](./08-deployment.md) — running it.
+
+## 10. Repository layout
+
+The paths that matter when working on the code:
+
+```
+vite.config.ts                Build configuration (Nitro node-server)
+src/
+  routes/           TanStack Router routes
+  lib/
+    db.server.ts             SQLite (sql.js) + schema init + seed
+    data.functions.ts        Server functions (single write path)
+    ee.server.ts             Audit, revert and business queries
+    ai/chat.server.ts        Chat with tools and injection guard
+    drive.server.ts          Google Drive API client
+    drive-tokens.server.ts   Drive OAuth and token lifecycle
+    local-fs.server.ts       Granted local folders (read + approved writes)
+    notion.server.ts         Notion API client
+    notion-tokens.server.ts  Notion OAuth and token lifecycle
+    office.server.ts         Text/PDF/Office extraction (Drive + local)
+    engine/                  Model provider + local credential custody
+drizzle/schema.ts             Typed SQLite schema
+drizzle/init.sql              SQLite DDL (applied at startup)
+packages/openexpert/          MIT engine (model provider, config, tools, CLI)
+docker/                       Dockerfile and docker-compose
+docs/{en,es}/                 Bilingual documentation
+scripts/                      Repo scripts (docs check, licences, desktop install)
+src-tauri/                    Tauri desktop shell (the window only)
+install.sh                    One-command Linux install
+.changeset/                   Release notes for the next version
+```
