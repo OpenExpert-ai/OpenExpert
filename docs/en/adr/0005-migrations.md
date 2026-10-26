@@ -20,6 +20,12 @@ greater than `PRAGMA user_version` and bumps the version.
 
 - Old and new databases converge at startup; no external migration tool or
   native dependency.
+- A database whose version is **above** the last migration this build ships is
+  refused instead of opened: its migrations would be skipped as already applied
+  and the app would write over a schema it has never read. The message names both
+  versions and the file is left untouched. That is the real path of a bundle
+  restored from another machine running a later version, so the restore checks
+  the same thing before writing anything.
 - Contributors must add a numbered migration for every schema change (documented
   in `docs/en/07-development.md` and `AGENTS.md`).
 - More complex changes (dropping/renaming columns on SQLite) still need a

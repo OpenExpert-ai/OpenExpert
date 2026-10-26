@@ -93,6 +93,16 @@ servidor se rechaza entera, y el mensaje dice qué campo rompe qué límite. Cua
 se rechaza una copia no se cambia nada: la instalación se queda con la
 configuración que tenía.
 
+La base de datos que lleva la copia se comprueba igual, y por la misma razón: un
+`openexpert.db` escrito por una versión **más nueva** de OpenExpert (una copia
+restaurada de otra máquina con una build posterior, o la de una beta) trae tablas
+que esta versión no conoce. La aplicación lo rechaza en vez de abrirlo y escribir
+a ciegas sobre un esquema que no ha leído: el mensaje dice de qué versión viene
+la base y hasta cuál entiende esta instalación, y no se toca nada —ni la base del
+destino ni su `.bak`—. Actualiza OpenExpert y vuelve a importar la copia. Lo mismo
+vale al arrancar: un `openexpert.db` con un esquema más nuevo no se abre y el
+mensaje dice por qué.
+
 ## Referencias
 
 - [Despliegue](./08-despliegue.md) — cómo arrancarlo.
