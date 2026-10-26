@@ -5,7 +5,7 @@
 // header and never in another provider's slot.
 import { describe, expect, it, vi } from "vitest";
 
-import { listProviderModels } from "../src/provider-models.js";
+import { listProviderModels, modelToolSupport } from "../src/provider-models.js";
 
 type Call = { url: string; init?: RequestInit };
 
@@ -194,5 +194,73 @@ describe("listProviderModels", () => {
     expect(res.error).toMatch(/No se pudo contactar con Ollama/);
     expect(res.source).toBe("catalogue");
     expect(res.models).toContain("llama3.1");
+  });
+});
+
+describe("modelToolSupport", () => {
+  it("cree el catálogo cuando el modelo ya está clasificado", async () => {
+    const { calls, impl } = stubFetch({});
+    await expect(modelToolSupport("google", "gemini-2.5-flash", { fetchImpl: impl })).resolves.toBe(
+      "yes",
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  it("no adivina para un modelo de nube que no está en el catálogo", async () => {
+    const { calls, impl } = stubFetch({ capabilities: ["tools"] });
+    await expect(
+      modelToolSupport("openai-compatible", "modelo-inventado", { fetchImpl: impl }),
+    ).resolves.toBe("unknown");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("pregunta a Ollama por las capacidades y acepta tools", async () => {
+    const { calls, impl } = stubFetch({ capabilities: ["completion", "tools"] });
+    await expect(
+      modelToolSupport("ollama", "llama3.1", {
+        endpoint: "http://127.0.0.1:11434",
+        fetchImpl: impl,
+      }),
+    ).resolves.toBe("yes");
+    expect(calls[0]?.url).toBe("http://127.0.0.1:11434/api/show");
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ name: "llama3.1" });
+  });
+
+  it("dice no cuando Ollama no anuncia tools", async () => {
+    const { impl } = stubFetch({ capabilities: ["completion"] });
+    await expect(
+      modelToolSupport("ollama", "dolphin3:8b", {
+        endpoint: "http://127.0.0.1:11434",
+        fetchImpl: impl,
+      }),
+    ).resolves.toBe("no");
+  });
+
+  it("devuelve unknown si Ollama responde con error, sin lista o sin red", async () => {
+    const falla = stubFetch({}, 500);
+    await expect(
+      modelToolSupport("ollama", "llama3.1", {
+        endpoint: "http://127.0.0.1:11434",
+        fetchImpl: falla.impl,
+      }),
+    ).resolves.toBe("unknown");
+
+    const sinLista = stubFetch({});
+    await expect(
+      modelToolSupport("ollama", "llama3.1", {
+        endpoint: "http://127.0.0.1:11434",
+        fetchImpl: sinLista.impl,
+      }),
+    ).resolves.toBe("unknown");
+
+    const rota = vi.fn(async () =>
+      Promise.reject(new Error("ECONNREFUSED")),
+    ) as unknown as typeof fetch;
+    await expect(
+      modelToolSupport("ollama", "llama3.1", {
+        endpoint: "http://127.0.0.1:11434",
+        fetchImpl: rota,
+      }),
+    ).resolves.toBe("unknown");
   });
 });
