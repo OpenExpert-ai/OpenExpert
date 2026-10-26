@@ -25,6 +25,17 @@ import { runInNewContext } from "node:vm";
  */
 const PROBE_LENGTH = 256;
 
+/** The most characters of the pattern itself that the probe is built from. */
+const PATTERN_PROBE_CHARS = 3;
+
+/**
+ * Characters always tried, whatever the pattern uses. A pattern that only
+ * costs something on digits (`\d+\d+\d+\d+\d+\d+x`) or on whitespace
+ * (`\s+\s+\s+\s+\s+x`) never receives them from its own atoms alone, so they
+ * are reserved here instead of left to the letters that come after.
+ */
+const ALWAYS_CHARS = ["0", " "];
+
 /**
  * A pattern that needs more than this against the probe is too slow. The
  * limit is generous: the patterns an owner writes legitimately cost a
@@ -125,32 +136,67 @@ function firstChar(fragment: string, absent: string): string {
   return ch;
 }
 
-/** The characters the pattern uses as plain literals. */
-function literalLetters(pattern: string): string[] {
+/**
+ * The characters the pattern can consume, one per atom: an escape gives the
+ * character it matches (`\d` a digit, `\w` a letter, `\s` a space), a class one
+ * it lists —or one it does not, when negated—, a group the character of its
+ * first atom, and a literal gives itself, accents included. Anchors and
+ * quantifiers are not characters, so they are skipped; the bounds of an
+ * interval (`{9,15}`) are skipped with the interval.
+ */
+function atomChars(pattern: string): string[] {
   const out: string[] = [];
-  let inClass = false;
-  for (let i = 0; i < pattern.length; i++) {
+  const push = (c: string) => {
+    if (c && !out.includes(c)) out.push(c);
+  };
+  for (let i = 0; i < pattern.length;) {
     const ch = pattern[i];
     if (ch === "\\") {
-      i++;
-      continue;
-    }
-    if (inClass) {
-      if (ch === "]") inClass = false;
+      const escaped = escapedChar(pattern, i);
+      push(escaped.char);
+      i = escaped.end;
       continue;
     }
     if (ch === "[") {
-      inClass = true;
+      const cls = classChar(pattern, i, "x");
+      push(cls.char);
+      i = cls.end;
       continue;
     }
-    if (ch && /[A-Za-z0-9]/.test(ch) && !out.includes(ch)) out.push(ch);
+    if (ch === "(") {
+      const group = groupChar(pattern, i, "x");
+      push(group.char);
+      i = group.end;
+      continue;
+    }
+    if (ch === "{") {
+      const end = pattern.indexOf("}", i);
+      i = end < 0 ? i + 1 : end + 1;
+      continue;
+    }
+    if (
+      ch &&
+      ch !== "." &&
+      ch !== "^" &&
+      ch !== "$" &&
+      ch !== "*" &&
+      ch !== "+" &&
+      ch !== "?" &&
+      ch !== "|" &&
+      ch !== ")" &&
+      ch !== "}" &&
+      ch !== "]"
+    ) {
+      push(ch);
+    }
+    i++;
   }
   return out;
 }
 
 /** A character the pattern does not use, to break the end of the probe. */
 function absentChar(pattern: string): string {
-  const used = new Set(literalLetters(pattern));
+  const used = new Set(atomChars(pattern));
   for (const c of BREAKER_CHARS) if (!used.has(c)) return c;
   for (const c of FALLBACK_CHARS) if (!used.has(c)) return c;
   return "\u0001";
@@ -160,19 +206,23 @@ function absentChar(pattern: string): string {
  * The characters the probe is built from.
  *
  * The engine is at its worst when two parts of the pattern compete for the
- * same characters, so the probe starts from the letters the pattern itself
- * uses: a wildcard and a literal that both match `a` leave the engine many
- * ways to split the input. A letter the pattern never uses is the opposite of
- * that, and it is the one that breaks the end of the probe.
+ * same characters, so the probe starts from what the pattern can consume —one
+ * character per atom— and not from the ASCII letters it happens to spell: a
+ * `\d` that never sees a digit, or an `ñ` that is dropped as if it were not
+ * literal, is measured at zero and passed. A digit and a space are tried
+ * always, since a pattern can catch only on those. A character the pattern
+ * never uses is the opposite of all that, and it is the one that breaks the
+ * end of the probe.
  */
 function probeChars(pattern: string): string[] {
   const out: string[] = [];
   const push = (c: string) => {
     if (c && !out.includes(c)) out.push(c);
   };
-  for (const c of literalLetters(pattern)) push(c);
+  for (const c of atomChars(pattern).slice(0, PATTERN_PROBE_CHARS)) push(c);
+  for (const c of ALWAYS_CHARS) push(c);
   for (const c of FALLBACK_CHARS) push(c);
-  return out.slice(0, 3);
+  return out.slice(0, PATTERN_PROBE_CHARS + ALWAYS_CHARS.length);
 }
 
 /**

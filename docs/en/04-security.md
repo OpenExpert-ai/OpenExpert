@@ -42,7 +42,11 @@ restricted to the pages shared in Notion's picker.
    freezes the process, and the check happens on the thread that serves the
    application, for every message of the turn. The measurement runs inside a
    `vm` context, whose timeout cuts the expression off if it does not come
-   back, so measuring a bad pattern does not freeze whoever measures it.
+   back, so measuring a bad pattern does not freeze whoever measures it. The
+   measured input is built from one character of every part the pattern can
+   consume —a `\d` is tried with a digit, a `\s` with a space, an `ñ` with an
+   `ñ`—, because a probe of ASCII letters alone measures zero against a pattern
+   that only chokes on numbers.
 2. **Server-side checks.** Domain isolation is enforced in `chat.server.ts`, not
    by the model.
 3. **Human approval.** The assistant only _proposes_ actions (`propose_*`);
