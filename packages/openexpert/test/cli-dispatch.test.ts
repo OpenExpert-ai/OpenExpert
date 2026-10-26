@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/cli/commands.js", () => ({
   cmdVersion: vi.fn(() => 0),
-  cmdDoctor: vi.fn(() => 0),
+  cmdDoctor: vi.fn(async () => 0),
   cmdFix: vi.fn(async () => 0),
   cmdModels: vi.fn(async () => 0),
   cmdServe: vi.fn(async () => 0),
@@ -41,7 +41,7 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation((...a) => void errs.push(a.join(" ")));
   exitMock = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
   vi.mocked(commands.cmdServe).mockResolvedValue(0);
-  vi.mocked(commands.cmdDoctor).mockReturnValue(0);
+  vi.mocked(commands.cmdDoctor).mockResolvedValue(0);
   vi.mocked(commands.cmdVersion).mockReturnValue(0);
   vi.mocked(commands.cmdFix).mockResolvedValue(0);
   vi.mocked(commands.cmdModels).mockResolvedValue(0);

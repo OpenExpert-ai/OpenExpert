@@ -33,12 +33,15 @@ export async function run(argv: string[]): Promise<void> {
     case "":
     case "init":
     case "setup": {
-      const res = await runWizard({});
+      const flags: { assumeYes?: boolean; noStart?: boolean } = {};
+      if (argv.includes("--yes") || argv.includes("-y")) flags.assumeYes = true;
+      if (argv.includes("--no-start")) flags.noStart = true;
+      const res = await runWizard(flags);
       if (res.started) process.exit(await cmdServe());
       return;
     }
     case "doctor":
-      return process.exit(cmdDoctor());
+      return process.exit(await cmdDoctor());
     case "fix":
       return process.exit(await cmdFix());
     case "models":

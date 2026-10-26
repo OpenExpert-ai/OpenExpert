@@ -9,18 +9,19 @@
 Only **Google Drive**, **local folders** and **Notion** are available, and all are
 optional. The other connectors are modelled in the data but pending credentials.
 
-| Integration      | Category      | Connection     | Status        |
-| ---------------- | ------------- | -------------- | ------------- |
-| **Google Drive** | Productivity  | OAuth + Picker | **Available** |
-| **Local files**  | Productivity  | Local server   | **Available** |
-| **Notion**       | Productivity  | OAuth 2.0      | **Available** |
-| Pipedrive        | CRM           | By licence     | Pending       |
-| Salesforce       | CRM           | By licence     | Pending       |
-| Holded           | ERP / Finance | By licence     | Pending       |
-| Gmail            | Productivity  | API            | Pending       |
-| Slack            | Productivity  | API            | Pending       |
-| Google Analytics | Advertising   | API            | Pending       |
-| Meta Ads         | Advertising   | Token          | Pending       |
+| Integration      | Category      | Connection     | Status                   |
+| ---------------- | ------------- | -------------- | ------------------------ |
+| **Google Drive** | Productivity  | OAuth + Picker | **Available**            |
+| **Local files**  | Productivity  | Local server   | **Available**            |
+| **Notion**       | Productivity  | OAuth 2.0      | **Available**            |
+| **Pipedrive**    | CRM           | API token      | **Available (optional)** |
+| **Holded**       | ERP / Finance | API key        | **Available (optional)** |
+| **CSV import**   | Business data | File           | **Available**            |
+| Salesforce       | CRM           | By licence     | Pending                  |
+| Gmail            | Productivity  | API            | Pending                  |
+| Slack            | Productivity  | API            | Pending                  |
+| Google Analytics | Advertising   | API            | Pending                  |
+| Meta Ads         | Advertising   | Token          | Pending                  |
 
 ## 2. Google Drive
 
@@ -139,7 +140,35 @@ grants live encrypted in `~/.openexpert/local-roots.json`.
 - Docker: the server sees the container filesystem, so mount the folder with
   `-v /host/folder:/data/folder`.
 
-## 5. AI tools
+## 5. Business connectors
+
+Pipedrive, Holded and CSV are optional and **pull-only**: OpenExpert reads from
+them and never writes back. Their keys are stored in `~/.openexpert/secrets.json`
+(`0600`) and are never shown again after they are saved.
+
+### Pipedrive
+
+**Settings → Data → Business connectors.** Create a personal API token in
+Pipedrive (Settings → Personal preferences → API) and paste it. The sync reads
+deals and maps company, stage, value, owner, days in stage, expected close date
+and status. Rows are upserted by `pd-<id>`; syncing again updates them.
+
+### Holded
+
+**Settings → Data → Business connectors.** Create an API key in Holded
+(Settings → Developers) and paste it. The sync reads invoices and maps client,
+amount, due date and status (`pending`/`partial` → open, `completed` → paid,
+`cancelled`/`failed` → cancelled). Rows are upserted by `holded-<id>`.
+
+### CSV import
+
+**Settings → Data → Import CSV** covers deals, invoices, campaigns and accounts.
+Download the template, fill it and import; Spanish and English header names are
+accepted. The row key is `id`, or `csv-<entity>-<row>` when the file has no id
+column. A file is capped at 5,000 rows and one bad row is reported by line
+number without discarding the rest.
+
+## 6. AI tools
 
 | Tool                                                                                           | Behaviour                                                                                                                                     |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -202,7 +231,7 @@ through its own extensions and using it elsewhere is very likely a breach. And t
 portal_, whose access is an OAuth account rather than an API key. The reason lives next to
 the catalogue so nobody retries it unaware.
 
-## 6. Security notes
+## 7. Security notes
 
 - Tokens and grants are **AES-256-GCM encrypted** with a key file generated
   on the local machine (`~/.openexpert/secret.key`, mode `0600`).
@@ -216,7 +245,7 @@ the catalogue so nobody retries it unaware.
 - The browser is trusted in the local single-owner edition (see
   [`04-security.md`](./04-security.md)).
 
-## 7. References
+## 8. References
 
 - [Architecture](./02-architecture.md) — layers.
 - [AI](./05-ai.md) — tool catalogue.

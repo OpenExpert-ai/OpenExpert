@@ -32,7 +32,7 @@ function bail(): never {
 }
 
 export async function runWizard(
-  opts: { cwd?: string; assumeYes?: boolean } = {},
+  opts: { cwd?: string; assumeYes?: boolean; noStart?: boolean } = {},
 ): Promise<WizardResult> {
   const cwd = opts.cwd ?? process.cwd();
   const existing = readConfig(cwd);
@@ -40,9 +40,17 @@ export async function runWizard(
 
   if (nonInteractive) {
     const local = await listProviderModels("ollama");
+    // A tool-less model cannot read the business data, and the first model in
+    // an Ollama install is not always one that supports tools. Prefer the
+    // documented default when it is present; otherwise keep the first one and
+    // let `doctor`/the chat explain the mismatch.
+    const preferred =
+      local.models.find((m) => m === "llama3.1" || m.startsWith("llama3.1:")) ??
+      local.models[0] ??
+      defaultModelOf("ollama");
     const config: FileConfig = {
       modelProvider: "ollama",
-      modelId: local.models[0] ?? defaultModelOf("ollama"),
+      modelId: preferred,
       ollamaBaseUrl: DEFAULT_OLLAMA_URL,
       dataDir: DEFAULT_DATA_DIR,
     };
@@ -140,6 +148,18 @@ export async function runWizard(
   p.outro(
     `Configuración guardada en openexpert.json (modelo: ${config.modelProvider}:${config.modelId}).`,
   );
+
+  // The installer configures the model and then exits; it must not leave a
+  // server running in the terminal it was called from.
+  if (opts.noStart) {
+    return {
+      config: { ...existing, ...config },
+      secrets,
+      provider: choice,
+      modelId: config.modelId ?? "",
+      started: false,
+    };
+  }
 
   const go = await p.confirm({ message: "¿Arrancar ahora?", initialValue: true });
   if (p.isCancel(go)) bail();

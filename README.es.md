@@ -42,7 +42,8 @@ Open source bajo licencia MIT.
 - «Crea un Experto nuevo para Operaciones.»
 
 El asistente responde con los datos que conectes (Google Drive, carpetas locales
-y Notion) y propone las escrituras en vez de ejecutarlas.
+y Notion) o tu CRM y contabilidad (Pipedrive, Holded o un CSV) y propone las
+escrituras en vez de ejecutarlas.
 
 ![Ajustes de IA de OpenExpert: Ollama seleccionado, con proveedores externos disponibles](docs/assets/readme-ai.png)
 
@@ -106,7 +107,7 @@ O instala todo (dependencias, build, lanzador y entrada de menú) con un solo
 comando:
 
 ```sh
-./install.sh              # añade --skip-build para reutilizar un build previo
+./install.sh              # pregunta el proveedor; --with-ollama instala Ollama + llama3.1
 ```
 
 Ver [Despliegue](./docs/es/08-despliegue.md).
@@ -123,6 +124,9 @@ Ver [Despliegue](./docs/es/08-despliegue.md).
 - **Fuentes** (opcional): Google Drive, carpetas locales y Notion, conectadas con
   tu propia cuenta; los tokens y las concesiones se guardan en local con permisos
   `0600`.
+- **Datos de negocio**: importa un CSV (ventas, facturas, campañas o cuentas) o
+  conecta Pipedrive y Holded con tu propia clave de API; los dos son opcionales.
+  El juego de ejemplo de Ajustes → Datos permite probar el panel antes de conectar.
 - **Gobierno**: cada cambio reversible se registra con una instantánea y puede
   revertirse desde la pantalla de actividad. La IA solo _propone_ acciones y
   requieren aprobación humana.
@@ -184,7 +188,8 @@ pueden cambiar entre versiones menores. La
 
 Las issues y los pull requests son bienvenidos. [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 explica el DCO y las puertas; la puesta en marcha está en
-[`docs/es/07-desarrollo.md`](./docs/es/07-desarrollo.md).
+[`docs/es/07-desarrollo.md`](./docs/es/07-desarrollo.md). El soporte es de
+comunidad y no tiene SLA: ver [`SUPPORT.md`](./SUPPORT.md).
 
 ## Notas
 
@@ -194,6 +199,11 @@ explica el DCO y las puertas; la puesta en marcha está en
   variables de entorno que se suelen definir.
 - El repositorio entero se distribuye bajo la **Licencia MIT**. Ver
   [`LICENSE`](./LICENSE) y [`NOTICE`](./NOTICE).
+- Las copias se descargan cifradas con una contraseña que eliges; si la pierdes,
+  la copia no se puede abrir. El directorio de datos se crea `0700` y la base
+  `0600`.
+- Los paquetes de escritorio de Windows y macOS se compilan sin firmar en CI;
+  Linux es la ruta de escritorio probada.
 - [`SECURITY.md`](./SECURITY.md) describe el canal privado para reportar
   vulnerabilidades.
 - [`PRIVACY.md`](./PRIVACY.md) es la política de privacidad (en español:

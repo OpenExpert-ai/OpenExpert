@@ -191,6 +191,12 @@ has to exist, `Exec`/`TryExec` have to point at executables and the icon has to
 be 512×512. `npm run desktop:check` runs the same verification on its own (it
 exits non-zero on a dead launcher, which is what `install.sh --doctor` reports).
 
+`install.sh` ends with the model wizard (`--no-setup` skips it). `--with-ollama`
+installs Ollama and pulls llama3.1 first; the wizard offers every provider in the
+catalogue. It then offers optional Pipedrive and Holded keys, read from the
+terminal and stored with mode `0600`; nothing is downloaded or connected unless
+you say yes.
+
 The window loads the URL the command is serving, not a port compiled into the
 binary: `openexpert desktop` exports `OPENEXPERT_DESKTOP_URL` and the shell
 navigates to it, so `PORT=3100 openexpert` opens 3100. Without that variable — a
@@ -254,6 +260,13 @@ They are for distributing the app, not for installing it on a machine: the
 supported Linux installation is the per-user launcher, or `install.sh` at the
 repository root, which is also what installs the `openexpert` command, the menu
 entry and the icon.
+
+### Windows and macOS (unsigned)
+
+`.github/workflows/desktop-installers.yml` builds a `.msi` and a `.dmg` on demand
+and on `v*` tags. They are for testing: they are not code-signed, so Windows
+SmartScreen and macOS Gatekeeper will warn. Signing needs certificates and is
+not wired yet.
 
 ## References
 

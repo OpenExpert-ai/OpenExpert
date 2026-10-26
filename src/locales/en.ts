@@ -152,7 +152,52 @@ export const en: Record<string, string> = {
   Integraciones: "Integrations",
   Eventos: "Events",
   Mensajes: "Messages",
+  "Datos de negocio": "Business data",
+  "Importa un CSV o carga un juego de ejemplo para probar el panel.":
+    "Import a CSV or load a sample dataset to try the dashboard.",
+  "Tipo de datos": "Data type",
+  "Importar CSV": "Import CSV",
+  Plantilla: "Template",
+  "La plantilla trae las cabeceras que entiende el importador; también acepta una exportación con nombres equivalentes en español o inglés.":
+    "The template carries the headers the importer understands; an export with equivalent Spanish or English names also works.",
+  Campañas: "Campaigns",
+  Cuentas: "Accounts",
+  "De ejemplo: {n}": "Sample rows: {n}",
+  "Cargar datos de ejemplo": "Load sample data",
+  "Quitar datos de ejemplo": "Remove sample data",
+  "Los datos de ejemplo se marcan como demo y se quitan sin tocar los reales.":
+    "Sample rows are marked as demo and can be removed without touching real data.",
+  "Importados {n} registros de {entity}": "Imported {n} {entity} records",
+  "{n} fila(s) con error; la primera, línea {row}: {message}":
+    "{n} row(s) failed; the first at line {row}: {message}",
+  "CSV no válido": "Invalid CSV",
+  "Datos de ejemplo quitados": "Sample data removed",
+  "Cargados {n} registros de ejemplo": "Loaded {n} sample records",
+  "Conectores de negocio": "Business connectors",
+  "Opcionales. Se conectan con tu clave y solo leen; los datos se quedan en tu equipo.":
+    "Optional. They connect with your key and only read; the data stays on your machine.",
+  Conectado: "Connected",
+  "Sin conectar": "Not connected",
+  "Última sync: {date}": "Last sync: {date}",
+  "API token de Pipedrive": "Pipedrive API token",
+  "API key de Holded": "Holded API key",
+  "Conectar y sincronizar": "Connect and sync",
+  "Clave guardada; pulsa Sincronizar.": "Key stored; press Sync now.",
+  "Las claves se guardan en secrets.json con permisos 0600; solo se leen datos del conector.":
+    "Keys are stored in secrets.json with mode 0600; only connector data is read.",
+  "Conectado: {n} registros": "Connected: {n} records",
+  "Sincronizados {n} registros": "Synced {n} records",
+  Desconectado: "Disconnected",
   "Copia de seguridad": "Backup",
+  "Contraseña de la copia": "Backup passphrase",
+  "Mínimo 8 caracteres": "At least 8 characters",
+  "Descargar cifrada": "Download encrypted",
+  "Copia cifrada descargada": "Encrypted backup downloaded",
+  "La copia cifrada pide esta contraseña al restaurar; si la pierdes, no se puede abrir.":
+    "The encrypted backup asks for this passphrase when restoring; if you lose it, it cannot be opened.",
+  "La copia está cifrada: escribe su contraseña para restaurarla.":
+    "The backup is encrypted: enter its passphrase to restore it.",
+  "Contraseña incorrecta o copia dañada.": "Wrong passphrase or damaged backup.",
   "Incluye la base de datos, la configuración, las credenciales locales y el estado de tus integraciones.":
     "Includes the database, the configuration, the local credentials and the state of your integrations.",
   "La copia lleva la clave que descifra esas credenciales: quien tenga el fichero puede leer tus tokens. Guárdala como guardarías las credenciales.":
@@ -583,6 +628,7 @@ export const en: Record<string, string> = {
   Consulta: "Query",
   Seguridad: "Security",
   Integración: "Integration",
+  Importación: "Import",
   Reversión: "Revert",
   Cobro: "Collection",
   "Cambio en campañas": "Campaign change",

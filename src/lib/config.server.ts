@@ -113,10 +113,10 @@ export function readFileConfigRaw(cwd: string = process.cwd()): RawFileConfig {
   }
 }
 
-function atomicWrite(path: string, contents: string, mode?: number): void {
-  mkdirSync(dirname(path), { recursive: true });
+function atomicWrite(path: string, contents: string, mode = 0o600): void {
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const tmp = `${path}.tmp`;
-  writeFileSync(tmp, contents, mode ? { mode } : undefined);
+  writeFileSync(tmp, contents, { mode });
   renameSync(tmp, path);
 }
 

@@ -82,10 +82,11 @@ Rules:
 - Secrets are stored server-side and are not part of the normal data flow. The
   local settings panel can **reveal** a stored key on demand (the "Copiar"
   button), so treat the browser as trusted and do not expose the port.
-- Backups (`GET /api/backup`) embed `secrets.json`, the encrypted credential
-  files and `secret.key`, the key that decrypts them. The bundle is therefore as
-  sensitive as the tokens themselves: cross-origin downloads are rejected, but
-  still download backups only on a trusted machine and store them safely.
+- Backups downloaded from **Settings → Data** are AES-256-GCM encrypted with a
+  passphrase you choose. The passphrase is not stored: losing it loses the
+  backup. The legacy plain bundle (`GET /api/backup`) embeds `secrets.json`, the
+  encrypted credential files and `secret.key`; it is still available for old
+  copies, but download it only on a trusted machine.
 - A restored `openexpert.json` is **validated before it is written**: a bundle
   is a file that arrives from outside, so the configuration it carries goes
   through the same schema the settings panel and the raw editor use. A copy
@@ -120,8 +121,10 @@ Rules:
 
 ## 5. Data at rest
 
-The database is a plain SQLite file you own. Encryption is provided by your
-disk, not by the app. Back it up by copying `OPENEXPERT_DATA_DIR`.
+The database is a plain SQLite file you own. The data directory is created
+`0700` and the database `0600`, so another local user cannot read it; encryption
+at rest is provided by your disk, not by the app. Back it up from
+**Settings → Data** (encrypted) or by copying `OPENEXPERT_DATA_DIR`.
 
 ## 6. Activity log and revert
 

@@ -79,6 +79,21 @@ See [AI providers](./13-ai-providers.md). In short:
 The wizard stores secrets in `~/.openexpert/secrets.json` (mode `0600`), never
 in the repository.
 
+## Connect your data
+
+The business tables start empty. Open **Settings → Data**:
+
+- **Sample data** loads demo deals and invoices; remove them later without
+  touching real rows.
+- **CSV import** covers deals, invoices, campaigns and accounts. Download the
+  template, fill it and import; Spanish and English header names are accepted.
+- **Connectors** are optional: Pipedrive (deals) and Holded (invoices) are
+  pull-only and need your own API token/key. Paste it and press **Sync**.
+
+On Linux, `./install.sh` runs the provider wizard at the end; add
+`--with-ollama` to install Ollama and pull llama3.1 first, and it also offers
+the two connectors without writing the key to a log.
+
 ## Where things live
 
 | Thing         | Location                                                                                              |
@@ -93,8 +108,8 @@ in the repository.
 - **Chat says the model key is missing.** Run `openexpert fix` or `openexpert init`.
 - **Ollama not detected.** Install it and pull a model: `ollama pull llama3.1`.
 - **Port 3000 busy.** Free it; the dev server is pinned to 3000.
-- **Docker image not found, or the pull is denied.** The registry image may be
-  private: run `docker login ghcr.io`. Otherwise build it locally:
+- **Docker image not found, or the pull is denied.** The image is public; check
+  your network or Docker login state. If you prefer, build it locally:
   `docker build -f docker/Dockerfile -t openexpert:local .`
 
 ## Next steps
