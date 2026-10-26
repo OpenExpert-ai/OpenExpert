@@ -78,6 +78,21 @@ Ver [Proveedores de IA](./13-proveedores-ia.md). En resumen:
 El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
 `0600`), nunca en el repositorio.
 
+## Conecta tus datos
+
+Las tablas de negocio empiezan vacías. Abre **Ajustes → Datos**:
+
+- **Datos de ejemplo** carga ventas y facturas de demo; se quitan después sin
+  tocar las filas reales.
+- **Importar CSV** cubre ventas, facturas, campañas y cuentas. Descarga la
+  plantilla, rellénala e impórtala; acepta cabeceras en español o en inglés.
+- **Conectores** opcionales: Pipedrive (ventas) y Holded (facturas) solo leen y
+  necesitan tu propia clave de API. Pégala y pulsa **Sincronizar**.
+
+En Linux, `./install.sh` abre el asistente de proveedor al terminar; añade
+`--with-ollama` para instalar Ollama y descargar llama3.1 antes, y también
+ofrece los dos conectores sin escribir la clave en ningún log.
+
 ## Dónde vive cada cosa
 
 | Elemento          | Ubicación                                                                                             |
@@ -93,9 +108,9 @@ El asistente guarda los secretos en `~/.openexpert/secrets.json` (permisos
   `openexpert init`.
 - **No detecta Ollama.** Instálalo y descarga un modelo: `ollama pull llama3.1`.
 - **El puerto 3000 está ocupado.** Libéralo; el servidor está fijado al 3000.
-- **No encuentra la imagen Docker o la descarga se deniega.** Puede que el
-  paquete sea privado: ejecuta `docker login ghcr.io`. Si no, constrúyela en
-  local: `docker build -f docker/Dockerfile -t openexpert:local .`
+- **No encuentra la imagen Docker o la descarga se deniega.** La imagen es
+  pública; revisa tu red o el estado de sesión de Docker. Si lo prefieres,
+  constrúyela en local: `docker build -f docker/Dockerfile -t openexpert:local .`
 
 ## Siguientes pasos
 

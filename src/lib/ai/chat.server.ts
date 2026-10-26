@@ -26,6 +26,7 @@ import { collectModelReplies, firstInjection, messageText } from "@/lib/ai/injec
 import { deadlineAsError, deadlineNote, stepDeadlineMs, turnStatus } from "@/lib/ai/deadline";
 import { settleHistory } from "@/lib/ai/approval-history";
 import { APPROVAL_REQUIRED, createChatTools } from "@/lib/ai/tools";
+import { friendlyModelError } from "@/lib/ai/model-error";
 import { effectiveConfig } from "@/lib/config.server";
 import { forbidden, isSameOrigin } from "@/lib/http.server";
 import { logger } from "@/lib/logger.server";
@@ -368,7 +369,7 @@ Formato (adáptalo a la pregunta):
         )
         .trim();
       providerError = provider || "Error al generar la respuesta.";
-      return providerError;
+      return friendlyModelError(providerError, cfg.modelId);
     },
     onEnd: async ({ responseMessage, isAborted, outcome }) => {
       // `onEnd` fires the same way for a turn that answered and for one the

@@ -47,14 +47,16 @@ recommendations.
 
 ## 5. Scope
 
-| Capability                                                              | Status   |
-| ----------------------------------------------------------------------- | -------- |
-| Local, single-owner edition                                             | Active   |
-| Chat with tools and streaming                                           | Active   |
-| Google Drive, local folders and Notion (read; approved writes)          | Optional |
-| Audit log and revert                                                    | Active   |
-| Pipedrive, Holded, Salesforce, Meta Ads, Gmail, Slack, Google Analytics | Pending  |
-| Automatic trigger scheduler                                             | Pending  |
+| Capability                                                     | Status   |
+| -------------------------------------------------------------- | -------- |
+| Local, single-owner edition                                    | Active   |
+| Chat with tools and streaming                                  | Active   |
+| Google Drive, local folders and Notion (read; approved writes) | Optional |
+| CSV import (deals, invoices, campaigns, accounts)              | Active   |
+| Pipedrive (deals) and Holded (invoices), pull-only             | Optional |
+| Audit log and revert                                           | Active   |
+| Salesforce, Meta Ads, Gmail, Slack, Google Analytics           | Pending  |
+| Automatic trigger scheduler                                    | Pending  |
 
 ## 6. Edition
 

@@ -230,6 +230,11 @@ src/
   routes/           TanStack Router routes
   lib/
     db.server.ts             SQLite (sql.js) + schema init + seed
+    business-csv.ts          CSV parser and column mapping
+    business-import.server.ts Upsert + audit for imported rows
+    connectors.server.ts     Pipedrive / Holded pull connectors
+    demo-data.server.ts      Sample rows (demo- ids)
+    backup-crypto.ts         Passphrase encryption for backups
     data.functions.ts        Server functions (single write path)
     ee.server.ts             Audit, revert and business queries
     ai/chat.server.ts        Chat with tools and injection guard

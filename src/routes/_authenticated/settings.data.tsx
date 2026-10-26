@@ -4,7 +4,18 @@ import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, Download, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  Unlink,
+  Upload,
+} from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -23,11 +34,26 @@ import { pluralize } from "@/lib/translate";
 import { formatBytes } from "@/lib/format";
 import {
   clearChatHistory,
+  exportEncryptedBackup,
   getDataStats,
   importBackup,
   resetData,
   vacuumDb,
 } from "@/lib/settings.functions";
+import { BUSINESS_COLUMNS, type BusinessEntity } from "@/lib/business-csv";
+import {
+  clearDemo,
+  getBusinessDataStatus,
+  importBusinessCsv,
+  loadDemo,
+} from "@/lib/business.functions";
+import {
+  connectHolded,
+  connectPipedrive,
+  disconnectConnector,
+  getConnectorStatus,
+  syncConnector,
+} from "@/lib/connectors.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/data")({
   component: DataSettings,
@@ -59,22 +85,46 @@ function fileLabel(key: string, t: (text: string) => string): string {
   }
 }
 
+const ENTITY_LABEL: Record<BusinessEntity, string> = {
+  deals: "Ventas",
+  invoices: "Facturas",
+  campaigns: "Campañas",
+  accounts: "Cuentas",
+};
+
 function DataSettings() {
   const get = useServerFn(getDataStats);
   const doImport = useServerFn(importBackup);
+  const doExportEncrypted = useServerFn(exportEncryptedBackup);
   const doClearChat = useServerFn(clearChatHistory);
   const doVacuum = useServerFn(vacuumDb);
   const doReset = useServerFn(resetData);
+  const getBusiness = useServerFn(getBusinessDataStatus);
+  const doImportCsv = useServerFn(importBusinessCsv);
+  const doLoadDemo = useServerFn(loadDemo);
+  const doClearDemo = useServerFn(clearDemo);
+  const getConnectors = useServerFn(getConnectorStatus);
+  const doConnectPipedrive = useServerFn(connectPipedrive);
+  const doConnectHolded = useServerFn(connectHolded);
+  const doSyncConnector = useServerFn(syncConnector);
+  const doDisconnect = useServerFn(disconnectConnector);
   const qc = useQueryClient();
   const { t, locale } = useT();
   const { data } = useQuery({ queryKey: ["data-stats"], queryFn: () => get() });
+  const business = useQuery({ queryKey: ["business-data"], queryFn: () => getBusiness() });
+  const connectors = useQuery({ queryKey: ["connectors"], queryFn: () => getConnectors() });
 
   const [busy, setBusy] = useState<string | null>(null);
   const [resetWord, setResetWord] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importWord, setImportWord] = useState("");
   const [clearOpen, setClearOpen] = useState(false);
+  const [entity, setEntity] = useState<BusinessEntity>("deals");
+  const [pipedriveToken, setPipedriveToken] = useState("");
+  const [holdedKey, setHoldedKey] = useState("");
+  const [backupPassphrase, setBackupPassphrase] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
     await qc.invalidateQueries();
@@ -84,7 +134,9 @@ function DataSettings() {
     setBusy("import");
     try {
       const content = await file.text();
-      const r = await doImport({ data: { content } });
+      const r = await doImport({
+        data: backupPassphrase ? { content, passphrase: backupPassphrase } : { content },
+      });
       toast.success(
         `${t("Copia restaurada")} (${r.applied.map((f) => fileLabel(f, t)).join(", ")})`,
       );
@@ -105,6 +157,25 @@ function DataSettings() {
     } finally {
       setBusy(null);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const onDownloadEncrypted = async () => {
+    setBusy("backup");
+    try {
+      const r = await doExportEncrypted({ data: { passphrase: backupPassphrase } });
+      const blob = new Blob([r.content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t("Copia cifrada descargada"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -156,6 +227,110 @@ function DataSettings() {
     }
   };
 
+  const onCsv = async (file: File) => {
+    setBusy("csv");
+    try {
+      const content = await file.text();
+      const r = await doImportCsv({ data: { entity, content } });
+      toast.success(
+        t("Importados {n} registros de {entity}", {
+          n: r.inserted + r.updated,
+          entity: t(ENTITY_LABEL[entity]),
+        }),
+      );
+      if (r.errors.length) {
+        const first = r.errors[0];
+        toast.warning(
+          t("{n} fila(s) con error; la primera, línea {row}: {message}", {
+            n: r.errors.length,
+            row: first?.row ?? 0,
+            message: first?.message ?? "",
+          }),
+        );
+      }
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message || t("CSV no válido"));
+    } finally {
+      setBusy(null);
+      if (csvRef.current) csvRef.current.value = "";
+    }
+  };
+
+  const onTemplate = () => {
+    const blob = new Blob([`${BUSINESS_COLUMNS[entity].join(",")}\n`], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `plantilla-${entity}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onDemo = async () => {
+    setBusy("demo");
+    try {
+      if ((business.data?.demo ?? 0) > 0) {
+        await doClearDemo();
+        toast.success(t("Datos de ejemplo quitados"));
+      } else {
+        const r = await doLoadDemo();
+        toast.success(t("Cargados {n} registros de ejemplo", { n: r.deals + r.invoices }));
+      }
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onConnect = async (id: "pipedrive" | "holded") => {
+    setBusy(`connect-${id}`);
+    try {
+      const r =
+        id === "pipedrive"
+          ? await doConnectPipedrive({ data: { token: pipedriveToken } })
+          : await doConnectHolded({ data: { key: holdedKey } });
+      toast.success(t("Conectado: {n} registros", { n: r.inserted + r.updated }));
+      if (id === "pipedrive") setPipedriveToken("");
+      else setHoldedKey("");
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onSync = async (id: "pipedrive" | "holded") => {
+    setBusy(`sync-${id}`);
+    try {
+      const r = await doSyncConnector({ data: { id } });
+      toast.success(t("Sincronizados {n} registros", { n: r.inserted + r.updated }));
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onDisconnect = async (id: "pipedrive" | "holded") => {
+    setBusy(`disconnect-${id}`);
+    try {
+      await doDisconnect({ data: { id } });
+      toast.success(t("Desconectado"));
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <Card title={t("Estado")} desc={t("Resumen de los datos que guarda tu instalación.")}>
@@ -184,15 +359,232 @@ function DataSettings() {
       </Card>
 
       <Card
+        title={t("Datos de negocio")}
+        desc={t("Importa un CSV o carga un juego de ejemplo para probar el panel.")}
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              {t("Tipo de datos")}
+              <select
+                className={`${inputCls} max-w-[12rem]`}
+                value={entity}
+                onChange={(e) => setEntity(e.target.value as BusinessEntity)}
+              >
+                {(Object.keys(ENTITY_LABEL) as BusinessEntity[]).map((id) => (
+                  <option key={id} value={id}>
+                    {t(ENTITY_LABEL[id])}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={`${btnGhost} cursor-pointer items-center gap-1.5`}>
+              <FileSpreadsheet className="h-4 w-4" />
+              {t("Importar CSV")}
+              <input
+                ref={csvRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void onCsv(f);
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              className={`${btnGhost} items-center gap-1.5`}
+              onClick={onTemplate}
+            >
+              <Download className="h-4 w-4" />
+              {t("Plantilla")}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t(
+              "La plantilla trae las cabeceras que entiende el importador; también acepta una exportación con nombres equivalentes en español o inglés.",
+            )}
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {business.data ? (
+              <>
+                <span>
+                  {t("Ventas")}: {business.data.deals}
+                </span>
+                <span>
+                  {t("Facturas")}: {business.data.invoices}
+                </span>
+                <span>
+                  {t("Campañas")}: {business.data.campaigns}
+                </span>
+                <span>
+                  {t("Cuentas")}: {business.data.accounts}
+                </span>
+                {business.data.demo > 0 ? (
+                  <span className="text-amber-500">
+                    {t("De ejemplo: {n}", { n: business.data.demo })}
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              <span>{t("Cargando…")}</span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className={`${btnPrimary} items-center gap-1.5`}
+              disabled={busy !== null}
+              onClick={() => void onDemo()}
+            >
+              <Sparkles className="h-4 w-4" />
+              {business.data?.demo ? t("Quitar datos de ejemplo") : t("Cargar datos de ejemplo")}
+            </button>
+            <p className="text-xs text-muted-foreground">
+              {t("Los datos de ejemplo se marcan como demo y se quitan sin tocar los reales.")}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      <Card
+        title={t("Conectores de negocio")}
+        desc={t(
+          "Opcionales. Se conectan con tu clave y solo leen; los datos se quedan en tu equipo.",
+        )}
+      >
+        <div className="space-y-4">
+          {(["pipedrive", "holded"] as const).map((id) => {
+            const current = connectors.data?.find((c) => c.id === id);
+            const connected = current?.connected ?? false;
+            const configured = current?.configured ?? false;
+            const value = id === "pipedrive" ? pipedriveToken : holdedKey;
+            const label = id === "pipedrive" ? "Pipedrive" : "Holded";
+            const placeholder =
+              id === "pipedrive" ? t("API token de Pipedrive") : t("API key de Holded");
+            return (
+              <div key={id} className="rounded-md border border-border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="font-medium">{label}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {connected ? t("Conectado") : t("Sin conectar")}
+                      {current?.lastSync
+                        ? ` · ${t("Última sync: {date}", {
+                            date: new Date(current.lastSync).toLocaleString(locale),
+                          })}`
+                        : ""}
+                    </div>
+                  </div>
+                  {connected ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : null}
+                </div>
+                {connected ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={`${btnGhost} items-center gap-1.5`}
+                      disabled={busy !== null}
+                      onClick={() => void onSync(id)}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      {t("Sincronizar")}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${btnGhost} items-center gap-1.5`}
+                      disabled={busy !== null}
+                      onClick={() => void onDisconnect(id)}
+                    >
+                      <Unlink className="h-4 w-4" />
+                      {t("Desconectar")}
+                    </button>
+                  </div>
+                ) : configured ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className={`${btnGhost} items-center gap-1.5`}
+                      disabled={busy !== null}
+                      onClick={() => void onSync(id)}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      {t("Sincronizar")}
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      {t("Clave guardada; pulsa Sincronizar.")}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <input
+                      type="password"
+                      className={`${inputCls} min-w-[16rem] flex-1`}
+                      placeholder={placeholder}
+                      value={value}
+                      onChange={(e) =>
+                        id === "pipedrive"
+                          ? setPipedriveToken(e.target.value)
+                          : setHoldedKey(e.target.value)
+                      }
+                    />
+                    <button
+                      type="button"
+                      className={`${btnPrimary} items-center gap-1.5`}
+                      disabled={value.trim().length < 10 || busy !== null}
+                      onClick={() => void onConnect(id)}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {t("Conectar y sincronizar")}
+                    </button>
+                  </div>
+                )}
+                {current?.entities?.length ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {current.entities.map((e) => `${e.name}: ${e.count}`).join(" · ")}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+          <p className="text-xs text-muted-foreground">
+            {t(
+              "Las claves se guardan en secrets.json con permisos 0600; solo se leen datos del conector.",
+            )}
+          </p>
+        </div>
+      </Card>
+
+      <Card
         title={t("Copia de seguridad")}
         desc={t(
           "Incluye la base de datos, la configuración, las credenciales locales y el estado de tus integraciones.",
         )}
       >
-        <div className="flex flex-wrap gap-3">
-          <a href="/api/backup" download className={`${btnPrimary} items-center gap-1.5`}>
-            <Download className="h-4 w-4" /> {t("Descargar copia")}
-          </a>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-[14rem] flex-col gap-1 text-xs text-muted-foreground">
+            {t("Contraseña de la copia")}
+            <input
+              type="password"
+              className={inputCls}
+              value={backupPassphrase}
+              placeholder={t("Mínimo 8 caracteres")}
+              onChange={(e) => setBackupPassphrase(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className={`${btnPrimary} items-center gap-1.5`}
+            disabled={backupPassphrase.length < 8 || busy !== null}
+            onClick={() => void onDownloadEncrypted()}
+          >
+            {busy === "backup" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {t("Descargar cifrada")}
+          </button>
           <label className={`${btnGhost} cursor-pointer items-center gap-1.5`}>
             {busy === "import" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -203,7 +595,7 @@ function DataSettings() {
             <input
               ref={fileRef}
               type="file"
-              accept="application/json,.json"
+              accept="application/json,.json,.enc"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -212,6 +604,11 @@ function DataSettings() {
             />
           </label>
         </div>
+        <p className="text-xs text-muted-foreground">
+          {t(
+            "La copia cifrada pide esta contraseña al restaurar; si la pierdes, no se puede abrir.",
+          )}
+        </p>
         <p className="text-xs text-muted-foreground">
           {t("Importar reemplaza los datos actuales. Se recomienda descargar una copia antes.")}
         </p>

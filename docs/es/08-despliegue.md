@@ -192,6 +192,12 @@ ejecutables y el icono tiene que ser de 512×512. `npm run desktop:check` hace e
 misma comprobación por su cuenta (sale con código distinto de cero si el lanzador
 está muerto, que es lo que informa `install.sh --doctor`).
 
+`install.sh` termina con el asistente de modelo (`--no-setup` lo salta).
+`--with-ollama` instala Ollama y descarga llama3.1 antes; el asistente ofrece
+todos los proveedores del catálogo. Después ofrece las claves opcionales de
+Pipedrive y Holded, leídas por teclado y guardadas con permisos `0600`; no se
+descarga ni se conecta nada sin que lo digas.
+
 La ventana carga la URL que sirve el comando, no un puerto compilado dentro del
 binario: `openexpert desktop` exporta `OPENEXPERT_DESKTOP_URL` y la cáscara
 navega a ella, así que `PORT=3100 openexpert` abre 3100. Sin esa variable —un
@@ -258,6 +264,13 @@ Sirven para distribuir la aplicación, no para instalarla en una máquina: la
 instalación soportada en Linux es el lanzador por usuario, o `install.sh` en la
 raíz del repositorio, que además es lo que instala el comando `openexpert`, la
 entrada de menú y el icono.
+
+### Windows y macOS (sin firmar)
+
+`.github/workflows/desktop-installers.yml` genera un `.msi` y un `.dmg` a mano y
+con las etiquetas `v*`. Son para probar: no están firmados, así que SmartScreen
+en Windows y Gatekeeper en macOS avisarán. La firma necesita certificados y
+todavía no está conectada.
 
 ## Referencias
 

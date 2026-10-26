@@ -24,14 +24,14 @@ Status of implemented and pending items.
 
 ## Pending
 
-- [ ] **Real connectors** (Pipedrive, Holded, Meta Ads, Gmail, Slack, Google
-      Analytics, Salesforce). OpenExpert ships **without business data**: the
-      tables are empty until a connector fills them. The business tools already
-      report provenance and say so when nothing is connected.
+- [ ] **Remaining connectors** (Meta Ads, Gmail, Slack, Google Analytics,
+      Salesforce). Pipedrive (deals), Holded (invoices) and CSV import are
+      available as optional, pull-only data sources.
 - [ ] **Autonomous processes (removed, to be rebuilt).** The old catalogue was
       scaffolding: "running" a process only incremented a counter, the trigger
       was descriptive (no scheduler) and the stages were never executed. It has
       been removed until it can be built for real: actual stage execution, a
       scheduler and, when needed, double-signature approval.
-- [ ] **Import of real data** (CSV) as an interim before the connectors.
-- [ ] **Backup helper** for `OPENEXPERT_DATA_DIR`.
+- [ ] **Signed Windows and macOS installers.** CI builds unsigned `.msi`/`.dmg`;
+      signing needs certificates.
+- [ ] **Scheduled backups.** The passphrase-encrypted download is manual today.

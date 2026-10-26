@@ -3,6 +3,11 @@
 #
 # OpenExpert — instalación local para Linux.
 #
+# Todo lo que crea este script queda bajo el usuario que lo ejecuta. El umask
+# cerrado evita que la base de datos y los secretos nazcan legibles por otros
+# usuarios de la máquina; los permisos se remachan además al escribir.
+umask 077
+#
 # Deja el sistema así:
 #   ~/.local/bin/openexpert                          comando en PATH
 #   ~/.local/bin/openexpert-desktop                  binario de la ventana (Tauri)
@@ -63,8 +68,17 @@ confirm() {
   case "${reply:-s}" in [sSyY]*) return 0 ;; *) return 1 ;; esac
 }
 
+# Optional yes/no questions default to "no": connectors are opt-in and an
+# installer that assumes yes would ask for a token the owner may not have.
+ask_optional() {
+  [ -t 0 ] || return 1
+  local reply
+  read -r -p "  ¿$1? [s/N] " reply
+  case "${reply:-n}" in [sSyY]*) return 0 ;; *) return 1 ;; esac
+}
+
 # ── argumentos ───────────────────────────────────────────────────────────────
-SKIP_BUILD=0; DO_DEPS=1; DO_PATH=1; FORCE_INSTALL=0; ROFI_FIX=0; DOCTOR=0; ASSUME_YES=0; BUNDLE=0
+SKIP_BUILD=0; DO_DEPS=1; DO_PATH=1; FORCE_INSTALL=0; ROFI_FIX=0; DOCTOR=0; ASSUME_YES=0; BUNDLE=0; NO_SETUP=0; WITH_OLLAMA=0
 for arg in "$@"; do
   case "$arg" in
     --skip-build) SKIP_BUILD=1 ;;
@@ -73,6 +87,8 @@ for arg in "$@"; do
     --reinstall)  FORCE_INSTALL=1 ;;
     --rofi-fix)   ROFI_FIX=1 ;;
     --bundle)     BUNDLE=1 ;;
+    --no-setup)   NO_SETUP=1 ;;
+    --with-ollama) WITH_OLLAMA=1 ;;
     --doctor)     DOCTOR=1; SKIP_BUILD=1; DO_DEPS=0; DO_PATH=0 ;;
     -y|--yes)     ASSUME_YES=1 ;;
     -h|--help)
@@ -86,6 +102,8 @@ Uso: ./install.sh [opciones]
   --reinstall      fuerza "npm ci" aunque exista node_modules
   --rofi-fix       añade "drun" al modi de rofi si falta
   --bundle         genera además .deb, .rpm y AppImage (descarga utilidades)
+  --with-ollama    instala Ollama y descarga llama3.1 antes de configurar
+  --no-setup       no abre el asistente de modelo al terminar
   --doctor         solo diagnóstico: no instala ni compila
   -y, --yes        sin preguntas
   -h, --help       esta ayuda
@@ -407,6 +425,77 @@ if have gio; then info "GNOME/GTK: aparece en el menú de aplicaciones y buscand
 
 if [ "$LAUNCHERS" = 0 ]; then
   warn "sin rofi/wofi/fuzzel/tofi en esta máquina; la entrada .desktop igualmente sale en el menú de tu escritorio (GNOME, KDE, XFCE…)"
+fi
+
+# ── configuración del modelo ─────────────────────────────────────────────────
+# La IA entra en la instalación: el asistente pregunta proveedor y modelo y
+# escribe openexpert.json + secrets.json. `--with-ollama` instala además el
+# runtime local y descarga llama3.1; sin ese flag no se baja nada por sorpresa.
+if [ "$DOCTOR" = 0 ] && [ "$NO_SETUP" = 0 ]; then
+  step "Modelo e IA"
+
+  if [ "$WITH_OLLAMA" = 1 ]; then
+    if have ollama; then
+      ok "Ollama ya está instalado"
+    else
+      info "Instalando Ollama…"
+      curl -fsSL https://ollama.com/install.sh | sh || warn "no se pudo instalar Ollama; elige otro proveedor en el asistente"
+    fi
+    if have ollama; then
+      if ollama list 2>/dev/null | awk '{print $1}' | grep -q '^llama3\.1'; then
+        ok "llama3.1 ya está descargado"
+      else
+        info "Descargando llama3.1 (~4,7 GB)…"
+        ollama pull llama3.1 || warn "no se pudo descargar llama3.1; puedes elegir otro modelo en el asistente"
+      fi
+    fi
+  fi
+
+  if [ -t 0 ] || [ "$ASSUME_YES" = 1 ]; then
+    if ( cd "$REPO" && node packages/openexpert/bin/openexpert.js init --no-start ); then
+      ok "modelo configurado"
+    else
+      warn "el asistente no terminó; ejecuta 'openexpert init' cuando quieras"
+    fi
+  else
+    info "sin terminal interactiva: ejecuta 'openexpert init' para elegir proveedor y modelo"
+  fi
+fi
+
+# ── conectores (opcionales) ──────────────────────────────────────────────────
+# La clave se pide por teclado y viaja por stdin: no aparece en el historial,
+# ni en `ps`, ni en el resumen. El conector queda configurado y la aplicación
+# lo sincroniza con su botón; si el token no vale, se ve al pulsar.
+if [ "$NO_SETUP" = 0 ] && [ -t 0 ] && [ "$ASSUME_YES" != 1 ]; then
+  step "Conectores (opcional)"
+  if ask_optional "¿Conectar Pipedrive ahora?"; then
+    PD_TOKEN=""
+    read -r -s -p "  Token de API de Pipedrive: " PD_TOKEN || true
+    echo
+    if [ -n "$PD_TOKEN" ]; then
+      if printf '%s' "$PD_TOKEN" | node "$REPO/scripts/setup-connector.mjs" pipedrive; then
+        ok "Pipedrive guardado; abre OpenExpert y pulsa Sincronizar"
+      else
+        warn "no se pudo guardar el token de Pipedrive"
+      fi
+    else
+      info "sin token; Pipedrive queda para más tarde"
+    fi
+  fi
+  if ask_optional "¿Conectar Holded ahora?"; then
+    HD_KEY=""
+    read -r -s -p "  API key de Holded: " HD_KEY || true
+    echo
+    if [ -n "$HD_KEY" ]; then
+      if printf '%s' "$HD_KEY" | node "$REPO/scripts/setup-connector.mjs" holded; then
+        ok "Holded guardado; abre OpenExpert y pulsa Sincronizar"
+      else
+        warn "no se pudo guardar la clave de Holded"
+      fi
+    else
+      info "sin clave; Holded queda para más tarde"
+    fi
+  fi
 fi
 
 # ── resumen ──────────────────────────────────────────────────────────────────
