@@ -67,6 +67,12 @@ que el evento más antiguo —y su snapshot, que es lo que necesita el botón de
 alcanzable desde el panel. Antes el recorte era mudo: la pantalla imprimía el tamaño de la ventana
 como si fuera el total.
 
+El registro no tiene retención, así que la lista abarca varios años. Por eso la marca de tiempo de
+una fila escribe el año siempre que no sea el actual (`formatDateTime`, en `src/lib/format.ts`):
+«15 jun, 10:30» es de este año, «15 jun 2025, 10:30» no. El año se lee del calendario local —el que
+imprime `toLocaleString`—, así que un evento del 31 de diciembre a las 23:30 en Madrid pertenece al
+año que dice el reloj de allí. La lista de conversaciones usa el mismo formateador.
+
 ### `chat_messages` — conversaciones
 
 | Columna           | Tipo        | Notas                        |

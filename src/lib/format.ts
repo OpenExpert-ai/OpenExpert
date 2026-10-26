@@ -5,13 +5,27 @@ import type { Locale } from "@/lib/i18n";
 
 const tag = (locale: Locale) => (locale === "en" ? "en-GB" : "es-ES");
 
+/**
+ * The day, month and time of an event, with the year only when it is not the
+ * current one.
+ *
+ * The activity log keeps every event, so the list reaches back years: a row
+ * stamped "15 jun, 10:30" reads as this year's, and two events twelve months
+ * apart are told apart by nothing. The year is written for any other year, and
+ * it is read from the local calendar —the one `toLocaleString` prints with— so
+ * an event on 31 December at 23:30 in Madrid belongs to the year the clock
+ * there says, not to the UTC one.
+ */
 export function formatDateTime(iso: string, locale: Locale = "es"): string {
-  return new Date(iso).toLocaleString(tag(locale), {
+  const date = new Date(iso);
+  const options: Intl.DateTimeFormatOptions = {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  };
+  if (date.getFullYear() !== new Date().getFullYear()) options.year = "numeric";
+  return date.toLocaleString(tag(locale), options);
 }
 
 export function formatNumber(n: number, locale: Locale = "es"): string {

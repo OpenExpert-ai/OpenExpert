@@ -6,8 +6,7 @@
 // drags in the server functions and the whole workspace, and the thing worth
 // checking here is what the line shows for an event nobody timed.
 
-import { fmtTime } from "@/lib/store";
-import { formatDuration } from "@/lib/format";
+import { formatDateTime, formatDuration } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
 export type ActivityEventMetaProps = {
@@ -30,7 +29,7 @@ export function ActivityEventMeta({
   return (
     <div className="mt-1 flex flex-wrap gap-x-4 font-mono text-[0.7rem] text-muted-foreground">
       <span>{id}</span>
-      <span>{fmtTime(ts, locale)}</span>
+      <span>{formatDateTime(ts, locale)}</span>
       <span>{formatDuration(duration_ms)}</span>
       {sources.length > 0 && (
         <span>

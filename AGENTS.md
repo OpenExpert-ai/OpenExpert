@@ -53,6 +53,11 @@ disagree, the code is right and the docs are the bug.
   actions that are not timed. Do not fill it with a constant: a number nobody
   measured reads in the audit trail as a real one. The screen shows a dash
   (`formatDuration` in `src/lib/format.ts`) when there is none.
+- The activity log has no retention, so the list reaches back years: the
+  timestamp of a row writes the year whenever it is not the current one, read
+  from the local calendar (`formatDateTime` in `src/lib/format.ts`, the single
+  formatter for the log and the list of conversations). A date of this year
+  stays short.
 - A date stored as plain text (`invoices.due_date` is `2026-09-01`) names a
   **calendar day**, not an instant: `new Date` reads it as UTC midnight, which
   is the previous day in every timezone behind UTC. The days between two such

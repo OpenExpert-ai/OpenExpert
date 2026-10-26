@@ -52,6 +52,17 @@ describe("formatDateTime", () => {
       String(thisYear.getFullYear()),
     );
   });
+
+  // The year comes from the local calendar, the one `toLocaleString` prints
+  // with, not from the year prefix of the ISO string: at 00:30 on 1 January in
+  // Madrid the instant still falls on 31 December in UTC, and the row belongs to
+  // the year the clock there says.
+  it("reads the year off the local calendar, not off the ISO string", () => {
+    const boundary = new Date(new Date().getFullYear(), 0, 1, 0, 30);
+    expect(formatDateTime(boundary.toISOString(), "es")).not.toContain(
+      String(boundary.getFullYear()),
+    );
+  });
 });
 
 describe("formatDuration", () => {
