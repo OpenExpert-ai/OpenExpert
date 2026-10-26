@@ -63,6 +63,12 @@ The file size and the answer size are two different things: a document that fits
 that goes in `charOffset` with the same `offset`, which is how a line that did not fit is
 continued. `totalChars` says how long the document is, so what is left is known instead of guessed.
 
+Chained windows are the document: a continuation opens with the newline that separates its first
+row from the last one of the previous read, so the text of two consecutive reads never glues two
+rows together. `truncated` marks one thing only: the cut split a line in half, which is what asks
+for `nextCharOffset` to go on inside it. A clean cut between lines leaves it unset even when text
+is left, because the rest is asked for with `hasMore` anyway.
+
 ### 2.2 Scopes
 
 | Scope        | Purpose                                                                                    |

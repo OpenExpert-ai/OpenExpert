@@ -34,21 +34,35 @@ export function takeWindow(
   let ln = line;
   let ch = char;
   let whole = 0;
+  // A window that starts at the beginning of a line other than the first one opens with the
+  // newline that separates it from the line before. The previous window stopped short of it, so
+  // this is the only place the caller can get it from: without it, the last row of one window and
+  // the first row of the next read as a single row.
+  let sep = line > 1 && char === 0 ? 1 : 0;
   for (;;) {
     if (ln > lines.length) return { text, line: ln, char: 0, more: false, truncated: false };
     if (whole >= limit) return { text, line: ln, char: ch, more: true, truncated: false };
     const cur = lines[ln - 1] ?? "";
     if (ch > cur.length) ch = cur.length;
     // The newline that separates this line from the piece before it costs a character too.
-    const sep = text.length > 0 ? 1 : 0;
     const room = budget - text.length - sep;
     const rest = cur.length - ch;
     if (room < rest) {
       const take = Math.max(0, room);
+      // Nothing of this line fits and the lines before it already fill the budget: the window ends
+      // at the line boundary. The separator is not emitted here (the next window opens with it), so
+      // the text does not end in a newline the source does not have there; and the cut did not
+      // split a line, so it is not `truncated`.
+      if (take === 0 && text.length > 0) {
+        return { text, line: ln, char: ch, more: true, truncated: false };
+      }
+      // A cut that takes no room at all still has to move the cursor, or the caller would ask for
+      // the same window forever.
+      const got = take > 0 ? take : Math.min(1, rest);
       return {
-        text: text + (sep ? "\n" : "") + cur.slice(ch, ch + take),
+        text: text + (sep ? "\n" : "") + cur.slice(ch, ch + got),
         line: ln,
-        char: ch + take,
+        char: ch + got,
         more: true,
         truncated: true,
       };
@@ -57,5 +71,6 @@ export function takeWindow(
     whole++;
     ch = 0;
     ln++;
+    sep = 1;
   }
 }

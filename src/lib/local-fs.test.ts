@@ -192,7 +192,9 @@ describe("windowed reads", () => {
       offset: first.nextOffset,
       limit: 100,
     });
-    expect(next.content?.startsWith("line 101")).toBe(true);
+    // The continuation opens with the newline that separates line 101 from line 100, so two
+    // windows glued together read as the file is.
+    expect(next.content?.startsWith("\nline 101")).toBe(true);
 
     // The tail used to be out of reach entirely: past the character cap, nothing said so.
     const last = await fs.readLocalFile(big, [root], { offset: 201, limit: 100 });
