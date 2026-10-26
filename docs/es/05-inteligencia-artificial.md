@@ -131,11 +131,11 @@ las fuentes, pero no lee datos de negocio.
 
 ## 4. Límites
 
-| Límite                 | Valor                                                                 |
-| ---------------------- | --------------------------------------------------------------------- |
-| Pasos por turno        | 50                                                                    |
-| Retención de historial | Configurable (`chat.retentionDays`), 30 días por defecto; `0` no poda |
-| Coste                  | El del proveedor; Ollama es gratis                                    |
+| Límite                 | Valor                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| Pasos por turno        | 50                                                                                |
+| Retención de historial | Configurable (`chat.retentionDays`), 30 días para todos los Expertos; `0` no poda |
+| Coste                  | El del proveedor; Ollama es gratis                                                |
 
 ## 5. Referencias
 

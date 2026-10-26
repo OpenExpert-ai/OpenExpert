@@ -19,7 +19,7 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 
 ## 3. Automatic maintenance
 
-- Conversation retention: 30 days, opportunistic cleanup (0 disables it).
+- Conversation retention: 30 days for every Expert, opportunistic cleanup (0 disables it).
 - Drive token refresh: automatic.
 - Revert: each change keeps its snapshot in the activity log.
 

@@ -421,27 +421,58 @@ export const listConversations = createServerFn({ method: "GET" })
     // Retention of zero means "never prune", exactly what the settings screen promises
     // ("0 desactiva la purga automática"). Treating it as "expire everything now" wiped
     // the whole history of the expert the moment the list was opened.
+    //
+    // The setting is a single number for the installation (`chat.retentionDays`), so the
+    // purge cannot be limited to the expert whose list is opened: the expired history of
+    // an expert nobody visits stayed on disk forever, and the screen was promising a
+    // retention it did not enforce. Every conversation of every expert is inspected here;
+    // the cutoff still only lists what the caller asked for.
     const retentionDays = chatSettings().retentionDays;
     const cutoff = Date.now() - retentionDays * 24 * 3600 * 1000;
-    const expired =
-      retentionDays > 0
-        ? [...map.values()].filter((c) => new Date(c.updatedAt).getTime() < cutoff).map((c) => c.id)
-        : [];
+    const lastSeen = new Map<
+      string,
+      { expertId: string; conversationId: string; updatedAt: string }
+    >();
+    if (retentionDays > 0) {
+      // Only the three columns the cutoff needs: the message itself is the bulk of the row.
+      const stamps = orm
+        .select({
+          expertId: schema.chatMessages.expertId,
+          conversationId: schema.chatMessages.conversationId,
+          createdAt: schema.chatMessages.createdAt,
+        })
+        .from(schema.chatMessages)
+        .all();
+      for (const s of stamps) {
+        // A conversation id is only unique inside its expert, and so is the delete below.
+        const key = `${s.expertId}\u0000${s.conversationId}`;
+        const prev = lastSeen.get(key);
+        if (!prev || s.createdAt > prev.updatedAt)
+          lastSeen.set(key, {
+            expertId: s.expertId,
+            conversationId: s.conversationId,
+            updatedAt: s.createdAt,
+          });
+      }
+    }
+    const expired = [...lastSeen.values()].filter((c) => new Date(c.updatedAt).getTime() < cutoff);
     if (expired.length) {
-      for (const id of expired)
+      for (const c of expired)
         orm
           .delete(schema.chatMessages)
           .where(
             and(
-              eq(schema.chatMessages.expertId, data.expertId),
-              eq(schema.chatMessages.conversationId, id),
+              eq(schema.chatMessages.expertId, c.expertId),
+              eq(schema.chatMessages.conversationId, c.conversationId),
             ),
           )
           .run();
       await persist();
     }
     return [...map.values()]
-      .filter((c) => !expired.includes(c.id))
+      .filter(
+        (c) => !expired.some((e) => e.expertId === data.expertId && e.conversationId === c.id),
+      )
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   });
 

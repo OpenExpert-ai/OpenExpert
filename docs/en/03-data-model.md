@@ -77,7 +77,8 @@ panel. The cut used to be silent: the screen printed the size of the window as i
 | `created_at`      | TEXT        | ISO timestamp                 |
 
 **Retention: configurable (`chat.retentionDays`, default 30 days; `0` disables it).**
-`listConversations` prunes threads older than the window; with `0` it deletes nothing.
+`listConversations` prunes threads older than the window across **every Expert**, not only the one
+whose list is being opened; with `0` it deletes nothing.
 
 Each row is one full UI message and is identified by the `id` it carries inside
 (`message.id`), not by the table key: a turn that continues —approving a write, for
