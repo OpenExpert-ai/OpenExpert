@@ -65,6 +65,12 @@ respuesta trae `hasMore`, se pide el resto con `offset: nextOffset`; si además 
 que no cupo entera. `totalChars` dice cuánto mide el documento, así que lo que queda se sabe sin
 adivinarlo.
 
+Las ventanas encadenadas son el documento: la continuación empieza por el salto de línea que
+separa su primera fila de la última de la lectura anterior, así que el texto de dos lecturas
+seguidas nunca pega dos filas. `truncated` marca una sola cosa: que el corte partió una línea por
+la mitad (y es lo que pide `nextCharOffset` para seguir dentro de ella). Un corte limpio entre
+líneas no lo pone, aunque quede texto, porque el resto se pide igual con `hasMore`.
+
 ### 2.2 Scopes
 
 | Scope        | Finalidad                                                                           |
