@@ -10,6 +10,9 @@ docker compose exec ollama ollama pull llama3.1
 # open http://localhost:3000
 ```
 
+Both ports are bound to `127.0.0.1` on purpose: neither the app nor Ollama has
+authentication.
+
 Generates `openexpert.json`, a `docker-compose.yml` (app + Ollama), a
 `.gitignore`, and a short `README.md`.
 

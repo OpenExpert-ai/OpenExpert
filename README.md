@@ -1,19 +1,48 @@
 # OpenExpert
 
-Operations dashboard with artificial intelligence that runs **entirely on your
-machine**: Experts with strict data isolation, integrations, a tool-using chat,
-human-approved actions, and a complete audit trail. **No cloud, no accounts,
-no database server** — just SQLite and your own model.
+**Talk to your company — with your data on your machine.**
 
-The project is **open source under the MIT license**.
+OpenExpert is a local-first AI operations dashboard: Experts with isolated data,
+a chat that uses tools, and actions that need your approval before anything
+changes. One SQLite file, your own model, no accounts and no cloud service.
 
-> La versión en español de este documento está en
-> [`README.es.md`](./README.es.md).
+It runs with Ollama by default. If you prefer, you can connect Gemini, Claude or
+any OpenAI-compatible endpoint; the database stays local either way.
+
+Open source under the MIT license.
+
+> The Spanish version of this document is [`README.es.md`](./README.es.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A524-339933)](https://nodejs.org)
+[![npm](https://img.shields.io/npm/v/@openexpert/openexpert)](https://www.npmjs.com/package/@openexpert/openexpert)
+[![Release](https://img.shields.io/github/v/release/OpenExpert-ai/OpenExpert)](https://github.com/OpenExpert-ai/OpenExpert/releases)
 [![CodeQL](https://github.com/OpenExpert-ai/OpenExpert/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
 [![Scorecard](https://img.shields.io/openssf-scorecard/github/OpenExpert-ai/OpenExpert)](https://scorecard.dev/viewer/?uri=github.com/OpenExpert-ai/OpenExpert)
+
+![OpenExpert's Experts screen: four Experts with isolated domains and sources](docs/assets/readme-experts.png)
+
+## Why OpenExpert
+
+- **Isolation by design.** Each Expert only sees the domains and sources it is
+  allowed to; no Expert can read another's data.
+- **Nothing changes without you.** The assistant proposes, you approve, and
+  every revertible change is logged with a snapshot and can be reverted.
+- **Local by default.** One SQLite file, no accounts, no database server. Ollama
+  runs on your machine; Gemini, Claude or any OpenAI-compatible endpoint are
+  optional.
+
+## What you can ask
+
+- "How is the sales pipeline doing?"
+- "Collect overdue invoices over €5,000."
+- "Pause campaigns with a high CPA."
+- "Create a new Expert for Operations."
+
+The assistant answers from the data you connect (Google Drive, local folders,
+Notion) and proposes writes instead of performing them.
+
+![OpenExpert's AI settings: Ollama selected, with external providers available](docs/assets/readme-ai.png)
 
 ## Quick start
 
@@ -25,7 +54,11 @@ The app has no login: keep it on `127.0.0.1` (see [docker/README.md](./docker/RE
 
 ```sh
 docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
-# or bring Ollama along (loopback only, as above):
+```
+
+Or, from a clone, bring Ollama along:
+
+```sh
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
@@ -58,7 +91,8 @@ redirect URI depends on it.
 ### Desktop app (Linux)
 
 OpenExpert can also run as a native window opened by a single command, installed
-for the current user (needs Rust and the WebKitGTK 4.1 libraries):
+for the current user (needs Rust and the WebKitGTK 4.1 libraries; the per-distro
+packages are in [Deployment](./docs/en/08-deployment.md#6-desktop-application-linux)):
 
 ```sh
 npm run desktop:install    # build + install the launcher
@@ -77,9 +111,11 @@ See [Deployment](./docs/en/08-deployment.md).
 ## How it works
 
 - **Data** lives in a single SQLite file at `OPENEXPERT_DATA_DIR/openexpert.db`
-  (default `~/.openexpert/`). Nothing leaves your machine.
-- **AI** is configuration: [Ollama](https://ollama.com) (default, no keys),
-  Google Gemini (free API key), Claude or any OpenAI-compatible endpoint. See
+  (default `~/.openexpert/`). The database never leaves your machine.
+- **AI** is configuration: [Ollama](https://ollama.com) (default, no keys) runs
+  locally; Google Gemini, Claude or any OpenAI-compatible endpoint are optional.
+  With Ollama, prompts stay local too; with an external provider, the prompt
+  goes to that provider. See
   [docs/en/13-ai-providers.md](./docs/en/13-ai-providers.md).
 - **Sources** (optional): Google Drive, local folders and Notion, connected with
   your own account; tokens and grants are stored locally with mode `0600`.
@@ -115,49 +151,47 @@ Spanish).
 
 ## Requirements
 
-- Node.js 24 or later
-- npm 11 or later (the official package manager)
+- Node.js 24 or later (includes npm 11).
+- Docker, optional, for the container path.
+- For the desktop app: Rust and WebKitGTK 4.1 — see
+  [Deployment](./docs/en/08-deployment.md#6-desktop-application-linux).
 
 ## Layout
 
-The most relevant paths:
+The paths you will touch most:
 
 ```
-vite.config.ts                Build configuration (Nitro node-server)
-src/
-  routes/           TanStack Router routes
-  lib/
-    db.server.ts             SQLite (sql.js) + schema init + seed
-    data.functions.ts        Server functions (single write path)
-    ee.server.ts             Audit, revert and business queries
-    ai/chat.server.ts        Chat with tools and injection guard
-    drive.server.ts          Google Drive API client
-    drive-tokens.server.ts   Drive OAuth and token lifecycle
-    local-fs.server.ts       Granted local folders (read + approved writes)
-    notion.server.ts         Notion API client
-    notion-tokens.server.ts  Notion OAuth and token lifecycle
-    office.server.ts         Text/PDF/Office extraction (Drive + local)
-    engine/                  Model provider + local credential custody
-drizzle/schema.ts             Typed SQLite schema
-drizzle/init.sql              SQLite DDL (applied at startup)
-packages/openexpert/          MIT engine (model provider, config, tools, CLI)
-docker/                       Dockerfile and docker-compose
-docs/{en,es}/                 Bilingual documentation
-scripts/                      Repo scripts (docs check, licences, desktop install)
-src-tauri/                    Tauri desktop shell (the window only)
-install.sh                    One-command Linux install
-.changeset/                   Release notes for the next version
+src/routes/          TanStack Router routes
+src/lib/             server functions, SQLite, AI tools, integrations
+packages/openexpert/ MIT engine and CLI
+docker/              Dockerfile and Compose
+docs/{en,es}/        bilingual documentation
+src-tauri/           desktop window (Tauri)
 ```
+
+The full tree is in [Development](./docs/en/07-development.md).
+
+## Status
+
+OpenExpert is **pre-1.0 (0.5.x)**. Interfaces and the data model may change
+between minor versions. The [roadmap](./docs/en/14-roadmap.md) tracks what is
+next.
+
+## Contributing
+
+Issues and pull requests are welcome. [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+explains the DCO and the gates; the development setup is in
+[`docs/en/07-development.md`](./docs/en/07-development.md).
 
 ## Notes
 
-- Single owner: there is no login and no multi-user management.
+- Single owner: there is no login and no multi-user management. Keep the server
+  on `127.0.0.1` unless you put it behind a proxy and a firewall.
 - `.env` is git-ignored; `.env.example` documents the environment variables you
   normally set.
 - The whole repository is released under the **MIT License**. See
   [`LICENSE`](./LICENSE) and [`NOTICE`](./NOTICE).
 - [`SECURITY.md`](./SECURITY.md) describes the private channel for reporting
   vulnerabilities.
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) explains how to contribute.
 - [`PRIVACY.md`](./PRIVACY.md) is the privacy policy (Spanish:
   [`docs/es/POLITICA-DE-PRIVACIDAD.md`](./docs/es/POLITICA-DE-PRIVACIDAD.md)).

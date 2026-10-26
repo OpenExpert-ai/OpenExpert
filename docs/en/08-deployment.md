@@ -6,13 +6,13 @@
 
 ## 1. Ways to run OpenExpert
 
-| Way              | Command                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------ |
-| Development      | `npm ci && npm run dev`                                                                    |
-| Production build | `npm run build` then `node .output/server/index.mjs`                                       |
-| Docker           | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest` |
-| CLI              | `npx @openexpert/openexpert serve`                                                         |
-| Desktop (Linux)  | `npm run desktop:install` then `openexpert`                                                |
+| Way              | Command                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| Development      | `npm ci && npm run dev`                                                                              |
+| Production build | `npm run build` then `node .output/server/index.mjs`                                                 |
+| Docker           | `docker run -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest` |
+| CLI              | `npx @openexpert/openexpert serve`                                                                   |
+| Desktop (Linux)  | `npm run desktop:install` then `openexpert`                                                          |
 
 The app listens on port 3000, on the **loopback interface only** (`127.0.0.1`).
 The dashboard has no authentication: whoever reaches the port can read and write

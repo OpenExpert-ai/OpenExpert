@@ -6,21 +6,13 @@
 
 ## 1. Formas de ejecutar OpenExpert
 
-| Forma               | Comando                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| Desarrollo          | `npm ci && npm run dev`                                                                    |
-| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                    |
-| Docker              | `docker run -p 3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest` |
-| CLI                 | `npx @openexpert/openexpert serve`                                                         |
-| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                             |
-
-| Forma               | Comando                                                                                             |
-| ------------------- | --------------------------------------------------------------------------------------------------- |
-| Desarrollo          | `npm ci && npm run dev`                                                                             |
-| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                             |
-| Docker              | `docker run -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:local` |
-| CLI                 | `npx @openexpert/openexpert serve`                                                                  |
-| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                                      |
+| Forma               | Comando                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Desarrollo          | `npm ci && npm run dev`                                                                              |
+| Build de producción | `npm run build` y luego `node .output/server/index.mjs`                                              |
+| Docker              | `docker run -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest` |
+| CLI                 | `npx @openexpert/openexpert serve`                                                                   |
+| Escritorio (Linux)  | `npm run desktop:install` y luego `openexpert`                                                       |
 
 La aplicación escucha en el puerto 3000 y **solo en la interfaz de bucle local**
 (`127.0.0.1`). El panel no tiene autenticación: quien alcance el puerto puede

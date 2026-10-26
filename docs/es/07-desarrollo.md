@@ -225,3 +225,34 @@ comprobaciones signifiquen algo.
 - [Arquitectura](./02-arquitectura.md) — mapa del código.
 - [Modelo de datos](./03-modelo-de-datos.md) — tablas.
 - [Despliegue](./08-despliegue.md) — cómo ejecutarlo.
+
+## 10. Estructura del repositorio
+
+Las rutas que importan al tocar el código:
+
+```
+vite.config.ts                Configuración de build (Nitro node-server)
+src/
+  routes/           Rutas de TanStack Router
+  lib/
+    db.server.ts             SQLite (sql.js) + esquema + semilla
+    data.functions.ts        Server functions (puerta única de escritura)
+    ee.server.ts             Auditoría, reversión y consultas de negocio
+    ai/chat.server.ts        Chat con herramientas y control anti-inyección
+    drive.server.ts          Cliente de Google Drive API
+    drive-tokens.server.ts   OAuth de Drive y ciclo de vida de tokens
+    local-fs.server.ts       Carpetas locales autorizadas (lectura + escritura aprobada)
+    notion.server.ts         Cliente de la API de Notion
+    notion-tokens.server.ts  OAuth de Notion y ciclo de vida de tokens
+    office.server.ts         Extracción de texto/PDF/Office (Drive + local)
+    engine/                  Proveedor de modelo + custodia local de credenciales
+drizzle/schema.ts             Esquema SQLite tipado
+drizzle/init.sql              DDL SQLite (aplicado al arrancar)
+packages/openexpert/          Motor MIT (modelo, config, herramientas, CLI)
+docker/                       Dockerfile y docker-compose
+docs/{en,es}/                 Documentación bilingüe
+scripts/                      Scripts del repositorio (docs, licencias, escritorio)
+src-tauri/                    Cáscara de escritorio Tauri (solo la ventana)
+install.sh                    Instalación Linux en un solo comando
+.changeset/                   Notas de la próxima versión
+```

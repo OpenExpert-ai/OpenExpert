@@ -1,18 +1,50 @@
 # OpenExpert
 
-Panel de operaciones con inteligencia artificial que funciona **enteramente en
-tu equipo**: Expertos con aislamiento de datos, integraciones, chat con
-herramientas, acciones con aprobación humana y registro auditable. **Sin nube,
-sin cuentas y sin servidor de base de datos**: solo SQLite y tu propio modelo.
+**Habla con tu empresa — con tus datos en tu equipo.**
 
-El proyecto es **open source bajo licencia MIT**.
+OpenExpert es un panel de operaciones con IA local-first: Expertos con datos
+aislados, un chat que usa herramientas y acciones que necesitan tu aprobación
+antes de cambiar nada. Un solo fichero SQLite, tu propio modelo, sin cuentas y
+sin servicio en la nube.
 
-> The English version of this document is [`README.md`](./README.md).
+Funciona con Ollama por defecto. Si lo prefieres, puedes conectar Gemini, Claude
+o cualquier endpoint compatible con OpenAI; la base de datos se queda local en
+cualquier caso.
+
+Open source bajo licencia MIT.
+
+> La versión en inglés de este documento es [`README.md`](./README.md).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A524-339933)](https://nodejs.org)
+[![npm](https://img.shields.io/npm/v/@openexpert/openexpert)](https://www.npmjs.com/package/@openexpert/openexpert)
+[![Release](https://img.shields.io/github/v/release/OpenExpert-ai/OpenExpert)](https://github.com/OpenExpert-ai/OpenExpert/releases)
 [![CodeQL](https://github.com/OpenExpert-ai/OpenExpert/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
 [![Scorecard](https://img.shields.io/openssf-scorecard/github/OpenExpert-ai/OpenExpert)](https://scorecard.dev/viewer/?uri=github.com/OpenExpert-ai/OpenExpert)
+
+![Pantalla de Expertos de OpenExpert: cuatro Expertos con dominios y fuentes aislados](docs/assets/readme-experts.png)
+
+## Por qué OpenExpert
+
+- **Aislamiento por diseño.** Cada Experto solo ve los dominios y las fuentes que
+  tiene permitidos; ningún Experto puede leer los datos de otro.
+- **Nada cambia sin ti.** El asistente propone, tú apruebas, y cada cambio
+  reversible queda registrado con una instantánea y se puede revertir.
+- **Local por defecto.** Un solo fichero SQLite, sin cuentas y sin servidor de
+  base de datos. Ollama se ejecuta en tu equipo; Gemini, Claude o cualquier
+  endpoint compatible con OpenAI son opcionales.
+
+## Qué puedes preguntar
+
+- «¿Cómo va el pipeline comercial?»
+- «Reclama las facturas vencidas de más de 5.000 €.»
+- «Pausa las campañas con un CPA alto.»
+- «Crea un Experto nuevo para Operaciones.»
+
+El asistente responde con los datos que conectes (Google Drive, carpetas locales
+y Notion) y propone las escrituras en vez de ejecutarlas.
+
+![Ajustes de IA de OpenExpert: Ollama seleccionado, con proveedores externos disponibles](docs/assets/readme-ai.png)
 
 ## Arranque rápido
 
@@ -24,7 +56,11 @@ La aplicación no tiene login: mantenla en `127.0.0.1` (ver [docker/README.md](.
 
 ```sh
 docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data ghcr.io/openexpert-ai/openexpert:latest
-# o con Ollama incluido (también solo en bucle local):
+```
+
+O, desde un clon, con Ollama incluido:
+
+```sh
 docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.1
 ```
@@ -58,7 +94,8 @@ redirección OAuth de Google Drive depende de él.
 
 OpenExpert también puede ejecutarse como una ventana nativa abierta con un único
 comando, instalada para el usuario actual (requiere Rust y las librerías de
-WebKitGTK 4.1):
+WebKitGTK 4.1; los paquetes por distribución están en
+[Despliegue](./docs/es/08-despliegue.md)):
 
 ```sh
 npm run desktop:install    # compila e instala el lanzador
@@ -77,14 +114,16 @@ Ver [Despliegue](./docs/es/08-despliegue.md).
 ## Cómo funciona
 
 - **Datos** en un único fichero SQLite en `OPENEXPERT_DATA_DIR/openexpert.db`
-  (por defecto `~/.openexpert/`). Nada sale de tu equipo.
+  (por defecto `~/.openexpert/`). La base de datos nunca sale de tu equipo.
 - **IA** como configuración: [Ollama](https://ollama.com) (por defecto, sin
-  claves), Google Gemini (clave gratuita), Claude o cualquier endpoint
-  OpenAI-compatible. Ver [docs/es/13-proveedores-ia.md](./docs/es/13-proveedores-ia.md).
+  claves) se ejecuta en local; Google Gemini, Claude o cualquier endpoint
+  compatible con OpenAI son opcionales. Con Ollama, los prompts tampoco salen;
+  con un proveedor externo, el prompt va a ese proveedor. Ver
+  [docs/es/13-proveedores-ia.md](./docs/es/13-proveedores-ia.md).
 - **Fuentes** (opcional): Google Drive, carpetas locales y Notion, conectadas con
   tu propia cuenta; los tokens y las concesiones se guardan en local con permisos
   `0600`.
-- **Gobierno**: cada cambio reversible se registra con snapshot y puede
+- **Gobierno**: cada cambio reversible se registra con una instantánea y puede
   revertirse desde la pantalla de actividad. La IA solo _propone_ acciones y
   requieren aprobación humana.
 - **Configuración** en un panel (`/settings`): modelo e IA, chat, copias de
@@ -115,49 +154,47 @@ Toda la documentación vive en **[`docs/`](./docs/README.md)** (inglés y españ
 
 ## Requisitos
 
-- Node.js 24 o superior
-- npm 11 o superior (gestor de paquetes oficial)
+- Node.js 24 o superior (incluye npm 11).
+- Docker, opcional, para el camino del contenedor.
+- Para la aplicación de escritorio: Rust y WebKitGTK 4.1 — ver
+  [Despliegue](./docs/es/08-despliegue.md).
 
 ## Estructura
 
 Las rutas que más se tocan:
 
 ```
-vite.config.ts                Configuración de build (Nitro node-server)
-src/
-  routes/           Rutas de TanStack Router
-  lib/
-    db.server.ts             SQLite (sql.js) + esquema + semilla
-    data.functions.ts        Server functions (puerta única de escritura)
-    ee.server.ts             Auditoría, reversión y consultas de negocio
-    ai/chat.server.ts        Chat con herramientas y control anti-inyección
-    drive.server.ts          Cliente de Google Drive API
-    drive-tokens.server.ts   OAuth de Drive y ciclo de vida de tokens
-    local-fs.server.ts       Carpetas locales autorizadas (lectura + escritura aprobada)
-    notion.server.ts         Cliente de la API de Notion
-    notion-tokens.server.ts  OAuth de Notion y ciclo de vida de tokens
-    office.server.ts         Extracción de texto/PDF/Office (Drive + local)
-    engine/                  Proveedor de modelo + custodia local de credenciales
-drizzle/schema.ts             Esquema SQLite tipado
-drizzle/init.sql              DDL SQLite (aplicado al arrancar)
-packages/openexpert/          Motor MIT (modelo, config, herramientas, CLI)
-docker/                       Dockerfile y docker-compose
-docs/{en,es}/                 Documentación bilingüe
-scripts/                      Scripts del repositorio (docs, licencias, escritorio)
-src-tauri/                    Cáscara de escritorio Tauri (solo la ventana)
-install.sh                    Instalación Linux en un solo comando
-.changeset/                   Notas de la próxima versión
+src/routes/          Rutas de TanStack Router
+src/lib/             server functions, SQLite, herramientas de IA, integraciones
+packages/openexpert/ Motor MIT y CLI
+docker/              Dockerfile y Compose
+docs/{en,es}/        Documentación bilingüe
+src-tauri/           Ventana de escritorio (Tauri)
 ```
+
+El árbol completo está en [Desarrollo](./docs/es/07-desarrollo.md).
+
+## Estado
+
+OpenExpert está en **pre-1.0 (0.5.x)**. Las interfaces y el modelo de datos
+pueden cambiar entre versiones menores. La
+[hoja de ruta](./docs/es/14-hoja-de-ruta.md) cuenta lo que viene.
+
+## Contribuir
+
+Las issues y los pull requests son bienvenidos. [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+explica el DCO y las puertas; la puesta en marcha está en
+[`docs/es/07-desarrollo.md`](./docs/es/07-desarrollo.md).
 
 ## Notas
 
-- Propietario único: no hay login ni gestión multiusuario.
+- Propietario único: no hay login ni gestión multiusuario. Mantén el servidor en
+  `127.0.0.1` salvo que lo pongas detrás de un proxy y un cortafuegos.
 - `.env` está excluido del control de versiones; `.env.example` documenta las
   variables de entorno que se suelen definir.
 - El repositorio entero se distribuye bajo la **Licencia MIT**. Ver
   [`LICENSE`](./LICENSE) y [`NOTICE`](./NOTICE).
 - [`SECURITY.md`](./SECURITY.md) describe el canal privado para reportar
   vulnerabilidades.
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) explica cómo contribuir.
 - [`PRIVACY.md`](./PRIVACY.md) es la política de privacidad (en español:
   [`docs/es/POLITICA-DE-PRIVACIDAD.md`](./docs/es/POLITICA-DE-PRIVACIDAD.md)).

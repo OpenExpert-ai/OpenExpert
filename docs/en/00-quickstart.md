@@ -10,11 +10,13 @@ no database server.
 ## Option A — Docker (no Node required)
 
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data \
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data \
   ghcr.io/openexpert-ai/openexpert:latest
 ```
 
 Open <http://localhost:3000>. Data persists in the `openexpert-data` volume.
+The app has no login, so the `127.0.0.1:` prefix is deliberate: it keeps the
+port off your network.
 You still need a model; the easiest is Ollama.
 
 ### With Ollama included

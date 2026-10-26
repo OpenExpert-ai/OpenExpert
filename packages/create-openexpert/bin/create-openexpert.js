@@ -22,7 +22,8 @@ services:
     image: ghcr.io/openexpert-ai/openexpert:latest
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # Loopback only: the app has no authentication.
+      - "127.0.0.1:3000:3000"
     environment:
       OPENEXPERT_MODEL_PROVIDER: ollama
       OPENEXPERT_MODEL_ID: llama3.1
@@ -38,7 +39,8 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     ports:
-      - "11434:11434"
+      # Loopback only: Ollama has no authentication either.
+      - "127.0.0.1:11434:11434"
 volumes:
   openexpert-data:
   ollama-data:
@@ -63,6 +65,9 @@ docker compose up -d
 docker compose exec ollama ollama pull llama3.1
 # open http://localhost:3000
 \`\`\`
+
+Both ports are bound to \`127.0.0.1\` on purpose: neither the app nor Ollama has
+authentication.
 
 ## Run with the CLI
 

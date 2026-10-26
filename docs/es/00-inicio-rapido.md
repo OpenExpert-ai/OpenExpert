@@ -10,12 +10,13 @@ cuentas y sin servidor de base de datos.
 ## Opción A — Docker (sin Node)
 
 ```sh
-docker run --rm -p 3000:3000 -v openexpert-data:/data \
+docker run --rm -p 127.0.0.1:3000:3000 -v openexpert-data:/data \
   ghcr.io/openexpert-ai/openexpert:latest
 ```
 
 Abre <http://localhost:3000>. Los datos persisten en el volumen
-`openexpert-data`. Aún necesitas un modelo; lo más fácil es Ollama.
+`openexpert-data`. La aplicación no tiene login, así que el prefijo
+`127.0.0.1:` es deliberado: mantiene el puerto fuera de tu red. Aún necesitas un modelo; lo más fácil es Ollama.
 
 ### Con Ollama incluido
 
