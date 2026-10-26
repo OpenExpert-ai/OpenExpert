@@ -25,7 +25,15 @@ import { join } from "node:path";
 import type { Database } from "sql.js";
 import { z } from "zod";
 import { applyFileConfigToEnv, checkFileConfig, setRuntimeEnv } from "./config.server";
-import { getDb, loadSqlJs, persist, resetDbHandle } from "./db.server";
+import {
+  assertKnownSchema,
+  getDb,
+  loadSqlJs,
+  persist,
+  resetDbHandle,
+  SchemaTooNewError,
+  schemaVersionOf,
+} from "./db.server";
 import { configPath, credentialsPath, dataDir, dbPath, secretsPath } from "./paths.server";
 import * as schema from "../../drizzle/schema";
 
@@ -106,8 +114,10 @@ export function buildBackup(): BackupBundle {
 
 const restoreSchema = z.object({
   format: z.literal(BACKUP_FORMAT),
-  // A newer bundle may mean things this version cannot honour, so it is refused
-  // instead of being applied halfway.
+  // This is the bundle's *format* version, not the database schema's: a newer
+  // envelope may mean things this build cannot honour, so it is refused instead
+  // of being applied halfway. The schema the database inside claims is checked
+  // in `assertValidDatabase`, which knows the last migration this build ships.
   version: z.number().int().min(1).max(BACKUP_VERSION),
   files: z.record(z.string(), z.string()),
 });
@@ -149,10 +159,13 @@ function assertValidConfig(b64: string | undefined): void {
 }
 
 /**
- * Whether the bundled bytes are a database sql.js can actually open. A restored
- * file that does not open is a database the app cannot start with, so this has
- * to be answered before the real one is replaced — the header alone is not enough
- * (a truncated file keeps its first 16 bytes).
+ * Whether the bundled bytes are a database sql.js can actually open, and one
+ * this build understands. A restored file that does not open is a database the
+ * app cannot start with, so this has to be answered before the real one is
+ * replaced — the header alone is not enough (a truncated file keeps its first
+ * 16 bytes). The schema version matters for the same reason: a bundle from a
+ * newer build carries tables this one has never read, and its migrations would
+ * be skipped as already applied.
  */
 async function assertValidDatabase(buf: Buffer): Promise<void> {
   const invalid = (detail?: string) =>
@@ -166,7 +179,12 @@ async function assertValidDatabase(buf: Buffer): Promise<void> {
     db = new SQL.Database(buf);
     // Opening is lazy; touching the schema is what reads the file and throws.
     db.exec("PRAGMA schema_version");
+    // A bundle from a newer build carries a schema this one has never read, so
+    // its migrations would be skipped as already applied. It is not a broken
+    // file: it is one this build cannot use, and its message says so.
+    assertKnownSchema(schemaVersionOf(db));
   } catch (e) {
+    if (e instanceof SchemaTooNewError) throw e;
     throw invalid(e instanceof Error ? e.message : String(e));
   } finally {
     db?.close();

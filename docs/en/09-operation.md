@@ -91,6 +91,16 @@ is refused whole, and the message says which field breaks which limit. Nothing
 is changed when a copy is refused: the installation keeps the configuration it
 had.
 
+The database inside the bundle is checked for the same reason: an
+`openexpert.db` written by a **newer** OpenExpert (a bundle restored from another
+machine running a later build, or from a beta) carries tables this version does
+not know. The app refuses it instead of opening it and writing blind over a
+schema it has never read: the message says which version the database comes from
+and how far this installation understands, and nothing is touched — neither the
+target database nor its `.bak`. Update OpenExpert and import the bundle again.
+The same holds at startup: an `openexpert.db` with a newer schema is not opened,
+and the message says why.
+
 ## References
 
 - [Deployment](./08-deployment.md) — how to start it.

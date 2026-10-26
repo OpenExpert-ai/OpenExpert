@@ -20,6 +20,12 @@ que `PRAGMA user_version` y sube la versión.
 
 - Las bases antiguas y nuevas convergen al arrancar; sin herramienta externa ni
   dependencia nativa.
+- Una base con una versión **mayor** que la última migración de esta build se
+  rechaza en vez de abrirse: sus migraciones se saltarían por «ya aplicadas» y la
+  aplicación escribiría sobre un esquema que no ha leído. El mensaje dice las dos
+  versiones y no toca el fichero. Es el camino real de una copia restaurada de
+  otra máquina con una versión posterior, así que la restauración comprueba lo
+  mismo antes de escribir nada.
 - Quien contribuye debe añadir una migración numerada por cada cambio de esquema
   (documentado en `docs/es/07-desarrollo.md` y `AGENTS.md`).
 - Los cambios complejos (borrar/renombrar columnas en SQLite) siguen necesitando
