@@ -452,7 +452,9 @@ if [ "$DOCTOR" = 0 ] && [ "$NO_SETUP" = 0 ]; then
   fi
 
   if [ -t 0 ] || [ "$ASSUME_YES" = 1 ]; then
-    if ( cd "$REPO" && node packages/openexpert/bin/openexpert.js init --no-start ); then
+    INIT_ARGS=(--no-start)
+    [ "$ASSUME_YES" = 1 ] && INIT_ARGS+=(--yes)
+    if ( cd "$REPO" && node packages/openexpert/bin/openexpert.js init "${INIT_ARGS[@]}" ); then
       ok "modelo configurado"
     else
       warn "el asistente no terminó; ejecuta 'openexpert init' cuando quieras"
