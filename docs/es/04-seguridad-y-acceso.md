@@ -44,7 +44,10 @@ selector.
    falla, congela el proceso, y la comprobación ocurre en el hilo que sirve la
    aplicación, en el mensaje de cada turno. La medición va dentro de un contexto
    `vm`, cuyo plazo corta la expresión si no vuelve, para que medir un patrón
-   malo no congele a quien lo mide.
+   malo no congele a quien lo mide. La entrada de la medición se construye con
+   un carácter de cada parte que el patrón puede consumir —un `\d` se prueba con
+   un dígito, un `\s` con un espacio, una `ñ` con una `ñ`—, porque una sonda de
+   solo letras ASCII mide cero contra un patrón que solo se atasca con números.
 2. **Comprobaciones en servidor.** El aislamiento por dominio se aplica en
    `chat.server.ts`, no por el modelo.
 3. **Aprobación humana.** El asistente solo _propone_ acciones (`propose_*`);
