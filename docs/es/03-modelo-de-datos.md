@@ -78,7 +78,8 @@ como si fuera el total.
 | `created_at`      | TEXT        | Fecha ISO                    |
 
 **Retención: configurable (`chat.retentionDays`, por defecto 30 días; `0` la desactiva).**
-`listConversations` elimina los hilos anteriores al corte; con `0` no borra nada.
+`listConversations` elimina los hilos anteriores al corte de **todos los Expertos**, no solo los del
+Experto cuya lista se abre; con `0` no borra nada.
 
 Cada fila es un mensaje de UI completo y se identifica por el `id` que lleva dentro
 (`message.id`), no por la clave de la tabla: un turno que continúa —la aprobación de una

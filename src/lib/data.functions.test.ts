@@ -634,6 +634,58 @@ describe("getChat, clearChat y listConversations", () => {
     ).toEqual(["nueva"]);
   });
 
+  it("la retención es de la instalación, no del Experto cuya lista se abre", async () => {
+    // El ajuste es un solo número para la instalación (`chat.retentionDays`) y la
+    // pantalla lo anuncia como la retención del historial. Si la purga solo mira
+    // las filas del Experto que se abre, el historial caducado de los demás se
+    // queda en disco hasta que alguien entre en su pestaña, que puede no pasar
+    // nunca.
+    chatCfg.retentionDays = 30;
+    await insertChat("ventas", "vieja-ventas", "2020-01-01T00:00:00.000Z", userMessage("de 2020"));
+    await insertChat("general", "nueva-general", new Date().toISOString(), userMessage("de hoy"));
+
+    const list = (await fns.listConversations({ data: { expertId: "general" } })) as {
+      id: string;
+    }[];
+    expect(list.map((c) => c.id)).toEqual(["nueva-general"]);
+
+    const { orm } = await db.getDb();
+    expect(
+      orm
+        .select()
+        .from(schema.chatMessages)
+        .all()
+        .map((r) => r.conversationId),
+    ).toEqual(["nueva-general"]);
+  });
+
+  it("la purga de un Experto no se lleva por delante los hilos vivos de otro", async () => {
+    // El otro lado del caso anterior: recorrer la tabla entera para podar no puede
+    // convertirse en «borra todo lo que no sea del Experto que se abre».
+    chatCfg.retentionDays = 30;
+    await insertChat(
+      "general",
+      "vieja-general",
+      "2020-01-01T00:00:00.000Z",
+      userMessage("de 2020"),
+    );
+    await insertChat("ventas", "nueva-ventas", new Date().toISOString(), userMessage("de hoy"));
+
+    const list = (await fns.listConversations({ data: { expertId: "general" } })) as {
+      id: string;
+    }[];
+    expect(list).toEqual([]);
+
+    const { orm } = await db.getDb();
+    expect(
+      orm
+        .select()
+        .from(schema.chatMessages)
+        .all()
+        .map((r) => `${r.expertId}/${r.conversationId}`),
+    ).toEqual(["ventas/nueva-ventas"]);
+  });
+
   it("con retención 0 no poda nada: cero significa sin purga", async () => {
     chatCfg.retentionDays = 0;
     await insertChat("general", "antigua", "2020-01-01T00:00:00.000Z", userMessage("de 2020"));

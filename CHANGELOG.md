@@ -7,6 +7,22 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### La retención del historial se aplica a toda la instalación
+
+- **La poda ya no depende de qué Experto abras.** El ajuste `chat.retentionDays` es un solo número
+  para la instalación y la pantalla lo presenta como la retención del historial, pero
+  `listConversations` (`src/lib/data.functions.ts`) filtraba las filas por `expertId` y borraba solo
+  las conversaciones caducadas de **ese** Experto: el historial de un Experto cuya lista no se abría
+  se quedaba en `chat_messages` para siempre, porque no hay ningún otro sitio que pode. Ahora, al
+  abrir la lista de cualquier Experto se recorre la tabla entera y se borran todos los hilos cuyo
+  último mensaje está fuera del plazo, sean del Experto que se abre o no. La lista que se devuelve
+  sigue siendo la del Experto pedido, en el mismo orden.
+- **`0` sigue significando «sin purga»**, y nada de esto corre en segundo plano: es una consulta más
+  sobre tres columnas cuando se pide la lista.
+- **La puerta es un test.** El caso «la retención es de la instalación, no del Experto cuya lista se
+  abre» en `src/lib/data.functions.test.ts` abre la lista de un Experto reciente y comprueba que el
+  hilo caducado del otro desaparece de la tabla, no solo de la respuesta.
+
 ### Una base de una versión más nueva no se abre en silencio
 
 - **La versión del esquema se comprueba antes de migrar, no después.** `applyMigrations`
