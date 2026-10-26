@@ -22,6 +22,14 @@ describe("la sonda del medidor de ReDoS", () => {
     expect(isPatternTooSlow("\\s+\\s+\\s+\\s+\\s+x")).toBe(true);
   });
 
+  // `literalLetters` also drops anything outside `[A-Za-z0-9]`, so a Spanish pattern written with
+  // its own letters never gets them in the probe either: `ñ+ñ+ñ+ñ+ñ+x` costs 309 ms with sixty
+  // «ñ» and seven repetitions of it hang the process past a minute, with the verdict "not too
+  // slow".
+  it("cuenta un patrón escrito con letras acentuadas", () => {
+    expect(isPatternTooSlow("ñ+ñ+ñ+ñ+ñ+x")).toBe(true);
+  });
+
   it("no rechaza los patrones con dígitos que el dueño escribe de verdad", () => {
     for (const legitimo of ["^\\d{9}$", "\\d{1,3}", "^\\+?\\d{9,15}$"]) {
       expect(isPatternTooSlow(legitimo), legitimo).toBe(false);
