@@ -66,6 +66,12 @@ total (`activityTotal`, a `COUNT(*)`), and `getActivityPage` pages backwards wit
 oldest event —and its snapshot, which is what the revert button needs— stays reachable from the
 panel. The cut used to be silent: the screen printed the size of the window as if it were the total.
 
+The log has no retention, so the list reaches back years. The timestamp of a row therefore writes the
+year whenever it is not the current one (`formatDateTime` in `src/lib/format.ts`): "15 jun, 10:30" is
+this year's, "15 jun 2025, 10:30" is not. The year is read from the local calendar —the one
+`toLocaleString` prints with— so an event on 31 December at 23:30 in Madrid belongs to the year the
+clock there says. The list of conversations uses the same formatter.
+
 ### `chat_messages` — conversations
 
 | Column            | Type        | Notes                         |

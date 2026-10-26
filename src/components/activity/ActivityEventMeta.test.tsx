@@ -57,4 +57,17 @@ describe("ActivityEventMeta", () => {
     expect(screen.getByText(/Google Drive/)).toBeTruthy();
     expect(screen.getByText(/snapshot/)).toBeTruthy();
   });
+
+  // The line carried the time of day only, so a row from last year and a row
+  // from this one read the same and the audit trail could not be placed in time.
+  it("writes the year of an event from another year, and not of one from this one", () => {
+    const lastYear = new Date(new Date().getFullYear() - 1, 5, 15, 10, 30);
+    render(<ActivityEventMeta {...base} ts={lastYear.toISOString()} duration_ms={null} />);
+    expect(screen.getByText(new RegExp(String(lastYear.getFullYear())))).toBeTruthy();
+    cleanup();
+
+    const thisYear = new Date(new Date().getFullYear(), 5, 15, 10, 30);
+    render(<ActivityEventMeta {...base} ts={thisYear.toISOString()} duration_ms={null} />);
+    expect(screen.queryByText(new RegExp(String(thisYear.getFullYear())))).toBeNull();
+  });
 });

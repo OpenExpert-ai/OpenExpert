@@ -36,6 +36,33 @@ describe("formatDateTime", () => {
     expect(formatDateTime("2026-01-02T03:04:00.000Z", "es").length).toBeGreaterThan(0);
     expect(formatDateTime("2026-01-02T03:04:00.000Z", "en").length).toBeGreaterThan(0);
   });
+
+  // The activity log keeps every event (`countActivity` counts the whole table),
+  // so the list reaches back years. A row stamped with day and month only reads
+  // as this year's, and two events twelve months apart are told apart by nothing.
+  it("writes the year of a date that is not from this year", () => {
+    const lastYear = new Date(new Date().getFullYear() - 1, 5, 15, 10, 30);
+    expect(formatDateTime(lastYear.toISOString(), "es")).toContain(String(lastYear.getFullYear()));
+    expect(formatDateTime(lastYear.toISOString(), "en")).toContain(String(lastYear.getFullYear()));
+  });
+
+  it("keeps this year's dates short", () => {
+    const thisYear = new Date(new Date().getFullYear(), 5, 15, 10, 30);
+    expect(formatDateTime(thisYear.toISOString(), "es")).not.toContain(
+      String(thisYear.getFullYear()),
+    );
+  });
+
+  // The year comes from the local calendar, the one `toLocaleString` prints
+  // with, not from the year prefix of the ISO string: at 00:30 on 1 January in
+  // Madrid the instant still falls on 31 December in UTC, and the row belongs to
+  // the year the clock there says.
+  it("reads the year off the local calendar, not off the ISO string", () => {
+    const boundary = new Date(new Date().getFullYear(), 0, 1, 0, 30);
+    expect(formatDateTime(boundary.toISOString(), "es")).not.toContain(
+      String(boundary.getFullYear()),
+    );
+  });
 });
 
 describe("formatDuration", () => {
