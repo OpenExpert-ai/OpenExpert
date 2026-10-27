@@ -168,8 +168,11 @@ export const en: Record<string, string> = {
   "Los datos de ejemplo se marcan como demo y se quitan sin tocar los reales.":
     "Sample rows are marked as demo and can be removed without touching real data.",
   "Importados {n} registros de {entity}": "Imported {n} {entity} records",
-  "{n} fila(s) con error; la primera, línea {row}: {message}":
-    "{n} row(s) failed; the first at line {row}: {message}",
+  "{n} fila con error; la primera, línea {row}: {message}":
+    "{n} row failed; the first at line {row}: {message}",
+  "{n} filas con error; la primera, línea {row}: {message}":
+    "{n} rows failed; the first at line {row}: {message}",
+  "Se detallan solo las {n} primeras.": "Only the first {n} are listed.",
   "CSV no válido": "Invalid CSV",
   "Datos de ejemplo quitados": "Sample data removed",
   "Cargados {n} registros de ejemplo": "Loaded {n} sample records",
@@ -186,7 +189,11 @@ export const en: Record<string, string> = {
   "Las claves se guardan en secrets.json con permisos 0600; solo se leen datos del conector.":
     "Keys are stored in secrets.json with mode 0600; only connector data is read.",
   "Conectado: {n} registros": "Connected: {n} records",
+  "Conectado: {n} registros; la descarga se cortó en el tope y hay más sin traer":
+    "Connected: {n} records; the download hit the cap and more rows were left behind",
   "Sincronizados {n} registros": "Synced {n} records",
+  "Sincronizados {n} registros; la descarga se cortó en el tope y hay más sin traer":
+    "Synced {n} records; the download hit the cap and more rows were left behind",
   Desconectado: "Disconnected",
   "Copia de seguridad": "Backup",
   "Contraseña de la copia": "Backup passphrase",

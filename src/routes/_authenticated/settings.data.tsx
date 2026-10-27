@@ -232,20 +232,33 @@ function DataSettings() {
     try {
       const content = await file.text();
       const r = await doImportCsv({ data: { entity, content } });
-      toast.success(
-        t("Importados {n} registros de {entity}", {
-          n: r.inserted + r.updated,
-          entity: t(ENTITY_LABEL[entity]),
-        }),
-      );
-      if (r.errors.length) {
-        const first = r.errors[0];
-        toast.warning(
-          t("{n} fila(s) con error; la primera, línea {row}: {message}", {
-            n: r.errors.length,
-            row: first?.row ?? 0,
-            message: first?.message ?? "",
+      const imported = r.inserted + r.updated;
+      // Un fichero sin una sola fila buena no es una importación: anunciarla en
+      // verde («Importados 0 registros») y solo después el error confunde.
+      if (imported > 0) {
+        toast.success(
+          t("Importados {n} registros de {entity}", {
+            n: imported,
+            entity: t(ENTITY_LABEL[entity]),
           }),
+        );
+      }
+      if (r.skipped > 0) {
+        const first = r.errors[0];
+        // `errors` es una muestra (el servidor manda 20 como mucho), así que el
+        // recuento sale de `skipped`; con `errors.length` se callaban las demás.
+        const notice = pluralize(
+          locale,
+          r.skipped,
+          "{n} fila con error; la primera, línea {row}: {message}",
+          "{n} filas con error; la primera, línea {row}: {message}",
+          { row: first?.row ?? 0, message: first?.message ?? "" },
+        );
+        const shown = r.errors.length;
+        toast.warning(
+          shown > 0 && shown < r.skipped
+            ? `${notice} ${t("Se detallan solo las {n} primeras.", { n: shown })}`
+            : notice,
         );
       }
       await refresh();
@@ -287,6 +300,15 @@ function DataSettings() {
     }
   };
 
+  // El aviso de una descarga cortada tiene que decirlo: con el tope de la
+  // sincronización, un «N registros» a secas hace pasar un trozo por el total.
+  const syncDone = (r: { inserted: number; updated: number; truncated: boolean }) => {
+    const n = r.inserted + r.updated;
+    return r.truncated
+      ? t("Sincronizados {n} registros; la descarga se cortó en el tope y hay más sin traer", { n })
+      : t("Sincronizados {n} registros", { n });
+  };
+
   const onConnect = async (id: "pipedrive" | "holded") => {
     setBusy(`connect-${id}`);
     try {
@@ -294,7 +316,13 @@ function DataSettings() {
         id === "pipedrive"
           ? await doConnectPipedrive({ data: { token: pipedriveToken } })
           : await doConnectHolded({ data: { key: holdedKey } });
-      toast.success(t("Conectado: {n} registros", { n: r.inserted + r.updated }));
+      toast.success(
+        r.truncated
+          ? t("Conectado: {n} registros; la descarga se cortó en el tope y hay más sin traer", {
+              n: r.inserted + r.updated,
+            })
+          : t("Conectado: {n} registros", { n: r.inserted + r.updated }),
+      );
       if (id === "pipedrive") setPipedriveToken("");
       else setHoldedKey("");
       await refresh();
@@ -309,7 +337,7 @@ function DataSettings() {
     setBusy(`sync-${id}`);
     try {
       const r = await doSyncConnector({ data: { id } });
-      toast.success(t("Sincronizados {n} registros", { n: r.inserted + r.updated }));
+      toast.success(syncDone(r));
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
