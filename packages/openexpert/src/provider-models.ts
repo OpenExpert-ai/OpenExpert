@@ -110,6 +110,44 @@ async function ollamaModels(baseUrl: string, o: Required<ListOptions>): Promise<
 }
 
 /**
+ * Whether the active model can call tools. A model without tool calling cannot
+ * read the business data, so the doctor fails before the first chat instead of
+ * letting the provider emit "does not support tools" in the interface.
+ */
+export async function modelToolSupport(
+  id: ModelProviderId,
+  model: string,
+  opts: {
+    env?: NodeJS.ProcessEnv;
+    timeoutMs?: number;
+    endpoint?: string;
+    fetchImpl?: typeof fetch;
+  } = {},
+): Promise<"yes" | "no" | "unknown"> {
+  const known = providerDef(id)?.models.find((m) => m.id === model)?.toolCall;
+  if (typeof known === "boolean") return known ? "yes" : "no";
+  // Only Ollama exposes the capability list; a cloud model whose record does
+  // not say is left unknown rather than guessed.
+  if (id !== "ollama") return "unknown";
+  const baseUrl = opts.endpoint || endpointOf(id, opts.env ?? process.env);
+  if (!baseUrl) return "unknown";
+  try {
+    const res = await (opts.fetchImpl ?? fetch)(`${ollamaApiBaseUrl(baseUrl)}/api/show`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: model }),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 6000),
+    });
+    if (!res.ok) return "unknown";
+    const json = (await res.json()) as { capabilities?: string[] };
+    if (!Array.isArray(json.capabilities)) return "unknown";
+    return json.capabilities.includes("tools") ? "yes" : "no";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
  * Which models the provider serves. `endpoint` overrides the stored URL, so the
  * settings panel can ask about an endpoint the user has typed but not yet saved.
  * Trailing slashes are trimmed with the shared helper: the URL comes from the

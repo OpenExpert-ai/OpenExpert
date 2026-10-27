@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { DEFAULT_OLLAMA_URL, endpointOf, isProviderId, providerDef } from "../providers.js";
 import { loadConfigWithNotices } from "../config.js";
 import { providerKeyMessage } from "../model-provider.js";
-import { listProviderModels } from "../provider-models.js";
+import { listProviderModels, modelToolSupport } from "../provider-models.js";
 import {
   DEFAULT_DATA_DIR,
   appCacheDir,
@@ -48,7 +48,7 @@ function effectiveEnv(cwd = process.cwd()): NodeJS.ProcessEnv {
   return env;
 }
 
-export function cmdDoctor(cwd = process.cwd()): number {
+export async function cmdDoctor(cwd = process.cwd()): Promise<number> {
   const provider = configuredProvider(cwd);
   const def = providerDef(provider);
   const dataDir = resolvedDataDir(cwd);
@@ -90,6 +90,19 @@ export function cmdDoctor(cwd = process.cwd()): number {
     problems.push(`Falta ${def.baseUrlEnv}.`);
   } else if (def?.baseUrlEnv) {
     console.log(`  endpoint: ${endpointOf(provider, env)}`);
+  }
+  const model =
+    process.env["OPENEXPERT_MODEL_ID"] || readConfig(cwd).modelId || def?.models[0]?.id || "";
+  if (model) {
+    console.log(`  model:    ${model}`);
+    const support = await modelToolSupport(provider, model, { env, timeoutMs: 1500 });
+    if (support === "no") {
+      problems.push(
+        `El modelo ${model} no admite herramientas (tool calling), así que no puede consultar tus datos. Elige uno compatible, como llama3.1.`,
+      );
+    } else if (support === "unknown") {
+      console.log("  note:     no se pudo comprobar si el modelo admite herramientas.");
+    }
   }
   if (!process.env["GOOGLE_CLIENT_ID"] && !secrets.GOOGLE_CLIENT_ID) {
     console.log("  note:     sin Google OAuth el chat funciona; Drive queda desconectado.");

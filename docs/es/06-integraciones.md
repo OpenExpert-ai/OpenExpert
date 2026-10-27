@@ -6,22 +6,23 @@
 
 ## 1. Estado
 
-Solo **Google Drive**, las **carpetas locales** y **Notion** están disponibles, y
-todas son opcionales. Los demás conectores están modelados en los datos pero
-pendientes de credenciales.
+Solo **Google Drive**, las **carpetas locales**, **Notion**, **Pipedrive**,
+**Holded** y la **importación CSV** están disponibles; todas son opcionales. Los
+demás conectores están modelados en los datos pero pendientes de credenciales.
 
-| Integración          | Categoría      | Conexión       | Estado         |
-| -------------------- | -------------- | -------------- | -------------- |
-| **Google Drive**     | Productividad  | OAuth + Picker | **Disponible** |
-| **Carpetas locales** | Productividad  | Servidor local | **Disponible** |
-| **Notion**           | Productividad  | OAuth 2.0      | **Disponible** |
-| Pipedrive            | CRM            | Por licencia   | Pendiente      |
-| Salesforce           | CRM            | Por licencia   | Pendiente      |
-| Holded               | ERP / Finanzas | Por licencia   | Pendiente      |
-| Gmail                | Productividad  | API            | Pendiente      |
-| Slack                | Productividad  | API            | Pendiente      |
-| Google Analytics     | Publicidad     | API            | Pendiente      |
-| Meta Ads             | Publicidad     | Token          | Pendiente      |
+| Integración          | Categoría      | Conexión       | Estado                    |
+| -------------------- | -------------- | -------------- | ------------------------- |
+| **Google Drive**     | Productividad  | OAuth + Picker | **Disponible**            |
+| **Carpetas locales** | Productividad  | Servidor local | **Disponible**            |
+| **Notion**           | Productividad  | OAuth 2.0      | **Disponible**            |
+| **Pipedrive**        | CRM            | Token de API   | **Disponible (opcional)** |
+| **Holded**           | ERP / Finanzas | Clave de API   | **Disponible (opcional)** |
+| **Importación CSV**  | Datos          | Fichero        | **Disponible**            |
+| Salesforce           | CRM            | Por licencia   | Pendiente                 |
+| Gmail                | Productividad  | API            | Pendiente                 |
+| Slack                | Productividad  | API            | Pendiente                 |
+| Google Analytics     | Publicidad     | API            | Pendiente                 |
+| Meta Ads             | Publicidad     | Token          | Pendiente                 |
 
 ## 2. Google Drive
 
@@ -144,7 +145,36 @@ absoluta. Las concesiones se guardan cifradas en
 - Docker: el servidor ve el sistema de archivos del contenedor, así que hay que
   montar la carpeta con `-v /ruta/host:/data/ruta`.
 
-## 5. Herramientas de IA
+## 5. Conectores de negocio
+
+Pipedrive, Holded y CSV son opcionales y **solo de lectura**: OpenExpert lee de
+ellos y nunca escribe de vuelta. Sus claves viven en
+`~/.openexpert/secrets.json` (`0600`) y no se vuelven a mostrar al guardarlas.
+
+### Pipedrive
+
+**Ajustes → Datos → Conectores de negocio.** Crea un token de API personal en
+Pipedrive (Ajustes → Preferencias personales → API) y pégalo. La sincronización
+lee las oportunidades y mapea empresa, etapa, valor, propietario, días en etapa,
+fecha de cierre prevista y estado. Las filas se actualizan por `pd-<id>`.
+
+### Holded
+
+**Ajustes → Datos → Conectores de negocio.** Crea una clave de API en Holded
+(Ajustes → Developers) y pégala. La sincronización lee las facturas y mapea
+cliente, importe, vencimiento y estado (`pending`/`partial` → abierta,
+`completed` → pagada, `cancelled`/`failed` → cancelada). Las filas se actualizan
+por `holded-<id>`.
+
+### Importación CSV
+
+**Ajustes → Datos → Importar CSV** cubre ventas, facturas, campañas y cuentas.
+Descarga la plantilla, rellénala e impórtala; acepta cabeceras en español o
+inglés. La clave es `id`, o `csv-<entidad>-<fila>` si el fichero no trae id. El
+límite es de 5.000 filas y una fila mala se informa por número de línea sin
+tirar el resto.
+
+## 6. Herramientas de IA
 
 | Herramienta                                                                                    | Comportamiento                                                                                                                                    |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -207,7 +237,7 @@ servicio desde sus propias extensiones y usarlo desde otro sitio es muy probable
 infracción. Y el _portal de Nous_, cuyo acceso es una cuenta OAuth y no una clave de API.
 El motivo vive junto al catálogo, para que nadie lo reintente sin saberlo.
 
-## 6. Notas de seguridad
+## 7. Notas de seguridad
 
 - Los **tokens** y la **lista de concesiones** están cifrados con **AES-256-GCM**
   con una clave generada en tu máquina (`~/.openexpert/secret.key`, `0600`).
@@ -221,7 +251,7 @@ El motivo vive junto al catálogo, para que nadie lo reintente sin saberlo.
 - El navegador se considera de confianza en la edición local
   monopropietario (ver [`04-seguridad-y-acceso.md`](./04-seguridad-y-acceso.md)).
 
-## 7. Referencias
+## 8. Referencias
 
 - [Arquitectura](./02-arquitectura.md) — capas.
 - [IA](./05-inteligencia-artificial.md) — catálogo de herramientas.

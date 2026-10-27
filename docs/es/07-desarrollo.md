@@ -168,6 +168,13 @@ que corre CI) y `test:run` ejecuta en una sola pasada los tests de la app y los 
 `src/puertas-cobertura.test.ts` recorre el repo y falla nombrando cualquier
 `*.test.ts(x)` que el proyecto raíz de vitest no ejecute.
 
+El comando que corre CI es `npm run test:coverage` (todos los ficheros a la vez, con
+el proveedor v8), no `test:run`. El plazo de cada test sigue siendo el defecto de
+5 s y no se sube en `vitest.config.ts`: un test que no quepa en él declara su propio
+límite como último argumento del `it(...)` o del `waitFor(...)`, para que un
+cuelgue de verdad en cualquier otro test siga saliendo en 5 s.
+`src/plazos-test-lentos.test.ts` vigila los dos ficheros que ya rozaban el límite.
+
 ## 8. Integración continua y publicaciones
 
 Todo cambio llega a `main` a través de una pull request: la rama está protegida
@@ -236,6 +243,11 @@ src/
   routes/           Rutas de TanStack Router
   lib/
     db.server.ts             SQLite (sql.js) + esquema + semilla
+    business-csv.ts          Parser CSV y mapeo de columnas
+    business-import.server.ts Upsert + auditoría de filas importadas
+    connectors.server.ts     Conectores pull de Pipedrive / Holded
+    demo-data.server.ts      Filas de ejemplo (ids demo-)
+    backup-crypto.ts         Cifrado de copias con contraseña
     data.functions.ts        Server functions (puerta única de escritura)
     ee.server.ts             Auditoría, reversión y consultas de negocio
     ai/chat.server.ts        Chat con herramientas y control anti-inyección

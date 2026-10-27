@@ -3,7 +3,7 @@
 // The schema is applied idempotently from drizzle/init.sql and example data
 // is seeded on first run.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import type { Database, SqlJsStatic } from "sql.js";
@@ -127,7 +127,10 @@ loadSecretsIntoEnv();
 /** Write the in-memory database to disk atomically (tmp + rename). */
 function writeDbFile(file: string, raw: Database): void {
   const tmp = `${file}.tmp`;
-  writeFileSync(tmp, Buffer.from(raw.export()));
+  // The database holds the business data in clear text. The directory is 0700
+  // and the file 0600, so another local user cannot read it even when the
+  // machine is shared; disk encryption remains the owner's job.
+  writeFileSync(tmp, Buffer.from(raw.export()), { mode: 0o600 });
   renameSync(tmp, file);
 }
 
@@ -148,7 +151,18 @@ function applyMigrations(raw: Database): void {
 async function init(): Promise<Handle> {
   const SQL = await loadSqlJs();
   const file = dbPath();
-  mkdirSync(dirname(file), { recursive: true });
+  const dir = dirname(file);
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  // `mode` only applies to a directory this call creates. An install from an
+  // older version may already have 0755, so close it here as well; on Windows
+  // the POSIX mode is not meaningful and chmod is skipped.
+  if (process.platform !== "win32") {
+    try {
+      chmodSync(dir, 0o700);
+    } catch {
+      // A read-only data dir is reported by the next write, with a better error.
+    }
+  }
   const raw = existsSync(file) ? new SQL.Database(readFileSync(file)) : new SQL.Database();
   // A database from a newer build is refused here, before `init.sql` or any
   // migration touches it: running them would skip everything it already has and

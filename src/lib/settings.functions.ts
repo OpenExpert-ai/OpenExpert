@@ -42,6 +42,7 @@ import {
   type ProviderProbeInput,
   type SecretName,
 } from "./config.server";
+import { decryptBackup, encryptBackup, isEncryptedBackup } from "./backup-crypto";
 
 const OWNER_NAME = "Propietario local";
 
@@ -320,12 +321,37 @@ export const getDataStats = createServerFn({ method: "GET" }).handler(async () =
   backup.dataStats(),
 );
 
-export const importBackup = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ content: z.string().min(2).max(200_000_000) }).parse(d))
+export const exportEncryptedBackup = createServerFn({ method: "POST" })
+  .validator((d) => z.object({ passphrase: z.string().min(8).max(200) }).parse(d))
   .handler(async ({ data }) => {
+    const plain = JSON.stringify(backup.buildBackup(), null, 2);
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    return {
+      content: encryptBackup(plain, data.passphrase),
+      filename: `openexpert-backup-${stamp}.json.enc`,
+    };
+  });
+
+export const importBackup = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        content: z.string().min(2).max(200_000_000),
+        passphrase: z.string().max(200).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    let content = data.content;
+    if (isEncryptedBackup(content)) {
+      if (!data.passphrase) {
+        throw new Error("La copia está cifrada: escribe su contraseña para restaurarla.");
+      }
+      content = decryptBackup(content, data.passphrase);
+    }
     let restored: backup.RestoreResult;
     try {
-      restored = await backup.restoreBackup(data.content);
+      restored = await backup.restoreBackup(content);
     } catch (e) {
       throw new Error(e instanceof Error ? e.message : "Copia no válida", { cause: e });
     }

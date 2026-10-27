@@ -73,104 +73,104 @@ afterEach(() => {
 });
 
 describe("cmdVersion", () => {
-  it("prints the version and exits 0", () => {
+  it("prints the version and exits 0", async () => {
     expect(cmdVersion()).toBe(0);
     expect(logs.join("\n")).toMatch(/^OpenExpert \d+\.\d+\.\d+/);
   });
 });
 
 describe("cmdDoctor", () => {
-  it("flags a missing GOOGLE_API_KEY for the google provider", () => {
+  it("flags a missing GOOGLE_API_KEY for the google provider", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "google");
-    expect(cmdDoctor(cwd)).toBe(1);
+    expect(await cmdDoctor(cwd)).toBe(1);
     expect(logs.join("\n")).toContain("provider: google");
     expect(logs.join("\n")).toContain("data dir: " + join(home, "data"));
     expect(logs.join("\n")).toMatch(/Falta GOOGLE_API_KEY/);
     expect(logs.join("\n")).toContain("pendiente:");
   });
 
-  it("is OK for google when a key is present", () => {
+  it("is OK for google when a key is present", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "google");
     vi.stubEnv("GOOGLE_API_KEY", "k");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("OK: listo para arrancar.");
     expect(logs.join("\n")).not.toContain("sin Google OAuth");
   });
 
-  it("notes the Drive disconnect when no OAuth client id is configured", () => {
+  it("notes the Drive disconnect when no OAuth client id is configured", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "google");
     vi.stubEnv("GOOGLE_API_KEY", "k");
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("sin Google OAuth el chat funciona");
   });
 
-  it("reads the provider from the directory it was given, not from the process cwd", () => {
+  it("reads the provider from the directory it was given, not from the process cwd", async () => {
     // No env override: the answer can only come from cwd/openexpert.json.
     writeFileSync(join(cwd, "openexpert.json"), JSON.stringify({ modelProvider: "ollama" }));
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("provider: ollama");
     expect(logs.join("\n")).not.toContain("provider: google");
   });
 
-  it("requires key and base url for openai-compatible", () => {
+  it("requires key and base url for openai-compatible", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "openai-compatible");
-    expect(cmdDoctor(cwd)).toBe(1);
+    expect(await cmdDoctor(cwd)).toBe(1);
     expect(logs.join("\n")).toMatch(/Falta OPENEXPERT_MODEL_KEY/);
     expect(logs.join("\n")).toMatch(/Falta OPENEXPERT_BASE_URL/);
   });
 
-  it("is OK for a configured openai-compatible provider", () => {
+  it("is OK for a configured openai-compatible provider", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "openai-compatible");
     vi.stubEnv("OPENEXPERT_MODEL_KEY", "k");
     vi.stubEnv("OPENEXPERT_BASE_URL", "https://api.example.com/v1");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("OK: listo para arrancar.");
   });
 
-  it("avisa cuando el directorio de datos no se puede crear", () => {
+  it("avisa cuando el directorio de datos no se puede crear", async () => {
     // El doctor es lo que se mira cuando algo no arranca: si el directorio no se
     // puede escribir, eso es un problema, no un detalle.
     vi.stubEnv("OPENEXPERT_DATA_DIR", "/proc/version/imposible");
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
-    expect(cmdDoctor(cwd)).toBe(1);
+    expect(await cmdDoctor(cwd)).toBe(1);
     expect(logs.join("\n")).toMatch(/No se puede escribir en/);
   });
 
-  it("un proveedor con clave propia no se conforma con la clave de otro", () => {
+  it("un proveedor con clave propia no se conforma con la clave de otro", async () => {
     // Compartir la variable era el fallo: la clave del endpoint genérico no
     // autentica contra Anthropic, y el doctor tiene que decirlo.
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "anthropic");
     vi.stubEnv("OPENEXPERT_MODEL_KEY", "sk-de-otro-proveedor");
-    expect(cmdDoctor(cwd)).toBe(1);
+    expect(await cmdDoctor(cwd)).toBe(1);
     expect(logs.join("\n")).toContain("provider: anthropic (Anthropic (Claude))");
     expect(logs.join("\n")).toMatch(/Falta ANTHROPIC_API_KEY/);
   });
 
-  it("está listo con la clave de Anthropic puesta", () => {
+  it("está listo con la clave de Anthropic puesta", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "anthropic");
     vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("OK: listo para arrancar.");
   });
 
-  it("lee el proveedor de la carpeta que se le da, aunque sea nuevo", () => {
+  it("lee el proveedor de la carpeta que se le da, aunque sea nuevo", async () => {
     writeFileSync(join(cwd, "openexpert.json"), JSON.stringify({ modelProvider: "anthropic" }));
-    expect(cmdDoctor(cwd)).toBe(1);
+    expect(await cmdDoctor(cwd)).toBe(1);
     expect(logs.join("\n")).toMatch(/Falta ANTHROPIC_API_KEY/);
   });
 
-  it("reports the ollama endpoint and never blocks", () => {
+  it("reports the ollama endpoint and never blocks", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("endpoint: http://localhost:11434");
   });
 
-  it("avisa de los límites que el fichero rompe, y no los deja pasar en silencio", () => {
+  it("avisa de los límites que el fichero rompe, y no los deja pasar en silencio", async () => {
     // The CLI reads the file through the same reader the application uses, so
     // a value above the limit is brought back to it in both. The owner has to
     // be told: the file says one thing and the application does another.
@@ -183,13 +183,13 @@ describe("cmdDoctor", () => {
         ai: { maxOutputTokens: 100_000_000 },
       }),
     );
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toMatch(/chat\.maxSteps: 100000 se recorta a 200/);
     expect(logs.join("\n")).toMatch(/chat\.retentionDays: 999999 se recorta a 3650/);
     expect(logs.join("\n")).toMatch(/ai\.maxOutputTokens: 100000000 se recorta a 200000/);
   });
 
-  it("avisa de los patrones de inyección que se descartan", () => {
+  it("avisa de los patrones de inyección que se descartan", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
     writeFileSync(
@@ -198,18 +198,18 @@ describe("cmdDoctor", () => {
         chat: { injectionExtraPatterns: Array.from({ length: 200 }, (_, i) => `p${i}`) },
       }),
     );
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).toMatch(/150 patrón\(es\) de inyección descartados/);
   });
 
-  it("no avisa de nada cuando el fichero está dentro de los límites", () => {
+  it("no avisa de nada cuando el fichero está dentro de los límites", async () => {
     vi.stubEnv("OPENEXPERT_MODEL_PROVIDER", "ollama");
     vi.stubEnv("GOOGLE_CLIENT_ID", "cid");
     writeFileSync(
       join(cwd, "openexpert.json"),
       JSON.stringify({ chat: { maxSteps: 40, retentionDays: 7 } }),
     );
-    expect(cmdDoctor(cwd)).toBe(0);
+    expect(await cmdDoctor(cwd)).toBe(0);
     expect(logs.join("\n")).not.toContain("aviso:");
   });
 });
@@ -404,7 +404,7 @@ describe("cmdServe", () => {
 });
 
 describe("cmdUpdate", () => {
-  it("removes the cached standalone server for the current version", () => {
+  it("removes the cached standalone server for the current version", async () => {
     // packageVersion() is "0.0.0" from the source tree; build that cache dir.
     const dir = join(home, ".openexpert", "app", "0.0.0");
     mkdirSync(dir, { recursive: true });
@@ -413,7 +413,7 @@ describe("cmdUpdate", () => {
     expect(logs.join("\n")).toContain("caché del servidor eliminada");
   });
 
-  it("says there is nothing to update when no cache exists", () => {
+  it("says there is nothing to update when no cache exists", async () => {
     expect(cmdUpdate()).toBe(0);
     expect(logs.join("\n")).toContain("No hay servidor descargado que actualizar.");
   });

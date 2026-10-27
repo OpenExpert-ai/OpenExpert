@@ -52,8 +52,10 @@ una tabla y recomendaciones.
 | Edición local, propietario único                                            | Activo    |
 | Chat con herramientas y streaming                                           | Activo    |
 | Google Drive, carpetas locales y Notion (lectura; escritura con aprobación) | Opcional  |
+| Importación CSV (ventas, facturas, campañas, cuentas)                       | Activo    |
+| Pipedrive (ventas) y Holded (facturas), solo lectura                        | Opcional  |
 | Registro de actividad y reversión                                           | Activo    |
-| Pipedrive, Holded, Salesforce, Meta Ads, Gmail, Slack, Google Analytics     | Pendiente |
+| Salesforce, Meta Ads, Gmail, Slack, Google Analytics                        | Pendiente |
 | Planificador automático de disparadores                                     | Pendiente |
 
 ## 6. Edición

@@ -166,6 +166,13 @@ in one pass. A new test needs no registration anywhere:
 `src/puertas-cobertura.test.ts` walks the repo and fails naming any
 `*.test.ts(x)` the root vitest project does not execute.
 
+The command CI runs is `npm run test:coverage` (every file at once, with the v8
+provider), not `test:run`. The per-test timeout is still the 5 s default and is
+not raised in `vitest.config.ts`: a test that does not fit declares its own limit
+as the last argument of `it(...)` or `waitFor(...)`, so a real hang in any other
+test still shows up in 5 s. `src/plazos-test-lentos.test.ts` watches the two files
+that were already brushing the limit.
+
 ## 8. Continuous integration and releases
 
 Every change reaches `main` through a pull request: the branch is protected by a
@@ -230,6 +237,11 @@ src/
   routes/           TanStack Router routes
   lib/
     db.server.ts             SQLite (sql.js) + schema init + seed
+    business-csv.ts          CSV parser and column mapping
+    business-import.server.ts Upsert + audit for imported rows
+    connectors.server.ts     Pipedrive / Holded pull connectors
+    demo-data.server.ts      Sample rows (demo- ids)
+    backup-crypto.ts         Passphrase encryption for backups
     data.functions.ts        Server functions (single write path)
     ee.server.ts             Audit, revert and business queries
     ai/chat.server.ts        Chat with tools and injection guard

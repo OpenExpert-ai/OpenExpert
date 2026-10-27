@@ -40,7 +40,8 @@ Open source under the MIT license.
 - "Create a new Expert for Operations."
 
 The assistant answers from the data you connect (Google Drive, local folders,
-Notion) and proposes writes instead of performing them.
+Notion) or your CRM and accounting (Pipedrive, Holded, or a CSV) and proposes
+writes instead of performing them.
 
 ![OpenExpert's AI settings: Ollama selected, with external providers available](docs/assets/readme-ai.png)
 
@@ -103,7 +104,7 @@ Or install everything (dependencies, build, launcher, menu entry) with one
 command:
 
 ```sh
-./install.sh              # add --skip-build to reuse an existing build
+./install.sh              # asks for the model provider; --with-ollama installs Ollama + llama3.1
 ```
 
 See [Deployment](./docs/en/08-deployment.md).
@@ -119,6 +120,9 @@ See [Deployment](./docs/en/08-deployment.md).
   [docs/en/13-ai-providers.md](./docs/en/13-ai-providers.md).
 - **Sources** (optional): Google Drive, local folders and Notion, connected with
   your own account; tokens and grants are stored locally with mode `0600`.
+- **Business data**: import a CSV (deals, invoices, campaigns or accounts) or
+  connect Pipedrive and Holded with your own API key; both are optional. The
+  sample dataset in Settings → Data lets you try the dashboard before connecting.
 - **Governance**: every revertible change is logged with a snapshot and can be
   reverted from the activity screen. AI actions are only _proposed_ and need
   human approval.
@@ -181,7 +185,8 @@ next.
 
 Issues and pull requests are welcome. [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 explains the DCO and the gates; the development setup is in
-[`docs/en/07-development.md`](./docs/en/07-development.md).
+[`docs/en/07-development.md`](./docs/en/07-development.md). Support is
+community-based and has no SLA: see [`SUPPORT.md`](./SUPPORT.md).
 
 ## Notes
 
@@ -191,6 +196,10 @@ explains the DCO and the gates; the development setup is in
   normally set.
 - The whole repository is released under the **MIT License**. See
   [`LICENSE`](./LICENSE) and [`NOTICE`](./NOTICE).
+- Backups are downloaded encrypted with a passphrase you choose; losing it means
+  losing the copy. The data directory is created `0700` and the database `0600`.
+- Windows and macOS desktop packages are built unsigned in CI; Linux is the
+  tested desktop path.
 - [`SECURITY.md`](./SECURITY.md) describes the private channel for reporting
   vulnerabilities.
 - [`PRIVACY.md`](./PRIVACY.md) is the privacy policy (Spanish:

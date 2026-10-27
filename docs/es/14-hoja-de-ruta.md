@@ -24,15 +24,14 @@ Estado de los elementos implementados y pendientes.
 
 ## Pendiente
 
-- [ ] **Conectores reales** (Pipedrive, Holded, Meta Ads, Gmail, Slack, Google
-      Analytics, Salesforce). OpenExpert se distribuye **sin datos de negocio**:
-      las tablas están vacías hasta que un conector las rellene. Las herramientas
-      de negocio ya indican la procedencia y avisan cuando no hay nada conectado.
+- [ ] **Conectores restantes** (Meta Ads, Gmail, Slack, Google Analytics,
+      Salesforce). Pipedrive (ventas), Holded (facturas) y la importación CSV ya
+      están disponibles como fuentes opcionales de solo lectura.
 - [ ] **Procesos autónomos (eliminados, por reconstruir).** El catálogo anterior
       era andamiaje: "ejecutar" un proceso solo subía un contador, el disparador
       era descriptivo (sin planificador) y las etapas nunca se ejecutaban. Se ha
       eliminado hasta poder construirlo de verdad: ejecución real de etapas, un
       planificador y, cuando haga falta, doble firma.
-- [ ] **Importación de datos reales** (CSV) como paso intermedio antes de los
-      conectores.
-- [ ] **Asistente de copia de seguridad** de `OPENEXPERT_DATA_DIR`.
+- [ ] **Instaladores firmados de Windows y macOS.** La CI genera `.msi`/`.dmg`
+      sin firmar; la firma necesita certificados.
+- [ ] **Copias programadas.** La descarga cifrada con contraseña es manual hoy.

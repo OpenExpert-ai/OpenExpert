@@ -83,11 +83,11 @@ Reglas:
   datos. El panel de ajustes local puede **revelar** una clave guardada a
   petición (botón "Copiar"), así que considera el navegador como entorno de
   confianza y no expongas el puerto.
-- Las copias de seguridad (`GET /api/backup`) incluyen `secrets.json`, los
-  ficheros cifrados de credenciales y `secret.key`, la clave que los descifra.
-  El sobre es, por tanto, tan sensible como los propios tokens: se rechazan las
-  descargas entre orígenes, pero aun así descarga copias solo en un equipo de
-  confianza y guárdalas con cuidado.
+- Las copias descargadas desde **Ajustes → Datos** están cifradas con
+  AES-256-GCM y una contraseña que eliges. La contraseña no se guarda: si la
+  pierdes, pierdes la copia. El sobre plano antiguo (`GET /api/backup`) incluye
+  `secrets.json`, los ficheros cifrados de credenciales y `secret.key`; sigue
+  disponible para copias viejas, pero descárgalo solo en un equipo de confianza.
 - Un `openexpert.json` restaurado se **valida antes de escribirse**: una copia
   es un fichero que llega de fuera, así que la configuración que trae pasa por
   el mismo esquema que usan el panel de ajustes y el editor en crudo. Una copia
@@ -128,8 +128,10 @@ Reglas:
 
 ## 5. Datos en reposo
 
-La base de datos es un fichero SQLite plano que tú controlas. El cifrado lo
-aporta tu disco, no la aplicación. Haz copia copiando `OPENEXPERT_DATA_DIR`.
+La base de datos es un fichero SQLite plano que tú controlas. El directorio de
+datos se crea `0700` y la base `0600`, así que otro usuario local no puede
+leerla; el cifrado en reposo lo aporta tu disco, no la aplicación. Haz copia
+desde **Ajustes → Datos** (cifrada) o copiando `OPENEXPERT_DATA_DIR`.
 
 ## 6. Registro y reversión
 
