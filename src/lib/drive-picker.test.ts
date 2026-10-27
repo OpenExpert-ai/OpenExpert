@@ -31,6 +31,8 @@ type EnvOpts = {
   scriptPresent?: boolean;
   scriptFails?: boolean;
   gapiMissing?: boolean;
+  /** `gapi.load` keeps its callback and never calls it: the module never starts. */
+  gapiNeverCallsBack?: boolean;
   pickerMissing?: boolean;
   actionEnum?: { PICKED?: string; CANCEL?: string };
   responseEnum?: { ACTION?: string; DOCUMENTS?: string };
@@ -39,6 +41,9 @@ type EnvOpts = {
 function makeEnv(opts: EnvOpts = {}) {
   const calls = {
     gapiLoad: [] as string[],
+    // Flipped by the test: the library loaded but the module never starts, so the callback the
+    // app is waiting for is swallowed.
+    swallowGapiCallback: opts.gapiNeverCallsBack ?? false,
     appended: false,
     // How many <script> tags the page has been given, one per attempt.
     appendCount: 0,
@@ -144,7 +149,7 @@ function makeEnv(opts: EnvOpts = {}) {
       : {
           load: vi.fn((lib: string, cb: () => void) => {
             calls.gapiLoad.push(lib);
-            cb();
+            if (!calls.swallowGapiCallback) cb();
           }),
         },
     google: picker ? { picker } : undefined,
@@ -162,6 +167,7 @@ async function importPicker() {
 
 beforeEach(() => vi.spyOn(console, "debug").mockImplementation(() => {}));
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -366,5 +372,35 @@ describe("pickDriveFiles", () => {
 
     calls.callback!({ action: "cancel" });
     await expect(promise).resolves.toEqual({ files: [], action: "cancel" });
+  });
+
+  it("rejects instead of hanging for ever when gapi.load never calls back", async () => {
+    const { calls } = makeEnv({ gapiNeverCallsBack: true });
+    const mod = await importPicker();
+
+    vi.useFakeTimers();
+    let settled: string | null = null;
+    const promise = mod.pickDriveFiles({ accessToken: "t", apiKey: "t", appId: "a" });
+    void promise.then(
+      () => (settled = "resolved"),
+      (e: Error) => (settled = `rejected: ${e.message}`),
+    );
+
+    // The script loads and gapi exists, but the picker module never starts: the callback the app
+    // handed to `gapi.load` is kept and never called. Without a deadline the promise stays
+    // pending for ever, and the button of Integraciones → Fuentes spins with nothing to read.
+    await flushUntil(() => calls.gapiLoad.length === 1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(settled ?? "la promesa sigue pendiente sin plazo").toMatch(
+      /^rejected: El cargador de Google \(gapi\) no respondió en 20 s\./,
+    );
+
+    // The failure is not cached: the cause is gone by the time the user clicks again.
+    calls.swallowGapiCallback = false;
+    const retry = mod.pickDriveFiles({ accessToken: "t", apiKey: "t", appId: "a" });
+    await flushUntil(() => calls.visible === true);
+    expect(calls.gapiLoad).toEqual(["picker", "picker"]);
+    calls.callback!({ action: "cancel" });
+    await expect(retry).resolves.toEqual({ files: [], action: "cancel" });
   });
 });

@@ -52,6 +52,11 @@ scripts lo paró, la CSP no lo permite— el intento se puede **reintentar**. El
 se recuerda: el siguiente clic vuelve a pedir el script, y el mensaje que explica el fallo dice
 qué comprobar. No hace falta recargar la página.
 
+Lo mismo vale cuando `api.js` sí carga pero la librería no termina de arrancar: si el módulo
+`picker` no llama al aviso de carga en **20 s**, el intento se da por fallido con el motivo
+(`El cargador de Google (gapi) no respondió en 20 s…`) en vez de dejar el botón girando sin
+explicación. Ese fallo tampoco se recuerda: el siguiente clic vuelve a pedir la librería.
+
 Las lecturas tienen tope: **25 MB por archivo**. El tamaño viaja en los metadatos, así que un
 archivo mayor se rechaza con una nota clara antes de descargarlo; en el texto suelto y en las
 exportaciones (Docs a texto, Sheets a CSV) el tope se aplica mientras se lee, de modo que un

@@ -7,6 +7,23 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### El Picker de Drive no se queda cargando sin decir nada
+
+- **El arranque de la librería de Google tiene plazo.** `pickDriveFiles` resolvía con
+  `window.gapi.load("picker", () => resolve())` y nada más: si `api.js` cargaba pero el módulo
+  `picker` no arrancaba (un bloqueador que deja pasar la primera petición y corta la siguiente, una
+  CSP que permite `apis.google.com` pero no lo que ese script pide después), el callback no llegaba
+  nunca y la promesa quedaba pendiente para siempre.
+- **Lo que veía el usuario:** el botón «Seleccionar archivos» giraba indefinidamente, sin mensaje y
+  sin poder reintentar sin recargar la página; los otros dos caminos de carga sí fallaban con
+  diagnóstico.
+- **Ahora:** pasados 20 s la carga se rechaza con «El cargador de Google (gapi) no respondió en
+  20 s…», el `finally` del llamador baja el estado de carga y el aviso dice qué comprobar. El fallo
+  no se cachea, así que el siguiente clic vuelve a pedir la librería.
+- **La puerta es un test.** `src/lib/drive-picker.test.ts` monta un `gapi.load` que no llama nunca a
+  su callback, avanza 30 s de reloj falso y exige el rechazo; después reintenta y comprueba que la
+  librería se vuelve a pedir.
+
 ### La importación de CSV rechaza la fecha que no existe
 
 - **`parseDate` valida el día contra el calendario, no por rango.** Comprobaba que el día estuviera

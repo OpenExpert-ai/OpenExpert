@@ -38,6 +38,14 @@ declare global {
 }
 
 const APIS_URL = "https://apis.google.com/js/api.js";
+/**
+ * Deadline for Google's own library to start the `picker` module. `api.js`
+ * loading is not enough: the module it fetches afterwards can be blocked on its
+ * own (a blocker that lets the first request through and cuts the second, a CSP
+ * that allows `apis.google.com` but not what that script asks for next), and the
+ * callback is never called. Without a deadline the caller spins for ever.
+ */
+const PICKER_LOAD_TIMEOUT_MS = 20_000;
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -75,7 +83,25 @@ function ensureLoaded(): Promise<void> {
           reject(new Error("El cargador de Google (gapi) no está disponible."));
           return;
         }
-        window.gapi.load("picker", () => resolve());
+        // The callback belongs to Google's library: `api.js` being loaded does not
+        // mean the `picker` module starts, and a callback that never arrives would
+        // leave the promise pending for ever (the button of Integraciones → Fuentes
+        // spins with nothing to read). The deadline is hard, like `fetchWithTimeout`
+        // on the server side.
+        const timer = setTimeout(() => {
+          const limit = `${Math.round(PICKER_LOAD_TIMEOUT_MS / 1_000)} s`;
+          reject(
+            new Error(
+              `El cargador de Google (gapi) no respondió en ${limit}. Comprueba tu conexión, ` +
+                "desactiva bloqueadores de scripts para localhost y que la CSP permita lo que el " +
+                "Picker pide después de api.js.",
+            ),
+          );
+        }, PICKER_LOAD_TIMEOUT_MS);
+        window.gapi.load("picker", () => {
+          clearTimeout(timer);
+          resolve();
+        });
       }),
   );
   readyP = attempt;
