@@ -158,7 +158,10 @@ and status. Rows are upserted by `pd-<id>`; syncing again updates them.
 **Settings → Data → Business connectors.** Create an API key in Holded
 (Settings → Developers) and paste it. The sync reads invoices and maps client,
 amount, due date and status (`pending`/`partial` → open, `completed` → paid,
-`cancelled`/`failed` → cancelled). Rows are upserted by `holded-<id>`.
+`cancelled`/`failed` → cancelled). Rows are upserted by `holded-<id>`. Amounts
+follow the same rule as the CSV import, so `1.234,56` reads as 1,234.56 euros;
+an unreadable amount and a due date that does not exist (`2026-02-31`) **skip
+the invoice** instead of storing it as zero euros.
 
 ### CSV import
 

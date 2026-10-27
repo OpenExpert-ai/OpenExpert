@@ -31,4 +31,8 @@ describe("mapHoldedInvoice y el importe", () => {
       mapHoldedInvoice({ id: "h-2", contact_name: "Sur", total: 10, due_date: "2026-02-31" }),
     ).toBeNull();
   });
+
+  it("descarta la fila cuando el importe no se puede leer", () => {
+    expect(mapHoldedInvoice(invoice("mil euros"))).toBeNull();
+  });
 });

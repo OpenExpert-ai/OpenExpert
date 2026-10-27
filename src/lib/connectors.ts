@@ -33,7 +33,8 @@ export type HoldedInvoice = {
   status?: string | null;
 };
 
-import type { DealInput, InvoiceInput } from "./business-csv";
+import { calendarDay } from "./calendar-day";
+import { parseMoney, type DealInput, type InvoiceInput } from "./business-csv";
 
 function daysSince(value: string | null | undefined, now: Date): number {
   if (!value) return 0;
@@ -43,10 +44,18 @@ function daysSince(value: string | null | undefined, now: Date): number {
   return Math.max(0, days);
 }
 
+/**
+ * The provider sends ISO dates (`2026-09-30`, sometimes with a time behind), so
+ * the first ten characters are taken — but only when that day exists:
+ * `2026-02-31` would be stored as written and `calendarDay` rejects it
+ * downstream, so the invoice would show as «0 días» overdue for ever.
+ */
 function isoDate(value: string | null | undefined): string | null {
   if (!value) return null;
   const match = value.match(/^\d{4}-\d{2}-\d{2}/);
-  return match ? match[0] : null;
+  if (!match) return null;
+  const day = match[0];
+  return calendarDay(day) ? day : null;
 }
 
 /** One Pipedrive deal as the local `deals` row, or null when it is unusable. */
@@ -86,7 +95,12 @@ export function mapHoldedInvoice(invoice: HoldedInvoice): InvoiceInput | null {
   const dueDate = isoDate(invoice.due_date) ?? isoDate(invoice.date);
   if (!dueDate) return null;
   const raw = invoice.total ?? invoice.payments_pending ?? 0;
-  const amount = typeof raw === "number" ? raw : Number(String(raw).replace(",", ".")) || 0;
+  // Same rule as the CSV importer: `1.234,56` is one thousand two hundred and
+  // not NaN → 0. And a total that cannot be read rejects the row instead of
+  // importing a debt of zero euros that nobody asked for.
+  const amount =
+    typeof raw === "number" ? (Number.isFinite(raw) ? raw : null) : parseMoney(String(raw));
+  if (amount === null) return null;
   return {
     id: `holded-${invoice.id}`,
     client,
