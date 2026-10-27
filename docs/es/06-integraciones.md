@@ -177,6 +177,13 @@ presupuesto diario y MRR— una celda **vacía** vale 0, pero una celda que no e
 número (`n/d`, `1.234,56 (IVA)`) **rechaza la fila**: antes entraba como 0 euros y
 la factura quedaba a cero sin que la importación avisara.
 
+En las columnas de fecha —vencimiento y fecha de cierre— la celda tiene que
+nombrar un día que exista: `31/02/2026` y `2026-02-31` son el mismo día imposible,
+así que en una factura **rechazan la fila** con su número de línea y en un deal
+dejan el cierre vacío. Antes se guardaban tal cual y el panel las contaba como
+0 días de vencidas para siempre, porque `calendarDay` no las sabe leer. Un texto
+que no es una fecha (`pendiente`, `1/3/26`) tampoco entra.
+
 ## 6. Herramientas de IA
 
 | Herramienta                                                                                    | Comportamiento                                                                                                                                    |

@@ -6,6 +6,8 @@
 // columns than these tables hold; the importer keeps the ones it understands
 // and says which required ones are missing instead of guessing.
 
+import { calendarDay } from "./calendar-day";
+
 export type BusinessEntity = "deals" | "invoices" | "campaigns" | "accounts";
 
 export type DealInput = {
@@ -251,18 +253,26 @@ function moneyOf(row: string[], columns: Map<string, number>, key: string, label
   return value;
 }
 
-/** ISO, `dd/mm/yyyy` and `dd-mm-yyyy`; anything else is left as written. */
+/**
+ * ISO, `dd/mm/yyyy` and `dd-mm-yyyy`; anything else is null.
+ *
+ * The day has to exist in its month. `31/02/2026` in either format is the same
+ * impossible day, and storing the text would leave a date the rest of the app
+ * cannot read: `calendarDay` rejects it, `daysSince` turns that into 0 and the
+ * invoice shows as «0 días» overdue for ever with no import warning. The check
+ * is the calendar round trip of `calendarDay`, not a day range of 1 to 31.
+ */
 export function parseDate(value: string): string | null {
   const raw = value.trim();
   if (!raw) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return calendarDay(raw) ? raw : null;
   const m = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (!m) return raw;
+  if (!m) return null;
   const day = Number(m[1]);
   const month = Number(m[2]);
   const year = Number(m[3]);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return raw;
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const normalised = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return calendarDay(normalised) ? normalised : null;
 }
 
 function valueOf(row: string[], columns: Map<string, number>, key: string): string {
@@ -321,8 +331,15 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
       } else if (entity === "invoices") {
         const client = valueOf(row, columns, "client");
         if (!client) throw new Error("Falta client (cliente).");
-        const dueDate = parseDate(valueOf(row, columns, "dueDate"));
-        if (!dueDate) throw new Error("Falta dueDate (vencimiento).");
+        const rawDueDate = valueOf(row, columns, "dueDate");
+        const dueDate = parseDate(rawDueDate);
+        if (!dueDate) {
+          throw new Error(
+            rawDueDate
+              ? `El campo dueDate (vencimiento) no es una fecha válida: «${rawDueDate}».`
+              : "Falta dueDate (vencimiento).",
+          );
+        }
         rows.push({
           entity,
           data: {

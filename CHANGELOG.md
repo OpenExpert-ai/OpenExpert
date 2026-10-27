@@ -7,6 +7,26 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### La importación de CSV rechaza la fecha que no existe
+
+- **`parseDate` valida el día contra el calendario, no por rango.** Comprobaba que el día estuviera
+  entre 1 y 31 y que el mes entre 1 y 12, y la rama ISO devolvía el texto sin mirarlo, así que
+  `31/02/2026` y `2026-02-31` entraban como `2026-02-31` y la fila se guardaba sin un solo error.
+  Ahora la comprobación es la ida y vuelta de `calendarDay` (`src/lib/calendar-day.ts`), el mismo
+  lector que usa el resto de la aplicación: si el día no existe en su mes, no es una fecha.
+- **Lo que no es una fecha ya no pasa como texto.** Antes `parseDate("pendiente")` devolvía
+  `"pendiente"` y `parseDate("1/3/26")` lo mismo, y ese texto acababa en `due_date` o en
+  `close_date`. Ahora devuelve `null`: en una factura la fila se rechaza con su número de línea y en
+  un deal el cierre queda vacío. La celda vacía sigue siendo «falta el vencimiento», con su mensaje
+  de siempre.
+- **Por qué importaba:** `overdueInvoices` lee esas fechas con `daysSince`, que convierte el `null`
+  de una fecha imposible en 0, así que la factura importada como vencida el 31 de febrero se
+  quedaba con «0 días» de vencida para siempre y la herramienta `overdue_invoices` le decía lo mismo
+  al modelo.
+- **La puerta es un test.** `src/lib/business-csv.fechas.test.ts` fija los dos formatos imposibles, el
+  bisiesto que sí existe (`29/02/2028`), el texto que no es fecha, el error con su línea en facturas y
+  el cierre a `null` en deals.
+
 ### La retención del historial se aplica a toda la instalación
 
 - **La poda ya no depende de qué Experto abras.** El ajuste `chat.retentionDays` es un solo número
