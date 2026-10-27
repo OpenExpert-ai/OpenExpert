@@ -130,7 +130,12 @@ afterEach(cleanup);
 async function mountPanel() {
   const { AiSettings } = await import("./settings.ai");
   render(<AiSettings />);
-  await waitFor(() => expect(screen.getByText("Compatible con OpenAI (BYOK)")).toBeTruthy());
+  // El primer caso del fichero paga el import de `./settings.ai` (TSX) y el
+  // montaje del panel; el `waitFor` por defecto (1 s) se queda corto con los 78
+  // ficheros de la suite en paralelo y cobertura.
+  await waitFor(() => expect(screen.getByText("Compatible con OpenAI (BYOK)")).toBeTruthy(), {
+    timeout: 10_000,
+  });
   return AiSettings;
 }
 
@@ -145,11 +150,14 @@ describe("el panel de modelo e IA", () => {
     });
     fireEvent.click(screen.getByText("Probar conexión"));
 
-    await waitFor(() => expect(calls.test.length).toBe(1));
+    await waitFor(() => expect(calls.test.length).toBe(1), { timeout: 10_000 });
     expect(calls.test[0]?.[0]).toEqual({
       data: { provider: "google", endpoint: "", key: "clave-nueva" },
     });
-  });
+    // Medido en `main` (768df2a) con `npm run test:coverage`: 5 165 ms, justo por
+    // encima del plazo por defecto. El trabajo es el mismo de siempre; lo que no
+    // cabía era el reloj.
+  }, 30_000);
 
   it("Ver modelos manda lo mismo que Probar conexión", async () => {
     await mountPanel();
@@ -160,11 +168,11 @@ describe("el panel de modelo e IA", () => {
     });
     fireEvent.click(screen.getByText("Listar"));
 
-    await waitFor(() => expect(calls.list.length).toBe(1));
+    await waitFor(() => expect(calls.list.length).toBe(1), { timeout: 10_000 });
     expect(calls.list[0]?.[0]).toEqual({
       data: { provider: "google", endpoint: "", key: "clave-nueva" },
     });
-  });
+  }, 15_000);
 
   it("manda el endpoint escrito del proveedor que lo tiene propio", async () => {
     await mountPanel();
@@ -173,20 +181,20 @@ describe("el panel de modelo e IA", () => {
     fireEvent.change(endpoint, { target: { value: "https://nuevo.test/v1" } });
     fireEvent.click(screen.getByText("Probar conexión"));
 
-    await waitFor(() => expect(calls.test.length).toBe(1));
+    await waitFor(() => expect(calls.test.length).toBe(1), { timeout: 10_000 });
     expect(calls.test[0]?.[0]).toEqual({
       data: { provider: "openai-compatible", endpoint: "https://nuevo.test/v1" },
     });
-  });
+  }, 15_000);
 
   it("sin clave escrita no manda ninguna, para que se pregunte por la guardada", async () => {
     await mountPanel();
 
     fireEvent.click(screen.getByText("Probar conexión"));
 
-    await waitFor(() => expect(calls.test.length).toBe(1));
+    await waitFor(() => expect(calls.test.length).toBe(1), { timeout: 10_000 });
     expect(calls.test[0]?.[0]).toEqual({
       data: { provider: "openai-compatible", endpoint: "https://guardado.test/v1" },
     });
-  });
+  }, 15_000);
 });

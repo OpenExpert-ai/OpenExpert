@@ -78,7 +78,10 @@ describe("topes del recorrido de archivos locales", () => {
     expect(out["truncated"]).toBe(true);
     expect(out["total"]).not.toBe(5_000);
     expect(String(out["note"] ?? "")).toMatch(/5[. ]?000/);
-  });
+    // Los 5 251 ficheros de `beforeAll` más el import de `./tools` rondan los
+    // 1,2 s en solitario y 5,2 s con los 78 ficheros de la suite en paralelo y
+    // cobertura: el plazo por defecto (5 s) se queda corto justo por el reloj.
+  }, 30_000);
 
   it("da cuántas coincidencias hay cuando enseña solo las primeras 200", async () => {
     const tools = await toolsWithRoot(matchesRoot);
@@ -86,5 +89,5 @@ describe("topes del recorrido de archivos locales", () => {
 
     expect((out["files"] as unknown[]).length).toBe(200);
     expect(out["total"]).toBe(250);
-  });
+  }, 15_000);
 });
