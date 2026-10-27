@@ -699,7 +699,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     read_notion_page: tool({
       description:
-        "Lee el texto de una PÁGINA de Notion por su id (incluye bloques anidados hasta dos niveles). El id debe ser una página (una fila devuelta por query_notion_database, object=page); no pases un id de fuente de datos. Devuelve content, blocks y hasMore: si `hasMore` es true la página es más larga que lo leído (300 bloques por defecto), el texto es parcial y sigues con `maxBlocks` mayor, hasta 1000.",
+        "Lee el texto de una PÁGINA de Notion por su id (incluye los bloques anidados hasta cuatro niveles: página, hijos, nietos y bisnietos). El id debe ser una página (una fila devuelta por query_notion_database, object=page); no pases un id de fuente de datos. Devuelve content, blocks y hasMore: si `hasMore` es true el texto es parcial, y el motivo puede ser el número de bloques (300 por defecto: sigues con `maxBlocks` mayor, hasta 1000) o el anidamiento (hay bloques con hijos por debajo del cuarto nivel: ahí subir `maxBlocks` no lee más, y no lo presentes como la página entera).",
       inputSchema: z.object({
         pageId: z.string(),
         maxBlocks: z.coerce
@@ -720,7 +720,7 @@ export function createChatTools(ctx: ChatToolsContext) {
           if (!page.content) notes.push("La página no contiene texto.");
           if (page.hasMore)
             notes.push(
-              `Se han leído ${page.blocks} bloques y la página tiene más: repite la llamada con maxBlocks mayor (hasta 1000).`,
+              `Se han leído ${page.blocks} bloques y la página tiene más: si el corte es por número de bloques, repite la llamada con maxBlocks mayor (hasta 1000); si viene de bloques anidados (se leen cuatro niveles), subir maxBlocks no añade nada y el texto de los niveles más hondos no se ha leído.`,
             );
           return {
             pageId,

@@ -115,7 +115,11 @@ cinco páginas (500 resultados) por llamada y devuelve `count`, `hasMore` y
 `nextCursor`; si queda lista, el asistente sigue con ese cursor en vez de dar la
 lista por completa. Una página larga se lee hasta 300 bloques por defecto y la
 respuesta trae `blocks` y `hasMore`, así que un acta de 400 bloques no se entrega
-a medias sin decirlo: el asistente sube `maxBlocks` (hasta 1000) y continúa.
+a medias sin decirlo: el asistente sube `maxBlocks` (hasta 1000) y continúa. El
+mismo `hasMore` cubre el otro corte: los bloques anidados se recorren hasta cuatro
+niveles (página, hijos, nietos y bisnietos), y si un bloque del cuarto nivel tiene
+hijos, ese texto no se lee y la respuesta lo anuncia. Ahí subir `maxBlocks` no
+cambia nada, porque el tope que actúa es de profundidad y no de número de bloques.
 
 ## 4. Carpetas locales
 
