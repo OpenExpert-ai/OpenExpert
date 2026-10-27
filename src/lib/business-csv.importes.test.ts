@@ -6,7 +6,7 @@
 // factura queda en 0 euros. El panel la ordena y la suma como cero y la
 // herramienta de facturas vencidas le pasa ese 0 al modelo.
 import { describe, expect, it } from "vitest";
-import { parseBusinessCsv } from "./business-csv";
+import { parseBusinessCsv, parseMoney } from "./business-csv";
 
 const invoices = (rows: string[]) => ["id,cliente,importe,vencimiento", ...rows].join("\n");
 
@@ -52,5 +52,35 @@ describe("parseBusinessCsv y un importe ilegible", () => {
     expect(out.errors).toEqual([]);
     const amounts = out.rows.flatMap((r) => (r.entity === "invoices" ? [r.data.amount] : []));
     expect(amounts).toEqual([0]);
+  });
+});
+
+// Un punto con exactamente tres decimales se toma por separador de miles, y con la parte entera a
+// cero eso no puede ser: nadie escribe `0.500` para decir quinientos. Un CSV en formato inglés con
+// tres decimales multiplicaba el importe por mil —0,50 € entraba como 500 €— mientras el mismo valor
+// escrito con coma entraba bien (`0,500` → 0,5), porque la rama de la coma siempre es decimal.
+describe("parseMoney y el punto con tres decimales", () => {
+  it("con la parte entera a cero el punto es decimal, no miles", () => {
+    expect(parseMoney("0.500")).toBe(0.5);
+    expect(parseMoney("-0.500")).toBe(-0.5);
+    expect(parseMoney("0.125")).toBe(0.125);
+  });
+
+  it("no cambia los formatos que ya se leían bien", () => {
+    expect(parseMoney("1.234")).toBe(1234);
+    expect(parseMoney("2.750")).toBe(2750);
+    expect(parseMoney("12.345")).toBe(12345);
+    expect(parseMoney("1.234,56")).toBe(1234.56);
+    expect(parseMoney("1,234.56")).toBe(1234.56);
+    expect(parseMoney("1234.56")).toBe(1234.56);
+    expect(parseMoney("0,500")).toBe(0.5);
+    expect(parseMoney("1,234")).toBe(1.234);
+  });
+
+  it("la factura importada lleva el importe que dice el fichero", () => {
+    const out = parseBusinessCsv("invoices", invoices(["i-1,ACME,0.500,30/09/2026"]));
+    expect(out.errors).toEqual([]);
+    const amounts = out.rows.flatMap((r) => (r.entity === "invoices" ? [r.data.amount] : []));
+    expect(amounts).toEqual([0.5]);
   });
 });

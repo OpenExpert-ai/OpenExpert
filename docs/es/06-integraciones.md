@@ -185,6 +185,12 @@ presupuesto diario y MRR— una celda **vacía** vale 0, pero una celda que no e
 número (`n/d`, `1.234,56 (IVA)`) **rechaza la fila**: antes entraba como 0 euros y
 la factura quedaba a cero sin que la importación avisara.
 
+Un punto con tres decimales se lee como separador de miles (`1.234` son mil
+doscientos treinta y cuatro) **salvo que la parte entera sea cero**: `0.500` es
+0,50 €, no 500 €. Antes un fichero en formato inglés con tres decimales
+multiplicaba el importe por mil mientras el mismo valor con coma (`0,500`) se
+leía bien.
+
 En las columnas de fecha —vencimiento y fecha de cierre— la celda tiene que
 nombrar un día que exista: `31/02/2026` y `2026-02-31` son el mismo día imposible,
 así que en una factura **rechazan la fila** con su número de línea y en un deal
