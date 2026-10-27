@@ -114,7 +114,12 @@ results) per call and returns `count`, `hasMore` and `nextCursor`; when there is
 more list, the assistant continues with that cursor instead of taking the list as
 complete. A long page is read up to 300 blocks by default and the answer carries
 `blocks` and `hasMore`, so a 400-block document is never handed over half-read
-without saying so: the assistant raises `maxBlocks` (up to 1000) and continues.
+without saying so: the assistant raises `maxBlocks` (up to 1000) and continues. The
+same `hasMore` covers the other cut: nested blocks are followed four levels deep
+(page, children, grandchildren and great-grandchildren), and when a fourth-level
+block has children of its own, that text is not read and the answer says so. There
+raising `maxBlocks` changes nothing, because the cap at play is depth, not block
+count.
 
 ## 4. Local folders
 

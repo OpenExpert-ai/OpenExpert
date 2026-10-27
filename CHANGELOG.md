@@ -7,6 +7,25 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### Una página de Notion con bloques muy anidados dice que está a medias
+
+- **El recorte por profundidad se anuncia.** `readPage` desciende por los bloques hijos hasta un
+  tope de profundidad y, al llegar, dejaba de bajar sin dejar rastro: el texto del nivel que no se
+  leía no aparecía y `hasMore` volvía en `false`, que es justo la señal que el modelo lee como «esta
+  es la página entera». Una lista dentro de un desplegable dentro de una cita se resumía sin su
+  último nivel y sin avisar, y subir `maxBlocks` no lo arreglaba porque el tope que actuaba era de
+  profundidad, no de número de bloques.
+- **Se lee un nivel más y lo que queda se dice.** El tope sube a cuatro niveles de bloques (página,
+  hijos, nietos y bisnietos) y, cuando un bloque del último nivel tiene hijos, `hasMore` sale en
+  `true`: quien llama sabe que el texto no es la página entera aunque no haya agotado el presupuesto
+  de bloques.
+- **La nota y las instrucciones del chat distinguen los dos motivos**, para no mandar al modelo a
+  subir `maxBlocks` cuando el corte es de anidamiento (donde no añade nada).
+- **La puerta es un test.** `src/lib/notion.anidados.test.ts` sirve el árbol de bloques con un
+  `fetch` doblado por id: con cuatro niveles exige el texto del cuarto y `hasMore: false`, y con
+  cinco exige `hasMore: true`, el quinto nivel fuera del texto y el mismo veredicto con `maxBlocks:
+1000`.
+
 ### El aviso de la importación de CSV cuenta las filas que se cayeron
 
 - **El recuento sale de `skipped`, no del tamaño de la muestra.** El servidor ya devolvía

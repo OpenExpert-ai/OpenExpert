@@ -242,22 +242,23 @@ export async function describeDataSource(id: string): Promise<{
 /** Blocks a page read takes by default, and the ceiling a caller may ask for. */
 const BLOCK_BUDGET = 300;
 const BLOCK_BUDGET_MAX = 1000;
-/** Nested levels read: the page, its blocks and their children. */
-const MAX_DEPTH = 2;
+/** Nested levels read: the page, its blocks and their children (four levels of blocks). */
+const MAX_DEPTH = 3;
 
 /** Text of a page, with how much of the page was read. */
 export type NotionPageText = {
   content: string;
   /** Blocks read in this call. */
   blocks: number;
-  /** The page has blocks this read did not take. */
+  /** The page has text this read did not take: blocks over the budget, or children below the depth cap. */
   hasMore: boolean;
 };
 
 /**
  * Read a page's text, following nested blocks up to MAX_DEPTH, bounded by the
- * block budget. Returns the count and `hasMore` so a long page (an acta, a 400
- * block document) is never handed over as if it were the whole page.
+ * block budget. Returns the count and `hasMore` so a page that was not read
+ * whole (a 400 block document, a list nested deeper than the cap) is never
+ * handed over as if it were the whole page.
  */
 export async function readPage(
   pageId: string,
@@ -285,7 +286,11 @@ export async function readPage(
         count++;
         const text = blockText(b);
         if (text) lines.push(text);
-        if (b["has_children"] && depth < MAX_DEPTH) await walk(String(b["id"]), depth + 1);
+        if (b["has_children"]) {
+          // Below the depth cap the children stay unread: the text is not the whole page.
+          if (depth < MAX_DEPTH) await walk(String(b["id"]), depth + 1);
+          else hasMore = true;
+        }
       }
       const next = typeof data["next_cursor"] === "string" ? data["next_cursor"] : undefined;
       cursor = data["has_more"] === true ? next : undefined;
