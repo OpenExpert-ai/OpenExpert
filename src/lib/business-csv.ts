@@ -140,6 +140,15 @@ const ALIASES: Record<string, string> = {
   riesgodechurn: "churnRisk",
 };
 
+/**
+ * Headers that name a different column depending on the entity: `importe` is the
+ * amount of an invoice, but the value of a deal. Without this a Spanish invoice
+ * CSV never fills `amount` and every invoice imports as 0 €.
+ */
+const ENTITY_ALIASES: Partial<Record<BusinessEntity, Record<string, string>>> = {
+  invoices: { importe: "amount", valor: "amount", value: "amount" },
+};
+
 /** Lowercase, without accents, without punctuation: `Días en etapa` → `diaseneta`. */
 function headerKey(value: string): string {
   return value
@@ -223,6 +232,25 @@ export function parseNumber(value: string, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * Money column: an empty cell means zero, but a cell that is not a number is
+ * `null` so the row is rejected. Importing it as 0 € would show a debt the file
+ * never said, and nothing would tell the user.
+ */
+export function parseMoney(value: string): number | null {
+  if (!value.trim()) return 0;
+  const n = parseNumber(value, Number.NaN);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** `parseMoney` for a CSV column: throws with the column name and the raw text. */
+function moneyOf(row: string[], columns: Map<string, number>, key: string, label: string): number {
+  const raw = valueOf(row, columns, key);
+  const value = parseMoney(raw);
+  if (value === null) throw new Error(`El campo ${key} (${label}) no es un número: «${raw}».`);
+  return value;
+}
+
 /** ISO, `dd/mm/yyyy` and `dd-mm-yyyy`; anything else is left as written. */
 export function parseDate(value: string): string | null {
   const raw = value.trim();
@@ -257,7 +285,8 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
   const headers = grid[0] ?? [];
   const columns = new Map<string, number>();
   headers.forEach((header, index) => {
-    const key = ALIASES[headerKey(header)];
+    const name = headerKey(header);
+    const key = ENTITY_ALIASES[entity]?.[name] ?? ALIASES[name];
     if (key && !columns.has(key)) columns.set(key, index);
   });
 
@@ -282,7 +311,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             id: idFor(entity, row, columns, i),
             company,
             stage: valueOf(row, columns, "stage") || "Sin etapa",
-            value: parseNumber(valueOf(row, columns, "value")),
+            value: moneyOf(row, columns, "value", "valor"),
             owner: valueOf(row, columns, "owner"),
             daysInStage: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "daysInStage")))),
             closeDate: closeDate || null,
@@ -299,7 +328,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
           data: {
             id: idFor(entity, row, columns, i),
             client,
-            amount: parseNumber(valueOf(row, columns, "amount")),
+            amount: moneyOf(row, columns, "amount", "importe"),
             dueDate,
             status: valueOf(row, columns, "status") || "open",
             reminders: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "reminders")))),
@@ -315,13 +344,13 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             name,
             channel: valueOf(row, columns, "channel"),
             status: valueOf(row, columns, "status") || "active",
-            spend7d: parseNumber(valueOf(row, columns, "spend7d")),
+            spend7d: moneyOf(row, columns, "spend7d", "inversión de 7 días"),
             conversions7d: Math.max(
               0,
               Math.round(parseNumber(valueOf(row, columns, "conversions7d"))),
             ),
-            cpaTarget: parseNumber(valueOf(row, columns, "cpaTarget")),
-            dailyBudget: parseNumber(valueOf(row, columns, "dailyBudget")),
+            cpaTarget: moneyOf(row, columns, "cpaTarget", "CPA objetivo"),
+            dailyBudget: moneyOf(row, columns, "dailyBudget", "presupuesto diario"),
           },
         });
       } else {
@@ -332,7 +361,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
           data: {
             id: idFor(entity, row, columns, i),
             name,
-            mrr: parseNumber(valueOf(row, columns, "mrr")),
+            mrr: moneyOf(row, columns, "mrr", "MRR"),
             usageTrend: parseNumber(valueOf(row, columns, "usageTrend")),
             openTickets: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "openTickets")))),
             churnRisk: parseNumber(valueOf(row, columns, "churnRisk")),
