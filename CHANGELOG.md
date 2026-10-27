@@ -7,6 +7,22 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### El tope de filas del CSV dice cuántas quedaron fuera
+
+- **El corte se contaba como una fila rota.** El importador acepta 5.000 filas y, al llegar al
+  tope, apuntaba `{ row: i + 1, message: "Máximo 5000 filas por importación." }` como un error de
+  fila más. Con una exportación de 5.237 negocios el panel enseñaba «Importados 5.000 registros» y
+  «1 fila con error»: el usuario leía que le faltaba una fila cuando en realidad le faltaba un
+  bloque de 237, y no había ningún número que se lo dijera.
+- **Ahora el resultado publica `omitted`.** `parseBusinessCsv` cuenta las filas que el tope dejó sin
+  leer (0 si el fichero cabe entero) y no las mete en `errors`; `importBusinessCsv` lo devuelve y el
+  panel lo anuncia en su propio aviso, con el número y en las dos lenguas, sin llamarlas filas con
+  error. El tope sigue siendo 5.000 y vive en `CSV_MAX_ROWS`.
+- **La puerta es un test.** `src/lib/business-csv.tope.test.ts` fija los dos números con 5.237
+  filas (5.000 leídas + 237 fuera), con una fila mala delante del tope (5.000 + 1 error + 236) y el
+  caso sin tope, y `-settings.data.test.tsx` exige que el aviso diga 237 y no hable de filas con
+  error.
+
 ### Una factura vence por su fecha, no por una etiqueta que nadie escribe
 
 - **El filtro pedía un estado que ningún camino produce.** `overdueInvoices` decidía por

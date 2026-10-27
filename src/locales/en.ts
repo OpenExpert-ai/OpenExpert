@@ -173,6 +173,10 @@ export const en: Record<string, string> = {
   "{n} filas con error; la primera, línea {row}: {message}":
     "{n} rows failed; the first at line {row}: {message}",
   "Se detallan solo las {n} primeras.": "Only the first {n} are listed.",
+  "{n} fila no se importó: el tope es de {max} filas por importación.":
+    "{n} row was not imported: the limit is {max} rows per import.",
+  "{n} filas no se importaron: el tope es de {max} filas por importación.":
+    "{n} rows were not imported: the limit is {max} rows per import.",
   "CSV no válido": "Invalid CSV",
   "Datos de ejemplo quitados": "Sample data removed",
   "Cargados {n} registros de ejemplo": "Loaded {n} sample records",

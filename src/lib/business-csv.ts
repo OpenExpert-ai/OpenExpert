@@ -58,10 +58,22 @@ export type ParsedBusinessRow =
 
 export type CsvError = { row: number; message: string };
 
+/**
+ * Las filas que una importación acepta como mucho. Vive aquí, junto al corte,
+ * porque el panel también la necesita para decir el tope en el aviso.
+ */
+export const CSV_MAX_ROWS = 5000;
+
 export type CsvParseResult = {
   rows: ParsedBusinessRow[];
   errors: CsvError[];
   headers: string[];
+  /**
+   * Filas que el tope dejó sin leer. No son filas con error —no se intentaron—
+   * y se cuentan aparte para que el usuario no lea «una fila con error» cuando
+   * le falta un bloque entero de su exportación.
+   */
+  omitted: number;
 };
 
 /** The columns each entity understands, in the order the template writes them. */
@@ -301,7 +313,7 @@ function idFor(entity: BusinessEntity, row: string[], columns: Map<string, numbe
  */
 export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParseResult {
   const grid = parseCsv(text);
-  if (grid.length === 0) return { rows: [], errors: [], headers: [] };
+  if (grid.length === 0) return { rows: [], errors: [], headers: [], omitted: 0 };
   const headers = grid[0] ?? [];
   const columns = new Map<string, number>();
   headers.forEach((header, index) => {
@@ -312,10 +324,12 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
 
   const rows: ParsedBusinessRow[] = [];
   const errors: CsvError[] = [];
-  const max = 5000;
+  const max = CSV_MAX_ROWS;
+  let omitted = 0;
   for (let i = 1; i < grid.length; i++) {
     if (rows.length >= max) {
-      errors.push({ row: i + 1, message: `Máximo ${max} filas por importación.` });
+      // El resto del fichero no se lee: se cuenta, no se informa como fila rota.
+      omitted = grid.length - i;
       break;
     }
     const row = grid[i] ?? [];
@@ -399,7 +413,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
       errors.push({ row: line, message: (e as Error).message });
     }
   }
-  return { rows, errors, headers };
+  return { rows, errors, headers, omitted };
 }
 
 /** The header line a spreadsheet needs to produce an import this parser accepts. */

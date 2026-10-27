@@ -40,7 +40,7 @@ import {
   resetData,
   vacuumDb,
 } from "@/lib/settings.functions";
-import { BUSINESS_COLUMNS, type BusinessEntity } from "@/lib/business-csv";
+import { BUSINESS_COLUMNS, CSV_MAX_ROWS, type BusinessEntity } from "@/lib/business-csv";
 import {
   clearDemo,
   getBusinessDataStatus,
@@ -259,6 +259,19 @@ function DataSettings() {
           shown > 0 && shown < r.skipped
             ? `${notice} ${t("Se detallan solo las {n} primeras.", { n: shown })}`
             : notice,
+        );
+      }
+      if (r.omitted > 0) {
+        // El tope no es una fila rota: es un bloque de la exportación que no se
+        // llegó a leer, y el usuario tiene que saber cuántas se quedaron fuera.
+        toast.warning(
+          pluralize(
+            locale,
+            r.omitted,
+            "{n} fila no se importó: el tope es de {max} filas por importación.",
+            "{n} filas no se importaron: el tope es de {max} filas por importación.",
+            { max: CSV_MAX_ROWS },
+          ),
         );
       }
       await refresh();
