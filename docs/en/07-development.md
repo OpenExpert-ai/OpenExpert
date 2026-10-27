@@ -238,6 +238,7 @@ src/
   lib/
     db.server.ts             SQLite (sql.js) + schema init + seed
     business-csv.ts          CSV parser and column mapping
+    csv-text.ts              CSV records and separator (shared rule)
     business-import.server.ts Upsert + audit for imported rows
     connectors.server.ts     Pipedrive / Holded pull connectors
     demo-data.server.ts      Sample rows (demo- ids)
