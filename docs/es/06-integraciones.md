@@ -164,7 +164,10 @@ fecha de cierre prevista y estado. Las filas se actualizan por `pd-<id>`.
 (Ajustes → Developers) y pégala. La sincronización lee las facturas y mapea
 cliente, importe, vencimiento y estado (`pending`/`partial` → abierta,
 `completed` → pagada, `cancelled`/`failed` → cancelada). Las filas se actualizan
-por `holded-<id>`.
+por `holded-<id>`. El importe se lee con la misma regla que la importación CSV,
+así que `1.234,56` entra como 1.234,56 euros; un importe que no se puede leer y
+un vencimiento que no existe (`2026-02-31`) **descartan la factura** en vez de
+guardarla a cero euros.
 
 ### Importación CSV
 
