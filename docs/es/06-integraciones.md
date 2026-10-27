@@ -185,7 +185,11 @@ guardarla a cero euros.
 Descarga la plantilla, rellénala e impórtala; acepta cabeceras en español o
 inglés. La clave es `id`, o `csv-<entidad>-<fila>` si el fichero no trae id. El
 límite es de 5.000 filas y una fila mala se informa por número de línea sin
-tirar el resto. En las columnas de dinero —valor, importe, gasto, CPA objetivo,
+tirar el resto. El aviso cuenta **todas** las filas rechazadas (`skipped`) y
+detalla las primeras veinte, que es lo que manda el servidor; si se cayeron más,
+lo dice, para que la muestra no se confunda con el total. Un fichero en el que no
+entra ninguna fila no se anuncia como importación: sale solo el aviso de error.
+En las columnas de dinero —valor, importe, gasto, CPA objetivo,
 presupuesto diario y MRR— una celda **vacía** vale 0, pero una celda que no es un
 número (`n/d`, `1.234,56 (IVA)`) **rechaza la fila**: antes entraba como 0 euros y
 la factura quedaba a cero sin que la importación avisara.

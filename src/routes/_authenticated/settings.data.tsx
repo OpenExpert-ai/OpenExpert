@@ -232,20 +232,33 @@ function DataSettings() {
     try {
       const content = await file.text();
       const r = await doImportCsv({ data: { entity, content } });
-      toast.success(
-        t("Importados {n} registros de {entity}", {
-          n: r.inserted + r.updated,
-          entity: t(ENTITY_LABEL[entity]),
-        }),
-      );
-      if (r.errors.length) {
-        const first = r.errors[0];
-        toast.warning(
-          t("{n} fila(s) con error; la primera, línea {row}: {message}", {
-            n: r.errors.length,
-            row: first?.row ?? 0,
-            message: first?.message ?? "",
+      const imported = r.inserted + r.updated;
+      // Un fichero sin una sola fila buena no es una importación: anunciarla en
+      // verde («Importados 0 registros») y solo después el error confunde.
+      if (imported > 0) {
+        toast.success(
+          t("Importados {n} registros de {entity}", {
+            n: imported,
+            entity: t(ENTITY_LABEL[entity]),
           }),
+        );
+      }
+      if (r.skipped > 0) {
+        const first = r.errors[0];
+        // `errors` es una muestra (el servidor manda 20 como mucho), así que el
+        // recuento sale de `skipped`; con `errors.length` se callaban las demás.
+        const notice = pluralize(
+          locale,
+          r.skipped,
+          "{n} fila con error; la primera, línea {row}: {message}",
+          "{n} filas con error; la primera, línea {row}: {message}",
+          { row: first?.row ?? 0, message: first?.message ?? "" },
+        );
+        const shown = r.errors.length;
+        toast.warning(
+          shown > 0 && shown < r.skipped
+            ? `${notice} ${t("Se detallan solo las {n} primeras.", { n: shown })}`
+            : notice,
         );
       }
       await refresh();

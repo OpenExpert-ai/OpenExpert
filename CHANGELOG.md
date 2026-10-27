@@ -7,6 +7,25 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### El aviso de la importación de CSV cuenta las filas que se cayeron
+
+- **El recuento sale de `skipped`, no del tamaño de la muestra.** El servidor ya devolvía
+  `skipped` con el número real de filas rechazadas y `errors` recortado a las 20 primeras
+  (`business.functions.ts`), y el panel contaba `errors.length`: con 45 filas malas el usuario leía
+  «20 fila(s) con error» y no tenía forma de saber que había perdido 25 por el camino. Ese aviso es
+  lo único que le dice qué entró en el panel, y es con lo que decide si vuelve a preparar el fichero.
+- **Y no anuncia un éxito que no lo es.** El toast verde «Importados 0 registros de …» salía también
+  cuando no entraba ninguna fila, así que un fichero entero rechazado se contaba primero como una
+  importación con éxito y después con el recuento recortado. Ahora solo sale si `inserted + updated`
+  es mayor que cero.
+- **Lo que se calla el detalle se dice.** Cuando hay más rechazadas que muestra, el aviso añade
+  «Se detallan solo las 20 primeras.», y el recuento concuerda («1 fila con error», «45 filas con
+  error»).
+- **La puerta es un test.** `src/routes/_authenticated/-settings.data.test.tsx` monta la ruta con
+  las funciones de servidor dobladas: 45 rechazadas y 20 en el detalle exigen el 45 y la nota del
+  recorte, el caso de 0 importadas exige que no se llame a `toast.success`, y una sola rechazada
+  exige el singular.
+
 ### El Picker de Drive no se queda cargando sin decir nada
 
 - **El arranque de la librería de Google tiene plazo.** `pickDriveFiles` resolvía con
