@@ -156,6 +156,11 @@ Pipedrive, Holded y CSV son opcionales y **solo de lectura**: OpenExpert lee de
 ellos y nunca escribe de vuelta. Sus claves viven en
 `~/.openexpert/secrets.json` (`0600`) y no se vuelven a mostrar al guardarlas.
 
+Una sincronización trae como mucho **5 000 filas** (50 páginas de 100). Si el
+proveedor tiene más, el aviso del panel lo dice —«Sincronizados N registros; la
+descarga se cortó en el tope y hay más sin traer»— en vez de dejar pasar el
+trozo por el total; el resto no se descarga y la integración sigue conectada.
+
 ### Pipedrive
 
 **Ajustes → Datos → Conectores de negocio.** Crea un token de API personal en

@@ -186,7 +186,11 @@ export const en: Record<string, string> = {
   "Las claves se guardan en secrets.json con permisos 0600; solo se leen datos del conector.":
     "Keys are stored in secrets.json with mode 0600; only connector data is read.",
   "Conectado: {n} registros": "Connected: {n} records",
+  "Conectado: {n} registros; la descarga se cortó en el tope y hay más sin traer":
+    "Connected: {n} records; the download hit the cap and more rows were left behind",
   "Sincronizados {n} registros": "Synced {n} records",
+  "Sincronizados {n} registros; la descarga se cortó en el tope y hay más sin traer":
+    "Synced {n} records; the download hit the cap and more rows were left behind",
   Desconectado: "Disconnected",
   "Copia de seguridad": "Backup",
   "Contraseña de la copia": "Backup passphrase",
