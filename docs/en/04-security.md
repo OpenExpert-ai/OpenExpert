@@ -55,7 +55,8 @@ restricted to the pages shared in Notion's picker.
    it in a temporary directory with no network and no view of the rest of the disk.
    Without `bubblewrap` it does not run: a network namespace isolates the network
    and leaves your keys readable, which is worse than not running anything
-   (`src/lib/python.server.ts`).
+   (`src/lib/python.server.ts`). The whole script stays in the activity trail, uncut:
+   that is what answers, afterwards, what actually ran.
 5. **Transport hardening.** Every response carries `X-Content-Type-Options`,
    `Referrer-Policy`, `X-Frame-Options` and `Permissions-Policy`, plus a
    `Content-Security-Policy` in production. The `/api/*` routes (chat, backup)
