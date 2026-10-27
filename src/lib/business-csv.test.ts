@@ -91,3 +91,47 @@ describe("parseBusinessCsv", () => {
     ]);
   });
 });
+
+describe("parseBusinessCsv y las columnas de dinero", () => {
+  it("rechaza la campaña y la cuenta con un importe ilegible, no las importa a 0", () => {
+    const campaign = parseBusinessCsv(
+      "campaigns",
+      ["id,nombre,gasto,cpa objetivo,presupuesto diario", 'c-1,Verano,"n/d",12,30'].join("\n"),
+    );
+    expect(campaign.rows).toEqual([]);
+    expect(campaign.errors).toEqual([
+      { row: 2, message: "El campo spend7d (inversión de 7 días) no es un número: «n/d»." },
+    ]);
+
+    const account = parseBusinessCsv("accounts", ["nombre,mrr", "Clínica,pendiente"].join("\n"));
+    expect(account.rows).toEqual([]);
+    expect(account.errors).toEqual([
+      { row: 2, message: "El campo mrr (MRR) no es un número: «pendiente»." },
+    ]);
+  });
+
+  it("lee el importe de una factura escrito en español y rechaza el que no lo es", () => {
+    const ok = parseBusinessCsv(
+      "invoices",
+      ["id,cliente,importe,vencimiento", 'i-1,Sur,"1.234,56",30/09/2026'].join("\n"),
+    );
+    expect(ok.errors).toEqual([]);
+    const amount = ok.rows.flatMap((r) => (r.entity === "invoices" ? [r.data.amount] : []));
+    expect(amount).toEqual([1234.56]);
+
+    const bad = parseBusinessCsv(
+      "invoices",
+      ["id,cliente,amount,vencimiento", 'i-1,Sur,"1.234,56 (IVA)",30/09/2026'].join("\n"),
+    );
+    expect(bad.rows).toEqual([]);
+    expect(bad.errors[0]?.row).toBe(2);
+    expect(bad.errors[0]?.message).toMatch(/importe|amount/i);
+  });
+
+  it("deja pasar 0 cuando la celda de dinero viene vacía", () => {
+    const out = parseBusinessCsv("campaigns", ["id,nombre,gasto", "c-1,Verano,"].join("\n"));
+    expect(out.errors).toEqual([]);
+    const spend = out.rows.flatMap((r) => (r.entity === "campaigns" ? [r.data.spend7d] : []));
+    expect(spend).toEqual([0]);
+  });
+});

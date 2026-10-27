@@ -6,6 +6,8 @@
 // columns than these tables hold; the importer keeps the ones it understands
 // and says which required ones are missing instead of guessing.
 
+import { calendarDay } from "./calendar-day";
+
 export type BusinessEntity = "deals" | "invoices" | "campaigns" | "accounts";
 
 export type DealInput = {
@@ -140,6 +142,15 @@ const ALIASES: Record<string, string> = {
   riesgodechurn: "churnRisk",
 };
 
+/**
+ * Headers that name a different column depending on the entity: `importe` is the
+ * amount of an invoice, but the value of a deal. Without this a Spanish invoice
+ * CSV never fills `amount` and every invoice imports as 0 €.
+ */
+const ENTITY_ALIASES: Partial<Record<BusinessEntity, Record<string, string>>> = {
+  invoices: { importe: "amount", valor: "amount", value: "amount" },
+};
+
 /** Lowercase, without accents, without punctuation: `Días en etapa` → `diaseneta`. */
 function headerKey(value: string): string {
   return value
@@ -223,18 +234,45 @@ export function parseNumber(value: string, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-/** ISO, `dd/mm/yyyy` and `dd-mm-yyyy`; anything else is left as written. */
+/**
+ * Money column: an empty cell means zero, but a cell that is not a number is
+ * `null` so the row is rejected. Importing it as 0 € would show a debt the file
+ * never said, and nothing would tell the user.
+ */
+export function parseMoney(value: string): number | null {
+  if (!value.trim()) return 0;
+  const n = parseNumber(value, Number.NaN);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** `parseMoney` for a CSV column: throws with the column name and the raw text. */
+function moneyOf(row: string[], columns: Map<string, number>, key: string, label: string): number {
+  const raw = valueOf(row, columns, key);
+  const value = parseMoney(raw);
+  if (value === null) throw new Error(`El campo ${key} (${label}) no es un número: «${raw}».`);
+  return value;
+}
+
+/**
+ * ISO, `dd/mm/yyyy` and `dd-mm-yyyy`; anything else is null.
+ *
+ * The day has to exist in its month. `31/02/2026` in either format is the same
+ * impossible day, and storing the text would leave a date the rest of the app
+ * cannot read: `calendarDay` rejects it, `daysSince` turns that into 0 and the
+ * invoice shows as «0 días» overdue for ever with no import warning. The check
+ * is the calendar round trip of `calendarDay`, not a day range of 1 to 31.
+ */
 export function parseDate(value: string): string | null {
   const raw = value.trim();
   if (!raw) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return calendarDay(raw) ? raw : null;
   const m = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (!m) return raw;
+  if (!m) return null;
   const day = Number(m[1]);
   const month = Number(m[2]);
   const year = Number(m[3]);
-  if (month < 1 || month > 12 || day < 1 || day > 31) return raw;
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const normalised = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return calendarDay(normalised) ? normalised : null;
 }
 
 function valueOf(row: string[], columns: Map<string, number>, key: string): string {
@@ -257,7 +295,8 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
   const headers = grid[0] ?? [];
   const columns = new Map<string, number>();
   headers.forEach((header, index) => {
-    const key = ALIASES[headerKey(header)];
+    const name = headerKey(header);
+    const key = ENTITY_ALIASES[entity]?.[name] ?? ALIASES[name];
     if (key && !columns.has(key)) columns.set(key, index);
   });
 
@@ -282,7 +321,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             id: idFor(entity, row, columns, i),
             company,
             stage: valueOf(row, columns, "stage") || "Sin etapa",
-            value: parseNumber(valueOf(row, columns, "value")),
+            value: moneyOf(row, columns, "value", "valor"),
             owner: valueOf(row, columns, "owner"),
             daysInStage: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "daysInStage")))),
             closeDate: closeDate || null,
@@ -292,14 +331,21 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
       } else if (entity === "invoices") {
         const client = valueOf(row, columns, "client");
         if (!client) throw new Error("Falta client (cliente).");
-        const dueDate = parseDate(valueOf(row, columns, "dueDate"));
-        if (!dueDate) throw new Error("Falta dueDate (vencimiento).");
+        const rawDueDate = valueOf(row, columns, "dueDate");
+        const dueDate = parseDate(rawDueDate);
+        if (!dueDate) {
+          throw new Error(
+            rawDueDate
+              ? `El campo dueDate (vencimiento) no es una fecha válida: «${rawDueDate}».`
+              : "Falta dueDate (vencimiento).",
+          );
+        }
         rows.push({
           entity,
           data: {
             id: idFor(entity, row, columns, i),
             client,
-            amount: parseNumber(valueOf(row, columns, "amount")),
+            amount: moneyOf(row, columns, "amount", "importe"),
             dueDate,
             status: valueOf(row, columns, "status") || "open",
             reminders: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "reminders")))),
@@ -315,13 +361,13 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             name,
             channel: valueOf(row, columns, "channel"),
             status: valueOf(row, columns, "status") || "active",
-            spend7d: parseNumber(valueOf(row, columns, "spend7d")),
+            spend7d: moneyOf(row, columns, "spend7d", "inversión de 7 días"),
             conversions7d: Math.max(
               0,
               Math.round(parseNumber(valueOf(row, columns, "conversions7d"))),
             ),
-            cpaTarget: parseNumber(valueOf(row, columns, "cpaTarget")),
-            dailyBudget: parseNumber(valueOf(row, columns, "dailyBudget")),
+            cpaTarget: moneyOf(row, columns, "cpaTarget", "CPA objetivo"),
+            dailyBudget: moneyOf(row, columns, "dailyBudget", "presupuesto diario"),
           },
         });
       } else {
@@ -332,7 +378,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
           data: {
             id: idFor(entity, row, columns, i),
             name,
-            mrr: parseNumber(valueOf(row, columns, "mrr")),
+            mrr: moneyOf(row, columns, "mrr", "MRR"),
             usageTrend: parseNumber(valueOf(row, columns, "usageTrend")),
             openTickets: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "openTickets")))),
             churnRisk: parseNumber(valueOf(row, columns, "churnRisk")),
