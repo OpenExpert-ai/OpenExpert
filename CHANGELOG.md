@@ -7,6 +7,26 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### El separador del CSV se lee del fichero, no se cuenta en la cabecera
+
+- **La importación elegía el separador contando comas en la primera línea**, incluidas las que
+  están dentro de un campo entrecomillado. Un CSV exportado con `;` —lo que escribe Excel en
+  castellano— cuya cabecera llevara tantas comas como separadores tiene la tabla se partía por
+  comas: las columnas desaparecían y todas las filas se rechazaban con «Falta client (cliente)»,
+  un motivo que el fichero no tenía. Las filas no llegaban a la base; el daño era la importación
+  fallida y el mensaje que culpaba al fichero.
+- **Ahora manda la misma regla que el lector de archivos locales.** `src/lib/csv-text.ts` reúne
+  `csvRecords` y `detectDelimiter` (módulo puro, sin `node:fs`): parte los primeros registros de
+  cada candidato, cuenta solo los separadores fuera de comillas y exige que la tabla más ancha se
+  repita en al menos la mitad de los registros, con la coma ganando el empate para no cambiar la
+  forma de un fichero normal. `parseCsv` la usa y `local-fs.server.ts` importa la misma, así que
+  las dos rutas que leen el mismo CSV ya no pueden describirlo de dos maneras.
+- **La puerta es un test.** `src/lib/business-csv.separador.test.ts` importa un fichero con `;` y
+  una cabecera «Notas, a, b, c» y exige sus dos facturas con importe 1200,50 y vencimiento
+  correctos, y mantiene los controles de un CSV por comas y de un fichero de una sola columna;
+  `src/lib/csv-text.test.ts` fija la regla (comillas, empate, tabulador, `|`, una columna, celda
+  con salto de línea).
+
 ### El tope de filas del CSV dice cuántas quedaron fuera
 
 - **El corte se contaba como una fila rota.** El importador acepta 5.000 filas y, al llegar al

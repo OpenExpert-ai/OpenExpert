@@ -86,7 +86,9 @@ The business tables start empty. Open **Settings → Data**:
 - **Sample data** loads demo deals and invoices; remove them later without
   touching real rows.
 - **CSV import** covers deals, invoices, campaigns and accounts. Download the
-  template, fill it and import; Spanish and English header names are accepted.
+  template, fill it and import; Spanish and English header names are accepted,
+  and the separator is read from the file itself (`,`, `;` as Spanish Excel
+  writes it, tab or `|`), never from the extension.
 - **Connectors** are optional: Pipedrive (deals) and Holded (invoices) are
   pull-only and need your own API token/key. Paste it and press **Sync**.
 
