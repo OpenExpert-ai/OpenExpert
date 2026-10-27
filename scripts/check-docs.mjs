@@ -34,12 +34,19 @@ function slug(heading) {
 const headingCache = new Map();
 function headings(file) {
   if (!headingCache.has(file)) {
-    const set = new Set();
+    const anchors = new Set();
+    const seen = new Map();
     for (const line of readFileSync(file, "utf8").split("\n")) {
       const m = /^#{1,6}\s+(.*)$/.exec(line);
-      if (m) set.add(slug(m[1]));
+      if (!m) continue;
+      const base = slug(m[1]);
+      const repeated = seen.get(base) ?? 0;
+      seen.set(base, repeated + 1);
+      // GitHub numera las apariciones de un encabezado repetido: la segunda es
+      // `slug-1`, la tercera `slug-2`… y son las anclas que la gente enlaza.
+      anchors.add(repeated === 0 ? base : `${base}-${repeated}`);
     }
-    headingCache.set(file, set);
+    headingCache.set(file, anchors);
   }
   return headingCache.get(file);
 }
@@ -52,8 +59,10 @@ for (const file of files) {
   let m;
   while ((m = re.exec(text))) {
     const raw = m[1].trim().split(/\s+/)[0];
-    if (raw.startsWith("http") || raw.startsWith("mailto:") || raw.startsWith("#")) continue;
+    if (raw.startsWith("http") || raw.startsWith("mailto:")) continue;
     const [path, anchor] = raw.split("#");
+    // Sin ruta el enlace apunta al propio fichero (`[ver](#ancla)`), y su ancla
+    // se valida igual: es la que se rompe al renombrar un apartado.
     const target = path ? resolve(dirname(file), path) : file;
     if (path && !existsSync(target)) {
       broken.push(`${file} -> ${raw} (missing file)`);
