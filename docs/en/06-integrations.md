@@ -152,6 +152,11 @@ Pipedrive, Holded and CSV are optional and **pull-only**: OpenExpert reads from
 them and never writes back. Their keys are stored in `~/.openexpert/secrets.json`
 (`0600`) and are never shown again after they are saved.
 
+A sync brings at most **5,000 rows** (50 pages of 100). When the provider has
+more, the panel toast says so — "Synced N records; the download hit the cap and
+more rows were left behind" — instead of letting the slice pass for the total;
+the rest is not downloaded and the integration stays connected.
+
 ### Pipedrive
 
 **Settings → Data → Business connectors.** Create a personal API token in

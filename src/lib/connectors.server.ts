@@ -17,11 +17,12 @@ import type { ParsedBusinessRow } from "./business-csv";
 const PIPEDRIVE = "https://api.pipedrive.com/v1";
 const HOLDED = "https://api.holded.com/api/v2";
 const MAX_ROWS = 5000;
+const MAX_PAGES = 50;
 const TIMEOUT_MS = 20_000;
 
 type Fetch = typeof fetch;
 
-type SyncResult = ImportCounts & { fetched: number };
+type SyncResult = ImportCounts & { fetched: number; truncated: boolean };
 
 function message(provider: string, status: number): string {
   if (status === 401) return `${provider} rechazó la clave (401). Revísala y vuelve a intentarlo.`;
@@ -54,7 +55,7 @@ async function markConnected(
 export async function fetchPipedriveDeals(
   token: string,
   fetchImpl: Fetch = fetch,
-): Promise<{ rows: ParsedBusinessRow[]; fetched: number }> {
+): Promise<{ rows: ParsedBusinessRow[]; fetched: number; truncated: boolean }> {
   const stages = new Map<string, string>();
   try {
     const stageJson = await getJson(
@@ -74,7 +75,12 @@ export async function fetchPipedriveDeals(
   const rows: ParsedBusinessRow[] = [];
   let start = 0;
   let fetched = 0;
-  for (let page = 0; page < 50 && rows.length < MAX_ROWS; page++) {
+  // El tope corta la descarga: si al agotar páginas o filas el paginador sigue
+  // diciendo que hay más, lo que falta no se trae y se avisa. No se deduce de
+  // `rows.length`, porque una página puede no llegar al tope de filas (el mapeo
+  // descarta negocios) y el corte viene igualmente por el número de páginas.
+  let truncated = false;
+  for (let page = 0; page < MAX_PAGES && rows.length < MAX_ROWS; page++) {
     const json = await getJson(
       "Pipedrive",
       `${PIPEDRIVE}/deals?status=all&start=${start}&limit=100&api_token=${encodeURIComponent(token)}`,
@@ -94,19 +100,24 @@ export async function fetchPipedriveDeals(
     const next = Number(pagination["next_start"]);
     if (!Number.isFinite(next) || next <= start) break;
     start = next;
+    // Si esta era la última vuelta que el tope permite, el proveedor todavía
+    // tenía más y esa parte se queda fuera.
+    truncated = page + 1 >= MAX_PAGES || rows.length >= MAX_ROWS;
   }
-  return { rows, fetched };
+  return { rows, fetched, truncated };
 }
 
 /** All Holded invoices, following the v2 cursor pagination. */
 export async function fetchHoldedInvoices(
   key: string,
   fetchImpl: Fetch = fetch,
-): Promise<{ rows: ParsedBusinessRow[]; fetched: number }> {
+): Promise<{ rows: ParsedBusinessRow[]; fetched: number; truncated: boolean }> {
   const rows: ParsedBusinessRow[] = [];
   let cursor: string | null = null;
   let fetched = 0;
-  for (let page = 0; page < 50 && rows.length < MAX_ROWS; page++) {
+  // Mismo trato que en Pipedrive: el corte por página o por filas se dice.
+  let truncated = false;
+  for (let page = 0; page < MAX_PAGES && rows.length < MAX_ROWS; page++) {
     const suffix = cursor ? `&cursor=${encodeURIComponent(cursor)}` : "";
     const json = await getJson(
       "Holded",
@@ -126,20 +137,21 @@ export async function fetchHoldedInvoices(
     if (!json["has_more"]) break;
     cursor = (json["cursor"] as string | null) ?? (json["next_cursor"] as string | null) ?? null;
     if (!cursor) break;
+    truncated = page + 1 >= MAX_PAGES || rows.length >= MAX_ROWS;
   }
-  return { rows, fetched };
+  return { rows, fetched, truncated };
 }
 
 export async function syncPipedrive(token: string, fetchImpl: Fetch = fetch): Promise<SyncResult> {
-  const { rows, fetched } = await fetchPipedriveDeals(token, fetchImpl);
+  const { rows, fetched, truncated } = await fetchPipedriveDeals(token, fetchImpl);
   const counts = await importBusinessRows("deals", rows, "Pipedrive");
   await markConnected("pipedrive", [{ name: "Deals", count: counts.inserted + counts.updated }]);
-  return { ...counts, fetched };
+  return { ...counts, fetched, truncated };
 }
 
 export async function syncHolded(key: string, fetchImpl: Fetch = fetch): Promise<SyncResult> {
-  const { rows, fetched } = await fetchHoldedInvoices(key, fetchImpl);
+  const { rows, fetched, truncated } = await fetchHoldedInvoices(key, fetchImpl);
   const counts = await importBusinessRows("invoices", rows, "Holded");
   await markConnected("holded", [{ name: "Facturas", count: counts.inserted + counts.updated }]);
-  return { ...counts, fetched };
+  return { ...counts, fetched, truncated };
 }
