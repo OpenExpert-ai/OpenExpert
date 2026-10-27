@@ -28,6 +28,7 @@ export const importBusinessCsv = createServerFn({ method: "POST" })
         inserted: 0,
         updated: 0,
         skipped: parsed.errors.length,
+        omitted: parsed.omitted,
         errors: parsed.errors.slice(0, 20),
       };
     }
@@ -35,6 +36,7 @@ export const importBusinessCsv = createServerFn({ method: "POST" })
     return {
       ...counts,
       skipped: parsed.errors.length,
+      omitted: parsed.omitted,
       errors: parsed.errors.slice(0, 20),
     };
   });

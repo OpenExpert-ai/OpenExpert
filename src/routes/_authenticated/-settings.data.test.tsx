@@ -190,3 +190,54 @@ describe("importación de CSV: el recuento de filas rechazadas", () => {
     expect(toast.success).toHaveBeenCalled();
   });
 });
+
+describe("importación de CSV: las filas que deja fuera el tope", () => {
+  it("dice cuántas se quedaron fuera y no las cuenta como filas con error", async () => {
+    // 5.237 filas buenas contra un tope de 5.000: el servidor importa 5.000 y
+    // avisa de las 237 que no leyó. No son filas rotas, así que no pueden salir
+    // como «filas con error».
+    businessFns.importBusinessCsv.mockResolvedValue({
+      inserted: 5000,
+      updated: 0,
+      skipped: 0,
+      omitted: 237,
+      errors: [],
+    });
+    const input = await mountPage();
+    await importCsv(input, "company,value\n");
+    await waitFor(() => expect(toast.warning).toHaveBeenCalled());
+    const message = String(toast.warning.mock.calls[0]?.[0] ?? "");
+    expect(message).toContain("237");
+    expect(message).toContain("5000");
+    expect(message).not.toContain("con error");
+  });
+
+  it("una sola fila fuera del tope se dice en singular", async () => {
+    businessFns.importBusinessCsv.mockResolvedValue({
+      inserted: 5000,
+      updated: 0,
+      skipped: 0,
+      omitted: 1,
+      errors: [],
+    });
+    const input = await mountPage();
+    await importCsv(input, "company,value\n");
+    await waitFor(() => expect(toast.warning).toHaveBeenCalled());
+    const message = String(toast.warning.mock.calls[0]?.[0] ?? "");
+    expect(message).toContain("1 fila no se importó");
+  });
+
+  it("no avisa cuando el fichero cabe entero", async () => {
+    businessFns.importBusinessCsv.mockResolvedValue({
+      inserted: 120,
+      updated: 0,
+      skipped: 0,
+      omitted: 0,
+      errors: [],
+    });
+    const input = await mountPage();
+    await importCsv(input, "company,value\n");
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(toast.warning).not.toHaveBeenCalled();
+  });
+});

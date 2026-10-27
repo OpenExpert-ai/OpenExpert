@@ -185,7 +185,9 @@ the invoice** instead of storing it as zero euros.
 Download the template, fill it and import; Spanish and English header names are
 accepted. The row key is `id`, or `csv-<entity>-<row>` when the file has no id
 column. A file is capped at 5,000 rows and one bad row is reported by line
-number without discarding the rest. The notice counts **every** rejected row
+number without discarding the rest; the rows **above the cap are not imported
+and are counted separately**, so the notice says how many were left out instead
+of passing them off as failed rows. The notice counts **every** rejected row
 (`skipped`) and details the first twenty, which is what the server sends; when
 more were dropped it says so, so the sample is not mistaken for the total. A file
 where nothing gets in is not announced as an import: only the error notice shows.
