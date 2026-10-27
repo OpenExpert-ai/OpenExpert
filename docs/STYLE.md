@@ -43,7 +43,9 @@ This guide keeps the docs consistent and verifiable. The English docs under
   absolute URLs for in-repo files. From `docs/`, a numbered document lives
   under `en/` or `es/`.
 - If you link to a heading, use its exact anchor. Anchors are validated by
-  `npm run check:docs`.
+  `npm run check:docs`, both in another file and in the same page (`#section`
+  alone); a heading repeated in one page is numbered GitHub-style, so the
+  second `## Instalación` answers to `#instalación-1`.
 
 ## Tables and code
 
