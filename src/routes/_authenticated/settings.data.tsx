@@ -287,6 +287,15 @@ function DataSettings() {
     }
   };
 
+  // El aviso de una descarga cortada tiene que decirlo: con el tope de la
+  // sincronización, un «N registros» a secas hace pasar un trozo por el total.
+  const syncDone = (r: { inserted: number; updated: number; truncated: boolean }) => {
+    const n = r.inserted + r.updated;
+    return r.truncated
+      ? t("Sincronizados {n} registros; la descarga se cortó en el tope y hay más sin traer", { n })
+      : t("Sincronizados {n} registros", { n });
+  };
+
   const onConnect = async (id: "pipedrive" | "holded") => {
     setBusy(`connect-${id}`);
     try {
@@ -294,7 +303,13 @@ function DataSettings() {
         id === "pipedrive"
           ? await doConnectPipedrive({ data: { token: pipedriveToken } })
           : await doConnectHolded({ data: { key: holdedKey } });
-      toast.success(t("Conectado: {n} registros", { n: r.inserted + r.updated }));
+      toast.success(
+        r.truncated
+          ? t("Conectado: {n} registros; la descarga se cortó en el tope y hay más sin traer", {
+              n: r.inserted + r.updated,
+            })
+          : t("Conectado: {n} registros", { n: r.inserted + r.updated }),
+      );
       if (id === "pipedrive") setPipedriveToken("");
       else setHoldedKey("");
       await refresh();
@@ -309,7 +324,7 @@ function DataSettings() {
     setBusy(`sync-${id}`);
     try {
       const r = await doSyncConnector({ data: { id } });
-      toast.success(t("Sincronizados {n} registros", { n: r.inserted + r.updated }));
+      toast.success(syncDone(r));
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
