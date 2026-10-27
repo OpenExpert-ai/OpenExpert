@@ -51,6 +51,12 @@ stopped it, the CSP does not allow it— the attempt can be **retried**. The fai
 not remembered: the next click asks for the script again, and the message that explains the
 failure says what to check. Reloading the page is not needed.
 
+The same holds when `api.js` loads but the library never starts: if the `picker` module does not
+call back within **20 s**, the attempt fails with the reason
+(`El cargador de Google (gapi) no respondió en 20 s…`) instead of leaving the button spinning
+with nothing to read. That failure is not remembered either: the next click asks for the library
+again.
+
 Reads are bounded: **25 MB per file**. The size comes with the metadata, so a bigger file is
 refused with a clear note before it is downloaded; for plain text and for exports (Docs to text,
 Sheets to CSV) the cap is applied while reading, so a huge document never reaches process memory
