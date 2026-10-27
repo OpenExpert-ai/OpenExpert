@@ -50,6 +50,12 @@ que la hora del día nunca suma un día a la cuenta. El mismo número es el que
 enseña la tarjeta de reclamación de cobro, porque los dos salen de la misma
 consulta.
 
+Una factura está vencida por su **fecha**: cuenta si el vencimiento ya pasó y no
+está pagada (`paid`) ni anulada (`cancelled`), aunque el `status` guardado sea
+`open`, que es lo que escriben el importador de CSV y el conector de Holded. El
+`status` explícito `overdue` se sigue respetando tal cual, también con fecha
+futura (sale con 0 días de retraso).
+
 ### Google Drive (opcional)
 
 | Herramienta         | Requiere              |

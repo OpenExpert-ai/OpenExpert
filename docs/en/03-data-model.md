@@ -119,6 +119,11 @@ days, and the hour of the day does not change it. A date that cannot be read,
 or one that has not come yet, counts as zero days — how long a debt has been
 running is never negative and never unknown.
 
+An invoice counts as overdue when its `due_date` has passed and it is neither
+`paid` nor `cancelled`, whatever the stored `status` says: the CSV importer and
+the Holded connector write `open`, so `overdue` only shows up when somebody marks
+it by hand, and it is still honoured as it is.
+
 ## 3. No users, roles or RLS
 
 The edition is single-owner, so there are no `profiles`, `user_roles`,

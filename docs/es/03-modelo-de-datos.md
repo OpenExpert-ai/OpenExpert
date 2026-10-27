@@ -121,6 +121,11 @@ un número de días, y la hora del día no lo cambia. Una fecha que no se puede
 leer, o que todavía no ha llegado, cuenta como cero días — lo que una deuda
 lleva corriendo nunca es negativo ni desconocido.
 
+Una factura cuenta como vencida cuando su `due_date` ya pasó y no está `paid` ni
+`cancelled`, sin mirar el `status` guardado: el importador de CSV y el conector
+de Holded escriben `open`, así que el valor `overdue` solo aparece si alguien lo
+marca a mano, y se sigue respetando tal cual.
+
 ## 3. Sin usuarios, roles ni RLS
 
 La edición es de propietario único, así que no hay tablas `profiles`,

@@ -189,6 +189,22 @@ export async function listDeals(stage: string | null) {
     }));
 }
 
+/**
+ * Whether an invoice is past due.
+ *
+ * The explicit `status = "overdue"` is honoured as it always was, but no path in
+ * the application writes it: the CSV importer defaults to `open`, the Holded
+ * connector only knows `paid`, `cancelled` and `open`, and the demo data uses
+ * `open`/`paid`. So the due date is what decides —an unpaid, non-cancelled
+ * invoice whose day has passed— and a row marked by hand keeps being listed
+ * even before its date, with zero days late.
+ */
+function isOverdue(invoice: { status: string; dueDate: string }, now: Date): boolean {
+  if (invoice.status === "overdue") return true;
+  if (invoice.status === "paid" || invoice.status === "cancelled") return false;
+  return daysSince(invoice.dueDate, now) > 0;
+}
+
 export async function overdueInvoices(minAmount: number | null) {
   const { orm } = await getDb();
   const today = new Date();
@@ -196,7 +212,7 @@ export async function overdueInvoices(minAmount: number | null) {
     .select()
     .from(schema.invoices)
     .all()
-    .filter((i) => i.status === "overdue" && Number(i.amount) >= (minAmount ?? 0))
+    .filter((i) => isOverdue(i, today) && Number(i.amount) >= (minAmount ?? 0))
     .sort((a, b) => b.amount - a.amount)
     .map((i) => ({
       id: i.id,

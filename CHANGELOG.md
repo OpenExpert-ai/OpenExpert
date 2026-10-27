@@ -7,6 +7,23 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### Una factura vence por su fecha, no por una etiqueta que nadie escribe
+
+- **El filtro pedía un estado que ningún camino produce.** `overdueInvoices` decidía por
+  `status === "overdue"`, y ese valor no lo escribe nadie: el importador de CSV guarda `open`
+  cuando la fila no trae estado, el conector de Holded solo devuelve `paid`, `cancelled` u
+  `open`, y los datos de ejemplo usan `open`/`paid`. Con datos reales, «¿qué facturas tengo
+  vencidas?» contestaba que ninguna, y `propose_invoice_reminders` respondía «Ninguna de esas
+  facturas está vencida», así que la tarjeta de reclamación de cobro no se podía llegar a
+  proponer.
+- **La fecha es la que decide.** Cuenta como vencida la factura cuyo `due_date` ya pasó —en días
+  de calendario, con la misma cuenta que los días de retraso— y que no está pagada ni anulada.
+  El `status` explícito `overdue` se sigue respetando tal cual, incluida la fila marcada a mano
+  con fecha por llegar, que sale con 0 días.
+- **La puerta es un test.** `src/lib/ee.vencidas.test.ts` inserta las facturas de los datos de
+  ejemplo con su estado real (`open`) y exige que salgan con sus días exactos, que las pagadas y
+  anuladas no cuenten, y que las que vencen hoy o más adelante tampoco.
+
 ### Una página de Notion con bloques muy anidados dice que está a medias
 
 - **El recorte por profundidad se anuncia.** `readPage` desciende por los bloques hijos hasta un
