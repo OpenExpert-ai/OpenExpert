@@ -180,7 +180,11 @@ the invoice** instead of storing it as zero euros.
 Download the template, fill it and import; Spanish and English header names are
 accepted. The row key is `id`, or `csv-<entity>-<row>` when the file has no id
 column. A file is capped at 5,000 rows and one bad row is reported by line
-number without discarding the rest. In the money columns —deal value, invoice
+number without discarding the rest. The notice counts **every** rejected row
+(`skipped`) and details the first twenty, which is what the server sends; when
+more were dropped it says so, so the sample is not mistaken for the total. A file
+where nothing gets in is not announced as an import: only the error notice shows.
+In the money columns —deal value, invoice
 amount, spend, CPA target, daily budget and MRR— an **empty** cell is 0, but a
 cell that is not a number (`n/d`, `1.234,56 (IVA)`) **rejects the row**: it used
 to be imported as 0 and the invoice showed zero without the import saying so.

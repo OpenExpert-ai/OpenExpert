@@ -141,6 +141,26 @@ describe("importación de CSV: el recuento de filas rechazadas", () => {
     await waitFor(() => expect(toast.warning).toHaveBeenCalled());
     const message = String(toast.warning.mock.calls[0]?.[0] ?? "");
     expect(message).toContain("45");
+    // Concordancia y tope: el aviso dice cuántas se cayeron y que el detalle va
+    // recortado, para que nadie confunda la muestra con el total.
+    expect(message).toContain("45 filas con error");
+    expect(message).toContain("Se detallan solo las 20 primeras.");
+  });
+
+  it("una sola fila rechazada se dice en singular", async () => {
+    businessFns.importBusinessCsv.mockResolvedValue({
+      inserted: 4,
+      updated: 0,
+      skipped: 1,
+      errors: sampleErrors(1),
+    });
+    const input = await mountPage();
+    await importCsv(input, "client,amount,dueDate\n");
+    await waitFor(() => expect(toast.warning).toHaveBeenCalled());
+    const message = String(toast.warning.mock.calls[0]?.[0] ?? "");
+    expect(message).toContain("1 fila con error");
+    expect(message).not.toContain("fila(s)");
+    expect(message).not.toContain("Se detallan");
   });
 
   it("un fichero que no importa nada no se anuncia como importado", async () => {
