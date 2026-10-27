@@ -495,6 +495,10 @@ export function createChatTools(ctx: ChatToolsContext) {
           const run = await py.runPython(code, { timeoutMs });
           // The script itself goes to the activity trail: running code is the one action where the
           // audit record is not a nicety but the way to answer "what did it actually run?".
+          // It goes whole: the tool schema already caps it at 20 000 characters, which fits in the
+          // snapshot, so a cut here would only make the trail describe a script that never ran. If a
+          // size cap is ever needed, it is announced (`truncated`, total and kept characters), never
+          // silent.
           // The duration is the one the run measured, not a placeholder.
           await ee
             .logActivity({
@@ -506,7 +510,7 @@ export function createChatTools(ctx: ChatToolsContext) {
               summary: `Script de Python (${run.durationMs} ms, salida ${run.exit ?? "-"})`,
               sources: ["Python"],
               duration_ms: run.durationMs,
-              snapshot: { script: code.slice(0, 4000) },
+              snapshot: { script: code },
             })
             .catch((e: unknown) =>
               logger.error("activity.log_failed", e, { tool: "run_python", expertId }),

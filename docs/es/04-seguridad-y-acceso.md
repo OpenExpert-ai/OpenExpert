@@ -56,6 +56,8 @@ selector.
    encerrarlo en un directorio temporal sin red y sin ver el resto del disco. Sin
    `bubblewrap` no se ejecuta: un espacio de nombres de red aísla la red y deja tus
    claves legibles, que es peor que no ejecutar nada (`src/lib/python.server.ts`).
+   El script completo queda en la traza de actividad, sin recortes: es lo que
+   responde después a qué se ejecutó de verdad.
 5. **Endurecimiento del transporte.** Cada respuesta incluye
    `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y
    `Permissions-Policy`, además de una `Content-Security-Policy` en producción.
