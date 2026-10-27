@@ -180,6 +180,11 @@ amount, spend, CPA target, daily budget and MRR— an **empty** cell is 0, but a
 cell that is not a number (`n/d`, `1.234,56 (IVA)`) **rejects the row**: it used
 to be imported as 0 and the invoice showed zero without the import saying so.
 
+A dot with three decimals is a thousands separator (`1.234` is one thousand two
+hundred thirty-four) **unless the integer part is zero**: `0.500` is €0.50, not
+€500. It used to multiply the amount by a thousand for an English-format file
+with three decimals, while the same value with a comma (`0,500`) read correctly.
+
 ## 6. AI tools
 
 | Tool                                                                                           | Behaviour                                                                                                                                     |

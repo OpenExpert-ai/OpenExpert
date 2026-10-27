@@ -213,7 +213,15 @@ export function parseCsv(text: string): string[][] {
   return rows;
 }
 
-/** `1.234,56`, `1,234.56`, `1.234` and `1234,56` all read as Spanish-friendly numbers. */
+/**
+ * `1.234,56`, `1,234.56`, `1.234` and `1234,56` all read as Spanish-friendly numbers.
+ *
+ * A single dot with exactly three digits is a thousands separator (`1.234`), except when the
+ * integer part is zero: nobody writes `0.500` for five hundred, so there the dot is the decimal
+ * mark and the value is 0,5. Otherwise an English-format file with three decimals multiplied the
+ * amount by a thousand —`0.500` entered as 500 €— while the same value with a comma (`0,500`)
+ * read as 0,5.
+ */
 export function parseNumber(value: string, fallback = 0): number {
   const raw = value.trim().replace(/[€$£\s%]/g, "");
   if (!raw) return fallback;
@@ -228,7 +236,9 @@ export function parseNumber(value: string, fallback = 0): number {
   } else if (lastDot !== -1) {
     const decimals = raw.length - lastDot - 1;
     const dots = (raw.match(/\./g) ?? []).length;
-    normalized = dots > 1 || decimals === 3 ? raw.replace(/\./g, "") : raw;
+    const integer = raw.slice(0, lastDot).replace(/^[+-]/, "");
+    const zeroInteger = integer === "" || /^0+$/.test(integer);
+    normalized = dots > 1 || (decimals === 3 && !zeroInteger) ? raw.replace(/\./g, "") : raw;
   }
   const n = Number(normalized);
   return Number.isFinite(n) ? n : fallback;
