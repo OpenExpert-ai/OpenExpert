@@ -269,8 +269,40 @@ describe("notion.server", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { updatePage, appendBlocks } = await import("./notion.server");
     expect((await updatePage("p3", { Name: {} })).title).toBe("Actualizada");
-    expect((await appendBlocks("p3", [])).id).toBe("p3");
+    // Un bloque de verdad: una lista vacía no gasta petición (ver tools.notion-chunks.test.ts).
+    const appended = await appendBlocks("p3", [{ object: "block", type: "paragraph" }]);
+    expect(appended.id).toBe("p3");
+    expect(appended.appended).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("cuando falla un lote dice que se quedó a medias y cuánto escribió", async () => {
+    let calls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        calls += 1;
+        return calls === 1
+          ? json({ object: "list", results: [] })
+          : new Response("bad", { status: 400 });
+      }),
+    );
+    const { appendBlocks } = await import("./notion.server");
+    const children = Array.from({ length: 250 }, () => ({ object: "block", type: "paragraph" }));
+    await expect(appendBlocks("p1", children)).rejects.toThrow(
+      /Falló el lote 2 de 3 .*Notion respondió 400.*100 de 250 bloques escritos/,
+    );
+  });
+
+  it("si falla el primer lote no dice que haya escrito nada", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("bad", { status: 400 })),
+    );
+    const { appendBlocks } = await import("./notion.server");
+    await expect(appendBlocks("p1", [{ object: "block" }])).rejects.toThrow(
+      /Falló el lote 1 de 1 .*no se añadió ningún bloque/,
+    );
   });
 
   it("maps 429 and 401 to clear errors", async () => {

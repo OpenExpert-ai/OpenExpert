@@ -324,10 +324,58 @@ export async function updatePage(pageId: string, properties: Json): Promise<Noti
   return toItem(data);
 }
 
-export async function appendBlocks(pageId: string, children: unknown[]): Promise<NotionItem> {
-  await call(`/blocks/${encodeURIComponent(pageId)}/children`, {
-    method: "PATCH",
-    body: JSON.stringify({ children }),
-  });
-  return { id: pageId, object: "block", title: "(bloques añadidos)" };
+/**
+ * Blocks Notion accepts in a single write: «There is a limit of 100 block
+ * children that can be appended by a single API request. Arrays of block
+ * children longer than 100 will result in an error»
+ * (developers.notion.com/reference/patch-block-children). A long page appended
+ * in one go —150 bullets— used to come back as a bare 400 with nothing written.
+ */
+export const NOTION_CHILDREN_LIMIT = 100;
+
+/** What a chunked append actually wrote, so the caller can say it out loud. */
+export type AppendBlocksResult = NotionItem & {
+  /** Blocks Notion accepted, in the order they were sent. */
+  appended: number;
+  /** Requests it took: one per NOTION_CHILDREN_LIMIT blocks. */
+  requests: number;
+};
+
+export async function appendBlocks(
+  pageId: string,
+  children: unknown[],
+): Promise<AppendBlocksResult> {
+  const batches: unknown[][] = [];
+  for (let i = 0; i < children.length; i += NOTION_CHILDREN_LIMIT)
+    batches.push(children.slice(i, i + NOTION_CHILDREN_LIMIT));
+
+  // One request per batch, in sequence: blocks land in the order they were sent,
+  // so they cannot go out in parallel.
+  let appended = 0;
+  for (const [index, batch] of batches.entries()) {
+    try {
+      await call(`/blocks/${encodeURIComponent(pageId)}/children`, {
+        method: "PATCH",
+        body: JSON.stringify({ children: batch }),
+      });
+    } catch (e) {
+      const written =
+        appended === 0
+          ? "no se añadió ningún bloque"
+          : `se quedaron ${appended} de ${children.length} bloques escritos`;
+      throw new Error(
+        `Falló el lote ${index + 1} de ${batches.length} al añadir bloques a Notion (${(e as Error).message}): ${written}. Vuelve a leer la página antes de reintentar, para no duplicar lo que sí llegó.`,
+        { cause: e },
+      );
+    }
+    appended += batch.length;
+  }
+
+  return {
+    id: pageId,
+    object: "block",
+    title: "(bloques añadidos)",
+    appended,
+    requests: batches.length,
+  };
 }
