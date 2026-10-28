@@ -3,6 +3,8 @@
 // are testable without a network or a database; the fetch/upsert lives in
 // `connectors.server.ts`.
 
+import { DEAL_STATUS, INVOICE_STATUS } from "./business-status";
+
 export type PipedriveDeal = {
   id?: number | string;
   title?: string;
@@ -101,15 +103,18 @@ export function mapPipedriveDeal(
     owner: deal.owner_name?.trim() ?? "",
     daysInStage: daysSince(deal.stage_change_time ?? deal.update_time ?? deal.add_time, now),
     closeDate: isoDate(deal.expected_close_date ?? deal.close_time),
-    status: deal.status === "won" || deal.status === "lost" ? deal.status : "open",
+    status:
+      deal.status === DEAL_STATUS.won || deal.status === DEAL_STATUS.lost
+        ? deal.status
+        : DEAL_STATUS.open,
   };
 }
 
 /** Holded's payment status is more granular than the local `open/paid` pair. */
 function holdedStatus(value: string | null | undefined): string {
-  if (value === "completed") return "paid";
-  if (value === "cancelled" || value === "failed") return "cancelled";
-  return "open";
+  if (value === "completed") return INVOICE_STATUS.paid;
+  if (value === "cancelled" || value === "failed") return INVOICE_STATUS.cancelled;
+  return INVOICE_STATUS.open;
 }
 
 /** One Holded invoice as the local `invoices` row, or null when it is unusable. */

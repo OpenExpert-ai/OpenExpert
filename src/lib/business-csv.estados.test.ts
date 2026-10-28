@@ -121,11 +121,11 @@ describe("lo que leen el panel y el asistente sobre un CSV en castellano", () =>
 
     const ee = await import("./ee.server");
     const summary = await ee.pipelineSummary();
-    // Abierto: solo Beta (500). Ganadas: Acme (1000) y Epsilon (200), que es lo
-    // que da un win rate de 2/3 frente a la perdida de Gamma.
+    // Abierto: solo Beta (500). Ganadas: Acme (1000), Delta (200) y Epsilon
+    // (100), que es lo que da un win rate de 3/4 frente a la perdida de Gamma.
     expect(summary.openDeals).toBe(1);
     expect(summary.openValue).toBe(500);
-    expect(summary.winRate).toBeCloseTo(2 / 3);
+    expect(summary.winRate).toBeCloseTo(3 / 4);
     expect(summary.byStage).toEqual({ Demo: { count: 1, value: 500 } });
   });
 

@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { daysSince } from "@/lib/calendar-day";
 import { allDemoIds } from "@/lib/business-provenance.server";
+import { DEAL_STATUS, INVOICE_STATUS } from "@/lib/business-status";
 import { countPhrase } from "@/lib/translate";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
@@ -140,9 +141,9 @@ export async function revertSnapshot(entries: SnapEntry[]): Promise<void> {
 export async function pipelineSummary() {
   const { orm } = await getDb();
   const deals = orm.select().from(schema.deals).all();
-  const open = deals.filter((d) => d.status === "open");
-  const won = deals.filter((d) => d.status === "won").length;
-  const lost = deals.filter((d) => d.status === "lost").length;
+  const open = deals.filter((d) => d.status === DEAL_STATUS.open);
+  const won = deals.filter((d) => d.status === DEAL_STATUS.won).length;
+  const lost = deals.filter((d) => d.status === DEAL_STATUS.lost).length;
   const byStage: Record<string, { count: number; value: number }> = {};
   for (const d of open) {
     const s = (byStage[d.stage] ??= { count: 0, value: 0 });
@@ -177,7 +178,10 @@ export async function listDeals(stage: string | null) {
   const { orm } = await getDb();
   const rows = orm.select().from(schema.deals).all();
   return rows
-    .filter((d) => d.status === "open" && (!stage || d.stage.toLowerCase() === stage.toLowerCase()))
+    .filter(
+      (d) =>
+        d.status === DEAL_STATUS.open && (!stage || d.stage.toLowerCase() === stage.toLowerCase()),
+    )
     .sort((a, b) => b.value - a.value)
     .map((d) => ({
       company: d.company,
@@ -201,8 +205,9 @@ export async function listDeals(stage: string | null) {
  * even before its date, with zero days late.
  */
 function isOverdue(invoice: { status: string; dueDate: string }, now: Date): boolean {
-  if (invoice.status === "overdue") return true;
-  if (invoice.status === "paid" || invoice.status === "cancelled") return false;
+  if (invoice.status === INVOICE_STATUS.overdue) return true;
+  if (invoice.status === INVOICE_STATUS.paid || invoice.status === INVOICE_STATUS.cancelled)
+    return false;
   return daysSince(invoice.dueDate, now) > 0;
 }
 
