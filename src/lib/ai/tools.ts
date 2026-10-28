@@ -7,6 +7,7 @@ import { z } from "zod";
 import * as ee from "../ee.server";
 import { rowProvenance, type RowProvenance } from "../business-provenance.server";
 import type { BusinessEntity } from "../business-csv";
+import { CAMPAIGN_STATUS } from "../business-status";
 import { getDb } from "@/lib/db.server";
 import { logger } from "@/lib/logger.server";
 import * as schema from "../../../drizzle/schema";
@@ -334,7 +335,7 @@ export function createChatTools(ctx: ChatToolsContext) {
         if (!src.connected && src.provenance === "empty") return { error: NO_SOURCE_NOTE };
         const ids = Array.isArray(campaignIds) ? campaignIds : [campaignIds];
         const rows = (await ee.campaignPerformance()).filter(
-          (x) => ids.includes(x.id) && x.status === "active",
+          (x) => ids.includes(x.id) && x.status === CAMPAIGN_STATUS.active,
         );
         if (!rows.length) return { error: "No hay campañas activas con esos IDs." };
         return proposePending(
