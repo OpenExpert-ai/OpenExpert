@@ -18,8 +18,9 @@ Tables: `experts`, `integrations`, `activity`, `chat_messages`, `deals`,
 On first run `src/lib/db.server.ts` seeds the **configuration** (Experts,
 integrations). The business tables (`deals`, `invoices`, `campaigns`,
 `accounts`) start **empty**: they are only filled by a real connector or an
-import. Business tools report whether a source is connected and never present
-local fixtures as real data. Delete the database file to re-seed the
+import. Business tools say where the rows come from —a connected integration, the
+owner's own import, or the sample rows marked `demo-`— and never call a table with
+rows in it empty or fake. Delete the database file to re-seed the
 configuration.
 
 ## 2. Tables

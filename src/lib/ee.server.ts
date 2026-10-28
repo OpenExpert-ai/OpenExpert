@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { daysSince } from "@/lib/calendar-day";
+import { allDemoIds } from "@/lib/business-provenance.server";
 import { countPhrase } from "@/lib/translate";
 import { getDb, now, persist } from "@/lib/db.server";
 import * as schema from "../../drizzle/schema";
@@ -282,6 +283,21 @@ export const pendingActionSchema = z.discriminatedUnion("kind", [
 /** Concordancia de número en los textos de la actividad: «1 reclamación» / «2 reclamaciones». */
 export { countPhrase };
 
+/**
+ * De dónde vienen las filas que una acción pendiente acaba de escribir.
+ *
+ * Las tablas de negocio no guardan su procedencia por fila, pero los datos de
+ * ejemplo sí llevan prefijo `demo-`, y el resto es lo que el usuario tiene en su
+ * equipo (importado por CSV o escrito por un conector, que ya no interviene en
+ * la aprobación). Atribuir la reclamación a Holded porque el conector esté
+ * conectado firmaba una fuente que no había tocado nada: la actividad de la
+ * factura de un CSV leía «fuentes: Holded».
+ */
+function rowSource(rows: Record<string, unknown>[]): string {
+  const ids = rows.map((r) => String(r["id"] ?? ""));
+  return allDemoIds(ids) ? "Datos de ejemplo" : "Datos locales";
+}
+
 export async function executePending(
   action: PendingAction,
 ): Promise<{ snapshot: SnapEntry[]; summary: string; sources: string[] }> {
@@ -298,7 +314,7 @@ export async function executePending(
     return {
       snapshot: snap,
       summary: `${countPhrase(rows.length, "reclamación de cobro registrada", "reclamaciones de cobro registradas")} (${rows.map((r) => r["client"]).join(", ")})`,
-      sources: ["Holded"],
+      sources: [rowSource(rows)],
     };
   }
   if (action.kind === "pause_campaigns") {
@@ -310,7 +326,7 @@ export async function executePending(
     return {
       snapshot: snap,
       summary: `${countPhrase(rows.length, "campaña pausada", "campañas pausadas")}: ${rows.map((r) => r["name"]).join(", ")}`,
-      sources: ["Meta Ads"],
+      sources: [rowSource(rows)],
     };
   }
   const exhaustive: never = action;

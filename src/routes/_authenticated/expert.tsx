@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { hasBusinessData } from "@/lib/business-data";
 import { pluralize } from "@/lib/translate";
 import { TOOL_LABELS } from "@/lib/ai/tool-labels";
 import { formatCurrency, formatDateTime } from "@/lib/format";
@@ -80,9 +81,6 @@ const SUGGESTIONS = [
   "Pausar campañas con CPA alto",
   "Crear nuevo Experto para Operaciones",
 ];
-
-/** Integrations that would provide real business data. None is connected yet. */
-const BUSINESS_SOURCE_IDS = ["pipedrive", "salesforce", "holded", "gmail", "slack", "ga", "meta"];
 
 function ExpertPage() {
   const { activeExpert } = useUI();
@@ -179,9 +177,10 @@ function ChatWindow({
       },
     });
   const busy = status === "submitted" || status === "streaming";
-  const hasBusinessSource = ws?.integrations.some(
-    (i) => BUSINESS_SOURCE_IDS.includes(i.id) && i.connected,
-  );
+  // Un conector conectado no es la única fuente: la importación de CSV deja filas
+  // en las mismas tablas, así que el aviso solo tiene sentido cuando no hay ni
+  // conector ni una sola fila de negocio.
+  const businessData = hasBusinessData(ws);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -404,7 +403,7 @@ function ChatWindow({
           <div ref={endRef} />
         </div>
       </div>
-      {!hasBusinessSource && (
+      {!businessData && (
         <div className="border-t border-warning/40 bg-warning/10 px-4 py-2 text-center text-[0.7rem] text-warning">
           {t(
             "Sin fuentes de negocio conectadas. Los conectores reales están en la hoja de ruta; hasta entonces el asistente no tiene datos que consultar.",
