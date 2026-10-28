@@ -183,11 +183,33 @@ describe("executePending", () => {
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(result.summary).toBe("1 reclamación de cobro registrada (Acme)");
       expect(result.summary).not.toMatch(/enviad/i);
-      expect(result.sources).toEqual(["Holded"]);
+      // Holded no ha intervenido en una factura local: la actividad nombra la
+      // procedencia que consta, no el conector que podría estar conectado.
+      expect(result.sources).toEqual(["Datos locales"]);
+      expect(result.sources).not.toContain("Holded");
       expect(result.sources).not.toContain("Gmail");
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("nombra los datos de ejemplo como tales en la actividad de una reclamación", async () => {
+    const { getDb, persist } = await import("./db.server");
+    const ee = await import("./ee.server");
+    const { raw } = await getDb();
+
+    raw.run(
+      "INSERT OR REPLACE INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)",
+      ["demo-inv-reclamada", "Demo SL", 500, "2026-01-01", "overdue", 0],
+    );
+    await persist();
+
+    const result = await ee.executePending({
+      kind: "invoice_reminders",
+      ids: ["demo-inv-reclamada"],
+    });
+    expect(result.sources).toEqual(["Datos de ejemplo"]);
+    expect(result.sources).not.toContain("Holded");
   });
 
   it("cuenta una reclamación por factura y concuerda en plural", async () => {

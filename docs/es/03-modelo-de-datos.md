@@ -18,8 +18,9 @@ Tablas: `experts`, `integrations`, `activity`, `chat_messages`, `deals`,
 En el primer arranque `src/lib/db.server.ts` siembra la **configuración**
 (Expertos, integraciones). Las tablas de negocio (`deals`, `invoices`,
 `campaigns`, `accounts`) arrancan **vacías**: solo las rellena un conector real o
-una importación. Las herramientas de negocio indican si hay una fuente conectada
-y nunca presentan datos locales como reales. Borra el fichero de base de datos
+una importación. Las herramientas de negocio dicen de dónde vienen las filas —de
+un conector conectado, de una importación del usuario o de los datos de ejemplo
+marcados `demo-`— y nunca llaman vacía ni falsa a una tabla que tiene filas. Borra el fichero de base de datos
 para volver a sembrar la configuración.
 
 ## 2. Tablas

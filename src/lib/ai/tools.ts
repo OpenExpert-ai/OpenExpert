@@ -5,6 +5,8 @@
 import { tool } from "ai";
 import { z } from "zod";
 import * as ee from "../ee.server";
+import { rowProvenance, type RowProvenance } from "../business-provenance.server";
+import type { BusinessEntity } from "../business-csv";
 import { getDb } from "@/lib/db.server";
 import { logger } from "@/lib/logger.server";
 import * as schema from "../../../drizzle/schema";
@@ -60,32 +62,62 @@ export interface ChatToolsContext {
 
 /**
  * Business tools only tell the truth about where their data comes from.
- * `connected` is true only when a real integration that feeds the data is
- * connected. The app ships with no business data and no connectors, so tools
- * return a clear note instead of invented figures.
+ *
+ * A connected integration is one source, but not the only one: the owner can
+ * import their own CSV into the same tables. The note therefore follows
+ * `rowProvenance` —nothing, only the `demo-` sample rows, or rows the owner
+ * brought in— and "the local database is empty" is only said when it is. The app
+ * ships with no business data and no connectors, so an empty table still gets a
+ * clear note instead of invented figures.
  */
 const NO_SOURCE_NOTE =
   "No hay ninguna fuente de negocio conectada. Los datos no son reales: la base local está vacía y los conectores reales están en la hoja de ruta.";
 
-async function sourceStatus(ids: string[]): Promise<{ connected: boolean; name: string | null }> {
+const DEMO_SOURCE_NOTE =
+  "No hay ninguna fuente de negocio conectada: lo que hay son datos de ejemplo (marcados demo) y los conectores reales están en la hoja de ruta.";
+
+const LOCAL_SOURCE_NOTE =
+  "No hay ninguna fuente de negocio conectada: los datos son locales, importados por el usuario en este equipo, y los conectores reales están en la hoja de ruta.";
+
+const PROVENANCE_NOTE: Record<RowProvenance, string> = {
+  empty: NO_SOURCE_NOTE,
+  demo: DEMO_SOURCE_NOTE,
+  local: LOCAL_SOURCE_NOTE,
+};
+
+/**
+ * Both halves of the provenance question in one read: whether an integration of
+ * `ids` is connected, and —when none is— which rows are actually in the table
+ * the tool reads.
+ */
+async function sourceStatus(
+  ids: string[],
+  entity: BusinessEntity,
+): Promise<{ connected: boolean; name: string | null; provenance: RowProvenance }> {
   const { orm } = await getDb();
   const hit = orm
     .select()
     .from(schema.integrations)
     .all()
     .find((i) => ids.includes(i.id) && i.connected);
-  return { connected: !!hit, name: hit?.name ?? null };
+  return {
+    connected: !!hit,
+    name: hit?.name ?? null,
+    provenance: await rowProvenance(entity),
+  };
 }
 
 function withSource<T extends object>(
   data: T,
-  src: { connected: boolean; name: string | null },
+  src: { connected: boolean; name: string | null; provenance: RowProvenance },
   note?: string,
 ): T & { source: string; connected: boolean; note?: string } {
-  // Two different facts end up in the same field: whether the data comes from a
-  // real integration, and whether the tool itself cut what it returned. A list
-  // that stops at the cap still has to say so on a database with no connector.
-  const notes = [src.connected ? null : NO_SOURCE_NOTE, note ?? null].filter(
+  // Two different facts end up in the same field: where the data comes from, and
+  // whether the tool itself cut what it returned. A list that stops at the cap
+  // still has to say so, and an imported CSV is not "the database is empty".
+  // `connected` keeps its narrow meaning —an integration is feeding the table—,
+  // so the note is what carries the rest.
+  const notes = [src.connected ? null : PROVENANCE_NOTE[src.provenance], note ?? null].filter(
     (n): n is string => !!n,
   );
   return {
@@ -161,7 +193,7 @@ export function createChatTools(ctx: ChatToolsContext) {
       execute: async () => {
         if (!allowed(DOMAIN.deals)) return deny("ventas");
         used.add("CRM");
-        const src = await sourceStatus(["pipedrive", "salesforce"]);
+        const src = await sourceStatus(["pipedrive", "salesforce"], "deals");
         const summary = await ee.pipelineSummary();
         const stalled = cappedList(
           summary.stalled,
@@ -184,7 +216,7 @@ export function createChatTools(ctx: ChatToolsContext) {
       execute: async ({ stage }) => {
         if (!allowed(DOMAIN.deals)) return deny("ventas");
         used.add("CRM");
-        const src = await sourceStatus(["pipedrive", "salesforce"]);
+        const src = await sourceStatus(["pipedrive", "salesforce"], "deals");
         const list = cappedList(
           await ee.listDeals(stage ?? null),
           "deals abiertos",
@@ -206,7 +238,7 @@ export function createChatTools(ctx: ChatToolsContext) {
       execute: async ({ minAmount }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
         used.add("Facturación");
-        const src = await sourceStatus(["holded"]);
+        const src = await sourceStatus(["holded"], "invoices");
         const list = cappedList(
           await ee.overdueInvoices(minAmount ?? null),
           "facturas vencidas",
@@ -228,7 +260,7 @@ export function createChatTools(ctx: ChatToolsContext) {
       execute: async () => {
         if (!allowed(DOMAIN.campaigns)) return deny("marketing");
         used.add("Publicidad");
-        const src = await sourceStatus(["meta", "ga"]);
+        const src = await sourceStatus(["meta", "ga"], "campaigns");
         const list = cappedList(
           await ee.campaignPerformance(),
           "campañas",
@@ -250,7 +282,7 @@ export function createChatTools(ctx: ChatToolsContext) {
       execute: async () => {
         if (!allowed(DOMAIN.accounts)) return deny("clientes");
         used.add("Clientes");
-        const src = await sourceStatus(["salesforce"]);
+        const src = await sourceStatus(["salesforce"], "accounts");
         const list = cappedList(
           await ee.churnRisk(),
           "cuentas",
@@ -269,8 +301,11 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({ invoiceIds: z.union([z.array(z.string()), z.string()]) }),
       execute: async ({ invoiceIds }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
-        const src = await sourceStatus(["holded"]);
-        if (!src.connected) return { error: NO_SOURCE_NOTE };
+        const src = await sourceStatus(["holded"], "invoices");
+        // Sin conector también se puede proponer cuando el usuario ha importado sus
+        // filas: lo que no se puede es proponer sobre una tabla vacía, donde no hay
+        // nada que reclamar ni que pausar.
+        if (!src.connected && src.provenance === "empty") return { error: NO_SOURCE_NOTE };
         const ids = Array.isArray(invoiceIds) ? invoiceIds : [invoiceIds];
         const rows = (await ee.overdueInvoices(null)).filter((i) => ids.includes(i.id));
         if (!rows.length) return { error: "Ninguna de esas facturas está vencida." };
@@ -292,8 +327,11 @@ export function createChatTools(ctx: ChatToolsContext) {
       inputSchema: z.object({ campaignIds: z.union([z.array(z.string()), z.string()]) }),
       execute: async ({ campaignIds }) => {
         if (!allowed(DOMAIN.campaigns)) return deny("marketing");
-        const src = await sourceStatus(["meta", "ga"]);
-        if (!src.connected) return { error: NO_SOURCE_NOTE };
+        const src = await sourceStatus(["meta", "ga"], "campaigns");
+        // Sin conector también se puede proponer cuando el usuario ha importado sus
+        // filas: lo que no se puede es proponer sobre una tabla vacía, donde no hay
+        // nada que reclamar ni que pausar.
+        if (!src.connected && src.provenance === "empty") return { error: NO_SOURCE_NOTE };
         const ids = Array.isArray(campaignIds) ? campaignIds : [campaignIds];
         const rows = (await ee.campaignPerformance()).filter(
           (x) => ids.includes(x.id) && x.status === "active",

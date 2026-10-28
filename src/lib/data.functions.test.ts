@@ -398,7 +398,9 @@ describe("decideAction", () => {
     const event = (await activityRows()).find((a) => a.id === "evt-ok");
     expect(event?.status).toBe("ok");
     expect(event?.summary).toBe("1 reclamación de cobro registrada (ACME) · aprobado");
-    expect(event?.sources).toEqual(["Holded"]);
+    // La factura vive en la base local: la actividad no puede firmarla con Holded,
+    // que no ha intervenido en la reclamación.
+    expect(event?.sources).toEqual(["Datos locales"]);
     expect(event?.snapshot).toMatchObject({
       entries: [{ table: "invoices", pk: { id: "inv-1" } }],
       pending: { kind: "invoice_reminders", ids: ["inv-1"] },

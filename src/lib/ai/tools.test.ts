@@ -976,15 +976,22 @@ describe("context denial across every gated tool", () => {
 });
 
 describe("propose_invoice_reminders guard rails", () => {
-  it("reports no connected finance source when Holded is disconnected", async () => {
+  it("propone sobre una factura local aunque Holded esté desconectado", async () => {
     const { getDb, persist } = await import("../db.server");
     const { raw } = await getDb();
     raw.run("UPDATE integrations SET connected = 0 WHERE id = ?", ["holded"]);
+    raw.run(
+      "INSERT OR REPLACE INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)",
+      ["inv-csv-local", "Acme", 1200, "2026-01-01", "overdue", 0],
+    );
     await persist();
     try {
-      const { tools } = await buildExpert(["finanzas"]);
-      const out = await exec(tools.propose_invoice_reminders)({ invoiceIds: "inv-anything" });
-      expect(String(out["error"])).toContain("No hay ninguna fuente");
+      const { tools, proposals } = await buildExpert(["finanzas"]);
+      const out = await exec(tools.propose_invoice_reminders)({ invoiceIds: "inv-csv-local" });
+      // El conector no es la única vía de datos: la factura importada por CSV se
+      // puede reclamar, y el guard solo frena cuando no hay ni una fila.
+      expect(out["status"]).toBe("pending");
+      expect(proposals).toHaveLength(1);
     } finally {
       raw.run("UPDATE integrations SET connected = 1 WHERE id = ?", ["holded"]);
       await persist();

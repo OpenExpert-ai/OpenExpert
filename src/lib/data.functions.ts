@@ -7,6 +7,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import * as ee from "./ee.server";
+import { businessRowCount } from "./business-provenance.server";
 import { EXPERT_DOMAINS } from "./domains";
 import { collectModelReplies, firstInjection, type GateMessage } from "@/lib/ai/injection";
 import { settleHistory } from "@/lib/ai/approval-history";
@@ -77,6 +78,10 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
   const activityTotal = countActivity(orm);
   const invoices = orm.select().from(schema.invoices).all();
   const campaigns = orm.select().from(schema.campaigns).all();
+  // Un conector no es la única vía de datos: la importación de CSV escribe las
+  // mismas tablas. El recuento de filas es lo que permite a la ventana del chat
+  // no anunciar «no tiene datos que consultar» sobre datos importados.
+  const businessRows = await businessRowCount();
 
   return {
     me: {
@@ -103,6 +108,9 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
     // COUNT(*) and not `activity.length`: the page has to say how many events
     // exist, not how many fit in the window.
     activityTotal,
+    // Filas de negocio en total: la ventana del chat decide con esto si el
+    // asistente tiene algo que consultar, haya conector o no.
+    businessRows,
     invoices: invoices.map((i) => ({
       id: i.id,
       client: i.client,

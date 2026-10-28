@@ -38,11 +38,17 @@ herramientas.
 | `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado (máx. 200) | `marketing` |
 | `get_churn_risk`           | MRR, tendencia de uso, tickets, baja (máx. 200, con `total`) | `clientes`  |
 
-Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Una
-herramienta solo atribuye el dato a un proveedor cuando esa integración está
-conectada (`connected: true`); si no, devuelve un `note` indicando que no hay
-fuente conectada, de modo que el asistente nunca presenta datos locales como
-reales.
+Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Un conector
+no es la única vía: la importación de CSV de la página Datos escribe las mismas
+tablas, así que la procedencia se lee de las filas (`rowProvenance`) y no del
+conector. La herramienta atribuye el dato a un proveedor cuando esa integración
+está conectada (`connected: true`) y, si no lo está, el `note` distingue los tres
+casos: no hay ninguna fila —la base está vacía de verdad—, solo hay filas de
+ejemplo (las que llevan id `demo-`, que se anuncian como tales) o hay datos
+locales del usuario, importados en su equipo. El asistente nunca dice «la base
+local está vacía» ni «los datos no son reales» sobre una tabla con filas del
+usuario. La ventana del chat usa el mismo criterio: el aviso «sin fuentes de
+negocio conectadas» solo se pinta cuando no hay ni conector ni una sola fila.
 
 Las listas de negocio (`list_deals`, `list_overdue_invoices`,
 `get_campaign_performance`, `get_churn_risk` y los deals estancados de
