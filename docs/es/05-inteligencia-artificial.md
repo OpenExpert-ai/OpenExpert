@@ -114,6 +114,14 @@ resultado dice cómo instalarlo. El intérprete tiene que ser el del sistema, en
 Notion se conecta con OAuth 2.0; el usuario elige qué páginas/bases comparte en
 el selector de Notion.
 
+`append_notion_blocks` respeta el tope de la API: Notion acepta como máximo 100
+bloques hijos por petición y una lista más larga es un error. Así que la
+herramienta trocea la lista en lotes de 100 y los manda en orden, uno detrás de
+otro (el orden es el contenido, no van en paralelo). El resultado dice cuántos
+bloques se añadieron (`appended`) y en cuántas peticiones (`requests`); si un
+lote falla, el error dice por cuál iba y cuántos bloques quedaron escritos, para
+releer la página antes de repetir y no duplicar lo que sí llegó.
+
 ### Propuestas (no ejecutan)
 
 | Herramienta                 | Propone                                 |

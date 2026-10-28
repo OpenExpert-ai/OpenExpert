@@ -908,13 +908,20 @@ describe("Notion tools", () => {
   });
 
   it("append_notion_blocks appends and audits", async () => {
-    svc.notionAppend.mockResolvedValue({ id: "p1", object: "block", title: "(bloques añadidos)" });
+    svc.notionAppend.mockResolvedValue({
+      id: "p1",
+      object: "block",
+      title: "(bloques añadidos)",
+      appended: 1,
+      requests: 1,
+    });
     const { tools } = await buildExpert([], ["notion"]);
     const out = await exec(tools.append_notion_blocks)({
       pageId: "p1",
       children: [{ object: "block" }],
     });
     expect(out["action"]).toBe("appended");
+    expect(out["appended"]).toBe(1);
     expect(svc.notionAppend).toHaveBeenCalledWith("p1", [{ object: "block" }]);
   });
 

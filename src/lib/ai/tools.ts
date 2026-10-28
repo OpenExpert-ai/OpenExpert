@@ -879,7 +879,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     append_notion_blocks: tool({
       description:
-        "Añade bloques de contenido al final de una página de Notion. children sigue el formato de la API de Notion. Requiere aprobación humana.",
+        "Añade bloques de contenido al final de una página de Notion. children sigue el formato de la API de Notion; Notion admite como máximo 100 bloques por petición y esta herramienta los trocea sola en lotes de 100, así que puedes mandar la lista entera. Devuelve cuántos bloques se añadieron (appended). Requiere aprobación humana.",
       inputSchema: z.object({ pageId: z.string(), children: z.array(z.unknown()) }),
       execute: async ({ pageId, children }) => {
         if (!expert.sources.includes("notion")) return deny("con Notion");
@@ -894,7 +894,7 @@ export function createChatTools(ctx: ChatToolsContext) {
               type: "Notion · edición",
               expert_id: expertId,
               status: "ok",
-              summary: "Añadidos bloques a una página de Notion",
+              summary: `Añadidos ${r.appended} bloques a una página de Notion`,
               sources: ["Notion"],
             })
             .catch((e: unknown) =>
