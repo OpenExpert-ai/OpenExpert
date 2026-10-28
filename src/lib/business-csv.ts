@@ -7,6 +7,7 @@
 // and says which required ones are missing instead of guessing.
 
 import { calendarDay } from "./calendar-day";
+import { detectDelimiter } from "./csv-text";
 
 export type BusinessEntity = "deals" | "invoices" | "campaigns" | "accounts";
 
@@ -177,14 +178,17 @@ function headerKey(value: string): string {
  * Split CSV text into rows. Handles quoted fields, escaped quotes and line
  * breaks inside a field; comma, semicolon and tab are all accepted because
  * Excel in Spanish writes semicolons and Pipedrive writes commas.
+ *
+ * The separator comes from `detectDelimiter`, the same rule the local file
+ * reader uses: counting the candidates in the first line picked a comma inside
+ * a quoted header cell over the real separator of the row, and a `;` file whose
+ * header held as many commas as the table has separators was then split wrong
+ * and every row rejected for missing a column it did have. Now both paths read
+ * the same text the same way.
  */
 export function parseCsv(text: string): string[][] {
   const clean = text.replace(/^\uFEFF/, "");
-  const firstLine = clean.slice(0, clean.indexOf("\n") === -1 ? clean.length : clean.indexOf("\n"));
-  const candidates = [",", ";", "\t"];
-  const delimiter = candidates.sort(
-    (a, b) => firstLine.split(b).length - firstLine.split(a).length,
-  )[0];
+  const delimiter = detectDelimiter(clean) ?? ",";
 
   const rows: string[][] = [];
   let row: string[] = [];
