@@ -80,13 +80,40 @@ async function sourceStatus(ids: string[]): Promise<{ connected: boolean; name: 
 function withSource<T extends object>(
   data: T,
   src: { connected: boolean; name: string | null },
+  note?: string,
 ): T & { source: string; connected: boolean; note?: string } {
+  // Two different facts end up in the same field: whether the data comes from a
+  // real integration, and whether the tool itself cut what it returned. A list
+  // that stops at the cap still has to say so on a database with no connector.
+  const notes = [src.connected ? null : NO_SOURCE_NOTE, note ?? null].filter(
+    (n): n is string => !!n,
+  );
   return {
     ...data,
     source: src.connected ? (src.name ?? "conectado") : "sin conexión",
     connected: src.connected,
-    ...(src.connected ? {} : { note: NO_SOURCE_NOTE }),
+    ...(notes.length ? { note: notes.join(" ") } : {}),
   };
+}
+
+/**
+ * Lists of business rows stop at `LIST_CAP`. The CSV importer takes up to
+ * 5 000 rows per file (`CSV_MAX_ROWS`) and each connector up to 5 000 per sync
+ * (`MAX_ROWS`), so a real CRM fills these tables — and a list tool that returned
+ * all of them sent 5 000 objects to the model in one step: the turn spent its
+ * tokens there, lost the thread of the question and hit the provider's length
+ * limit, so the user read an error instead of a list. The cap travels with
+ * `total` (every matching row, the figure the model cites), `hasMore`, and a
+ * note that says how many are shown of how many, like `search_drive` does.
+ */
+const LIST_CAP = 200;
+
+function cappedList<T>(rows: T[], what: string, hint: string) {
+  const items = rows.slice(0, LIST_CAP);
+  const total = rows.length;
+  const hasMore = total > items.length;
+  const note = hasMore ? `Se listan ${items.length} de ${total} ${what}. ${hint}` : undefined;
+  return { items, total, hasMore, note };
 }
 
 /**
@@ -139,24 +166,46 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     list_deals: tool({
       description:
-        "Lista deals abiertos del CRM, opcionalmente filtrados por etapa (Cualificación, Demo, Propuesta, Negociación).",
+        "Lista deals abiertos del CRM, opcionalmente filtrados por etapa (Cualificación, Demo, Propuesta, Negociación). " +
+        "Devuelve los primeros 200 y `total` con cuántos deals abiertos hay: si la respuesta trae `hasMore`, la lista viene cortada y hay que acotarla con una etapa concreta. " +
+        "`total` es el número que se cita al usuario, nunca el de los deals devueltos.",
       inputSchema: z.object({ stage: z.string().nullish() }),
       execute: async ({ stage }) => {
         if (!allowed(DOMAIN.deals)) return deny("ventas");
         used.add("CRM");
         const src = await sourceStatus(["pipedrive", "salesforce"]);
-        return withSource({ deals: await ee.listDeals(stage ?? null) }, src);
+        const list = cappedList(
+          await ee.listDeals(stage ?? null),
+          "deals abiertos",
+          "Acota con una etapa concreta.",
+        );
+        return withSource(
+          { deals: list.items, total: list.total, hasMore: list.hasMore },
+          src,
+          list.note,
+        );
       },
     }),
     list_overdue_invoices: tool({
       description:
-        "Facturas vencidas, con importe, días de retraso y reclamaciones ya registradas. Filtra por importe mínimo en euros (opcional).",
+        "Facturas vencidas, con importe, días de retraso y reclamaciones ya registradas. Filtra por importe mínimo en euros (opcional). " +
+        "Devuelve las primeras 200 y `total` con cuántas están vencidas: si la respuesta trae `hasMore`, la lista viene cortada y hay que acotarla con un importe mínimo. " +
+        "`total` es el número que se cita al usuario, nunca el de las facturas devueltas.",
       inputSchema: z.object({ minAmount: z.coerce.number().nullish() }),
       execute: async ({ minAmount }) => {
         if (!allowed(DOMAIN.invoices)) return deny("finanzas");
         used.add("Facturación");
         const src = await sourceStatus(["holded"]);
-        return withSource({ invoices: await ee.overdueInvoices(minAmount ?? null) }, src);
+        const list = cappedList(
+          await ee.overdueInvoices(minAmount ?? null),
+          "facturas vencidas",
+          "Acota con un importe mínimo más alto.",
+        );
+        return withSource(
+          { invoices: list.items, total: list.total, hasMore: list.hasMore },
+          src,
+          list.note,
+        );
       },
     }),
     get_campaign_performance: tool({
