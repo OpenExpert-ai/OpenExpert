@@ -170,7 +170,10 @@ trozo por el total; el resto no se descarga y la integración sigue conectada.
 **Ajustes → Datos → Conectores de negocio.** Crea un token de API personal en
 Pipedrive (Ajustes → Preferencias personales → API) y pégalo. La sincronización
 lee las oportunidades y mapea empresa, etapa, valor, propietario, días en etapa,
-fecha de cierre prevista y estado. Las filas se actualizan por `pd-<id>`.
+fecha de cierre prevista y estado. Las filas se actualizan por `pd-<id>`. Los
+días en etapa se cuentan por días de calendario —un cambio de ayer es un día a
+cualquier hora de hoy—, y de ese número sale el umbral de 21 días con el que el
+resumen marca un negocio como estancado.
 
 ### Holded
 
