@@ -155,13 +155,24 @@ export function createChatTools(ctx: ChatToolsContext) {
   return {
     get_pipeline_summary: tool({
       description:
-        "Resumen del pipeline comercial: valor abierto, nº de deals, win rate, previsión ponderada, desglose por etapa y deals estancados (>21 días).",
+        "Resumen del pipeline comercial: valor abierto, nº de deals, win rate, previsión ponderada, desglose por etapa y deals estancados (>21 días). " +
+        "Los estancados vienen cortados a los primeros 200 y `stalledTotal` dice cuántos hay en total, que es la cifra que se cita al usuario.",
       inputSchema: z.object({}),
       execute: async () => {
         if (!allowed(DOMAIN.deals)) return deny("ventas");
         used.add("CRM");
         const src = await sourceStatus(["pipedrive", "salesforce"]);
-        return withSource(await ee.pipelineSummary(), src);
+        const summary = await ee.pipelineSummary();
+        const stalled = cappedList(
+          summary.stalled,
+          "deals estancados",
+          "Los recuentos de arriba sí son de todos: pregunta por una etapa concreta si necesitas el detalle del resto.",
+        );
+        return withSource(
+          { ...summary, stalled: stalled.items, stalledTotal: stalled.total },
+          src,
+          stalled.note,
+        );
       },
     }),
     list_deals: tool({
@@ -210,24 +221,46 @@ export function createChatTools(ctx: ChatToolsContext) {
     }),
     get_campaign_performance: tool({
       description:
-        "Rendimiento de campañas publicitarias (últimos 7 días): gasto, conversiones, CPA real vs objetivo y estado.",
+        "Rendimiento de campañas publicitarias (últimos 7 días): gasto, conversiones, CPA real vs objetivo y estado. " +
+        "Devuelve las primeras 200 y `total` con cuántas campañas hay: si trae `hasMore`, la lista viene cortada y la cifra que se cita es `total`, no el número de devueltas. " +
+        "Vienen ordenadas por gasto, así que el corte deja fuera las de menos gasto.",
       inputSchema: z.object({}),
       execute: async () => {
         if (!allowed(DOMAIN.campaigns)) return deny("marketing");
         used.add("Publicidad");
         const src = await sourceStatus(["meta", "ga"]);
-        return withSource({ campaigns: await ee.campaignPerformance() }, src);
+        const list = cappedList(
+          await ee.campaignPerformance(),
+          "campañas",
+          "Vienen ordenadas por gasto: el corte deja fuera las de menos gasto.",
+        );
+        return withSource(
+          { campaigns: list.items, total: list.total, hasMore: list.hasMore },
+          src,
+          list.note,
+        );
       },
     }),
     get_churn_risk: tool({
       description:
-        "Riesgo de churn por cuenta cliente: MRR, tendencia de uso, tickets abiertos y probabilidad de baja.",
+        "Riesgo de churn por cuenta cliente: MRR, tendencia de uso, tickets abiertos y probabilidad de baja. " +
+        "Devuelve las primeras 200 y `total` con cuántas cuentas hay: si trae `hasMore`, la lista viene cortada y la cifra que se cita es `total`, no el número de devueltas. " +
+        "Vienen ordenadas por riesgo, así que el corte deja fuera las de menos riesgo.",
       inputSchema: z.object({}),
       execute: async () => {
         if (!allowed(DOMAIN.accounts)) return deny("clientes");
         used.add("Clientes");
         const src = await sourceStatus(["salesforce"]);
-        return withSource({ accounts: await ee.churnRisk() }, src);
+        const list = cappedList(
+          await ee.churnRisk(),
+          "cuentas",
+          "Vienen ordenadas por riesgo: el corte deja fuera las de menos riesgo.",
+        );
+        return withSource(
+          { accounts: list.items, total: list.total, hasMore: list.hasMore },
+          src,
+          list.note,
+        );
       },
     }),
     propose_invoice_reminders: tool({
