@@ -167,7 +167,10 @@ the rest is not downloaded and the integration stays connected.
 **Settings → Data → Business connectors.** Create a personal API token in
 Pipedrive (Settings → Personal preferences → API) and paste it. The sync reads
 deals and maps company, stage, value, owner, days in stage, expected close date
-and status. Rows are upserted by `pd-<id>`; syncing again updates them.
+and status. Rows are upserted by `pd-<id>`; syncing again updates them. Days in
+stage are calendar days — a change made yesterday is one day at any hour of
+today — and that same number is what the pipeline summary compares against its
+21-day threshold to call a deal stalled.
 
 ### Holded
 

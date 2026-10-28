@@ -7,6 +7,26 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### Los días en etapa de un negocio se cuentan por días de calendario
+
+- **El contador dividía milisegundos entre 24 h.** `src/lib/connectors.ts` tenía su propio
+  `daysSince`, que hacía `Math.floor((now - stamp) / 86_400_000)`: la cuenta que el proyecto ya
+  había descartado para las facturas vencidas, porque mezcla el día de calendario con la hora a la
+  que se pregunta. Un cambio de etapa de hace 23 h salía «0 días» (ayer, que el usuario cuenta
+  como uno) y uno de hace 47 h «1» (anteayer, que cuenta como dos). Se veía en el chat, por
+  `list_deals` (`days_in_stage`), y en el umbral de estancados del resumen: un negocio con 21 días
+  y 23 h no aparecía en `stalled`, así que el aviso llegaba un día tarde y el recuento tapado por
+  el tope (`stalledTotal`) heredaba el error.
+- **Ahora la cuenta es la de `calendar-day.ts`.** `daysSinceInstant` cuenta días de calendario
+  entre el día local del instante y el día local de hoy, y `daysSince` de las fechas planas pasa
+  por la misma función, así que las dos rutas no pueden dar números distintos. La hora del
+  proveedor se sigue leyendo como UTC cuando no trae zona (`2026-10-27 22:00:00`) y ahora también
+  se respeta cuando trae `Z` o desfase, que antes se rompía al pegarle otro `Z`.
+- **La puerta es el test del revisor.** `src/lib/connectors-dias.test.ts` mide 23 h y 47 h a las
+  09:00 y exige 1 y 2 días, el texto con `Z` y con `+02:00` como instantes distintos, el caso de 0
+  días (sin fecha, basura, futuro) y el negocio de 21 días y 23 h contando como estancado; cuatro
+  de los cinco casos estaban en rojo contra `main`.
+
 ### El separador del CSV se lee del fichero, no se cuenta en la cabecera
 
 - **La importación elegía el separador contando comas en la primera línea**, incluidas las que

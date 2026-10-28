@@ -54,6 +54,26 @@ export function calendarDay(value: string): Date | null {
 export function daysSince(value: string, now: Date): number {
   const from = calendarDay(value);
   if (!from) return 0;
+  return daysSinceInstant(from, now);
+}
+
+/**
+ * The whole calendar days between an instant and another, in the local
+ * timezone.
+ *
+ * A provider timestamp is an instant — `2026-10-27 22:00:00` is a moment, not
+ * a day — but how long ago it happened is counted in days the user counts: the
+ * local day it fell in against the local day today. Dividing milliseconds by
+ * 86 400 000 would answer with the hour of the question instead, so a change
+ * 23 hours ago would read «0 días» (yesterday, which is one) and one 47 hours
+ * ago «1» (the day before yesterday, which is two).
+ *
+ * An instant that has not happened yet gives 0: a deal cannot be longer in its
+ * stage than since it entered it, and a clock out of step is no reason to
+ * answer with a negative.
+ */
+export function daysSinceInstant(from: Date, now: Date): number {
+  if (!Number.isFinite(from.getTime())) return 0;
   const days = dayIndex(now) - dayIndex(from);
   return days > 0 ? days : 0;
 }

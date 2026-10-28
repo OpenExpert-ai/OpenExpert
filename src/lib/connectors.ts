@@ -33,15 +33,40 @@ export type HoldedInvoice = {
   status?: string | null;
 };
 
-import { calendarDay } from "./calendar-day";
+import { calendarDay, daysSinceInstant } from "./calendar-day";
 import { parseMoney, type DealInput, type InvoiceInput } from "./business-csv";
 
+/** A zone designator at the end of a timestamp: `Z` or `+02:00` / `-0500`. */
+const ZONE = /(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+/**
+ * The instant a provider timestamp names.
+ *
+ * Pipedrive writes its datetimes in UTC and without a zone (`2026-10-27
+ * 22:00:00`), so a space has to become the `T` that `Date.parse` expects and a
+ * value with no zone is read as UTC — appending the `Z` — instead of being
+ * taken as local time, which would move the day by the offset of the machine.
+ * A value that does come with `Z` or an offset is respected as written.
+ */
+function instantOf(value: string): Date | null {
+  const text = value.trim().replace(" ", "T");
+  // Without a zone the timestamp is UTC; a plain date has no time to zone and
+  // lands on UTC midnight, the convention the rest of the module follows.
+  const stamp = Date.parse(ZONE.test(text) ? text : `${text}Z`);
+  return Number.isFinite(stamp) ? new Date(stamp) : null;
+}
+
+/**
+ * Days the deal has been in its stage, counted as calendar days: a change made
+ * yesterday is one day, whatever the hour of the question. The count is done on
+ * instants by `calendar-day` so the reader of a provider timestamp and the
+ * reader of a stored date answer with the same days.
+ */
 function daysSince(value: string | null | undefined, now: Date): number {
   if (!value) return 0;
-  const stamp = Date.parse(value.replace(" ", "T") + (value.includes("Z") ? "" : "Z"));
-  if (!Number.isFinite(stamp)) return 0;
-  const days = Math.floor((now.getTime() - stamp) / 86_400_000);
-  return Math.max(0, days);
+  const stamp = instantOf(value);
+  if (!stamp) return 0;
+  return daysSinceInstant(stamp, now);
 }
 
 /**
