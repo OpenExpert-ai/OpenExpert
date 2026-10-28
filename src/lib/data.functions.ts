@@ -76,8 +76,12 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
     .all();
   const act = readActivity(orm, 0, ACTIVITY_WINDOW);
   const activityTotal = countActivity(orm);
-  const invoices = orm.select().from(schema.invoices).all();
-  const campaigns = orm.select().from(schema.campaigns).all();
+  // La ventana no pinta las tablas de negocio: solo necesita saber si hay filas.
+  // Las facturas y las campañas viajaban enteras aquí (872 KB con el tope de
+  // 5.000 filas por fichero del importador) y este workspace se refresca cada
+  // 15 s, así que se pagaba el CRM completo para no leerlo. Quien necesite las
+  // filas tiene las herramientas del chat y `business.functions.ts`, que ya
+  // paginan y recortan.
   // Un conector no es la única vía de datos: la importación de CSV escribe las
   // mismas tablas. El recuento de filas es lo que permite a la ventana del chat
   // no anunciar «no tiene datos que consultar» sobre datos importados.
@@ -111,14 +115,6 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async () =
     // Filas de negocio en total: la ventana del chat decide con esto si el
     // asistente tiene algo que consultar, haya conector o no.
     businessRows,
-    invoices: invoices.map((i) => ({
-      id: i.id,
-      client: i.client,
-      amount: i.amount,
-      status: i.status,
-      reminders: i.reminders,
-    })),
-    campaigns: campaigns.map((c) => ({ id: c.id, name: c.name, status: c.status })),
   };
 });
 

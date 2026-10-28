@@ -74,6 +74,14 @@ una fila escribe el año siempre que no sea el actual (`formatDateTime`, en `src
 imprime `toLocaleString`—, así que un evento del 31 de diciembre a las 23:30 en Madrid pertenece al
 año que dice el reloj de allí. La lista de conversaciones usa el mismo formateador.
 
+El workspace tampoco lleva las tablas de negocio. `getWorkspace` devuelve lo que la ventana pinta
+—propietario, Expertos, integraciones, la ventana del registro y su total— más `businessRows`, el
+recuento de filas de negocio, que es lo único que la ventana necesita saber para no anunciar «no hay
+datos que consultar» sobre un CRM importado. Antes viajaban también `invoices` y `campaigns` enteras,
+y con el tope de 5.000 filas por fichero del importador eso eran 872 KB cada 15 s de refresco aunque
+ningún componente lee esas listas. Las filas se piden a `business.functions.ts` y a las herramientas
+del chat, que ya paginan y dicen cuántas dejan fuera.
+
 ### `chat_messages` — conversaciones
 
 | Columna           | Tipo        | Notas                        |
