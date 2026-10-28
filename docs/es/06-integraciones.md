@@ -214,6 +214,13 @@ dejan el cierre vacío. Antes se guardaban tal cual y el panel las contaba como
 0 días de vencidas para siempre, porque `calendarDay` no las sabe leer. Un texto
 que no es una fecha (`pendiente`, `1/3/26`) tampoco entra.
 
+El recuento de la importación cuenta **filas escritas**, no apariciones de un
+id. Un fichero puede traer el mismo id dos veces —dos exportaciones
+concatenadas, una factura repetida—: la primera aparición inserta y la segunda
+actualiza la fila que acaba de entrar, así que son una inserción y una
+actualización, nunca dos inserciones. Antes el panel decía «2 importados» sobre
+una tabla con una sola fila, y el total no cuadraba con lo guardado.
+
 ## 6. Herramientas de IA
 
 | Herramienta                                                                                    | Comportamiento                                                                                                                                    |

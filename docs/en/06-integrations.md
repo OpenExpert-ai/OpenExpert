@@ -201,6 +201,13 @@ hundred thirty-four) **unless the integer part is zero**: `0.500` is €0.50, no
 €500. It used to multiply the amount by a thousand for an English-format file
 with three decimals, while the same value with a comma (`0,500`) read correctly.
 
+The import counts **rows written**, not appearances of an id. A file can carry
+the same id twice — two exports concatenated, an invoice repeated —: the first
+appearance inserts and the second updates the row the first one just wrote, so
+that is one insertion and one update, never two insertions. The panel used to
+say "2 imported" over a table with a single row, and the total did not match
+what was stored.
+
 ## 6. AI tools
 
 | Tool                                                                                           | Behaviour                                                                                                                                     |
