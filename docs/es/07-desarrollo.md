@@ -244,6 +244,7 @@ src/
   lib/
     db.server.ts             SQLite (sql.js) + esquema + semilla
     business-csv.ts          Parser CSV y mapeo de columnas
+    csv-text.ts              Registros y separador de un CSV (regla compartida)
     business-import.server.ts Upsert + auditoría de filas importadas
     connectors.server.ts     Conectores pull de Pipedrive / Holded
     demo-data.server.ts      Filas de ejemplo (ids demo-)

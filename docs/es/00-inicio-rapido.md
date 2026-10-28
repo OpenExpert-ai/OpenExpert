@@ -85,7 +85,9 @@ Las tablas de negocio empiezan vacías. Abre **Ajustes → Datos**:
 - **Datos de ejemplo** carga ventas y facturas de demo; se quitan después sin
   tocar las filas reales.
 - **Importar CSV** cubre ventas, facturas, campañas y cuentas. Descarga la
-  plantilla, rellénala e impórtala; acepta cabeceras en español o en inglés.
+  plantilla, rellénala e impórtala; acepta cabeceras en español o en inglés y
+  lee el separador del propio fichero (`,`, `;` como el Excel castellano,
+  tabulador o `|`), no de la extensión.
 - **Conectores** opcionales: Pipedrive (ventas) y Holded (facturas) solo leen y
   necesitan tu propia clave de API. Pégala y pulsa **Sincronizar**.
 
