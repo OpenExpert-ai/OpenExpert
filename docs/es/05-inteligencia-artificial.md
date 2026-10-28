@@ -30,13 +30,13 @@ herramientas.
 
 ### Lectura
 
-| Herramienta                | Contenido                                                    | Dominio     |
-| -------------------------- | ------------------------------------------------------------ | ----------- |
-| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados  | `ventas`    |
-| `list_deals`               | Oportunidades abiertas, por etapa (máx. 200, con `total`)    | `ventas`    |
-| `list_overdue_invoices`    | Facturas vencidas, importe, días, reclamaciones (máx. 200)   | `finanzas`  |
-| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado (máx. 200) | `marketing` |
-| `get_churn_risk`           | MRR, tendencia de uso, tickets, baja (máx. 200, con `total`) | `clientes`  |
+| Herramienta                | Contenido                                                                                  | Dominio     |
+| -------------------------- | ------------------------------------------------------------------------------------------ | ----------- |
+| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión ponderada, deals fuera de ella, estancados | `ventas`    |
+| `list_deals`               | Oportunidades abiertas, por etapa (máx. 200, con `total`)                                  | `ventas`    |
+| `list_overdue_invoices`    | Facturas vencidas, importe, días, reclamaciones (máx. 200)                                 | `finanzas`  |
+| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado (máx. 200)                               | `marketing` |
+| `get_churn_risk`           | MRR, tendencia de uso, tickets, baja (máx. 200, con `total`)                               | `clientes`  |
 
 Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Un conector
 no es la única vía: la importación de CSV de la página Datos escribe las mismas
@@ -59,6 +59,15 @@ es el número de filas que coinciden, la cifra que el modelo cita al usuario,
 de cuántas. Un CRM importado puede tener miles de filas (cada fichero de CSV y
 cada sincronización aceptan hasta 5 000), y mandarlas enteras gastaba el turno en
 tokens y perdía el hilo de la pregunta.
+
+La previsión del pipeline solo pondera las etapas con una probabilidad declarada
+(Cualificación 10 %, Demo 25 %, Propuesta 45 %, Negociación 70 %). Un CRM real no
+usa esos cuatro nombres —el conector de Pipedrive guarda las etapas que el dueño
+haya definido y el importador de CSV escribe el texto tal cual—, así que un deal
+cuya etapa no está en la tabla no se pondera con una probabilidad inventada: se
+queda fuera de la previsión y se cuenta en `unweighted` (cuántos deals y cuánto
+valor). La nota de la herramienta lo dice para que el modelo no cite la cifra como
+el pipeline entero, y la tarjeta de la interfaz lo escribe al lado de la previsión.
 
 Los días que lleva vencida una factura se cuentan por el calendario, en la zona
 horaria local: el día que vence y el día que se lee se comparan como días, así
