@@ -138,6 +138,18 @@ export async function revertSnapshot(entries: SnapEntry[]): Promise<void> {
 
 /* ---------- Business queries (used by AI tools) ---------- */
 
+/**
+ * Probabilidad declarada por etapa. Una etapa que no está aquí no tiene
+ * probabilidad: no se pondera con un valor inventado, se queda fuera de la
+ * previsión y se cuenta en `unweighted`.
+ */
+const STAGE_PROBABILITY: Record<string, number> = {
+  Cualificación: 0.1,
+  Demo: 0.25,
+  Propuesta: 0.45,
+  Negociación: 0.7,
+};
+
 export async function pipelineSummary() {
   const { orm } = await getDb();
   const deals = orm.select().from(schema.deals).all();
@@ -150,17 +162,30 @@ export async function pipelineSummary() {
     s.count++;
     s.value += Number(d.value);
   }
-  const prob: Record<string, number> = {
-    Cualificación: 0.1,
-    Demo: 0.25,
-    Propuesta: 0.45,
-    Negociación: 0.7,
-  };
+  // El conector de Pipedrive guarda el nombre de etapa del usuario y el
+  // importador de CSV escribe el texto tal cual, así que las etapas del CRM no
+  // son las cuatro de la tabla. Lo que no tiene probabilidad no se pondera —un
+  // 20 % de la nada es una cifra inventada— y lo que queda fuera se dice.
+  let forecast = 0;
+  const unweighted = { deals: 0, value: 0 };
+  for (const d of open) {
+    const value = Number(d.value);
+    const probability = Object.hasOwn(STAGE_PROBABILITY, d.stage)
+      ? STAGE_PROBABILITY[d.stage]
+      : undefined;
+    if (probability === undefined) {
+      unweighted.deals++;
+      unweighted.value += value;
+      continue;
+    }
+    forecast += value * probability;
+  }
   return {
     openValue: open.reduce((a, d) => a + Number(d.value), 0),
     openDeals: open.length,
     winRate: won + lost ? won / (won + lost) : 0,
-    forecast: Math.round(open.reduce((a, d) => a + Number(d.value) * (prob[d.stage] ?? 0.2), 0)),
+    forecast: Math.round(forecast),
+    unweighted,
     byStage,
     stalled: open
       .filter((d) => d.daysInStage > 21)

@@ -9,7 +9,9 @@ import { rowProvenance, type RowProvenance } from "../business-provenance.server
 import type { BusinessEntity } from "../business-csv";
 import { CAMPAIGN_STATUS } from "../business-status";
 import { getDb } from "@/lib/db.server";
+import { formatCurrency } from "@/lib/format";
 import { logger } from "@/lib/logger.server";
+import { countPhrase } from "@/lib/translate";
 import * as schema from "../../../drizzle/schema";
 
 export const DOMAIN = {
@@ -189,6 +191,7 @@ export function createChatTools(ctx: ChatToolsContext) {
     get_pipeline_summary: tool({
       description:
         "Resumen del pipeline comercial: valor abierto, nº de deals, win rate, previsión ponderada, desglose por etapa y deals estancados (>21 días). " +
+        "La previsión solo pondera las etapas con probabilidad declarada (Cualificación, Demo, Propuesta y Negociación) y `unweighted` dice qué deals y qué valor quedan fuera de ella: la previsión no es el pipeline entero salvo que `unweighted.deals` sea 0. " +
         "Los estancados vienen cortados a los primeros 200 y `stalledTotal` dice cuántos hay en total, que es la cifra que se cita al usuario.",
       inputSchema: z.object({}),
       execute: async () => {
@@ -201,10 +204,17 @@ export function createChatTools(ctx: ChatToolsContext) {
           "deals estancados",
           "Los recuentos de arriba sí son de todos: pregunta por una etapa concreta si necesitas el detalle del resto.",
         );
+        // Una previsión que sólo cubre una parte del pipeline se cita como tal:
+        // el modelo no puede presentar la cifra como si fueran todos los deals.
+        const unweightedNote =
+          summary.unweighted.deals > 0
+            ? `La previsión ponderada deja fuera ${countPhrase(summary.unweighted.deals, "deal", "deals")} por ${formatCurrency(summary.unweighted.value)} cuya etapa no tiene probabilidad declarada: preséntala como previsión de lo ponderado, no del pipeline entero.`
+            : null;
+        const notes = [stalled.note, unweightedNote].filter((n): n is string => !!n);
         return withSource(
           { ...summary, stalled: stalled.items, stalledTotal: stalled.total },
           src,
-          stalled.note,
+          notes.length ? notes.join(" ") : undefined,
         );
       },
     }),
