@@ -607,6 +607,10 @@ export const en: Record<string, string> = {
   "Deals activos": "Active deals",
   "Win rate": "Win rate",
   "Previsión ponderada": "Weighted forecast",
+  "Fuera de la previsión: {n} deal sin probabilidad declarada ({value})":
+    "Outside the forecast: {n} deal with no declared probability ({value})",
+  "Fuera de la previsión: {n} deals sin probabilidad declarada ({value})":
+    "Outside the forecast: {n} deals with no declared probability ({value})",
   "Facturas vencidas": "Overdue invoices",
   Facturas: "Invoices",
   "Importe total": "Total amount",

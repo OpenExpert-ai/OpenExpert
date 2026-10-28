@@ -820,22 +820,39 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
       openDeals: number;
       winRate: number;
       forecast: number;
+      unweighted?: { deals: number; value: number };
       stalled: unknown[];
     };
+    const unweighted = p.unweighted;
     return (
-      <Metrics
-        title={t("Pipeline comercial")}
-        items={[
-          { label: t("Valor abierto"), value: formatCurrency(p.openValue, locale) },
-          { label: t("Deals activos"), value: String(p.openDeals) },
-          { label: t("Win rate"), value: `${(p.winRate * 100).toFixed(1)}%` },
-          {
-            label: t("Previsión ponderada"),
-            value: formatCurrency(p.forecast, locale),
-            tone: "good",
-          },
-        ]}
-      />
+      <div>
+        <Metrics
+          title={t("Pipeline comercial")}
+          items={[
+            { label: t("Valor abierto"), value: formatCurrency(p.openValue, locale) },
+            { label: t("Deals activos"), value: String(p.openDeals) },
+            { label: t("Win rate"), value: `${(p.winRate * 100).toFixed(1)}%` },
+            {
+              label: t("Previsión ponderada"),
+              value: formatCurrency(p.forecast, locale),
+              tone: "good",
+            },
+          ]}
+        />
+        {/* La previsión solo pondera las etapas con probabilidad declarada: sin
+            esta línea, la cifra parece cubrir todo el pipeline. */}
+        {unweighted && unweighted.deals > 0 ? (
+          <p className="mt-1 px-1 text-[11px] text-muted-foreground">
+            {pluralize(
+              locale,
+              unweighted.deals,
+              "Fuera de la previsión: {n} deal sin probabilidad declarada ({value})",
+              "Fuera de la previsión: {n} deals sin probabilidad declarada ({value})",
+              { value: formatCurrency(unweighted.value, locale) },
+            )}
+          </p>
+        ) : null}
+      </div>
     );
   }
   if (name === "list_overdue_invoices") {
