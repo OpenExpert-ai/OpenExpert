@@ -159,8 +159,6 @@ describe("getWorkspace", () => {
       experts: { id: string; name: string; domains: string[] }[];
       integrations: { id: string; connected: boolean; entities: unknown[] }[];
       activity: unknown[];
-      invoices: unknown[];
-      campaigns: unknown[];
     };
     expect(ws.me).toEqual({ name: "Propietario local", role: "ADMIN" });
     expect(ws.experts.map((e) => e.id)).toEqual(
@@ -172,9 +170,12 @@ describe("getWorkspace", () => {
       entities: [],
     });
     expect(ws.activity).toEqual([]);
-    // Los datos de negocio no se siembran: vacío hasta que un conector real los traiga.
-    expect(ws.invoices).toEqual([]);
-    expect(ws.campaigns).toEqual([]);
+    // Las tablas de negocio no viajan en el workspace: se refresca cada 15 s y la
+    // ventana no las pinta, así que llevarlas enteras (872 KB con 5.000 filas por
+    // tabla) era pagar el CRM completo para no leerlo. Lo que la ventana necesita
+    // saber es si hay filas, y eso lo dice `businessRows`.
+    expect(ws).not.toHaveProperty("invoices");
+    expect(ws).not.toHaveProperty("campaigns");
   });
 
   it("marca hasSnapshot y pending leyendo el snapshot de la actividad", async () => {

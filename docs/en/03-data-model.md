@@ -73,6 +73,14 @@ this year's, "15 jun 2025, 10:30" is not. The year is read from the local calend
 `toLocaleString` prints with— so an event on 31 December at 23:30 in Madrid belongs to the year the
 clock there says. The list of conversations uses the same formatter.
 
+The workspace does not carry the business tables either. `getWorkspace` returns what the window
+paints —owner, Experts, integrations, the log window and its total— plus `businessRows`, the business
+row count, which is the only thing the window needs to know in order not to announce "there is no
+data to query" over an imported CRM. `invoices` and `campaigns` used to travel whole as well, and at
+the importer's cap of 5,000 rows per file that was 872 KB every 15 s of refresh even though no
+component reads those lists. The rows are requested from `business.functions.ts` and from the chat
+tools, which already paginate and say how many they leave out.
+
 ### `chat_messages` — conversations
 
 | Column            | Type        | Notes                         |
