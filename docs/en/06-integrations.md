@@ -204,6 +204,22 @@ hundred thirty-four) **unless the integer part is zero**: `0.500` is €0.50, no
 €500. It used to multiply the amount by a thousand for an English-format file
 with three decimals, while the same value with a comma (`0,500`) read correctly.
 
+The status column is stored in a **fixed English vocabulary** —`open`, `won` and
+`lost` for deals, `open`, `paid`, `overdue` and `cancelled` for invoices, and
+`active` and `paused` for campaigns—, but the cell may arrive in Spanish, in
+capitals and with accents: "Ganado", "GANADO", "ganada", "Closed Won", "Pagada",
+"Anulada", "Pendiente", "Vencida", "ACTIVA" and "Pausada" are read as their
+canonical value. An empty cell takes the default status (`open` for deals and
+invoices, `active` for campaigns) and one outside the list —"En revisión"—
+**rejects the row**, naming the value and the accepted statuses, just like an
+amount that is not a number: it used to be stored as-is and the row stayed
+invisible to the panel and the assistant, which compare against the English
+vocabulary (a file entirely in Spanish gave €0 open, invoices already paid listed
+as overdue and active campaigns that could not be paused). The vocabulary lives
+in `src/lib/business-status.ts`, shared by the importer and the readers. Rows
+already stored with the old cell are not rewritten: importing the same file again
+updates them by their `id`.
+
 The import counts **rows written**, not appearances of an id. A file can carry
 the same id twice — two exports concatenated, an invoice repeated —: the first
 appearance inserts and the second updates the row the first one just wrote, so

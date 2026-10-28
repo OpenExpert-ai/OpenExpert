@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { useAct, useMe, useUI, useWorkspace, workspaceKey } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { hasBusinessData } from "@/lib/business-data";
+import { CAMPAIGN_STATUS } from "@/lib/business-status";
 import { pluralize } from "@/lib/translate";
 import { TOOL_LABELS } from "@/lib/ai/tool-labels";
 import { formatCurrency, formatDateTime } from "@/lib/format";
@@ -859,7 +860,7 @@ function ToolCard({ name, output, expertId }: { name: string; output: unknown; e
   if (name === "get_campaign_performance") {
     const c = (
       (o["campaigns"] as { status: string; spend7d: number; overTargetPct: number | null }[]) ?? []
-    ).filter((x) => x.status === "active");
+    ).filter((x) => x.status === CAMPAIGN_STATUS.active);
     return (
       <Metrics
         title={t("Campañas activas · 7 días")}

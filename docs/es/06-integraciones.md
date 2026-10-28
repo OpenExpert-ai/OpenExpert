@@ -217,6 +217,22 @@ dejan el cierre vacío. Antes se guardaban tal cual y el panel las contaba como
 0 días de vencidas para siempre, porque `calendarDay` no las sabe leer. Un texto
 que no es una fecha (`pendiente`, `1/3/26`) tampoco entra.
 
+La columna de estado se guarda en **un vocabulario fijo en inglés** —`open`,
+`won` y `lost` en ventas, `open`, `paid`, `overdue` y `cancelled` en facturas y
+`active` y `paused` en campañas—, pero la celda puede venir en castellano, en
+mayúsculas y con tilde: «Ganado», «GANADO», «ganada», «Closed Won», «Pagada»,
+«Anulada», «Pendiente», «Vencida», «ACTIVA» y «Pausada» entran con su valor
+canónico. Una celda vacía vale el estado por defecto (`open` en ventas y
+facturas, `active` en campañas) y una que no está en la lista —«En revisión»—
+**rechaza la fila** nombrando el valor y los estados aceptados, igual que un
+importe que no es un número: antes se guardaba tal cual y la fila quedaba
+invisible para el panel y para el asistente, que comparan contra el vocabulario
+inglés (un fichero entero en castellano daba 0 € abiertos, facturas ya pagadas
+como vencidas y campañas activas que no se podían pausar). El vocabulario vive en
+`src/lib/business-status.ts`, compartido por el importador y los lectores. Las
+filas que ya estén guardadas con la celda antigua no se tocan: importar otra vez
+el mismo fichero las actualiza por su `id`.
+
 El recuento de la importación cuenta **filas escritas**, no apariciones de un
 id. Un fichero puede traer el mismo id dos veces —dos exportaciones
 concatenadas, una factura repetida—: la primera aparición inserta y la segunda

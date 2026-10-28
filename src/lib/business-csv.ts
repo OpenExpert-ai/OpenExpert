@@ -6,6 +6,14 @@
 // columns than these tables hold; the importer keeps the ones it understands
 // and says which required ones are missing instead of guessing.
 
+import {
+  CAMPAIGN_STATUS,
+  DEAL_STATUS,
+  INVOICE_STATUS,
+  canonicalStatus,
+  unknownStatusMessage,
+  type StatusEntity,
+} from "./business-status";
 import { calendarDay } from "./calendar-day";
 import { detectDelimiter } from "./csv-text";
 
@@ -311,6 +319,19 @@ function idFor(entity: BusinessEntity, row: string[], columns: Map<string, numbe
 }
 
 /**
+ * El estado canónico de la celda, con la celda en inglés o en castellano. Una
+ * celda vacía vale el estado por defecto de la entidad, y una que no está en el
+ * vocabulario rechaza la fila —igual que un importe que no es un número— para
+ * que nadie importe filas que después ningún lector ve.
+ */
+function statusOf(entity: StatusEntity, value: string, fallback: string): string {
+  if (!value) return fallback;
+  const canonical = canonicalStatus(entity, value);
+  if (canonical) return canonical;
+  throw new Error(unknownStatusMessage(entity, value));
+}
+
+/**
  * Turn a CSV into typed rows. A row that cannot be used is reported with its
  * line number and skipped; the rest still imports, because one bad export row
  * should not throw away a whole file.
@@ -353,7 +374,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             owner: valueOf(row, columns, "owner"),
             daysInStage: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "daysInStage")))),
             closeDate: closeDate || null,
-            status: valueOf(row, columns, "status") || "open",
+            status: statusOf(entity, valueOf(row, columns, "status"), DEAL_STATUS.open),
           },
         });
       } else if (entity === "invoices") {
@@ -375,7 +396,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             client,
             amount: moneyOf(row, columns, "amount", "importe"),
             dueDate,
-            status: valueOf(row, columns, "status") || "open",
+            status: statusOf(entity, valueOf(row, columns, "status"), INVOICE_STATUS.open),
             reminders: Math.max(0, Math.round(parseNumber(valueOf(row, columns, "reminders")))),
           },
         });
@@ -388,7 +409,7 @@ export function parseBusinessCsv(entity: BusinessEntity, text: string): CsvParse
             id: idFor(entity, row, columns, i),
             name,
             channel: valueOf(row, columns, "channel"),
-            status: valueOf(row, columns, "status") || "active",
+            status: statusOf(entity, valueOf(row, columns, "status"), CAMPAIGN_STATUS.active),
             spend7d: moneyOf(row, columns, "spend7d", "inversión de 7 días"),
             conversions7d: Math.max(
               0,
