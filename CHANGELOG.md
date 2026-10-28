@@ -7,6 +7,26 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### El tope de archivos concedidos de Drive avisa de lo que retira
+
+- **`addGrantedFiles` recortaba la lista con `slice(-5000)` y contestaba `{ ok, count }`.** Lo que
+  caía eran las concesiones más antiguas, y una concesión retirada es acceso retirado: `search_drive`
+  y `read_drive_file` solo ven los ids que siguen en `drive-grants.json`, así que el archivo dejaba
+  de existir para el Experto sin que nadie hubiera pulsado la papelera. La pantalla de Fuentes decía
+  «N archivos añadidos» con el número que el usuario acababa de elegir, así que ni el recuento
+  delataba el recorte: se elegía un archivo y desaparecía otro. Peor, un archivo ya concedido
+  conservaba su `addedAt` y su posición, de modo que podía ser **justo el que se acababa de volver a
+  elegir** el que cayera en ese mismo `slice`. Se alcanza de verdad: el Picker permite seleccionar
+  carpetas completas y una primera selección pasa de 5.000 archivos en una llamada.
+- **Ahora el recorte se nombra y nunca se lleva el archivo recién elegido.** La respuesta trae
+  `evicted: { count, names }` (y nada cuando no se retira nada), lo que cae es la concesión con el
+  `addedAt` más antiguo —volver a elegir un archivo lo refresca— y el evento queda en el registro
+  de actividad con `sources: ["Google Drive"]`. La pantalla de Fuentes cambia el «N archivos
+  añadidos» por un aviso con los nombres retirados y qué hacer para recuperarlos.
+- **La puerta es el test del revisor.** `src/lib/drive-grants.tope.test.ts` fija los tres casos
+  contra `main`: con 5.000 concesiones la respuesta nombra `evicted` y cae `f0.pdf`, volver a elegir
+  el más antiguo deja dentro ese y retira el siguiente, y por debajo del tope no cambia nada.
+
 ### Los días en etapa de un negocio se cuentan por días de calendario
 
 - **El contador dividía milisegundos entre 24 h.** `src/lib/connectors.ts` tenía su propio

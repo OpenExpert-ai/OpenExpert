@@ -178,13 +178,30 @@ function SourcesPage() {
         );
         return;
       }
-      await addGrantedFiles({ data: { files: outcome.files } });
+      const added = await addGrantedFiles({ data: { files: outcome.files } });
       await qc.invalidateQueries({ queryKey: ["drive-grants"] });
       await qc.invalidateQueries({ queryKey: ["drive-status"] });
       await qc.invalidateQueries({ queryKey: ["workspace"] });
-      toast.success(
-        pluralize(locale, outcome.files.length, "{n} archivo añadido.", "{n} archivos añadidos."),
-      );
+      // The cap drops the oldest grants, and a dropped grant is a file the Expert
+      // can no longer read: saying «N archivos añadidos» while another one lost
+      // its access is the silent cut this screen has to break.
+      const evicted = added.evicted;
+      if (evicted) {
+        const shown = evicted.names.slice(0, 3).join(", ");
+        toast.warning(
+          pluralize(
+            locale,
+            evicted.count,
+            "El tope de 5.000 archivos concedidos ha retirado {n} archivo: {names}. Vuelve a elegirlo en el Picker si lo necesitas.",
+            "El tope de 5.000 archivos concedidos ha retirado {n} archivos: {names}. Vuelve a elegirlos en el Picker si los necesitas.",
+            { names: evicted.names.length > 3 ? `${shown}, …` : shown },
+          ),
+        );
+      } else {
+        toast.success(
+          pluralize(locale, outcome.files.length, "{n} archivo añadido.", "{n} archivos añadidos."),
+        );
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
