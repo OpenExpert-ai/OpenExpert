@@ -369,6 +369,10 @@ export const en: Record<string, string> = {
   "Seleccionar archivos": "Select files",
   "{n} archivo añadido.": "{n} file added.",
   "{n} archivos añadidos.": "{n} files added.",
+  "El tope de 5.000 archivos concedidos ha retirado {n} archivo: {names}. Vuelve a elegirlo en el Picker si lo necesitas.":
+    "The 5,000-grant cap has dropped {n} file: {names}. Pick it again in the Picker if you need it.",
+  "El tope de 5.000 archivos concedidos ha retirado {n} archivos: {names}. Vuelve a elegirlos en el Picker si los necesitas.":
+    "The 5,000-grant cap has dropped {n} files: {names}. Pick them again in the Picker if you need them.",
   "{n} archivo elegido": "{n} file selected",
   "{n} archivos elegidos": "{n} files selected",
   "Quitar archivo": "Remove file",

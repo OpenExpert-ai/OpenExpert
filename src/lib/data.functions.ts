@@ -536,9 +536,29 @@ const grantSchema = z.object({
   mimeType: z.string(),
 });
 
-/** Adds the files picked in Google Picker to the granted set (never replaces it). */
+/** Tope de concesiones de Drive: 5.000 caben en el workspace, la lista entera no. */
+const GRANTS_CAP = 5000;
+
+/** `«a.pdf», «b.pdf» y 3 más`: para el registro, que no puede llevar 5.000 nombres. */
+function namesForLog(files: { name: string }[]): string {
+  const shown = files.slice(0, 5).map((f) => `«${f.name}»`);
+  const rest = files.length - shown.length;
+  return rest > 0 ? `${shown.join(", ")} y ${rest} más` : shown.join(", ");
+}
+
+/**
+ * Adds the files picked in Google Picker to the granted set (never replaces it).
+ *
+ * The set has a cap and hitting it costs access: `search_drive` and
+ * `read_drive_file` only see the ids still in `drive-grants.json`, so a grant
+ * that falls is a file the Experto can no longer read. The cap drops the grant
+ * whose `addedAt` is oldest —picking a file again refreshes it, so the file the
+ * user has just chosen can never be the one that falls— and says so: the response
+ * names what it evicted and the activity log keeps the trace. A silent cut is a
+ * cut its owner does not know about.
+ */
 export const addGrantedFiles = createServerFn({ method: "POST" })
-  .validator((d) => z.object({ files: z.array(grantSchema).max(5000) }).parse(d))
+  .validator((d) => z.object({ files: z.array(grantSchema).max(GRANTS_CAP) }).parse(d))
   .handler(async ({ data }) => {
     const local: typeof import("@/lib/engine/local-secrets.server") =
       await import("@/lib/engine/local-secrets.server");
@@ -546,11 +566,33 @@ export const addGrantedFiles = createServerFn({ method: "POST" })
     const map = new Map(existing.map((f) => [f.id, f]));
     const now = new Date().toISOString();
     for (const f of data.files) {
-      map.set(f.id, { ...f, addedAt: map.get(f.id)?.addedAt ?? now });
+      // Picking a file again refreshes its `addedAt`: the grant is new even if
+      // the id was already there, and the cap evicts the oldest `addedAt`.
+      map.set(f.id, { ...f, addedAt: now });
     }
-    const next = [...map.values()].slice(-5000);
+    const all = [...map.values()];
+    // Oldest grant first; `sort` is stable, so a batch picked in one call keeps
+    // its order and the first one picked is the first to fall.
+    const byAge = [...all].sort((a, b) => a.addedAt.localeCompare(b.addedAt));
+    const evicted = byAge.slice(0, Math.max(0, all.length - GRANTS_CAP));
+    const evictedIds = new Set(evicted.map((f) => f.id));
+    const next = all.filter((f) => !evictedIds.has(f.id));
     await saveGrantedFiles(next, now);
-    return { ok: true, count: next.length };
+    if (!evicted.length) return { ok: true, count: next.length };
+    await ee.logActivity({
+      actor: "human",
+      actor_name: OWNER_NAME,
+      type: "Integración",
+      expert_id: "general",
+      status: "ok",
+      summary: `El tope de ${GRANTS_CAP} archivos concedidos de Google Drive retiró el acceso a ${ee.countPhrase(evicted.length, "archivo", "archivos")}: ${namesForLog(evicted)}`,
+      sources: ["Google Drive"],
+    });
+    return {
+      ok: true,
+      count: next.length,
+      evicted: { count: evicted.length, names: evicted.map((f) => f.name) },
+    };
   });
 
 /**

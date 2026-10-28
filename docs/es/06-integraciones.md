@@ -45,7 +45,15 @@ necesitas entrar en Google Cloud.
 7. La papelera de un archivo de esa lista **revoca** el acceso: su id sale de
    `drive-grants.json`, `search_drive` deja de listarlo, `read_drive_file`
    responde `(sin acceso)` y el cambio queda en el registro de actividad.
-   `Desconectar` revoca todos los archivos de golpe.
+   `Desconectar` revoca todos los archivos de golpe. `addGrantedFiles` contesta
+   `evicted: { count, names }` cuando el tope retira algo (`src/lib/data.functions.ts`).
+8. La lista tiene un **tope de 5.000 concesiones**. Al llegar, añadir un archivo
+   retira la concesión con el `addedAt` **más antiguo** —el archivo deja de estar
+   accesible para el Experto aunque nadie haya pulsado la papelera— y lo dice:
+   la pantalla de Fuentes avisa nombrando lo retirado y el registro de actividad
+   guarda el evento. Volver a elegir un archivo refresca su `addedAt`, así que el
+   recorte nunca se lleva el que acabas de elegir; para recuperar uno retirado,
+   vuelve a elegirlo en el Picker.
 
 Si el script del Google Picker no se puede cargar —se cayó la conexión, un bloqueador de
 scripts lo paró, la CSP no lo permite— el intento se puede **reintentar**. El intento fallido no

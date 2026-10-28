@@ -44,7 +44,15 @@ to touch Google Cloud.
 7. The trash icon **revokes** access to that file: its id is dropped from
    `drive-grants.json`, `search_drive` stops listing it, `read_drive_file`
    answers `(sin acceso)` and the change is recorded in the activity log.
-   `Desconectar` revokes every file at once.
+   `Desconectar` revokes every file at once. `addGrantedFiles` answers
+   `evicted: { count, names }` whenever the cap drops something
+   (`src/lib/data.functions.ts`).
+8. The list has a **cap of 5,000 grants**. Once it is reached, adding a file drops
+   the grant with the **oldest** `addedAt` —that file stops being accessible to the
+   Expert even though nobody pressed the trash icon— and says so: the Sources
+   screen warns with the names it dropped and the activity log keeps the event.
+   Picking a file again refreshes its `addedAt`, so the cut never takes the one you
+   have just picked; to recover a dropped grant, pick it again in the Picker.
 
 If the Google Picker script cannot be loaded —the connection dropped, a script blocker
 stopped it, the CSP does not allow it— the attempt can be **retried**. The failed attempt is

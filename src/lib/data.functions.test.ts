@@ -719,7 +719,7 @@ describe("addGrantedFiles, revokeGrantedFile y los grants del Picker", () => {
   const doc = { id: "f-doc", name: "Acta", mimeType: "application/vnd.google-apps.document" };
   const otro = { id: "f-otro", name: "Zip", mimeType: "application/zip" };
 
-  it("acumula por id, conserva addedAt y resume los tipos en la integración", async () => {
+  it("acumula por id, refresca addedAt al volver a elegir y resume los tipos en la integración", async () => {
     const first = (await fns.addGrantedFiles({ data: { files: [pdf, doc] } })) as {
       ok: boolean;
       count: number;
@@ -734,7 +734,10 @@ describe("addGrantedFiles, revokeGrantedFile y los grants del Picker", () => {
     const grants = (await fns.getGrantedFiles()) as { files: { id: string; addedAt: string }[] };
     const storedPdf = grants.files.find((f) => f.id === "f-pdf");
     expect(grants.files.map((f) => f.id)).toEqual(["f-pdf", "f-doc", "f-otro"]);
-    expect(storedPdf?.addedAt).toBe(grants.files[0]?.addedAt);
+    // Volver a elegir el PDF refresca su `addedAt` y el acta conserva el suyo: es
+    // lo que hace que el tope retire los más antiguos y nunca el recién elegido.
+    const storedDoc = grants.files.find((f) => f.id === "f-doc")!;
+    expect(Date.parse(storedPdf!.addedAt)).toBeGreaterThanOrEqual(Date.parse(storedDoc.addedAt));
 
     const ws = (await fns.getWorkspace()) as {
       integrations: {
