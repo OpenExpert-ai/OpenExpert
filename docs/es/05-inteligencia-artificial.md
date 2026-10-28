@@ -30,19 +30,26 @@ herramientas.
 
 ### Lectura
 
-| Herramienta                | Contenido                                                       | Dominio     |
-| -------------------------- | --------------------------------------------------------------- | ----------- |
-| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados     | `ventas`    |
-| `list_deals`               | Oportunidades abiertas, opcionalmente por etapa                 | `ventas`    |
-| `list_overdue_invoices`    | Facturas vencidas con importe, días y reclamaciones registradas | `finanzas`  |
-| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado               | `marketing` |
-| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja            | `clientes`  |
+| Herramienta                | Contenido                                                   | Dominio     |
+| -------------------------- | ----------------------------------------------------------- | ----------- |
+| `get_pipeline_summary`     | Valor abierto, nº de deals, win rate, previsión, estancados | `ventas`    |
+| `list_deals`               | Oportunidades abiertas, por etapa (máx. 200, con `total`)   | `ventas`    |
+| `list_overdue_invoices`    | Facturas vencidas, importe, días, reclamaciones (máx. 200)  | `finanzas`  |
+| `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado           | `marketing` |
+| `get_churn_risk`           | MRR, tendencia de uso, tickets, probabilidad de baja        | `clientes`  |
 
 Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Una
 herramienta solo atribuye el dato a un proveedor cuando esa integración está
 conectada (`connected: true`); si no, devuelve un `note` indicando que no hay
 fuente conectada, de modo que el asistente nunca presenta datos locales como
 reales.
+
+Las listas de negocio (`list_deals`, `list_overdue_invoices`) devuelven como mucho
+200 filas y lo dicen: `total` es el número de filas que coinciden —la cifra que el
+modelo cita al usuario—, `hasMore` avisa de que la lista viene cortada y la nota
+dice cuántas se enseñan de cuántas. Un CRM importado puede tener miles de filas
+(cada fichero de CSV y cada sincronización aceptan hasta 5 000), y mandarlas
+enteras gastaba el turno en tokens y perdía el hilo de la pregunta.
 
 Los días que lleva vencida una factura se cuentan por el calendario, en la zona
 horaria local: el día que vence y el día que se lee se comparan como días, así
