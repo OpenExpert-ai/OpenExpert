@@ -283,8 +283,13 @@ Drive and local folders in `src/lib/office.server.ts`.
   (a job-level `permissions:` block replaces the workflow one, so repeat
   `contents: read` where checkout is used).
 - The `chore(release): version packages` pull request is opened by
-  `changesets/action` with `GITHUB_TOKEN`, so its workflows start as
-  **"action_required"**: approve them before trusting the PR's checks.
+  `changesets/action` with `GITHUB_TOKEN`, so GitHub parks its runs in
+  **"action_required"** (the approval policy is `first_time_contributors` and
+  `github-actions[bot]` never stops being one). `release.yml` approves them
+  itself in the `unblock-version-pr` job, which runs
+  `scripts/approve-parked-runs.mjs` after every version push, so its checks do
+  report. A run still parked there means that job failed: read its log instead
+  of approving by hand.
 
 ## 9. Never commit secrets
 
