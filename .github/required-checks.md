@@ -1,14 +1,17 @@
 # Required checks for `main`
 
-`main` is protected by the ruleset `protect-main` (id `24980275`), but the
-ruleset only requires a pull request: it has **no `required_status_checks`**. That
-is why pull request #48 was merged on 2026-10-17 with CI red — the checks run,
-report, and block nothing.
+`main` is protected by the ruleset `protect-main` (id `24980275`). Until
+2026-10-29 the ruleset only required a pull request: it had **no
+`required_status_checks`**, so the checks ran, reported, and blocked nothing —
+that is how pull request #48 was merged on 2026-10-17 with CI red.
 
-This file is the ruleset to apply, and it was deliberately **not applied from a
-workflow**: editing rulesets needs admin on the repository, the call is not
-rehearsable in a pull request, and a bad PUT replaces the whole ruleset. Run it
-by hand, once, from a checkout of `main`.
+**The rule is applied** (T-0391, 2026-10-29): the three checks below are
+required, and a pending or failing one blocks the merge. What follows is the
+payload that was applied, kept because a ruleset is replaced as a whole and
+re-running the same `PUT` is both the re-apply and the undo. Editing rulesets
+needs admin on the repository, the call is not rehearsable in a pull request,
+and a bad `PUT` replaces the whole ruleset: run it by hand, never from a
+workflow.
 
 ## The check names this repository produces
 
@@ -30,11 +33,32 @@ request can legitimately skip turns every documentation PR into a stuck one.
 (They still report `success` when they run, so they can be required later if the
 last star in the merge box is wanted.)
 
-## Apply it
+## What changes for agents merging pull requests
+
+With `required_status_checks` on, `gh pr merge` is refused while a required
+check is pending or red (`mergeStateStatus: BLOCKED`, "the base branch policy
+prohibits this merge"), so opening a pull request and merging it in the same
+breath — the Dev implementer agent did exactly that — no longer works. The flow
+is open, wait, and merge only if they are green:
+
+```bash
+gh pr create --fill --base main --head auto/T-XXXX-slug
+gh pr checks <n> --watch --fail-fast   # the three required checks
+gh pr merge <n> --squash --delete-branch
+```
+
+`gh pr merge --auto` is the alternative that queues the merge and lets GitHub
+fire it when the checks pass, but this repository has **`allow_auto_merge:
+false`**, so `--auto` answers "Auto-merge is not allowed for this repository".
+Turning it on is a repository setting, not a ruleset change, and it is a human
+decision: `gh api --method PATCH repos/OpenExpert-ai/OpenExpert -f
+allow_auto_merge=true`. Until then, wait for the checks.
+
+## The payload that was applied
 
 `protect-main` already has the `pull_request`, `non_fast_forward` and `deletion`
 rules; a ruleset is replaced as a whole, so the payload repeats them verbatim and
-adds `required_status_checks`. `bypass_actors: []` keeps the current behaviour:
+adds `required_status_checks`. `bypass_actors: []` keeps the previous behaviour:
 nobody bypasses the ruleset, including admins.
 
 ```bash
@@ -100,11 +124,19 @@ tree that already contains `main`" is worth the extra re-runs.
 
 ```bash
 gh api repos/OpenExpert-ai/OpenExpert/rulesets/24980275 \
+  --jq '[.rules[].type]'
+# ["pull_request","required_status_checks","non_fast_forward","deletion"]
+
+gh api repos/OpenExpert-ai/OpenExpert/rulesets/24980275 \
   --jq '.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context'
+# Lint · Typecheck · Test · Build
+# Workflows and secrets
+# Analyze (javascript-typescript)
 ```
 
 Then open any pull request: the three checks appear under "Required" in the
-merge box, and a red one turns the merge button into "Merging is blocked".
+merge box, `gh pr view <n> --json mergeStateStatus` says `BLOCKED` while they are
+pending, and a red one keeps the merge button on "Merging is blocked".
 
 ## Undo
 
