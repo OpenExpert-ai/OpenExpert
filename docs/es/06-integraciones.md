@@ -85,6 +85,12 @@ seguidas nunca pega dos filas. `truncated` marca una sola cosa: que el corte par
 la mitad (y es lo que pide `nextCharOffset` para seguir dentro de ella). Un corte limpio entre
 líneas no lo pone, aunque quede texto, porque el resto se pide igual con `hasMore`.
 
+El corte cae en una frontera de carácter, no de unidad UTF-16: un emoji (cualquier carácter fuera
+del plano básico) ocupa dos unidades, así que la ventana se queda corta antes que a medias y el
+texto que se le entrega al modelo nunca lleva media pareja suplente en un borde. Con un presupuesto
+de una sola unidad se entrega el carácter entero —una unidad de más— antes que una ventana vacía que
+no moviera el cursor.
+
 ### 2.2 Scopes
 
 | Scope        | Finalidad                                                                           |

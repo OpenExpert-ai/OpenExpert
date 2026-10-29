@@ -68,3 +68,66 @@ describe("takeWindow al cortar entre líneas", () => {
     expect(w.char).toBe(10);
   });
 });
+
+/** La primera mitad de pareja suelta (alta sin su baja, o baja sin su alta); -1 si no hay ninguna. */
+function loneSurrogateAt(text: string): number {
+  for (let i = 0; i < text.length; i += 1) {
+    const unit = text.charCodeAt(i);
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = text.charCodeAt(i + 1);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return i;
+      i += 1;
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) return i;
+  }
+  return -1;
+}
+
+describe("takeWindow con caracteres fuera del plano básico", () => {
+  // Un emoji ocupa dos unidades UTF-16 y el presupuesto se mide en unidades, así
+  // que un corte de 5 cae entre las dos mitades del tercero. La ventana es el
+  // texto que se le entrega al modelo (lector de ficheros, de Drive y de CSV), y
+  // un suplente suelto se lee como un carácter roto: la ventana no puede acabar
+  // en \uD83D ni la siguiente empezar por \uDE00.
+  const emoji = "😀".repeat(10);
+
+  it("no parte un par suplente al cortar dentro de la línea", () => {
+    const w = takeWindow([emoji], 1, 0, 1, 5);
+    expect(loneSurrogateAt(w.text)).toBe(-1);
+    expect(w.text).toBe("😀😀");
+    expect(w.char).toBe(4);
+    expect(w.truncated).toBe(true);
+    expect(w.more).toBe(true);
+  });
+
+  it("la ventana siguiente arranca en una frontera de carácter, no en media pareja", () => {
+    const w = takeWindow([emoji], 1, 0, 1, 5);
+    const next = takeWindow([emoji], w.line, w.char, 1, 5);
+    expect(loneSurrogateAt(next.text)).toBe(-1);
+    expect(next.text).toBe("😀😀");
+    expect(next.char).toBe(8);
+  });
+
+  it("recompone el texto con emojis ventana a ventana, sin perder ni repetir nada", () => {
+    expect(readAll(emoji, 1, 5)).toBe(emoji);
+    expect(readAll(`${emoji}\n${emoji}`, 1, 3)).toBe(`${emoji}\n${emoji}`);
+    // El corte que cae justo en la frontera no se mueve: cuatro unidades son dos emojis.
+    expect(takeWindow([emoji], 1, 0, 1, 4).text).toBe("😀😀");
+  });
+
+  it("con presupuesto de una unidad entrega el carácter entero, nunca una ventana vacía", () => {
+    // El carácter cuesta dos unidades, así que echarse atrás del todo dejaría la ventana vacía y
+    // el cursor quieto: se lleva el carácter completo (una unidad de más) y el lector avanza.
+    const w = takeWindow([emoji], 1, 0, 1, 1);
+    expect(w.text).toBe("😀");
+    expect(loneSurrogateAt(w.text)).toBe(-1);
+    expect(w.char).toBe(2);
+    expect(w.more).toBe(true);
+    expect(readAll(emoji, 1, 1)).toBe(emoji);
+  });
+
+  it("recompone el texto con emojis y finales de línea de Windows", () => {
+    const text = `hola\r\n${emoji}\r\n${emoji}\r\nfin`;
+    expect(readAll(text, 1, 3)).toBe(text);
+    expect(readAll(text, 2, 5)).toBe(text);
+  });
+});

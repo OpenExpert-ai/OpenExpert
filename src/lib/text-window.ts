@@ -14,6 +14,29 @@ export type TextWindow = {
 };
 
 /**
+ * How many UTF-16 units to take from `from` so the slice ends on a character boundary.
+ *
+ * The budget is counted in UTF-16 units, because that is what the context costs, but a character
+ * outside the basic plane (any emoji, CJK of plane 1) is two units: a cut between the two halves
+ * of the pair leaves a lone surrogate at the end of the window and its twin at the start of the
+ * next one, so the model reads a broken character on both sides of every boundary. The cut backs
+ * off to the boundary; and when backing off would leave nothing to take — the room was one unit
+ * and the character costs two — it takes the whole character instead, because one unit over
+ * budget beats half a character and the cursor still moves, so the window is neither empty nor a
+ * repeat of the one before.
+ */
+function wholeChars(text: string, from: number, want: number): number {
+  // At least one unit — a cut that takes nothing would leave the cursor still — and never past
+  // the end of the line, which is always a boundary.
+  const cut = Math.min(Math.max(want, 1), text.length - from);
+  const before = text.charCodeAt(from + cut - 1);
+  const after = text.charCodeAt(from + cut);
+  const splitsPair = before >= 0xd800 && before <= 0xdbff && after >= 0xdc00 && after <= 0xdfff;
+  if (!splitsPair) return cut;
+  return cut > 1 ? cut - 1 : cut + 1;
+}
+
+/**
  * The longest slice of the text that starts at `line` (1-based) and character `char` (0-based,
  * inside that line), takes at most `limit` lines and at most `budget` characters, plus the point
  * where the next read has to resume.
@@ -57,8 +80,9 @@ export function takeWindow(
         return { text, line: ln, char: ch, more: true, truncated: false };
       }
       // A cut that takes no room at all still has to move the cursor, or the caller would ask for
-      // the same window forever.
-      const got = take > 0 ? take : Math.min(1, rest);
+      // the same window forever. Either way it lands on a character boundary: half a surrogate pair
+      // is not text, it is a broken character at both edges of the cut.
+      const got = wholeChars(cur, ch, take > 0 ? take : Math.min(1, rest));
       return {
         text: text + (sep ? "\n" : "") + cur.slice(ch, ch + got),
         line: ln,
