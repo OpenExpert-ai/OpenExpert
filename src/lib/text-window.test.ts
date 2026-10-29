@@ -113,4 +113,21 @@ describe("takeWindow con caracteres fuera del plano básico", () => {
     // El corte que cae justo en la frontera no se mueve: cuatro unidades son dos emojis.
     expect(takeWindow([emoji], 1, 0, 1, 4).text).toBe("😀😀");
   });
+
+  it("con presupuesto de una unidad entrega el carácter entero, nunca una ventana vacía", () => {
+    // El carácter cuesta dos unidades, así que echarse atrás del todo dejaría la ventana vacía y
+    // el cursor quieto: se lleva el carácter completo (una unidad de más) y el lector avanza.
+    const w = takeWindow([emoji], 1, 0, 1, 1);
+    expect(w.text).toBe("😀");
+    expect(loneSurrogateAt(w.text)).toBe(-1);
+    expect(w.char).toBe(2);
+    expect(w.more).toBe(true);
+    expect(readAll(emoji, 1, 1)).toBe(emoji);
+  });
+
+  it("recompone el texto con emojis y finales de línea de Windows", () => {
+    const text = `hola\r\n${emoji}\r\n${emoji}\r\nfin`;
+    expect(readAll(text, 1, 3)).toBe(text);
+    expect(readAll(text, 2, 5)).toBe(text);
+  });
 });

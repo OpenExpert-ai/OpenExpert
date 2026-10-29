@@ -84,6 +84,12 @@ rows together. `truncated` marks one thing only: the cut split a line in half, w
 for `nextCharOffset` to go on inside it. A clean cut between lines leaves it unset even when text
 is left, because the rest is asked for with `hasMore` anyway.
 
+The cut lands on a character boundary, not on a UTF-16 unit: an emoji (any character outside the
+basic plane) is two units, so a window stops short rather than halfway and the text handed to the
+model never carries half a surrogate pair at an edge. With a budget of a single unit the whole
+character is handed over — one unit over — rather than an empty window that would not move the
+cursor.
+
 ### 2.2 Scopes
 
 | Scope        | Purpose                                                                                    |
