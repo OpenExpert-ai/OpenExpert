@@ -57,6 +57,13 @@ beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), "openexpert-ws-payload-"));
   process.env["OPENEXPERT_DATA_DIR"] = dir;
   fns = await import("./data.functions");
+  // Una sola siembra para los tres casos: las tres aserciones miran el mismo
+  // estado y ninguna lo toca, así que reponerlo en cada `it` eran 30 000
+  // `INSERT` fila a fila para comprobar tres cosas. Sembrar aquí deja el mismo
+  // contrato y aparta al fichero del `testTimeout` de 5 s. Si algún caso
+  // llegara a escribir en `invoices`/`campaigns`, tiene que reponer el estado
+  // (volver a llamar a `seedFullBusinessTables()` desde el propio test).
+  await seedFullBusinessTables();
 });
 
 afterAll(() => {
@@ -70,42 +77,40 @@ async function seedFullBusinessTables() {
   const { raw } = await getDb();
   raw.run("DELETE FROM invoices");
   raw.run("DELETE FROM campaigns");
-  const invoice =
-    "INSERT INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)";
-  const campaign =
-    "INSERT INTO campaigns (id,name,channel,status,spend_7d,conversions_7d,cpa_target,daily_budget) VALUES (?,?,?,?,?,?,?,?)";
-  for (let i = 0; i < 5000; i++) {
-    raw.run(invoice, [
-      `inv-${i}`,
-      `Cliente con nombre largo ${i}`,
-      1200.5,
-      "2026-02-01",
-      "open",
-      0,
-    ]);
-    raw.run(campaign, [
-      `cmp-${i}`,
-      `Campaña de marca número ${i}`,
-      "meta",
-      "active",
-      840,
-      12,
-      40,
-      30,
-    ]);
+  // `sql.js` compila cada `run()` desde cero, así que 10 000 sentencias sueltas
+  // tardaban casi tres segundos: lo que decide aquí es el número de sentencias,
+  // no las filas. Preparadas una vez y dentro de una transacción, las mismas
+  // 10 000 filas dejan el estado idéntico en unas décimas.
+  const invoice = raw.prepare(
+    "INSERT INTO invoices (id,client,amount,due_date,status,reminders) VALUES (?,?,?,?,?,?)",
+  );
+  const campaign = raw.prepare(
+    "INSERT INTO campaigns (id,name,channel,status,spend_7d,conversions_7d,cpa_target,daily_budget) VALUES (?,?,?,?,?,?,?,?)",
+  );
+  raw.run("BEGIN");
+  try {
+    for (let i = 0; i < 5000; i++) {
+      invoice.run([`inv-${i}`, `Cliente con nombre largo ${i}`, 1200.5, "2026-02-01", "open", 0]);
+      campaign.run([`cmp-${i}`, `Campaña de marca número ${i}`, "meta", "active", 840, 12, 40, 30]);
+    }
+    raw.run("COMMIT");
+  } catch (e) {
+    raw.run("ROLLBACK");
+    throw e;
+  } finally {
+    invoice.free();
+    campaign.free();
   }
 }
 
 describe("lo que viaja en el workspace", () => {
   it("no lleva las tablas de facturas ni de campañas", async () => {
-    await seedFullBusinessTables();
     const ws = (await fns.getWorkspace()) as Record<string, unknown>;
     expect(Object.keys(ws)).not.toContain("invoices");
     expect(Object.keys(ws)).not.toContain("campaigns");
   });
 
   it("se queda acotado con el CRM lleno, en vez de crecer con las tablas", async () => {
-    await seedFullBusinessTables();
     const ws = (await fns.getWorkspace()) as Record<string, unknown>;
     const bytes = JSON.stringify(ws).length;
     // Hoy son 872 KB. La ventana no necesita más que sus Expertos, sus integraciones y
@@ -114,7 +119,6 @@ describe("lo que viaja en el workspace", () => {
   });
 
   it("sigue trayendo lo que la ventana pinta y el recuento de filas de negocio", async () => {
-    await seedFullBusinessTables();
     const ws = (await fns.getWorkspace()) as {
       me: { name: string };
       experts: unknown[];
