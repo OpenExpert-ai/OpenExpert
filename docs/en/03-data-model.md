@@ -38,13 +38,13 @@ configuration.
 
 ### `integrations` — connector catalogue
 
-| Column             | Type        | Notes                                                      |
-| ------------------ | ----------- | ---------------------------------------------------------- |
-| `id`               | TEXT PK     | `gdrive`, `pipedrive`, …                                   |
-| `name`, `category` | TEXT        | —                                                          |
-| `connected`        | INTEGER     | 0/1; `gdrive`, `local` and `notion` can be connected today |
-| `entities`         | TEXT (JSON) | `[{ name, count }]` from the last sync                     |
-| `last_sync`        | TEXT        | ISO timestamp or null                                      |
+| Column             | Type        | Notes                                                                                            |
+| ------------------ | ----------- | ------------------------------------------------------------------------------------------------ |
+| `id`               | TEXT PK     | `gdrive`, `pipedrive`, …                                                                         |
+| `name`, `category` | TEXT        | —                                                                                                |
+| `connected`        | INTEGER     | 0/1; `gdrive`, `local` and `notion` can be connected today                                       |
+| `entities`         | TEXT (JSON) | `[{ name, count }]` from the last sync; the sync writes the name and the interface translates it |
+| `last_sync`        | TEXT        | ISO timestamp or null                                                                            |
 
 ### `activity` — audit log
 
