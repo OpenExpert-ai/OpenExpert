@@ -123,6 +123,16 @@ cannot see it, and it stays in Spanish with nothing to warn about it.
 | `npm run version-packages`        | Apply pending changesets locally              |
 | `npm run release`                 | Build, then publish with Changesets           |
 
+### Coverage thresholds
+
+`vitest.config.ts` declares the coverage floor that `npm run test:coverage` enforces —
+the only place it bites, since `npx vitest run` does not check thresholds: 85 %
+statements, 77 % branches, 87 % functions and 87 % lines over `src/lib/**/*.ts`. On
+2026-10-29 the suite measured 89.99 / 81.35 / 91.56 / 91.96, so the floors sit about
+four points below: a legitimate dip never reddens someone else's change and a real
+collapse does. When coverage goes up, the floors go up with it;
+`src/umbrales-cobertura.test.ts` demands the four of them.
+
 ### Port 3000
 
 `vite.config.ts` pins `port: 3000` and `strictPort: true`; the Drive OAuth

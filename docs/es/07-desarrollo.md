@@ -124,6 +124,16 @@ llega a ser una clave— y se queda en español sin que nada avise.
 | `npm run version-packages`        | Aplica los changesets pendientes en local           |
 | `npm run release`                 | Compila y publica con Changesets                    |
 
+### Umbrales de cobertura
+
+`vitest.config.ts` declara el suelo de cobertura que aplica `npm run test:coverage`
+—el único sitio donde muerde, porque `npx vitest run` no comprueba umbrales—: 85 % de
+sentencias, 77 % de ramas, 87 % de funciones y 87 % de líneas sobre `src/lib/**/*.ts`.
+El 29/10 la suite medía 89,99 / 81,35 / 91,56 / 91,96, así que los suelos van unos
+cuatro puntos por debajo: una bajada legítima no pone en rojo un cambio ajeno y un
+derrumbe sí. Cuando la cobertura suba, los suelos suben con ella;
+`src/umbrales-cobertura.test.ts` exige los cuatro.
+
 ### Puerto 3000
 
 `vite.config.ts` fija `port: 3000` y `strictPort: true`; la URI de redirección
