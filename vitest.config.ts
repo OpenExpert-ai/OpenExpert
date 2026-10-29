@@ -31,10 +31,19 @@ export default defineConfig({
       // in scope now that it has its own tests.
       exclude: ["src/lib/**/*.d.ts"],
       thresholds: {
-        statements: 64,
-        branches: 56,
-        functions: 65,
-        lines: 65,
+        // Floors, not targets: they sit about four points below what the suite
+        // measures today, so a legitimate dip (a new file with its first
+        // uncovered branch) never reddens someone else's change while a real
+        // collapse does. Measured on 2026-10-29 with
+        // `npx vitest run --coverage --maxWorkers=4` over this `include`:
+        // 89.99 / 81.35 / 91.56 / 91.96. The old 64/56/65/65 was 25 points of
+        // slack: the job stayed green with a quarter of the suite deleted.
+        // When coverage goes up, raise the floors with it — never lower a floor
+        // to make a red job green, and never leave it ageing.
+        statements: 85,
+        branches: 77,
+        functions: 87,
+        lines: 87,
       },
     },
   },
