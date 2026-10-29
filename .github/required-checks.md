@@ -115,10 +115,14 @@ untouched.
 ## Two things that will look like a stuck PR and are not
 
 - **The `chore(release): version packages` pull request.** `changesets/action`
-  opens it with `GITHUB_TOKEN`, so its workflows start as **"action_required"**
-  and no check reports until someone approves the run (Actions → the run →
-  _Approve and run_). With required checks on, that PR cannot merge until it is
-  approved; that is the correct order, not a bug.
+  pushes it with `GITHUB_TOKEN`, so the actor is `github-actions[bot]` and this
+  repository's approval policy is `first_time_contributors`: GitHub creates the
+  PR's three runs in **"action_required"** and no check reports until one is
+  approved. `release.yml` approves them itself, in the `unblock-version-pr` job
+  that runs `scripts/approve-parked-runs.mjs` after the version push — that is
+  the root fix, so no click is needed and the PR gets its checks on every push.
+  A run still parked on that PR means that job failed: read its log, not the
+  pull request.
 - **A pull request that changes nothing the desktop or Docker jobs build.** Their
   checks report `skipped`, not `success`. That is enough for a required check
   (GitHub treats a skipped check as passing), and it is still why they are left

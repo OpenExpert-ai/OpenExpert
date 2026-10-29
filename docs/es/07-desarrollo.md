@@ -232,10 +232,16 @@ commit del fichero que escribe en `.changeset/`; los cambios solo de
 documentación no la necesitan, porque el manifiesto raíz es privado y no se
 versiona. Al mergear la pull request `chore(release): version packages`
 se publica en npm (OIDC trusted publishing, sin `NPM_TOKEN`) y se construye la
-imagen de Docker. Esa PR la abre `changesets/action` con el `GITHUB_TOKEN` por
-defecto, así que sus workflows llegan como **"action_required"** y hay que
-aprobarlos (Actions → la ejecución → _Approve and run_) para que sus
-comprobaciones signifiquen algo.
+imagen de Docker. Esa PR la empuja `changesets/action` con el `GITHUB_TOKEN` por
+defecto, así que GitHub crea sus ejecuciones en **"action_required"** — el actor
+es `github-actions[bot]` y la política de aprobación es
+`first_time_contributors`, que no se lo da por bueno nunca — y sus
+comprobaciones no significan nada hasta que se aprueban. `release.yml` las
+aprueba él mismo: el job `unblock-version-pr` ejecuta
+`scripts/approve-parked-runs.mjs` después del empuje y aprueba solo las
+ejecuciones de esa rama, en el head que acaba de producir, de este repositorio.
+Si alguna sigue aparcada, ese job ha fallado: mira su log antes de aprobarla a
+mano.
 
 ## 9. Referencias
 

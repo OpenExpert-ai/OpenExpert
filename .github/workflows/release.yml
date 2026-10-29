@@ -64,6 +64,37 @@ jobs:
           # has one name and one version. See `server-asset`.
           create-github-releases: "false"
 
+  # GitHub holds the runs of the release pull request for approval: the branch
+  # is pushed by `changesets/action` with `GITHUB_TOKEN`, so the actor is
+  # `github-actions[bot]`, and the repository's `first_time_contributors`
+  # approval policy never trusts it. Every push therefore left CI, CodeQL and
+  # Desktop gate in `action_required` at 0 s: 12 runs between 2026-10-20 and
+  # 2026-10-29 and `check-runs` `total_count` 0 on the PR's head, so the release
+  # shipped without a single check reporting on it. GitHub does run a
+  # bot-created pull request once its runs are approved, so this job approves
+  # them right after the push. `scripts/approve-parked-runs.mjs` holds the
+  # filter (that branch, that head, this repository and never a fork) and its
+  # test; approving is what hands a run the repository's secrets, which is why
+  # the filter is that narrow.
+  unblock-version-pr:
+    name: Approve the parked runs on the version PR
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # A job-level block replaces the workflow one, so `contents: read` comes
+    # back for the checkout and `actions: write` is what the approve call needs.
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Approve the runs the push parked
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: node scripts/approve-parked-runs.mjs
+
   # The bundle `npx @openexpert/openexpert serve` downloads. It cannot live in its
   # own release-triggered workflow: releases created here carry this run's
   # GITHUB_TOKEN, and GitHub does not start workflows from events that token

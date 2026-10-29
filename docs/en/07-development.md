@@ -227,9 +227,14 @@ commit the file it writes under `.changeset/`; documentation-only changes need
 none, because the root manifest is private and is not versioned. Merging the
 `chore(release): version packages` pull request
 publishes to npm (OIDC trusted publishing, no `NPM_TOKEN`) and builds the Docker
-image. That PR is opened by `changesets/action` with the default `GITHUB_TOKEN`,
-so its workflows arrive as **"action_required"** and must be approved (Actions →
-the run → _Approve and run_) before its checks mean anything.
+image. That PR is pushed by `changesets/action` with the default `GITHUB_TOKEN`,
+so GitHub creates its runs in **"action_required"** — the actor is
+`github-actions[bot]` and the approval policy is `first_time_contributors`, which
+never trusts it — and its checks mean nothing until they are approved.
+`release.yml` approves them itself: the `unblock-version-pr` job runs
+`scripts/approve-parked-runs.mjs` after the push and approves only the runs of
+that branch, at the head it just produced, from this repository. A run still
+parked means that job failed; read its log before approving by hand.
 
 ## 9. References
 
