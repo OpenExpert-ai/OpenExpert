@@ -195,8 +195,16 @@ jobs:
           test -x src-tauri/target/release/openexpert-desktop
           deb="$(find src-tauri/target/release/bundle/deb -name '*.deb' | head -1)"
           test -n "$deb"
-          dpkg-deb -c "$deb" | grep -q 'usr/bin/openexpert-desktop'
-          dpkg-deb -c "$deb" | grep -q 'usr/share/applications/OpenExpert.desktop'
+          # El listado se lee una vez y a un fichero: con `dpkg-deb -c | grep -q`
+          # el grep cierra la tubería en cuanto encuentra la ruta, tar recibe
+          # SIGPIPE al seguir escribiendo y `pipefail` convierte eso en un fallo
+          # del paso (exit 2) aunque el .deb esté bien. Pasó en el primer PR que
+          # despertó este job tras el cambio de matriz (T-0382).
+          listing="$(mktemp)"
+          dpkg-deb -c "$deb" >"$listing"
+          grep -q 'usr/bin/openexpert-desktop' "$listing"
+          grep -q 'usr/share/applications/OpenExpert.desktop' "$listing"
+          rm -f "$listing"
           ls -lh "$deb"
 
   # The image smoke test used to be its own workflow, which duplicated the
