@@ -617,6 +617,13 @@ export const en: Record<string, string> = {
     "Outside the forecast: {n} deals with no declared probability ({value})",
   "Facturas vencidas": "Overdue invoices",
   Facturas: "Invoices",
+  // Contadores de una integración (`syncedEntityLabel` en settings.data.tsx): el
+  // nombre lo escribe la sincronización, así que la clave es la palabra guardada.
+  Carpetas: "Folders",
+  Documentos: "Documents",
+  "Hojas de cálculo": "Spreadsheets",
+  Presentaciones: "Presentations",
+  "Otros archivos": "Other files",
   "Importe total": "Total amount",
   "Campañas activas · 7 días": "Active campaigns · 7 days",
   Activas: "Active",

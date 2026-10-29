@@ -7,6 +7,21 @@ per-package detail lives in `packages/openexpert/CHANGELOG.md`.
 
 ## Unreleased
 
+### Los contadores de una integración se leen en el idioma de la interfaz
+
+- **El panel de datos pintaba el nombre que guardó la sincronización, y cada sincronizador lo
+  escribe en su idioma.** `settings.data.tsx` hacía `` `${e.name}: ${e.count}` `` sin pasar por
+  `t()`: `summarizeGrants` y las carpetas locales guardan «Documentos», «Hojas de cálculo»,
+  «Presentaciones», «Carpetas» y «Otros archivos», Holded guarda «Facturas» y Pipedrive, «Deals».
+  Con la interfaz en inglés una conexión de Drive anunciaba «Documentos: 12 · Carpetas: 3» y en
+  castellano la de Pipedrive anunciaba «Deals: 120», que además es el nombre de la tabla en una app
+  que la llama «Ventas». Es la misma clase de fallo que los recortes de configuración: una frase
+  escrita en el servidor se queda en el idioma en que se escribió.
+- **Ahora el nombre se traduce en la frontera con la ventana.** `syncedEntityLabel` reconoce las
+  etiquetas que escriben los sincronizadores y las pasa por `t()` (con «Deals» → «Ventas»), y lo
+  que no es una etiqueta conocida se pinta tal cual: el nombre de un espacio de Notion es dato del
+  usuario y cambiarlo sería mentir sobre lo que hay conectado.
+
 ### El tope de archivos concedidos de Drive avisa de lo que retira
 
 - **`addGrantedFiles` recortaba la lista con `slice(-5000)` y contestaba `{ ok, count }`.** Lo que

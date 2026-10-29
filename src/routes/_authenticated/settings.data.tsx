@@ -92,6 +92,37 @@ const ENTITY_LABEL: Record<BusinessEntity, string> = {
   accounts: "Cuentas",
 };
 
+/**
+ * El nombre de una entidad sincronizada lo escribe la sincronización al guardar
+ * (`summarizeGrants`, las carpetas locales, Holded, Pipedrive), así que cada
+ * escritor lo deja en su idioma y no es una etiqueta de la interfaz: sin pasar
+ * por aquí, con la interfaz en inglés una conexión de Drive anunciaba
+ * «Documentos: 12 · Carpetas: 3» y en castellano la de Pipedrive, «Deals: 120».
+ * Lo que no sea una etiqueta conocida —el nombre de un espacio de Notion es dato
+ * del usuario— se pinta tal cual.
+ */
+function syncedEntityLabel(name: string, t: (text: string) => string): string {
+  switch (name) {
+    case "Documentos":
+      return t("Documentos");
+    case "Hojas de cálculo":
+      return t("Hojas de cálculo");
+    case "Presentaciones":
+      return t("Presentaciones");
+    case "Carpetas":
+      return t("Carpetas");
+    case "Otros archivos":
+      return t("Otros archivos");
+    case "Facturas":
+      return t("Facturas");
+    case "Deals":
+      // Pipedrive escribe el nombre de la tabla en inglés; aquí se llama «Ventas».
+      return t("Ventas");
+    default:
+      return name;
+  }
+}
+
 function DataSettings() {
   const get = useServerFn(getDataStats);
   const doImport = useServerFn(importBackup);
@@ -582,7 +613,9 @@ function DataSettings() {
                 )}
                 {current?.entities?.length ? (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {current.entities.map((e) => `${e.name}: ${e.count}`).join(" · ")}
+                    {current.entities
+                      .map((e) => `${syncedEntityLabel(e.name, t)}: ${e.count}`)
+                      .join(" · ")}
                   </p>
                 ) : null}
               </div>

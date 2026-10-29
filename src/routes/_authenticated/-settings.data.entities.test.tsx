@@ -28,6 +28,10 @@ const connectors = vi.hoisted(() => [
       { name: "Facturas", count: 4 },
       { name: "Carpetas", count: 2 },
       { name: "Documentos", count: 1 },
+      { name: "Hojas de cálculo", count: 3 },
+      { name: "Presentaciones", count: 2 },
+      { name: "Otros archivos", count: 6 },
+      { name: "Deals", count: 5 },
       { name: "Acme Corp", count: 7 },
     ],
   },
@@ -62,12 +66,15 @@ vi.mock("@tanstack/react-query", () => ({
 
 // El `t` de verdad, con el diccionario de verdad y la interfaz en inglés: la
 // aserción tiene que hablar del idioma que ve el usuario, no de un doble.
+const uiLocale = vi.hoisted(() => ({ current: "en" as "en" | "es" }));
+
 vi.mock("@/lib/i18n", async () => {
   const { translate } = await import("@/lib/translate");
   return {
     useT: () => ({
-      t: (text: string, params?: Record<string, string | number>) => translate("en", text, params),
-      locale: "en" as const,
+      t: (text: string, params?: Record<string, string | number>) =>
+        translate(uiLocale.current, text, params),
+      locale: uiLocale.current,
     }),
   };
 });
@@ -111,9 +118,30 @@ describe("panel de datos: las entidades sincronizadas y el idioma de la interfaz
     expect(text).toContain("Invoices: 4");
     expect(text).toContain("Folders: 2");
     expect(text).toContain("Documents: 1");
+    expect(text).toContain("Spreadsheets: 3");
+    expect(text).toContain("Presentations: 2");
+    expect(text).toContain("Other files: 6");
     expect(text).not.toContain("Facturas");
     expect(text).not.toContain("Carpetas");
     expect(text).not.toContain("Documentos");
+    expect(text).not.toContain("Hojas de cálculo");
+    expect(text).not.toContain("Presentaciones");
+    expect(text).not.toContain("Otros archivos");
+    // «Deals» lo escribe Pipedrive en inglés; en esta app esa tabla es «Ventas».
+    expect(text).toContain("Sales: 5");
+    expect(text).not.toContain("Deals");
+  });
+
+  it("con la interfaz en español dice Ventas y Facturas, no el «Deals» guardado", async () => {
+    uiLocale.current = "es";
+    try {
+      const text = await mountPage();
+      expect(text).toContain("Facturas: 4");
+      expect(text).toContain("Ventas: 5");
+      expect(text).not.toContain("Deals");
+    } finally {
+      uiLocale.current = "en";
+    }
   });
 
   it("un nombre que no es etiqueta conocida se pinta tal cual, sin traducirlo", async () => {
