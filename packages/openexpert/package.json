@@ -85,7 +85,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.91",
+    "@ai-sdk/openai": "^4.0.101",
     "@clack/prompts": "^1.8.1",
     "ai": "^7.0.0"
   },
