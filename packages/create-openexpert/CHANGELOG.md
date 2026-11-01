@@ -1,5 +1,11 @@
 # create-openexpert
 
+## 0.2.2
+
+### Patch Changes
+
+- 83a8b03: Bind the generated Compose ports to loopback so the app and Ollama are not exposed to the LAN.
+
 ## 0.2.1
 
 ### Patch Changes
