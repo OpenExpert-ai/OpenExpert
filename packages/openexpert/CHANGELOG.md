@@ -1,5 +1,13 @@
 # @openexpert/openexpert
 
+## 0.6.2
+
+### Patch Changes
+
+- c3c8792: Offer optional encrypted daily local backups while OpenExpert is open.
+- c3c8792: Warn when an older desktop server has an unknown version, and prevent a known server version mismatch after an update.
+- c3c8792: Show documents actually read during chat, including partial reads and available modification times.
+
 ## 0.6.1
 
 ### Patch Changes
