@@ -149,7 +149,6 @@ function ChatWindow({
   const qc = useQueryClient();
   const { t, locale } = useT();
   const clear = useAct(clearChat);
-  const driveConnected = ws?.integrations.find((i) => i.id === "gdrive")?.connected;
   const expert = ws?.experts.find((e) => e.id === expertId);
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
@@ -316,13 +315,15 @@ function ChatWindow({
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
                 {expert?.description}
               </p>
+              <p className="mx-auto mt-3 max-w-md text-xs text-muted-foreground">
+                {t("Comprueba las fuentes y los datos importantes: la IA puede equivocarse.")}
+              </p>
               <div className="mx-auto mt-8 max-w-lg rounded-lg border border-border bg-card p-5 text-left">
                 <div className="text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
                   {t("Primeros pasos")}
                 </div>
                 <ol className="mt-3 space-y-2 text-sm">
                   <SetupStep
-                    done
                     title={t("Elige tu modelo")}
                     desc={t("Ollama, Gemini o tu propio endpoint.")}
                     action={
@@ -335,20 +336,19 @@ function ChatWindow({
                     }
                   />
                   <SetupStep
-                    done={!!driveConnected}
-                    title={t("Conecta Google Drive")}
-                    desc={t("Opcional: leer, crear y editar tus documentos.")}
+                    done={businessData}
+                    title={t("Añade tus datos")}
+                    desc={t("Importa un CSV, conecta un servicio o prueba datos de ejemplo.")}
                     action={
                       <Link
-                        to="/integrations/sources"
+                        to="/settings/data"
                         className={buttonVariants({ variant: "outline", size: "sm" })}
                       >
-                        {driveConnected ? t("Gestionar") : t("Conectar")}
+                        {t("Gestionar datos")}
                       </Link>
                     }
                   />
                   <SetupStep
-                    done
                     title={t("Pregunta lo que necesites")}
                     desc={t("Las acciones sensibles te pedirán aprobación antes de ejecutarse.")}
                   />
@@ -505,7 +505,7 @@ function SetupStep({
   desc,
   action,
 }: {
-  done: boolean;
+  done?: boolean;
   title: string;
   desc: string;
   action?: React.ReactNode;
@@ -554,8 +554,8 @@ type ToolPart = {
 };
 
 const SOURCE: Record<string, string> = {
-  get_pipeline_summary: "CRM",
-  list_deals: "CRM",
+  get_pipeline_summary: "Ventas",
+  list_deals: "Ventas",
   list_overdue_invoices: "Facturación",
   propose_invoice_reminders: "Facturación",
   get_campaign_performance: "Publicidad",
@@ -603,7 +603,20 @@ function AssistantMsg({
     .map((p) => (p.type === "text" ? p.text : ""))
     .join("\n\n")
     .trim();
-  const sources = [...new Set(tools.map((t) => SOURCE[t.type.slice(5)]).filter(Boolean))];
+  const sources = [
+    ...new Set(
+      tools
+        .filter((part) => {
+          const output = part.output;
+          return (
+            part.state === "output-available" &&
+            !(output && typeof output === "object" && "error" in output)
+          );
+        })
+        .map((part) => SOURCE[part.type.slice(5)])
+        .filter((source): source is string => Boolean(source)),
+    ),
+  ];
   const [copied, setCopied] = useState(false);
   const { t } = useT();
   return (
@@ -613,12 +626,13 @@ function AssistantMsg({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-wider text-muted-foreground">
           <span className="text-primary">OpenExpert</span>
           <span>· {expertId}</span>
+          {sources.length > 0 && <span>{t("Consultas realizadas")}:</span>}
           {sources.map((s) => (
             <span
               key={s}
               className="rounded border border-border px-1.5 py-0.5 normal-case tracking-normal text-foreground/70"
             >
-              {s}
+              {t(s)}
             </span>
           ))}
           {streaming && (
@@ -645,6 +659,25 @@ function AssistantMsg({
           </Collapsible>
         )}
         {tools.length > 0 && <ExecutionTimeline tools={tools} />}
+        {tools.map((part) => (
+          <ImportProvenance key={`${part.toolCallId}-provenance`} part={part} />
+        ))}
+        {tools.map((part) => {
+          const output = part.output;
+          if (
+            part.state !== "output-available" ||
+            !output ||
+            typeof output !== "object" ||
+            !("note" in output) ||
+            typeof output.note !== "string"
+          )
+            return null;
+          return (
+            <p key={`${part.toolCallId}-note`} className="text-xs text-muted-foreground">
+              {output.note}
+            </p>
+          );
+        })}
         {tools.map((part) => {
           // The SDK pauses the turn here and waits for the user's decision.
           if (part.state === "approval-requested" && part.approval?.id) {
@@ -697,6 +730,57 @@ function AssistantMsg({
         )}
       </div>
     </div>
+  );
+}
+
+function ImportProvenance({ part }: { part: ToolPart }) {
+  const { t, locale } = useT();
+  if (part.state !== "output-available" || !part.output || typeof part.output !== "object")
+    return null;
+  const output = part.output as Record<string, unknown>;
+  const key = ["deals", "invoices", "campaigns", "accounts", "stalled"].find((k) =>
+    Array.isArray(output[k]),
+  );
+  if (!key) return null;
+  const rows = (output[key] as unknown[]).filter(
+    (value): value is Record<string, unknown> =>
+      !!value &&
+      typeof value === "object" &&
+      typeof (value as Record<string, unknown>)["id"] === "string",
+  );
+  if (!rows.length) return null;
+  return (
+    <Collapsible label={t("Última importación por registro")}>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {t("Solo indica la última importación conocida; los registros pueden cambiar después.")}
+      </p>
+      <ul className="max-h-52 space-y-1 overflow-y-auto text-xs text-muted-foreground">
+        {rows.map((row) => {
+          const source =
+            typeof row["lastImportSource"] === "string"
+              ? row["lastImportSource"]
+              : t("Desconocida");
+          const date =
+            typeof row["lastImportedAt"] === "string"
+              ? formatDateTime(row["lastImportedAt"], locale)
+              : null;
+          const name =
+            typeof row["company"] === "string"
+              ? row["company"]
+              : typeof row["client"] === "string"
+                ? row["client"]
+                : typeof row["name"] === "string"
+                  ? row["name"]
+                  : (row["id"] as string);
+          return (
+            <li key={row["id"] as string}>
+              {name} · {row["id"] as string} · {source}
+              {date ? ` · ${date}` : ""}
+            </li>
+          );
+        })}
+      </ul>
+    </Collapsible>
   );
 }
 

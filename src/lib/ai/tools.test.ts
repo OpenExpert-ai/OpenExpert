@@ -272,7 +272,7 @@ beforeEach(() => {
 const FsFile = { path: "/r/a.txt", name: "a.txt", size: 4 };
 
 describe("business tools with a connected source", () => {
-  it("labels the real integration name and drops the no-source note", async () => {
+  it("does not attribute every local row to a connected integration", async () => {
     const { getDb, persist } = await import("../db.server");
     const { raw } = await getDb();
     raw.run(
@@ -284,8 +284,9 @@ describe("business tools with a connected source", () => {
     const { tools } = await buildExpert(["ventas"]);
     const out = await exec(tools.get_pipeline_summary)({});
     expect(out["connected"]).toBe(true);
-    expect(out["source"]).toBe("Pipedrive");
-    expect(out["note"]).toBeUndefined();
+    expect(out["source"]).toBe("tabla local");
+    expect(out["note"]).toContain("Pipedrive");
+    expect(out["note"]).toContain("última importación conocida");
   });
 
   it("executes every business read handler for an Expert that owns the domains", async () => {

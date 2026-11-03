@@ -136,7 +136,7 @@ export function ActivityPage() {
         eyebrow={t("Auditoría")}
         title={t("Registro de Actividad")}
         desc={t(
-          "Cada consulta, acción y cambio de configuración queda trazado. Los ADMIN pueden revertir acciones con snapshot; las acciones pendientes se aprueban aquí o en el chat.",
+          "El registro muestra consultas, acciones y cambios de configuración. Puedes revertir cambios compatibles y aprobar acciones pendientes aquí o en el chat.",
         )}
       />
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-6 py-3">

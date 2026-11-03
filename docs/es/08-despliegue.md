@@ -111,6 +111,13 @@ el repositorio.
 git pull && npm ci && npm run desktop:install
 ```
 
+El lanzador de escritorio comprueba si la build de producción es más antigua
+que el código de la aplicación, el motor compartido, el esquema de la base de
+datos, los archivos estáticos o la configuración de compilación. Si lo es,
+arranca el servidor de desarrollo hasta que se reconstruya la build. Esta
+comprobación de fechas no detecta archivos eliminados ni garantiza que se haya
+reiniciado un servidor que ya estaba en marcha.
+
 El servidor y la ventana son mitades independientes y no hay saludo de versión
 entre ellas: una ventana instalada hace semanas sigue cargando lo que sirva el
 servidor, así que un `git pull` que toque `src-tauri/` pide reinstalar la ventana
@@ -192,11 +199,7 @@ ejecutables y el icono tiene que ser de 512×512. `npm run desktop:check` hace e
 misma comprobación por su cuenta (sale con código distinto de cero si el lanzador
 está muerto, que es lo que informa `install.sh --doctor`).
 
-`install.sh` termina con el asistente de modelo (`--no-setup` lo salta).
-`--with-ollama` instala Ollama y descarga llama3.1 antes; el asistente ofrece
-todos los proveedores del catálogo. Después ofrece las claves opcionales de
-Pipedrive y Holded, leídas por teclado y guardadas con permisos `0600`; no se
-descarga ni se conecta nada sin que lo digas.
+`install.sh` instala la aplicación sin pedir proveedor, modelo ni conectores. Se configuran en Ajustes → IA y Ajustes → Datos. La opción `--with-ollama` instala Ollama y descarga llama3.1; `--no-setup` se sigue aceptando por compatibilidad.
 
 La ventana carga la URL que sirve el comando, no un puerto compilado dentro del
 binario: `openexpert desktop` exporta `OPENEXPERT_DESKTOP_URL` y la cáscara

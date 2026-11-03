@@ -70,17 +70,16 @@ export interface ChatToolsContext {
  * import their own CSV into the same tables. The note therefore follows
  * `rowProvenance` —nothing, only the `demo-` sample rows, or rows the owner
  * brought in— and "the local database is empty" is only said when it is. The app
- * ships with no business data and no connectors, so an empty table still gets a
- * clear note instead of invented figures.
+ * ships with no business data, so an empty table still gets a clear note.
+ * A connected integration does not establish the origin of every local row.
  */
-const NO_SOURCE_NOTE =
-  "No hay ninguna fuente de negocio conectada. Los datos no son reales: la base local está vacía y los conectores reales están en la hoja de ruta.";
+const NO_SOURCE_NOTE = "No hay ninguna fuente de negocio conectada y la tabla local está vacía.";
 
 const DEMO_SOURCE_NOTE =
-  "No hay ninguna fuente de negocio conectada: lo que hay son datos de ejemplo (marcados demo) y los conectores reales están en la hoja de ruta.";
+  "No hay ninguna fuente de negocio conectada: los datos son de ejemplo (marcados demo).";
 
 const LOCAL_SOURCE_NOTE =
-  "No hay ninguna fuente de negocio conectada: los datos son locales, importados por el usuario en este equipo, y los conectores reales están en la hoja de ruta.";
+  "No hay ninguna fuente de negocio conectada: hay datos locales en la tabla, que pueden incluir datos de ejemplo.";
 
 const PROVENANCE_NOTE: Record<RowProvenance, string> = {
   empty: NO_SOURCE_NOTE,
@@ -115,17 +114,18 @@ function withSource<T extends object>(
   src: { connected: boolean; name: string | null; provenance: RowProvenance },
   note?: string,
 ): T & { source: string; connected: boolean; note?: string } {
-  // Two different facts end up in the same field: where the data comes from, and
-  // whether the tool itself cut what it returned. A list that stops at the cap
-  // still has to say so, and an imported CSV is not "the database is empty".
-  // `connected` keeps its narrow meaning —an integration is feeding the table—,
-  // so the note is what carries the rest.
-  const notes = [src.connected ? null : PROVENANCE_NOTE[src.provenance], note ?? null].filter(
-    (n): n is string => !!n,
-  );
+  // Connection status cannot establish the provenance of each row: imports,
+  // samples and connector data share a table. Keep truncation notices too.
+  const notes = [
+    src.connected
+      ? `Consulta de la tabla local; ${src.name ?? "un conector"} está conectado. Puede haber datos importados o de ejemplo.`
+      : PROVENANCE_NOTE[src.provenance],
+    "lastImportSource y lastImportedAt indican la última importación conocida, no el origen de cada campo; null significa desconocido. Las filas pueden haberse modificado después.",
+    note ?? null,
+  ].filter((n): n is string => !!n);
   return {
     ...data,
-    source: src.connected ? (src.name ?? "conectado") : "sin conexión",
+    source: src.connected ? "tabla local" : "sin conexión",
     connected: src.connected,
     ...(notes.length ? { note: notes.join(" ") } : {}),
   };

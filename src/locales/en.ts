@@ -4,6 +4,42 @@
 // while translations are completed.
 
 export const en: Record<string, string> = {
+  "Comprobar copia": "Check backup",
+  "Comprobación completada sin modificar tus datos.": "Check completed without changing your data.",
+  "Contenido: {list}": "Contents: {list}",
+  "La copia no contiene una base de datos.": "The backup does not contain a database.",
+  "Faltan archivos de integración: {list}": "Integration files missing: {list}",
+  "Se comprueban el formato, la configuración y la apertura de la base de datos; no se prueba la conexión a los servicios.":
+    "The format, configuration, and database opening are checked; service connections are not tested.",
+  "El CSV supera el límite de 5 MB.": "The CSV exceeds the 5 MB limit.",
+  "Vista previa del CSV": "CSV preview",
+  "Filas válidas: {n}": "Valid rows: {n}",
+  "Filas con error: {n}": "Rows with errors: {n}",
+  "Filas fuera del límite: {n}": "Rows beyond the limit: {n}",
+  "Identificadores repetidos en el archivo: {n}. Las últimas filas reemplazan las anteriores.":
+    "Repeated IDs in the file: {n}. Later rows replace earlier ones.",
+  "Los identificadores ya existentes se actualizarán al importar.":
+    "Existing IDs will be updated on import.",
+  "Línea {row}: {message}": "Line {row}: {message}",
+  "Confirmar importación": "Confirm import",
+  "Añade tus datos": "Add your data",
+  "Importa un CSV, conecta un servicio o prueba datos de ejemplo.":
+    "Import a CSV, connect a service, or try sample data.",
+  "Gestionar datos": "Manage data",
+  "Comprueba las fuentes y los datos importantes: la IA puede equivocarse.":
+    "Check sources and important data: AI can make mistakes.",
+  "El registro muestra consultas, acciones y cambios de configuración. Puedes revertir cambios compatibles y aprobar acciones pendientes aquí o en el chat.":
+    "The log shows queries, actions, and configuration changes. You can revert supported changes and approve pending actions here or in chat.",
+  "Consultas realizadas": "Queries performed",
+  "Informe diario de facturas vencidas": "Daily overdue invoice report",
+  "Opcional. Una vez al día, mientras OpenExpert está abierto, cuenta las facturas vencidas locales y guarda el resultado en Actividad. No envía mensajes ni modifica facturas. Puede incluir datos de ejemplo.":
+    "Optional. Once a day while OpenExpert is open, count local overdue invoices and save the result in Activity. It sends no messages and does not change invoices. It may include sample data.",
+  "Activar informe diario": "Enable daily report",
+  "No se pudo actualizar el informe diario.": "Could not update the daily report.",
+  "Última importación por registro": "Last import by record",
+  "Solo indica la última importación conocida; los registros pueden cambiar después.":
+    "Shows only the last known import; records may change afterwards.",
+  Desconocida: "Unknown",
   // --- Shell -----------------------------------------------------------------
   "Habla con tu empresa": "Talk to your company",
   Expert: "Expert",

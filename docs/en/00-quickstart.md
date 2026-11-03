@@ -92,9 +92,12 @@ The business tables start empty. Open **Settings → Data**:
 - **Connectors** are optional: Pipedrive (deals) and Holded (invoices) are
   pull-only and need your own API token/key. Paste it and press **Sync**.
 
-On Linux, `./install.sh` runs the provider wizard at the end; add
-`--with-ollama` to install Ollama and pull llama3.1 first, and it also offers
-the two connectors without writing the key to a log.
+Before a CSV import, the preview shows valid rows, row errors, rows beyond the
+limit and repeated IDs in the file. Confirm to import; existing IDs are updated
+and the last occurrence of a repeated ID wins. The preview shows at most 20
+errors and reports the total.
+
+On Linux, `./install.sh` installs the desktop app without asking for a provider, model or connectors. Configure them in Settings → AI and Settings → Data. Add `--with-ollama` to install Ollama and pull llama3.1.
 
 ## Where things live
 

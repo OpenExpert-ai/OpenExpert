@@ -190,6 +190,9 @@ export async function pipelineSummary() {
     stalled: open
       .filter((d) => d.daysInStage > 21)
       .map((d) => ({
+        id: d.id,
+        lastImportSource: d.importSource,
+        lastImportedAt: d.importedAt,
         company: d.company,
         stage: d.stage,
         value: Number(d.value),
@@ -209,6 +212,9 @@ export async function listDeals(stage: string | null) {
     )
     .sort((a, b) => b.value - a.value)
     .map((d) => ({
+      id: d.id,
+      lastImportSource: d.importSource,
+      lastImportedAt: d.importedAt,
       company: d.company,
       stage: d.stage,
       value: Number(d.value),
@@ -247,6 +253,8 @@ export async function overdueInvoices(minAmount: number | null) {
     .sort((a, b) => b.amount - a.amount)
     .map((i) => ({
       id: i.id,
+      lastImportSource: i.importSource,
+      lastImportedAt: i.importedAt,
       client: i.client,
       amount: Number(i.amount),
       daysOverdue: daysSince(i.dueDate, today),
@@ -266,6 +274,8 @@ export async function campaignPerformance() {
       const cpaTarget = Number(c.cpaTarget);
       return {
         id: c.id,
+        lastImportSource: c.importSource,
+        lastImportedAt: c.importedAt,
         name: c.name,
         channel: c.channel,
         status: c.status,
@@ -291,6 +301,9 @@ export async function churnRisk() {
     .all()
     .sort((a, b) => b.churnRisk - a.churnRisk)
     .map((a) => ({
+      id: a.id,
+      lastImportSource: a.importSource,
+      lastImportedAt: a.importedAt,
       name: a.name,
       mrr: Number(a.mrr),
       usageTrendPct: Math.round(Number(a.usageTrend) * 100),

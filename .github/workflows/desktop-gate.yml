@@ -123,6 +123,24 @@ jobs:
           test "$(run_it doctor --verbose)" = "STUB doctor --verbose"
           echo "::notice title=Desktop gates::D routes subcommands to the CLI and only opens the window with no arguments"
 
+      # Remove and reinstall the launcher without touching the owner's data.
+      - name: D — uninstall and reinstall preserve data
+        run: |
+          set -euo pipefail
+          home="${RUNNER_TEMP}/desktop-home/home"
+          mkdir -p "${home}/.openexpert"
+          printf 'data sentinel' > "${home}/.openexpert/openexpert.db"
+          HOME="${home}" node scripts/uninstall-desktop.mjs
+          test ! -e "${home}/.local/bin/openexpert"
+          test ! -e "${home}/.local/bin/openexpert-desktop"
+          test ! -e "${home}/.local/share/applications/openexpert.desktop"
+          test ! -e "${home}/.local/share/icons/hicolor/512x512/apps/openexpert.png"
+          test "$(cat "${home}/.openexpert/openexpert.db")" = 'data sentinel'
+          HOME="${home}" node scripts/uninstall-desktop.mjs
+          HOME="${home}" node scripts/install-desktop.mjs --skip-build
+          HOME="${home}" node scripts/install-desktop.mjs --check
+          test "$(cat "${home}/.openexpert/openexpert.db")" = 'data sentinel'
+
       - name: E · F · G — not automated yet
         run: |
           echo "::notice title=Desktop gates::E (runtime smoke under Xvfb) and F (glibc, ldd, objdump of the binary) need a Rust build, which this advisory job skips."

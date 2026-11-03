@@ -107,7 +107,7 @@ O instala todo (dependencias, build, lanzador y entrada de menú) con un solo
 comando:
 
 ```sh
-./install.sh              # pregunta el proveedor; --with-ollama instala Ollama + llama3.1
+./install.sh              # configura el modelo y los conectores en Ajustes; --with-ollama instala Ollama + llama3.1
 ```
 
 Ver [Despliegue](./docs/es/08-despliegue.md).

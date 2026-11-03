@@ -28,7 +28,7 @@ pero **no la ejecución**: la IA propone y la persona aprueba.
 - **Expertos** con aislamiento por dominio. El conjunto inicial es `general`,
   `ventas`, `finanzas`, `marketing`.
 - **Chat con datos reales** mediante herramientas que consultan la base de datos
-  local. No inventa cifras.
+  local. El modelo puede equivocarse: comprueba las cifras importantes y sus fuentes.
 - **Gobierno:** registro de actividad de cada evento relevante y reversión de los
   cambios reversibles.
 - **Fuentes** (opcional): Google Drive, carpetas locales y Notion — leer, crear

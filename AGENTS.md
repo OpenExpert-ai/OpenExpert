@@ -31,10 +31,16 @@ disagree, the code is right and the docs are the bug.
 - **Business data is not seeded.** `deals`/`invoices`/`campaigns`/`accounts`
   start empty and are only filled by a real connector (roadmap) or an import;
   migration `0004` clears the old fixtures. Only the configuration (Experts,
-  integrations) is seeded. Business tools report provenance (`connected`) and
-  never present local data as real.
+  integrations) is seeded. Business tools report connection status separately
+  from row provenance: a connected integration does not establish the origin
+  of each row in the shared local tables. Since migration `0008`, imported rows
+  record the source and time of their latest import; old rows remain unknown,
+  and subsequent edits may alter fields. The chat can show this metadata without
+  treating it as a citation for every claim.
 - Schema changes: keep `schema.ts` and `init.sql` in sync for fresh installs and
   add a numbered migration for existing databases.
+- CSV import previews valid rows, errors, omitted rows and repeated IDs before
+  confirmation. Existing IDs are updated and repeated IDs take the last row.
 
 ## 3. Code paths and rules
 
@@ -98,9 +104,14 @@ disagree, the code is right and the docs are the bug.
   actions are only _proposed_ (`propose_*`) and require explicit human approval.
 - The assistant always answers in **Spanish**; the interface is bilingual
   (Spanish/English).
-- Autonomous processes were removed (they were mocks: "running" only bumped a
-  counter and there was no scheduler). Migration `0005` drops the table; rebuild
-  them for real per the roadmap.
+- The empty chat links to model and data settings without claiming that an
+  untested model is ready. AI answers may contain errors; users are asked to
+  verify important data and sources.
+- The optional daily overdue invoice report runs only while a window is open.
+  It counts local invoices, may include sample data, and writes one activity
+  entry per local day; it makes no external changes and does not backfill days.
+  Its deterministic ID deduplicates requests to the same server, not multiple
+  independent server processes. Other autonomous processes remain pending.
 
 ## 5. Model provider: configuration, not code
 
@@ -214,6 +225,9 @@ Drive and local folders in `src/lib/office.server.ts`.
   the integrations connected. The key makes the bundle as sensitive as the
   tokens; restoring replaces the current data and reports what the bundle did
   not carry.
+- Settings → Data can check an encrypted or plain backup without applying it:
+  `inspectBackup` shares the restore's format, configuration and database
+  checks and reports included and missing files; it does not test connections.
 - **A restored configuration is validated like a typed one.** The bundle is a
   file that arrives from outside, so `restoreBackup` checks the
   `openexpert.json` it carries with the same schema the panel and the raw
@@ -248,6 +262,13 @@ Drive and local folders in `src/lib/office.server.ts`.
   `npm run desktop:check` fail on a launcher whose `exec` target no longer exists.
   The launcher opens the window only with no argument: any subcommand (`doctor`,
   `fix`, `init`, `serve`, `version`) runs the CLI and never starts the GUI.
+  The installer does not prompt for a provider, model or connectors: configure
+  them in Settings. `--with-ollama` explicitly installs Ollama and its model;
+  `--no-setup` is retained as a compatibility option.
+  Before starting the production build, the launcher compares its timestamp with
+  app and shared engine sources, the database schema, public assets and build
+  configuration; an older build falls back to development mode. This timestamp
+  check cannot detect deleted files or restart an already-running server.
 - **The window follows the port.** The window URL is not the one compiled into
   the binary: `openexpert desktop` exports `OPENEXPERT_DESKTOP_URL` and the shell
   navigates to it (`src-tauri/src/main.rs`), so `PORT=3100 openexpert` opens 3100. `build.frontendDist` is `src-tauri/fallback/` (one page, no web app
@@ -264,6 +285,10 @@ Drive and local folders in `src/lib/office.server.ts`.
   missing is listed in `docs/en/08-deployment.md` §5.
 
 ## 8. Repository layout and tooling
+
+- Owner preference: publish completed and verified changes to production for all
+  users without asking again, following the protected PR and release workflow.
+  Report any checks, permissions or release gates that prevent publication.
 
 - `packages/openexpert/` is the shared MIT engine: `model-provider`, `config`,
   `storage`/`secrets` interfaces, the tool catalog and the `openexpert` CLI

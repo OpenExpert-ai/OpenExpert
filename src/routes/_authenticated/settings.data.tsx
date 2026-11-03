@@ -17,6 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
+import { DailyReportSettings } from "@/components/DailyReport";
 import { buttonVariants } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -37,10 +38,16 @@ import {
   exportEncryptedBackup,
   getDataStats,
   importBackup,
+  inspectBackup,
   resetData,
   vacuumDb,
 } from "@/lib/settings.functions";
-import { BUSINESS_COLUMNS, CSV_MAX_ROWS, type BusinessEntity } from "@/lib/business-csv";
+import {
+  BUSINESS_COLUMNS,
+  CSV_MAX_ROWS,
+  parseBusinessCsv,
+  type BusinessEntity,
+} from "@/lib/business-csv";
 import {
   clearDemo,
   getBusinessDataStatus,
@@ -126,6 +133,7 @@ function syncedEntityLabel(name: string, t: (text: string) => string): string {
 function DataSettings() {
   const get = useServerFn(getDataStats);
   const doImport = useServerFn(importBackup);
+  const doInspect = useServerFn(inspectBackup);
   const doExportEncrypted = useServerFn(exportEncryptedBackup);
   const doClearChat = useServerFn(clearChatHistory);
   const doVacuum = useServerFn(vacuumDb);
@@ -151,9 +159,17 @@ function DataSettings() {
   const [importWord, setImportWord] = useState("");
   const [clearOpen, setClearOpen] = useState(false);
   const [entity, setEntity] = useState<BusinessEntity>("deals");
+  const [csvPreview, setCsvPreview] = useState<{
+    content: string;
+    entity: BusinessEntity;
+    result: ReturnType<typeof parseBusinessCsv>;
+  } | null>(null);
   const [pipedriveToken, setPipedriveToken] = useState("");
   const [holdedKey, setHoldedKey] = useState("");
   const [backupPassphrase, setBackupPassphrase] = useState("");
+  const [inspection, setInspection] = useState<{ included: string[]; missing: string[] } | null>(
+    null,
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
 
@@ -210,6 +226,22 @@ function DataSettings() {
     }
   };
 
+  const onInspect = async (file: File) => {
+    setInspection(null);
+    setBusy("inspect");
+    try {
+      const content = await file.text();
+      const result = await doInspect({
+        data: backupPassphrase ? { content, passphrase: backupPassphrase } : { content },
+      });
+      setInspection(result);
+    } catch (e) {
+      toast.error((e as Error).message || t("Copia no válida"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onClearChat = async () => {
     setBusy("chat");
     try {
@@ -259,9 +291,22 @@ function DataSettings() {
   };
 
   const onCsv = async (file: File) => {
+    try {
+      if (file.size > 5_000_000) throw new Error(t("El CSV supera el límite de 5 MB."));
+      const content = await file.text();
+      setCsvPreview({ content, entity, result: parseBusinessCsv(entity, content) });
+    } catch (e) {
+      toast.error((e as Error).message || t("CSV no válido"));
+    } finally {
+      if (csvRef.current) csvRef.current.value = "";
+    }
+  };
+
+  const confirmCsv = async () => {
+    if (!csvPreview) return;
+    const { content, entity } = csvPreview;
     setBusy("csv");
     try {
-      const content = await file.text();
       const r = await doImportCsv({ data: { entity, content } });
       const imported = r.inserted + r.updated;
       // Un fichero sin una sola fila buena no es una importación: anunciarla en
@@ -306,11 +351,11 @@ function DataSettings() {
         );
       }
       await refresh();
+      setCsvPreview(null);
     } catch (e) {
       toast.error((e as Error).message || t("CSV no válido"));
     } finally {
       setBusy(null);
-      if (csvRef.current) csvRef.current.value = "";
     }
   };
 
@@ -478,6 +523,66 @@ function DataSettings() {
               "La plantilla trae las cabeceras que entiende el importador; también acepta una exportación con nombres equivalentes en español o inglés.",
             )}
           </p>
+          {csvPreview && (
+            <section
+              aria-label={t("Vista previa del CSV")}
+              className="space-y-2 rounded-md border border-border p-3 text-sm"
+            >
+              <h3 className="font-medium">
+                {t("Vista previa del CSV")} · {t(ENTITY_LABEL[csvPreview.entity])}
+              </h3>
+              <p>
+                {t("Filas válidas: {n}", { n: csvPreview.result.rows.length })} ·{" "}
+                {t("Filas con error: {n}", { n: csvPreview.result.errors.length })} ·{" "}
+                {t("Filas fuera del límite: {n}", { n: csvPreview.result.omitted })}
+              </p>
+              {(() => {
+                const ids = csvPreview.result.rows.map((row) => row.data.id);
+                const repeated = ids.length - new Set(ids).size;
+                return repeated > 0 ? (
+                  <p>
+                    {t(
+                      "Identificadores repetidos en el archivo: {n}. Las últimas filas reemplazan las anteriores.",
+                      { n: repeated },
+                    )}
+                  </p>
+                ) : null;
+              })()}
+              <p className="text-muted-foreground">
+                {t("Los identificadores ya existentes se actualizarán al importar.")}
+              </p>
+              {csvPreview.result.errors.length > 0 && (
+                <ul className="max-h-40 overflow-auto text-destructive">
+                  {csvPreview.result.errors.slice(0, 20).map((error, index) => (
+                    <li key={`${error.row}-${index}`}>
+                      {t("Línea {row}: {message}", { row: error.row, message: error.message })}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {csvPreview.result.errors.length > 20 && (
+                <p>{t("Se detallan solo las {n} primeras.", { n: 20 })}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={btnPrimary}
+                  disabled={busy !== null || csvPreview.result.rows.length === 0}
+                  onClick={() => void confirmCsv()}
+                >
+                  {t("Confirmar importación")}
+                </button>
+                <button
+                  type="button"
+                  className={btnGhost}
+                  disabled={busy !== null}
+                  onClick={() => setCsvPreview(null)}
+                >
+                  {t("Cancelar")}
+                </button>
+              </div>
+            </section>
+          )}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {business.data ? (
               <>
@@ -519,6 +624,8 @@ function DataSettings() {
           </div>
         </div>
       </Card>
+
+      <DailyReportSettings />
 
       <Card
         title={t("Conectores de negocio")}
@@ -677,7 +784,51 @@ function DataSettings() {
               }}
             />
           </label>
+          <label className={`${btnGhost} cursor-pointer items-center gap-1.5`}>
+            {busy === "inspect" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            {t("Comprobar copia")}
+            <input
+              type="file"
+              accept="application/json,.json,.enc"
+              className="hidden"
+              disabled={busy !== null}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void onInspect(f);
+              }}
+            />
+          </label>
         </div>
+        {inspection && (
+          <div role="status" className="mt-3 space-y-1 text-sm">
+            <p>{t("Comprobación completada sin modificar tus datos.")}</p>
+            <p>
+              {t("Contenido: {list}", {
+                list: inspection.included.map((f) => fileLabel(f, t)).join(", ") || "—",
+              })}
+            </p>
+            {!inspection.included.includes("db") && (
+              <p>{t("La copia no contiene una base de datos.")}</p>
+            )}
+            {inspection.missing.length > 0 && (
+              <p>
+                {t("Faltan archivos de integración: {list}", {
+                  list: inspection.missing.map((f) => fileLabel(f, t)).join(", "),
+                })}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "Se comprueban el formato, la configuración y la apertura de la base de datos; no se prueba la conexión a los servicios.",
+              )}
+            </p>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground">
           {t(
             "La copia cifrada pide esta contraseña al restaurar; si la pierdes, no se puede abrir.",

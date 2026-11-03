@@ -11,7 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { buildBackup, dataStats, resetData, restoreBackup } from "./backup.server";
+import { buildBackup, dataStats, inspectBackup, resetData, restoreBackup } from "./backup.server";
 import { resetDbHandle } from "./db.server";
 
 /**
@@ -130,6 +130,28 @@ afterAll(() => {
 });
 
 describe("backups", () => {
+  it("checks a backup without changing the current installation", async () => {
+    const previous = { dir: process.env["OPENEXPERT_DATA_DIR"], cwd: process.cwd() };
+    const install = await installCurrent();
+    try {
+      const current = readFileSync(join(install.data, "openexpert.db"));
+      const result = await inspectBackup(
+        JSON.stringify({
+          ...buildBackup(),
+          files: { db: install.dbBlob },
+        }),
+      );
+      expect(result.included).toEqual(["db"]);
+      expect(readFileSync(join(install.data, "openexpert.db"))).toEqual(current);
+      expect(existsSync(join(install.data, "openexpert.db.bak"))).toBe(false);
+      await expect(
+        inspectBackup(JSON.stringify({ ...buildBackup(), files: { db: "bad" } })),
+      ).rejects.toThrow();
+      expect(readFileSync(join(install.data, "openexpert.db"))).toEqual(current);
+    } finally {
+      dropInstallation(install, previous);
+    }
+  });
   it("seeds the database and builds a bundle", async () => {
     const stats = await dataStats();
     expect(stats.experts).toBeGreaterThan(0);

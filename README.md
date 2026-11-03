@@ -104,7 +104,7 @@ Or install everything (dependencies, build, launcher, menu entry) with one
 command:
 
 ```sh
-./install.sh              # asks for the model provider; --with-ollama installs Ollama + llama3.1
+./install.sh              # configure the model and connectors in Settings; --with-ollama installs Ollama + llama3.1
 ```
 
 See [Deployment](./docs/en/08-deployment.md).

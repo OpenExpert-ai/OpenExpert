@@ -83,6 +83,12 @@ where you would keep a password. Bundles written before format 2 carried only
 the database, the configuration and the credential files without the key;
 importing one reports what it could not bring.
 
+Settings → Data → Check backup opens an encrypted or plain bundle without
+changing the installation. It checks the format, configuration and whether the
+database opens, and reports included and missing files. It does not test service
+connections or prove that every database record is usable. Enter the passphrase
+first for an encrypted bundle. Scheduled backups remain unavailable.
+
 A bundle is a file that arrives from outside, so the configuration it carries
 is checked before anything is written: the same limits the panel and the raw
 editor enforce. A copy whose `openexpert.json` asks for more than 200 steps per
@@ -105,3 +111,13 @@ and the message says why.
 
 - [Deployment](./08-deployment.md) — how to start it.
 - [Security & access](./04-security.md) — audit and revert.
+
+## Daily overdue invoice report
+
+Settings → Data offers an optional daily report, disabled by default. While an
+OpenExpert window is open it counts overdue local invoices and records the count
+in Activity once per local calendar day. It never edits invoices or sends
+messages, and the count may include sample data. If the app is closed at the
+usual time, the next open window runs the check; it does not run in the
+background or backfill missed days. Multiple windows using the same server share
+one daily activity entry. This does not coordinate separate server processes.

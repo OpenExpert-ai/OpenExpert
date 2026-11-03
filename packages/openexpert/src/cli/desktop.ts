@@ -92,12 +92,39 @@ function newestMtime(dir: string): number {
   return newest;
 }
 
-/** True when the production build exists and is not older than src/. */
+// These inputs contribute to the web server or its static assets. Checking only
+// src/ could serve an old schema, shared engine, public file or build config.
+const BUILD_INPUTS = [
+  "src",
+  "drizzle",
+  "public",
+  "packages/openexpert/src",
+  "packages/openexpert/schema",
+  "packages/openexpert/package.json",
+  "package.json",
+  "package-lock.json",
+  "vite.config.ts",
+  "tsconfig.json",
+];
+
+/** True when the production build exists and is not older than its inputs. */
 function buildIsFresh(repo: string): boolean {
   const built = join(repo, ".output", "server", "index.mjs");
   if (!existsSync(built)) return false;
   try {
-    return statSync(built).mtimeMs >= newestMtime(join(repo, "src"));
+    const newestInput = Math.max(
+      0,
+      ...BUILD_INPUTS.map((input) => {
+        const path = join(repo, input);
+        try {
+          const stat = statSync(path);
+          return stat.isDirectory() ? newestMtime(path) : stat.mtimeMs;
+        } catch {
+          return 0;
+        }
+      }),
+    );
+    return statSync(built).mtimeMs >= newestInput;
   } catch {
     return true;
   }

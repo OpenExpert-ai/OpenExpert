@@ -85,6 +85,13 @@ propios tokens: guárdalo donde guardarías una contraseña. Las copias anterior
 al formato 2 solo llevaban la base de datos, la configuración y los ficheros de
 credenciales sin la clave; al importarlas se avisa de lo que no pudieron traer.
 
+En Ajustes → Datos → Comprobar copia puedes revisar un fichero cifrado o plano
+sin modificar la instalación. Se comprueban el formato, la configuración y la
+apertura de la base de datos, y se enumeran los archivos incluidos y ausentes.
+No se prueban conexiones a servicios ni se verifica cada registro. Para una
+copia cifrada, introduce primero la contraseña. Las copias programadas aún no
+están disponibles.
+
 Una copia es un fichero que llega de fuera, así que la configuración que trae
 se comprueba antes de escribir nada: los mismos límites que aplican el panel y
 el editor en crudo. Una copia cuyo `openexpert.json` pide más de 200 pasos por
@@ -107,3 +114,14 @@ mensaje dice por qué.
 
 - [Despliegue](./08-despliegue.md) — cómo arrancarlo.
 - [Seguridad y acceso](./04-seguridad-y-acceso.md) — auditoría y reversión.
+
+## Informe diario de facturas vencidas
+
+Ajustes → Datos ofrece un informe diario opcional, desactivado por defecto.
+Mientras hay una ventana de OpenExpert abierta, cuenta las facturas locales
+vencidas y registra el resultado en Actividad una vez por día del calendario
+local. No modifica facturas ni envía mensajes, y el recuento puede incluir datos
+de ejemplo. Si la aplicación está cerrada, la siguiente ventana abierta hace la
+comprobación; no se ejecuta en segundo plano ni recupera los días perdidos.
+Varias ventanas del mismo servidor comparten una sola entrada diaria. Esto no
+coordina procesos de servidor separados.

@@ -11,7 +11,7 @@
 // El otro lado del mismo aviso: un fichero que no importa nada no puede
 // anunciarse primero como «Importados 0 registros», en verde.
 
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toast = vi.hoisted(() => ({
@@ -70,6 +70,7 @@ vi.mock("@/lib/settings.functions", () => ({
   exportEncryptedBackup: vi.fn(),
   getDataStats: vi.fn(),
   importBackup: vi.fn(),
+  inspectBackup: vi.fn(),
   resetData: vi.fn(),
   vacuumDb: vi.fn(),
 }));
@@ -108,10 +109,12 @@ async function mountPage(): Promise<HTMLInputElement> {
   return input as HTMLInputElement;
 }
 
-async function importCsv(input: HTMLInputElement, content: string) {
-  const file = csvFile(content);
+async function importCsv(input: HTMLInputElement, _content: string) {
+  // Los resultados se simulan abajo; la vista previa necesita una fila válida.
+  const file = csvFile("company,value\nEjemplo,1\n");
   Object.defineProperty(input, "files", { value: [file], configurable: true });
   fireEvent.change(input);
+  fireEvent.click(await screen.findByRole("button", { name: "Confirmar importación" }));
   await waitFor(() => expect(businessFns.importBusinessCsv).toHaveBeenCalled());
 }
 
@@ -126,6 +129,21 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+it("muestra errores y duplicados antes de importar y permite cancelar", async () => {
+  const input = await mountPage();
+  Object.defineProperty(input, "files", {
+    value: [csvFile("id,company,value\na,Uno,1\na,Dos,2\nb,,3\n")],
+    configurable: true,
+  });
+  fireEvent.change(input);
+  expect(await screen.findByText(/Identificadores repetidos en el archivo: 1/)).toBeTruthy();
+  expect(screen.getByText(/Línea 4:/)).toBeTruthy();
+  expect(businessFns.importBusinessCsv).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+  expect(screen.queryByText(/Identificadores repetidos/)).toBeNull();
+  expect(businessFns.importBusinessCsv).not.toHaveBeenCalled();
+});
 
 describe("importación de CSV: el recuento de filas rechazadas", () => {
   it("dice las 45 que se cayeron, no las 20 que caben en el detalle", async () => {
