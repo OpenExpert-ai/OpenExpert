@@ -63,6 +63,8 @@ npm run dev          # http://localhost:3000
 
 ---
 
+En el chat, **Primeros pasos** enlaza a los ajustes del modelo y los datos. Puedes ocultar la guía y volver a abrirla desde cualquier conversación. Elegir un modelo no confirma que la conexión funcione; pruébala en Ajustes → IA.
+
 ## Elegir un modelo
 
 Ver [Proveedores de IA](./13-proveedores-ia.md). En resumen:

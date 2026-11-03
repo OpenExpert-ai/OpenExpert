@@ -41,6 +41,10 @@ disagree, the code is right and the docs are the bug.
   add a numbered migration for existing databases.
 - CSV import previews valid rows, errors, omitted rows and repeated IDs before
   confirmation. Existing IDs are updated and repeated IDs take the last row.
+- Business connector syncs refuse malformed lists or pagination and missing or
+  repeated next offsets/cursors before importing; a response that claims more
+  pages cannot be reported as a complete sync. Explicit row/page caps still
+  import the downloaded rows with a truncation warning.
 
 ## 3. Code paths and rules
 
@@ -104,9 +108,11 @@ disagree, the code is right and the docs are the bug.
   actions are only _proposed_ (`propose_*`) and require explicit human approval.
 - The assistant always answers in **Spanish**; the interface is bilingual
   (Spanish/English).
-- The empty chat links to model and data settings without claiming that an
-  untested model is ready. AI answers may contain errors; users are asked to
-  verify important data and sources.
+- The chat links to model and data settings in a dismissible, reopenable guide
+  without claiming that an untested model is ready. Its dismissed state is
+  stored in the browser; the guide remains usable if storage is unavailable.
+  AI answers may contain errors; users are asked to verify important data and
+  sources.
   Successful document reads with text can be inspected by file identifier,
   starting line and partial-read status; searches and unsuccessful reads are
   not shown as reads, and these records are not citations for individual claims.

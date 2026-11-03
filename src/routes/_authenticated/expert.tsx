@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ExpertForm } from "./experts";
 import { ApprovalOutcome } from "@/components/chat/ApprovalOutcome";
+import { GettingStarted } from "@/components/chat/GettingStarted";
 
 // react-markdown + remark-gfm + micromark weigh ~200 KB raw (~55 KB gzip). They
 // are only needed once there is assistant text to render, so they load on
@@ -305,6 +306,9 @@ function ChatWindow({
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-8">
+          <div className="pt-8">
+            <GettingStarted hasBusinessData={businessData} hasMessages={messages.length > 0} />
+          </div>
           {messages.length === 0 && (
             <div className="py-14 text-center">
               <div className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-primary">
@@ -319,42 +323,6 @@ function ChatWindow({
               <p className="mx-auto mt-3 max-w-md text-xs text-muted-foreground">
                 {t("Comprueba las fuentes y los datos importantes: la IA puede equivocarse.")}
               </p>
-              <div className="mx-auto mt-8 max-w-lg rounded-lg border border-border bg-card p-5 text-left">
-                <div className="text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-                  {t("Primeros pasos")}
-                </div>
-                <ol className="mt-3 space-y-2 text-sm">
-                  <SetupStep
-                    title={t("Elige tu modelo")}
-                    desc={t("Ollama, Gemini o tu propio endpoint.")}
-                    action={
-                      <Link
-                        to="/settings/ai"
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
-                      >
-                        {t("Configurar")}
-                      </Link>
-                    }
-                  />
-                  <SetupStep
-                    done={businessData}
-                    title={t("Añade tus datos")}
-                    desc={t("Importa un CSV, conecta un servicio o prueba datos de ejemplo.")}
-                    action={
-                      <Link
-                        to="/settings/data"
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
-                      >
-                        {t("Gestionar datos")}
-                      </Link>
-                    }
-                  />
-                  <SetupStep
-                    title={t("Pregunta lo que necesites")}
-                    desc={t("Las acciones sensibles te pedirán aprobación antes de ejecutarse.")}
-                  />
-                </ol>
-              </div>
               <div className="mt-8 grid gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -497,44 +465,6 @@ function ChatWindow({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function SetupStep({
-  done,
-  title,
-  desc,
-  action,
-}: {
-  done?: boolean;
-  title: string;
-  desc: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3">
-      <span
-        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
-          done
-            ? "border-success/50 bg-success/10 text-success"
-            : "border-border text-muted-foreground"
-        }`}
-        aria-hidden
-      >
-        {done ? (
-          <Check className="size-3" />
-        ) : (
-          <span className="size-1.5 rounded-full bg-current" />
-        )}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-medium text-foreground">{title}</span>
-          {action}
-        </span>
-        <span className="block text-xs text-muted-foreground">{desc}</span>
-      </span>
-    </li>
   );
 }
 

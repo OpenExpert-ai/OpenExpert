@@ -179,6 +179,8 @@ proveedor tiene más, el aviso del panel lo dice —«Sincronizados N registros;
 descarga se cortó en el tope y hay más sin traer»— en vez de dejar pasar el
 trozo por el total; el resto no se descarga y la integración sigue conectada.
 
+Si el proveedor anuncia más páginas pero no entrega un desplazamiento o cursor válido que avance, o devuelve una lista o estado de paginación inválidos, la sincronización falla antes de importar ninguna fila. El panel muestra el error; se puede reintentar cuando el proveedor responda correctamente. Es distinto del tope indicado arriba, donde las filas descargadas se importan con un aviso de recorte.
+
 ### Pipedrive
 
 **Ajustes → Datos → Conectores de negocio.** Crea un token de API personal en

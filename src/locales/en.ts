@@ -528,6 +528,10 @@ export const en: Record<string, string> = {
   "Eliminar conversación": "Delete conversation",
   "Habla con tu empresa.": "Talk to your company.",
   "Primeros pasos": "Getting started",
+  "Ocultar primeros pasos": "Hide getting started",
+  "Mostrar primeros pasos": "Show getting started",
+  "Puedes hacer estos pasos cuando quieras y volver a abrir esta guía desde el chat.":
+    "Complete these steps whenever you like and reopen this guide from the chat.",
   "Analizando contexto…": "Analysing context…",
   "Pensando…": "Thinking…",
   "La respuesta falló. Puedes volver a intentarlo.": "The response failed. You can try again.",

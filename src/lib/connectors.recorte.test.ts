@@ -119,3 +119,64 @@ describe("fetchHoldedInvoices: el tope de la descarga se dice", () => {
     expect(out.truncated).toBe(false);
   });
 });
+
+describe("respuestas incompletas de los conectores", () => {
+  const response = (body: unknown) => async () => jsonResponse(body);
+  const pipedrive = (body: unknown) =>
+    (async (input: string | URL | Request) =>
+      String(input).includes("/stages")
+        ? jsonResponse({ data: [] })
+        : jsonResponse(body)) as typeof fetch;
+
+  it.each([
+    { data: [{ id: 1 }], additional_data: { pagination: { more_items_in_collection: true } } },
+    {
+      data: [{ id: 1 }],
+      additional_data: { pagination: { more_items_in_collection: true, next_start: 0 } },
+    },
+    { data: [{ id: 1 }] },
+    { success: false, data: null },
+    { unexpected: [] },
+  ])("rechaza una respuesta incompleta de Pipedrive: %j", async (body) => {
+    await expect(fetchPipedriveDeals("token", pipedrive(body))).rejects.toThrow(/Pipedrive/);
+  });
+
+  it("acepta una cuenta de Pipedrive vacía confirmada", async () => {
+    const result = await fetchPipedriveDeals("token", pipedrive({ success: true, data: null }));
+    expect(result).toMatchObject({ rows: [], fetched: 0, truncated: false });
+  });
+
+  it.each([
+    { items: [], has_more: true },
+    { items: [{ id: "1" }], has_more: true, next_cursor: "" },
+    { items: [{ id: "1" }] },
+    { success: false, items: [] },
+    { unexpected: [] },
+  ])("rechaza una respuesta incompleta de Holded: %j", async (body) => {
+    await expect(fetchHoldedInvoices("key", response(body) as typeof fetch)).rejects.toThrow(
+      /Holded/,
+    );
+  });
+
+  it("rechaza JSON ilegible sin exponer contenido de la respuesta", async () => {
+    const invalid = (async () => new Response("respuesta rota")) as typeof fetch;
+    await expect(fetchHoldedInvoices("key", invalid)).rejects.toThrow(
+      "Holded devolvió una respuesta no válida; no se han importado datos.",
+    );
+  });
+
+  it("detecta un cursor de Holded que se repite", async () => {
+    const body = { items: [], has_more: true, next_cursor: "next" };
+    await expect(fetchHoldedInvoices("key", response(body) as typeof fetch)).rejects.toThrow(
+      /cursor/,
+    );
+  });
+
+  it("acepta una lista vacía de Holded", async () => {
+    const result = await fetchHoldedInvoices(
+      "key",
+      response({ items: [], has_more: false }) as typeof fetch,
+    );
+    expect(result).toMatchObject({ rows: [], fetched: 0, truncated: false });
+  });
+});
