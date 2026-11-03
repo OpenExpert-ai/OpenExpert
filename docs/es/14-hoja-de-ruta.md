@@ -30,4 +30,4 @@ Estado de los elementos implementados y pendientes.
 - [ ] **Otros procesos autónomos.** Hay un informe diario de facturas vencidas que funciona mientras la aplicación está abierta. Otros procesos necesitan ejecución real de etapas, planificación y, cuando proceda, aprobación.
 - [ ] **Instaladores firmados de Windows y macOS.** La CI genera `.msi`/`.dmg`
       sin firmar; la firma necesita certificados.
-- [ ] **Copias programadas.** La descarga cifrada con contraseña es manual hoy.
+- [ ] **Copias con la aplicación cerrada.** Las copias diarias cifradas funcionan mientras hay una ventana abierta; queda pendiente un programador independiente.

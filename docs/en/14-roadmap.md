@@ -30,4 +30,4 @@ Status of implemented and pending items.
 - [ ] **Broader autonomous processes.** A daily overdue-invoice report can run while the app is open. Other processes need real stage execution, scheduling and, when appropriate, approval.
 - [ ] **Signed Windows and macOS installers.** CI builds unsigned `.msi`/`.dmg`;
       signing needs certificates.
-- [ ] **Scheduled backups.** The passphrase-encrypted download is manual today.
+- [ ] **Background backups while closed.** Encrypted daily local backups work while a window is open; an independent scheduler remains pending.

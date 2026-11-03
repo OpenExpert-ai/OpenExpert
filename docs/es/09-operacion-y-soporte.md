@@ -89,8 +89,16 @@ En Ajustes → Datos → Comprobar copia puedes revisar un fichero cifrado o pla
 sin modificar la instalación. Se comprueban el formato, la configuración y la
 apertura de la base de datos, y se enumeran los archivos incluidos y ausentes.
 No se prueban conexiones a servicios ni se verifica cada registro. Para una
-copia cifrada, introduce primero la contraseña. Las copias programadas aún no
-están disponibles.
+copia cifrada, introduce primero la contraseña.
+
+En Ajustes → Datos también puedes activar una copia local cifrada diaria mientras
+haya una ventana abierta. Introduce una contraseña de al menos ocho caracteres;
+solo se guarda en la memoria del servidor y hay que reactivarlo tras reiniciarlo.
+Las copias viven en `OPENEXPERT_DATA_DIR/automatic-backups/`, no se borran
+automáticamente y ocupan espacio. La copia del día nunca se reemplaza: si cambias
+la contraseña, conserva la anterior para esa copia. Con todas las ventanas
+cerradas no se ejecuta y no recupera días perdidos. Guarda una copia en otro
+dispositivo para protegerte de un fallo del disco.
 
 Una copia es un fichero que llega de fuera, así que la configuración que trae
 se comprueba antes de escribir nada: los mismos límites que aplican el panel y

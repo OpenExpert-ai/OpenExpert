@@ -40,6 +40,23 @@ export const en: Record<string, string> = {
   "Solo indica la última importación conocida; los registros pueden cambiar después.":
     "Shows only the last known import; records may change afterwards.",
   Desconocida: "Unknown",
+  "Documentos leídos": "Documents read",
+  "Estas lecturas muestran lo consultado, no verifican cada afirmación de la respuesta.":
+    "These reads show what was consulted; they do not verify every claim in the answer.",
+  "Desde la línea {n}": "From line {n}",
+  "Modificado: {date}": "Modified: {date}",
+  "Lectura parcial": "Partial read",
+  "No se pudo crear la copia automática. Comprueba el espacio y los permisos.":
+    "Could not create the automatic backup. Check disk space and permissions.",
+  "Copias automáticas cifradas": "Encrypted automatic backups",
+  "Crea una copia local al día mientras OpenExpert está abierto. La contraseña solo se mantiene en memoria y hay que activarlo de nuevo al reiniciar el servidor. Las copias no se eliminan automáticamente; conserva la contraseña para restaurarlas.":
+    "Creates one local backup per day while OpenExpert is open. The password is kept only in memory and must be entered again after the server restarts. Backups are not deleted automatically; keep the password to restore them.",
+  "Carpeta de copias: {path}": "Backup folder: {path}",
+  "Contraseña de las copias": "Backup password",
+  "Detener copias automáticas": "Stop automatic backups",
+  "Activar copias automáticas": "Enable automatic backups",
+  "Si cambias la contraseña, se conserva la copia de hoy con su contraseña anterior; la nueva se usará para las siguientes.":
+    "If you change the password, today’s backup keeps its previous password; the new one applies to later backups.",
   // --- Shell -----------------------------------------------------------------
   "Habla con tu empresa": "Talk to your company",
   Expert: "Expert",

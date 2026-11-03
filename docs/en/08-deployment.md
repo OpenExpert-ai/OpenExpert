@@ -118,10 +118,7 @@ it is, the launcher starts the development server until the production build is
 rebuilt. This timestamp check does not detect deleted files or guarantee that a
 running server has been restarted.
 
-The server and the window are independent halves with no version handshake: a
-window installed weeks ago keeps loading whatever the server serves, which is why
-a `git pull` that touches `src-tauri/` needs a reinstall of the window (and only
-of the window).
+The desktop launcher checks the version reported by an already-running server. If it differs from the installed CLI, the launcher asks you to close the old server; it never stops a server it did not start. An older server that does not report a version is still reused with a warning. The server and the native window remain independent: a `git pull` that changes `src-tauri/` still requires rebuilding and reinstalling the window.
 
 Automatic updates need, at least:
 

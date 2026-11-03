@@ -5,6 +5,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { isAllowedHost, securityHeaders } from "./lib/http.server";
 import { logger } from "./lib/logger.server";
+import { APP_VERSION } from "./lib/version";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -87,6 +88,7 @@ export default {
 function applySecurityHeaders(response: Response, requestId: string): Response {
   const headers = new Headers(response.headers);
   headers.set("x-request-id", requestId);
+  headers.set("x-openexpert-version", APP_VERSION);
   for (const [name, value] of Object.entries(
     securityHeaders(process.env["NODE_ENV"] === "production"),
   )) {
