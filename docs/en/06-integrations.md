@@ -176,6 +176,8 @@ more, the panel toast says so — "Synced N records; the download hit the cap an
 more rows were left behind" — instead of letting the slice pass for the total;
 the rest is not downloaded and the integration stays connected.
 
+If a provider reports more pages but does not supply a valid advancing offset or cursor, or returns an invalid list or pagination status, the sync fails before importing any rows. The panel reports the error; retry after the provider responds correctly. This differs from the documented cap, where the downloaded rows are imported with a truncation warning.
+
 ### Pipedrive
 
 **Settings → Data → Business connectors.** Create a personal API token in

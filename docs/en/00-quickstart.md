@@ -64,6 +64,8 @@ npm run dev          # http://localhost:3000
 
 ---
 
+In the chat, **Getting started** links to model and data settings. Hide it when you do not need it and reopen it from any conversation. Choosing a model does not itself confirm that its connection works; test it in Settings → AI.
+
 ## Choosing a model
 
 See [AI providers](./13-ai-providers.md). In short:

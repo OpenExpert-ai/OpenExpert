@@ -35,7 +35,18 @@ function message(provider: string, status: number): string {
 async function getJson(provider: string, url: string, init: RequestInit, fetchImpl: Fetch) {
   const res = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!res.ok) throw new Error(message(provider, res.status));
-  return (await res.json()) as Record<string, unknown>;
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new Error(`${provider} devolvió una respuesta no válida; no se han importado datos.`);
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body))
+    throw new Error(`${provider} devolvió una respuesta no válida; no se han importado datos.`);
+  const json = body as Record<string, unknown>;
+  if (json["success"] === false)
+    throw new Error(`${provider} informó de un error; no se han importado datos.`);
+  return json;
 }
 
 async function markConnected(
@@ -87,7 +98,15 @@ export async function fetchPipedriveDeals(
       {},
       fetchImpl,
     );
-    const data = (json["data"] as PipedriveDeal[] | undefined) ?? [];
+    const rawData = json["data"];
+    // Pipedrive puede responder data: null cuando no hay oportunidades, pero
+    // solo si la propia respuesta confirma el éxito. Ausencia u otro tipo no
+    // demuestran que la colección esté vacía.
+    if (!Array.isArray(rawData) && !(rawData === null && json["success"] === true))
+      throw new Error(
+        "Pipedrive devolvió una lista de oportunidades no válida; no se han importado datos.",
+      );
+    const data = (rawData ?? []) as PipedriveDeal[];
     for (const deal of data) {
       fetched++;
       const mapped = mapPipedriveDeal(deal, stages);
@@ -96,9 +115,15 @@ export async function fetchPipedriveDeals(
     const pagination = (
       json["additional_data"] as { pagination?: Record<string, unknown> } | undefined
     )?.pagination;
-    if (!pagination?.["more_items_in_collection"]) break;
-    const next = Number(pagination["next_start"]);
-    if (!Number.isFinite(next) || next <= start) break;
+    const more = pagination?.["more_items_in_collection"];
+    if (more === false || (data.length === 0 && more === undefined)) break;
+    if (more !== true)
+      throw new Error("Pipedrive no indicó si quedan más páginas; no se han importado datos.");
+    const next = pagination?.["next_start"];
+    if (typeof next !== "number" || !Number.isSafeInteger(next) || next <= start)
+      throw new Error(
+        "Pipedrive indicó más páginas sin un siguiente desplazamiento válido; no se han importado datos.",
+      );
     start = next;
     // Si esta era la última vuelta que el tope permite, el proveedor todavía
     // tenía más y esa parte se queda fuera.
@@ -114,6 +139,7 @@ export async function fetchHoldedInvoices(
 ): Promise<{ rows: ParsedBusinessRow[]; fetched: number; truncated: boolean }> {
   const rows: ParsedBusinessRow[] = [];
   let cursor: string | null = null;
+  const seenCursors = new Set<string>();
   let fetched = 0;
   // Mismo trato que en Pipedrive: el corte por página o por filas se dice.
   let truncated = false;
@@ -125,18 +151,27 @@ export async function fetchHoldedInvoices(
       { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" } },
       fetchImpl,
     );
-    const items =
-      (json["items"] as HoldedInvoice[] | undefined) ??
-      (json["data"] as HoldedInvoice[] | undefined) ??
-      [];
+    const rawItems = json["items"] ?? json["data"];
+    if (!Array.isArray(rawItems))
+      throw new Error(
+        "Holded devolvió una lista de facturas no válida; no se han importado datos.",
+      );
+    const items = rawItems as HoldedInvoice[];
     for (const invoice of items) {
       fetched++;
       const mapped = mapHoldedInvoice(invoice);
       if (mapped) rows.push({ entity: "invoices", data: mapped });
     }
-    if (!json["has_more"]) break;
-    cursor = (json["cursor"] as string | null) ?? (json["next_cursor"] as string | null) ?? null;
-    if (!cursor) break;
+    if (json["has_more"] === false || (items.length === 0 && json["has_more"] === undefined)) break;
+    if (json["has_more"] !== true)
+      throw new Error("Holded no indicó si quedan más páginas; no se han importado datos.");
+    const next = json["next_cursor"] ?? json["cursor"];
+    if (typeof next !== "string" || !next.trim() || seenCursors.has(next))
+      throw new Error(
+        "Holded indicó más páginas sin un siguiente cursor válido; no se han importado datos.",
+      );
+    seenCursors.add(next);
+    cursor = next;
     truncated = page + 1 >= MAX_PAGES || rows.length >= MAX_ROWS;
   }
   return { rows, fetched, truncated };
