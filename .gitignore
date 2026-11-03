@@ -16,6 +16,7 @@ dist-ssr
 .nitro
 *.local
 coverage
+.vitest/
 
 # Env — only .env.example is committed
 .env

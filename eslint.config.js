@@ -16,6 +16,10 @@ export default tseslint.config(
       "src-tauri/target",
       "src-tauri/gen",
       "**/coverage",
+      // Worktrees de los agentes: son copias completas del repo (y están en
+      // .gitignore). Sin esta línea ESLint ve dos tsconfig raíz y `npm run lint`
+      // falla con un error de configuración que no tiene que ver con el código.
+      ".worktrees",
     ],
   },
   {
