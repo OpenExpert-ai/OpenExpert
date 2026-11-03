@@ -1,5 +1,12 @@
 # @openexpert/openexpert
 
+## 0.6.3
+
+### Patch Changes
+
+- bfb2b92: Reject incomplete or malformed connector responses before importing data instead of reporting a complete sync.
+- bfb2b92: Hide and reopen the getting-started guide from any conversation.
+
 ## 0.6.2
 
 ### Patch Changes

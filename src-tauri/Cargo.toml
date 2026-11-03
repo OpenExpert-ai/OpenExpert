@@ -1,6 +1,6 @@
 [package]
 name = "openexpert-desktop"
-version = "0.6.2"
+version = "0.6.3"
 description = "OpenExpert desktop shell — native window for the local OpenExpert server."
 authors = ["OpenExpert"]
 edition = "2021"
