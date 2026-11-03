@@ -2,7 +2,7 @@
 import { EventEmitter } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/cli/lib.js", async (importOriginal) => {
@@ -280,6 +280,48 @@ describe("cmdDesktop", () => {
       });
       expect(await cmdDesktop(cwd)).toBe(0);
       expect(logs.join("\n")).toContain("La build está desactualizada");
+      expect(spawnMock).toHaveBeenCalledWith(
+        "npm",
+        ["run", "dev"],
+        expect.objectContaining({ cwd: repo }),
+      );
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    "drizzle/init.sql",
+    "public/icon.svg",
+    "packages/openexpert/src/config.ts",
+    "vite.config.ts",
+    "package-lock.json",
+  ])("does not serve a build older than %s", async (input) => {
+    const repo = mkdtempSync(join(tmpdir(), "oe-repo-"));
+    try {
+      mkdirSync(join(repo, ".output", "server"), { recursive: true });
+      const built = join(repo, ".output", "server", "index.mjs");
+      writeFileSync(built, "// built");
+      const file = join(repo, input);
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, "updated");
+      const old = new Date(1_000);
+      utimesSync(built, old, old);
+      findRepoRootMock.mockReturnValue(repo);
+      let probes = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          if (++probes === 1) throw new Error("ECONNREFUSED");
+          return new Response("", { status: 200, headers: OPENEXPERT_HEADERS });
+        }),
+      );
+      spawnMock.mockImplementation((cmd: string) => {
+        const c = fakeChild();
+        if (cmd === binPath) process.nextTick(() => (c as unknown as EventEmitter).emit("exit", 0));
+        return c;
+      });
+      expect(await cmdDesktop(cwd)).toBe(0);
       expect(spawnMock).toHaveBeenCalledWith(
         "npm",
         ["run", "dev"],

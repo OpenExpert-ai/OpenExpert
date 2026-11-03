@@ -64,6 +64,8 @@ export const deals = sqliteTable("deals", {
   daysInStage: integer("days_in_stage").notNull().default(0),
   closeDate: text("close_date"),
   status: text("status").notNull().default("open"),
+  importSource: text("import_source"),
+  importedAt: text("imported_at"),
 });
 
 export const invoices = sqliteTable("invoices", {
@@ -73,6 +75,8 @@ export const invoices = sqliteTable("invoices", {
   dueDate: text("due_date").notNull(),
   status: text("status").notNull().default("open"),
   reminders: integer("reminders").notNull().default(0),
+  importSource: text("import_source"),
+  importedAt: text("imported_at"),
 });
 
 export const campaigns = sqliteTable("campaigns", {
@@ -84,6 +88,8 @@ export const campaigns = sqliteTable("campaigns", {
   conversions7d: integer("conversions_7d").notNull().default(0),
   cpaTarget: real("cpa_target").notNull().default(0),
   dailyBudget: real("daily_budget").notNull().default(0),
+  importSource: text("import_source"),
+  importedAt: text("imported_at"),
 });
 
 export const accounts = sqliteTable("accounts", {
@@ -93,6 +99,8 @@ export const accounts = sqliteTable("accounts", {
   usageTrend: real("usage_trend").notNull().default(0),
   openTickets: integer("open_tickets").notNull().default(0),
   churnRisk: real("churn_risk").notNull().default(0),
+  importSource: text("import_source"),
+  importedAt: text("imported_at"),
 });
 
 // Key/value store for UI preferences (theme, density, language).

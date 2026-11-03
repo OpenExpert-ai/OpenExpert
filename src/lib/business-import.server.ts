@@ -82,8 +82,14 @@ export async function importBusinessRows(
     typed.map((r) => r.id),
   );
 
+  const importedAt = new Date().toISOString();
   const counts = writeRows(typed, alreadyStored, (row) => {
-    orm.insert(table).values(row).onConflictDoUpdate({ target: table.id, set: row }).run();
+    const imported = { ...row, importSource: source, importedAt };
+    orm
+      .insert(table)
+      .values(imported)
+      .onConflictDoUpdate({ target: table.id, set: imported })
+      .run();
   });
 
   await persist();

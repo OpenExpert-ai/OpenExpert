@@ -332,6 +332,25 @@ export const exportEncryptedBackup = createServerFn({ method: "POST" })
     };
   });
 
+export const inspectBackup = createServerFn({ method: "POST" })
+  .validator((d) =>
+    z
+      .object({
+        content: z.string().min(2).max(200_000_000),
+        passphrase: z.string().max(200).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    let content = data.content;
+    if (isEncryptedBackup(content)) {
+      if (!data.passphrase)
+        throw new Error("La copia está cifrada: escribe su contraseña para comprobarla.");
+      content = decryptBackup(content, data.passphrase);
+    }
+    return backup.inspectBackup(content);
+  });
+
 export const importBackup = createServerFn({ method: "POST" })
   .validator((d) =>
     z

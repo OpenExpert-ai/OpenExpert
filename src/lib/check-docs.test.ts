@@ -48,6 +48,7 @@ function docsRepo(files: Record<string, string>): string {
 
 function runCheckDocs(cwd: string): { status: number | null; output: string } {
   const r = spawnSync(process.execPath, [SCRIPT], { cwd, encoding: "utf8" });
+  if (r.error) throw r.error;
   return { status: r.status, output: `${r.stdout}${r.stderr}` };
 }
 

@@ -91,9 +91,12 @@ Las tablas de negocio empiezan vacías. Abre **Ajustes → Datos**:
 - **Conectores** opcionales: Pipedrive (ventas) y Holded (facturas) solo leen y
   necesitan tu propia clave de API. Pégala y pulsa **Sincronizar**.
 
-En Linux, `./install.sh` abre el asistente de proveedor al terminar; añade
-`--with-ollama` para instalar Ollama y descargar llama3.1 antes, y también
-ofrece los dos conectores sin escribir la clave en ningún log.
+Antes de importar un CSV, la vista previa muestra las filas válidas, los errores
+por fila, las filas que superan el límite y los identificadores repetidos en el
+archivo. Confirma para importar: los identificadores existentes se actualizan y
+la última fila repetida prevalece. Se muestran hasta 20 errores y el total.
+
+En Linux, `./install.sh` instala la aplicación sin pedir proveedor, modelo ni conectores. Configúralos en Ajustes → IA y Ajustes → Datos. Añade `--with-ollama` para instalar Ollama y descargar llama3.1.
 
 ## Dónde vive cada cosa
 

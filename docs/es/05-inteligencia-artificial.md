@@ -38,17 +38,9 @@ herramientas.
 | `get_campaign_performance` | Gasto, conversiones, CPA real vs objetivo, estado (máx. 200)                               | `marketing` |
 | `get_churn_risk`           | MRR, tendencia de uso, tickets, baja (máx. 200, con `total`)                               | `clientes`  |
 
-Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Un conector
-no es la única vía: la importación de CSV de la página Datos escribe las mismas
-tablas, así que la procedencia se lee de las filas (`rowProvenance`) y no del
-conector. La herramienta atribuye el dato a un proveedor cuando esa integración
-está conectada (`connected: true`) y, si no lo está, el `note` distingue los tres
-casos: no hay ninguna fila —la base está vacía de verdad—, solo hay filas de
-ejemplo (las que llevan id `demo-`, que se anuncian como tales) o hay datos
-locales del usuario, importados en su equipo. El asistente nunca dice «la base
-local está vacía» ni «los datos no son reales» sobre una tabla con filas del
-usuario. La ventana del chat usa el mismo criterio: el aviso «sin fuentes de
-negocio conectadas» solo se pinta cuando no hay ni conector ni una sola fila.
+Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Las importaciones CSV, los datos de ejemplo y los conectores escriben en las mismas tablas locales. Las herramientas indican si hay una integración conectada; una conexión no demuestra que todas sus filas procedan de ella. Cada registro listado incluye la fuente y la fecha de su última importación conocida. Las filas anteriores a esta función tienen fuente desconocida y los cambios posteriores pueden modificar campos. Sin conexión, la nota distingue tablas vacías, solo con ejemplos y con datos locales. El chat muestra las consultas realizadas, las notas y la última importación de los registros devueltos; no son citas de cada afirmación.
+
+Las filas importadas guardan la fuente y la fecha de su última importación. Las filas anteriores a estos metadatos tienen procedencia desconocida y pueden modificarse después. El chat puede mostrar esta información para las filas devueltas; no es una cita para cada afirmación.
 
 Las listas de negocio (`list_deals`, `list_overdue_invoices`,
 `get_campaign_performance`, `get_churn_risk` y los deals estancados de

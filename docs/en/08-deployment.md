@@ -112,6 +112,12 @@ repository.
 git pull && npm ci && npm run desktop:install
 ```
 
+The desktop launcher checks whether the production build is older than the app
+source, shared engine, database schema, static assets or build configuration. If
+it is, the launcher starts the development server until the production build is
+rebuilt. This timestamp check does not detect deleted files or guarantee that a
+running server has been restarted.
+
 The server and the window are independent halves with no version handshake: a
 window installed weeks ago keeps loading whatever the server serves, which is why
 a `git pull` that touches `src-tauri/` needs a reinstall of the window (and only
@@ -191,11 +197,7 @@ has to exist, `Exec`/`TryExec` have to point at executables and the icon has to
 be 512×512. `npm run desktop:check` runs the same verification on its own (it
 exits non-zero on a dead launcher, which is what `install.sh --doctor` reports).
 
-`install.sh` ends with the model wizard (`--no-setup` skips it). `--with-ollama`
-installs Ollama and pulls llama3.1 first; the wizard offers every provider in the
-catalogue. It then offers optional Pipedrive and Holded keys, read from the
-terminal and stored with mode `0600`; nothing is downloaded or connected unless
-you say yes.
+`install.sh` installs the application without asking for a provider, model or connectors. Configure them in Settings → AI and Settings → Data. The optional `--with-ollama` flag installs Ollama and pulls llama3.1; `--no-setup` remains accepted for compatibility.
 
 The window loads the URL the command is serving, not a port compiled into the
 binary: `openexpert desktop` exports `OPENEXPERT_DESKTOP_URL` and the shell

@@ -84,6 +84,7 @@ vi.mock("@/lib/settings.functions", () => ({
   exportEncryptedBackup: vi.fn(),
   getDataStats: vi.fn(),
   importBackup: vi.fn(),
+  inspectBackup: vi.fn(),
   resetData: vi.fn(),
   vacuumDb: vi.fn(),
 }));

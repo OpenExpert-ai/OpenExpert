@@ -27,8 +27,7 @@ execution**: AI proposes, a person approves.
 
 - **Experts** with per-domain isolation. The initial set is `general`, `ventas`,
   `finanzas`, `marketing`.
-- **Chat with real data** through tools that query the local database. It does
-  not invent numbers.
+- **Chat with real data** through tools that query the local database. The model can still make mistakes, so verify important figures and their sources.
 - **Governance:** an activity log of every relevant event and revert for
   revertible changes.
 - **Sources** (optional): Google Drive, local folders and Notion — read, create

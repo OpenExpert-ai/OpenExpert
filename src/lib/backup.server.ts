@@ -306,7 +306,9 @@ function swapFailureMessage(detail: string, undone: LogicalFile[], stuck: Staged
  * to the bundle's configuration and secrets, with a message that only mentioned
  * the database.
  */
-export async function restoreBackup(content: string): Promise<RestoreResult> {
+export async function inspectBackup(
+  content: string,
+): Promise<{ included: LogicalFile[]; missing: LogicalFile[] }> {
   const parsed = restoreSchema.parse(JSON.parse(content) as unknown);
   const dbB64 = parsed.files["db"];
   if (dbB64 !== undefined) await assertValidDatabase(Buffer.from(dbB64, "base64"));
@@ -314,6 +316,15 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
   // `openexpert.json` the application cannot use is refused whole, and the
   // installation keeps the file it had.
   assertValidConfig(parsed.files["config"]);
+  return {
+    included: BACKUP_FILES.filter((key) => parsed.files[key] !== undefined),
+    missing: missingAfterRestore(parsed.version, parsed.files),
+  };
+}
+
+export async function restoreBackup(content: string): Promise<RestoreResult> {
+  await inspectBackup(content);
+  const parsed = restoreSchema.parse(JSON.parse(content) as unknown);
 
   mkdirSync(dataDir(), { recursive: true });
 

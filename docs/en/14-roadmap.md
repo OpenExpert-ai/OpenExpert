@@ -27,11 +27,7 @@ Status of implemented and pending items.
 - [ ] **Remaining connectors** (Meta Ads, Gmail, Slack, Google Analytics,
       Salesforce). Pipedrive (deals), Holded (invoices) and CSV import are
       available as optional, pull-only data sources.
-- [ ] **Autonomous processes (removed, to be rebuilt).** The old catalogue was
-      scaffolding: "running" a process only incremented a counter, the trigger
-      was descriptive (no scheduler) and the stages were never executed. It has
-      been removed until it can be built for real: actual stage execution, a
-      scheduler and, when needed, double-signature approval.
+- [ ] **Broader autonomous processes.** A daily overdue-invoice report can run while the app is open. Other processes need real stage execution, scheduling and, when appropriate, approval.
 - [ ] **Signed Windows and macOS installers.** CI builds unsigned `.msi`/`.dmg`;
       signing needs certificates.
 - [ ] **Scheduled backups.** The passphrase-encrypted download is manual today.

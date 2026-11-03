@@ -51,7 +51,9 @@ CREATE TABLE IF NOT EXISTS deals (
   owner TEXT NOT NULL DEFAULT '',
   days_in_stage INTEGER NOT NULL DEFAULT 0,
   close_date TEXT,
-  status TEXT NOT NULL DEFAULT 'open'
+  status TEXT NOT NULL DEFAULT 'open',
+  import_source TEXT,
+  imported_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -60,7 +62,9 @@ CREATE TABLE IF NOT EXISTS invoices (
   amount REAL NOT NULL DEFAULT 0,
   due_date TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'open',
-  reminders INTEGER NOT NULL DEFAULT 0
+  reminders INTEGER NOT NULL DEFAULT 0,
+  import_source TEXT,
+  imported_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS campaigns (
@@ -71,7 +75,9 @@ CREATE TABLE IF NOT EXISTS campaigns (
   spend_7d REAL NOT NULL DEFAULT 0,
   conversions_7d INTEGER NOT NULL DEFAULT 0,
   cpa_target REAL NOT NULL DEFAULT 0,
-  daily_budget REAL NOT NULL DEFAULT 0
+  daily_budget REAL NOT NULL DEFAULT 0,
+  import_source TEXT,
+  imported_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
@@ -80,7 +86,9 @@ CREATE TABLE IF NOT EXISTS accounts (
   mrr REAL NOT NULL DEFAULT 0,
   usage_trend REAL NOT NULL DEFAULT 0,
   open_tickets INTEGER NOT NULL DEFAULT 0,
-  churn_risk REAL NOT NULL DEFAULT 0
+  churn_risk REAL NOT NULL DEFAULT 0,
+  import_source TEXT,
+  imported_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS chat_messages_expert_conv ON chat_messages (expert_id, conversation_id);
