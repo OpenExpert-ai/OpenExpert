@@ -1,5 +1,18 @@
 # @openexpert/openexpert
 
+## 0.6.1
+
+### Patch Changes
+
+- b47e8a7: Preview CSV rows, errors and duplicate identifiers before importing business data.
+- b47e8a7: Add an optional daily local overdue-invoice report while OpenExpert is open.
+- b47e8a7: Detect more stale desktop builds after shared engine, schema, asset or build configuration changes.
+- b47e8a7: Install the Linux desktop without prompting for an AI provider, model, or connectors; configure them in Settings instead.
+
+  Clarify the chat setup steps and remind users to verify important AI answers.
+
+- b47e8a7: Show completed queries and provenance limitations in chat, and check backups without restoring them.
+
 ## 0.6.0
 
 ### Minor Changes
