@@ -107,6 +107,9 @@ disagree, the code is right and the docs are the bug.
 - The empty chat links to model and data settings without claiming that an
   untested model is ready. AI answers may contain errors; users are asked to
   verify important data and sources.
+  Successful document reads with text can be inspected by file identifier,
+  starting line and partial-read status; searches and unsuccessful reads are
+  not shown as reads, and these records are not citations for individual claims.
 - The optional daily overdue invoice report runs only while a window is open.
   It counts local invoices, may include sample data, and writes one activity
   entry per local day; it makes no external changes and does not backfill days.
@@ -225,6 +228,10 @@ Drive and local folders in `src/lib/office.server.ts`.
   the integrations connected. The key makes the bundle as sensitive as the
   tokens; restoring replaces the current data and reports what the bundle did
   not carry.
+- Optional automatic backups run at most once per local day only while a window
+  is open. The passphrase stays in server memory, so activation must be repeated
+  after restart. Encrypted files are atomically created in `automatic-backups/`
+  under the data directory and never overwritten or deleted automatically.
 - Settings → Data can check an encrypted or plain backup without applying it:
   `inspectBackup` shares the restore's format, configuration and database
   checks and reports included and missing files; it does not test connections.
@@ -269,6 +276,9 @@ Drive and local folders in `src/lib/office.server.ts`.
   app and shared engine sources, the database schema, public assets and build
   configuration; an older build falls back to development mode. This timestamp
   check cannot detect deleted files or restart an already-running server.
+  Before reusing an existing server, the launcher compares its reported version
+  with the CLI and refuses a known mismatch without stopping it. Old servers
+  without the version header remain usable with a warning.
 - **The window follows the port.** The window URL is not the one compiled into
   the binary: `openexpert desktop` exports `OPENEXPERT_DESKTOP_URL` and the shell
   navigates to it (`src-tauri/src/main.rs`), so `PORT=3100 openexpert` opens 3100. `build.frontendDist` is `src-tauri/fallback/` (one page, no web app

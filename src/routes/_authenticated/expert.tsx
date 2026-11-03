@@ -33,6 +33,7 @@ import { hasBusinessData } from "@/lib/business-data";
 import { CAMPAIGN_STATUS } from "@/lib/business-status";
 import { pluralize } from "@/lib/translate";
 import { TOOL_LABELS } from "@/lib/ai/tool-labels";
+import { documentReads } from "@/lib/ai/read-evidence";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { clearChat, decideAction, getChat, listConversations } from "@/lib/data.functions";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -659,6 +660,7 @@ function AssistantMsg({
           </Collapsible>
         )}
         {tools.length > 0 && <ExecutionTimeline tools={tools} />}
+        <DocumentReads tools={tools} />
         {tools.map((part) => (
           <ImportProvenance key={`${part.toolCallId}-provenance`} part={part} />
         ))}
@@ -730,6 +732,49 @@ function AssistantMsg({
         )}
       </div>
     </div>
+  );
+}
+
+function DocumentReads({ tools }: { tools: ToolPart[] }) {
+  const { t, locale } = useT();
+  const reads = documentReads(tools);
+  if (!reads.length) return null;
+  return (
+    <Collapsible label={t("Documentos leídos")}>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {t("Estas lecturas muestran lo consultado, no verifican cada afirmación de la respuesta.")}
+      </p>
+      <ul className="max-h-52 space-y-2 overflow-y-auto text-xs text-muted-foreground">
+        {reads.map((read, index) => (
+          <li key={`${read.kind}-${read.identifier}-${index}`}>
+            {read.url ? (
+              <a
+                href={read.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                {read.name}
+              </a>
+            ) : (
+              <span className="font-medium text-foreground">{read.name}</span>
+            )}
+            {" · "}
+            {read.kind === "drive"
+              ? "Google Drive"
+              : read.kind === "local"
+                ? t("Archivos locales")
+                : "Notion"}
+            {read.name !== read.identifier && <> · {read.identifier}</>}
+            {read.offset !== undefined && <> · {t("Desde la línea {n}", { n: read.offset })}</>}
+            {read.modifiedTime && (
+              <> · {t("Modificado: {date}", { date: formatDateTime(read.modifiedTime, locale) })}</>
+            )}
+            {read.partial && <> · {t("Lectura parcial")}</>}
+          </li>
+        ))}
+      </ul>
+    </Collapsible>
   );
 }
 

@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { MessagesSquare, Network, Plug, ScrollText, Layers, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { DailyReportRunner } from "@/components/DailyReport";
+import { AutomaticBackupRunner } from "@/components/AutomaticBackup";
 import { useMe, useUI, useWorkspace } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { buttonVariants } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <DailyReportRunner />
+      <AutomaticBackupRunner />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border focus:border-border focus:bg-card focus:px-3 focus:py-2 focus:text-sm"

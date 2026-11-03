@@ -87,7 +87,16 @@ Settings → Data → Check backup opens an encrypted or plain bundle without
 changing the installation. It checks the format, configuration and whether the
 database opens, and reports included and missing files. It does not test service
 connections or prove that every database record is usable. Enter the passphrase
-first for an encrypted bundle. Scheduled backups remain unavailable.
+first for an encrypted bundle.
+
+Settings → Data can also enable one encrypted local backup per day while a
+window is open. Enter a passphrase of at least eight characters; it is held only
+in server memory, so the schedule must be enabled again after a server restart.
+Copies live in `OPENEXPERT_DATA_DIR/automatic-backups/`, are not deleted
+automatically and need disk space. A copy already made today is never replaced:
+if the passphrase changes, keep the old one for that copy. No copy runs while all
+windows are closed and missed days are not backfilled. Copy these files to a
+separate device for protection from disk failure.
 
 A bundle is a file that arrives from outside, so the configuration it carries
 is checked before anything is written: the same limits the panel and the raw

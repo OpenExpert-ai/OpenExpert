@@ -38,7 +38,7 @@ export function looksLikeOpenExpert(status: number, headers: Headers): boolean {
   return status < 500 && headers.has("x-request-id") && headers.has("x-frame-options");
 }
 
-type ServerProbe = "openexpert" | "other" | "none";
+type ServerProbe = { kind: "openexpert"; version: string | null } | { kind: "other" | "none" };
 
 /** Classify whatever is listening on the app port (if anything). */
 async function probeServer(timeoutMs = 1500): Promise<ServerProbe> {
@@ -47,16 +47,18 @@ async function probeServer(timeoutMs = 1500): Promise<ServerProbe> {
       signal: AbortSignal.timeout(timeoutMs),
       redirect: "manual",
     });
-    return looksLikeOpenExpert(res.status, res.headers) ? "openexpert" : "other";
+    return looksLikeOpenExpert(res.status, res.headers)
+      ? { kind: "openexpert", version: res.headers.get("x-openexpert-version") }
+      : { kind: "other" };
   } catch {
-    return "none";
+    return { kind: "none" };
   }
 }
 
 async function waitForServer(timeoutMs = 120_000): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    if ((await probeServer()) === "openexpert") return true;
+    if ((await probeServer()).kind === "openexpert") return true;
     await new Promise((r) => setTimeout(r, 400));
   }
   return false;
@@ -194,9 +196,22 @@ export async function cmdDesktop(cwd = process.cwd()): Promise<number> {
   let startedServer = false;
 
   const probe = await probeServer();
-  if (probe === "openexpert") {
+  if (probe.kind === "openexpert") {
+    const expectedVersion = packageVersion();
+    if (probe.version && expectedVersion !== "0.0.0" && probe.version !== expectedVersion) {
+      console.error(
+        `El servidor activo usa OpenExpert ${probe.version}, pero el lanzador usa ${expectedVersion}.\n` +
+          `Cierra el servidor anterior y vuelve a abrir OpenExpert para usar la versión instalada.`,
+      );
+      return 1;
+    }
+    if (!probe.version) {
+      console.warn(
+        "El servidor activo no informa de su versión; no se puede comprobar si está actualizado.",
+      );
+    }
     console.log(`• Usando el servidor ya activo en ${appUrl()}`);
-  } else if (probe === "other") {
+  } else if (probe.kind === "other") {
     console.error(
       `El puerto ${port()} está ocupado por otra aplicación, no por OpenExpert.\n` +
         `OpenExpert no arranca encima de otro programa. Mira quién lo ocupa y libéralo\n` +

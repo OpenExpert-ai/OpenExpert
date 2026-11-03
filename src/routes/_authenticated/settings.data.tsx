@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { btnGhost, btnPrimary, inputCls } from "@/components/AppShell";
 import { DailyReportSettings } from "@/components/DailyReport";
+import { AutomaticBackupSettings } from "@/components/AutomaticBackup";
 import { buttonVariants } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -626,6 +627,7 @@ function DataSettings() {
       </Card>
 
       <DailyReportSettings />
+      <AutomaticBackupSettings />
 
       <Card
         title={t("Conectores de negocio")}

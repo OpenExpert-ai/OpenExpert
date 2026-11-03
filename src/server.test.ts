@@ -17,6 +17,7 @@ vi.mock("@tanstack/react-start/server-entry", () => ({
 vi.mock("./lib/logger.server", () => ({ logger: logged }));
 
 import server from "./server";
+import { APP_VERSION } from "./lib/version";
 
 const request = (path = "/") => new Request(`http://localhost:3000${path}`);
 
@@ -41,6 +42,7 @@ describe("server.fetch: respuesta normal", () => {
     const { res, body } = await call();
     expect(res.status).toBe(200);
     expect(body).toBe("ok");
+    expect(res.headers.get("x-openexpert-version")).toBe(APP_VERSION);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     expect(res.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");

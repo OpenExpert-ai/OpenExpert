@@ -42,6 +42,8 @@ Los datos de negocio **no se incluyen**: las tablas arrancan vacías. Las import
 
 Las filas importadas guardan la fuente y la fecha de su última importación. Las filas anteriores a estos metadatos tienen procedencia desconocida y pueden modificarse después. El chat puede mostrar esta información para las filas devueltas; no es una cita para cada afirmación.
 
+En las lecturas de documentos que devuelven texto, el chat puede mostrar el nombre y el identificador (o ruta local), la fecha de modificación si está disponible, la línea inicial y si la lectura fue parcial. Para Drive, se puede abrir un enlace HTTPS de Google Drive o Docs devuelto por la herramienta. Los resultados de búsqueda y las lecturas fallidas o vacías no aparecen como documentos leídos. Estos registros describen llamadas a herramientas, no son citas que prueben cada afirmación.
+
 Las listas de negocio (`list_deals`, `list_overdue_invoices`,
 `get_campaign_performance`, `get_churn_risk` y los deals estancados de
 `get_pipeline_summary`) devuelven como mucho 200 filas y lo dicen: `total` —o

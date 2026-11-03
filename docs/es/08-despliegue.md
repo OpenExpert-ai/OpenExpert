@@ -118,10 +118,7 @@ arranca el servidor de desarrollo hasta que se reconstruya la build. Esta
 comprobación de fechas no detecta archivos eliminados ni garantiza que se haya
 reiniciado un servidor que ya estaba en marcha.
 
-El servidor y la ventana son mitades independientes y no hay saludo de versión
-entre ellas: una ventana instalada hace semanas sigue cargando lo que sirva el
-servidor, así que un `git pull` que toque `src-tauri/` pide reinstalar la ventana
-(y solo la ventana).
+El lanzador de escritorio comprueba la versión declarada por un servidor ya activo. Si no coincide con la del CLI instalado, pide cerrar el servidor anterior; nunca detiene un servidor que no haya arrancado. Un servidor antiguo que no declare su versión se sigue usando con un aviso. El servidor y la ventana nativa siguen siendo independientes: un `git pull` que cambie `src-tauri/` todavía requiere compilar e instalar la ventana de nuevo.
 
 Para tener actualizaciones automáticas hace falta, como mínimo:
 

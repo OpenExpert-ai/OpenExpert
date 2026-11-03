@@ -9,6 +9,7 @@ vi.mock("../src/cli/lib.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/cli/lib.js")>();
   return {
     ...actual,
+    packageVersion: vi.fn(() => "1.2.3"),
     findRepoRoot: vi.fn(actual.findRepoRoot),
     ensureStandaloneApp: vi.fn(actual.ensureStandaloneApp),
   };
@@ -105,6 +106,7 @@ describe("cmdDesktop", () => {
   });
 
   it("reuses an already-running OpenExpert server and opens the window", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("", { status: 200, headers: OPENEXPERT_HEADERS })),
@@ -117,8 +119,47 @@ describe("cmdDesktop", () => {
     expect(await cmdDesktop(cwd)).toBe(0);
     expect(logs.join("\n")).toContain("Usando el servidor ya activo en http://localhost:3000");
     expect(logs.join("\n")).toContain("Abriendo la ventana de OpenExpert");
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining("no informa de su versión"));
     expect(spawnMock).toHaveBeenCalledWith(binPath, [], expect.objectContaining({}));
     // The reused server must not be killed on shutdown (we did not start it).
+  });
+
+  it("refuses to reuse a server from a different version without stopping it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("", {
+            status: 200,
+            headers: { ...OPENEXPERT_HEADERS, "x-openexpert-version": "1.1.0" },
+          }),
+      ),
+    );
+    expect(await cmdDesktop(cwd)).toBe(1);
+    expect(errs.join("\n")).toContain("1.1.0");
+    expect(errs.join("\n")).toContain("1.2.3");
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it("reuses a server reporting the installed version", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("", {
+            status: 200,
+            headers: { ...OPENEXPERT_HEADERS, "x-openexpert-version": "1.2.3" },
+          }),
+      ),
+    );
+    spawnMock.mockImplementation((cmd: string) => {
+      const child = fakeChild();
+      if (cmd === binPath)
+        process.nextTick(() => (child as unknown as EventEmitter).emit("exit", 0));
+      return child;
+    });
+    expect(await cmdDesktop(cwd)).toBe(0);
+    expect(spawnMock).toHaveBeenCalledWith(binPath, [], expect.anything());
   });
 
   it("tells the window which port it serves instead of the compiled 3000", async () => {
