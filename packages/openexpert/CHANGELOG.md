@@ -1,5 +1,11 @@
 # @openexpert/openexpert
 
+## 0.7.0
+
+### Minor Changes
+
+- 846a048: Run the daily report and the encrypted daily backup with no window open: `openexpert jobs run`, plus a systemd user timer installed with `openexpert jobs install`.
+
 ## 0.6.4
 
 ### Patch Changes
