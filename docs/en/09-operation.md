@@ -127,6 +127,35 @@ Settings → Data offers an optional daily report, disabled by default. While an
 OpenExpert window is open it counts overdue local invoices and records the count
 in Activity once per local calendar day. It never edits invoices or sends
 messages, and the count may include sample data. If the app is closed at the
-usual time, the next open window runs the check; it does not run in the
-background or backfill missed days. Multiple windows using the same server share
-one daily activity entry. Current-version servers refuse to share a data directory; older versions do not enforce that lock.
+usual time, the next open window runs the check. Multiple windows using the same
+server share one daily activity entry.
+
+## Scheduled work without a window
+
+`openexpert jobs` runs the same work when no window is open, and can install the
+timer that does it on its own:
+
+```sh
+openexpert jobs run           # run what is due now
+openexpert jobs install       # systemd user timer, every 15 minutes
+openexpert jobs status        # timer, stored passphrase and data directory
+openexpert jobs uninstall
+openexpert jobs passphrase    # reads the backup passphrase from stdin
+```
+
+The runner takes the exclusive data-directory lock, so a scheduled run never
+overlaps an open window: if OpenExpert is running, the run exits without doing
+anything and the next tick tries again. A run writes the daily report only when
+it is enabled in Settings, and the encrypted daily backup only when a passphrase
+is stored; otherwise it reports what it skipped. It never backfills days that
+were missed while nothing was running.
+
+The timer belongs to the user's session. To keep it running while nobody is
+logged in, enable lingering once: `loginctl enable-linger $USER`. Installations
+whose filesystem does not support SQLite file locking cannot use the runner.
+
+The passphrase lives in the secrets file (`secrets.json`, mode 0600) because a
+background process cannot ask for it. That protects backups copied elsewhere,
+not a reader of the account: the same user can read the database and the file.
+Use `openexpert jobs passphrase --clear` to stop scheduled backups; the
+in-window backups keep working with the passphrase typed in Settings.

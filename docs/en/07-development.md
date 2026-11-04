@@ -248,6 +248,7 @@ The paths that matter when working on the code:
 
 ```
 vite.config.ts                Build configuration (Nitro node-server)
+vite.jobs.config.ts           Headless bundle for `openexpert jobs`
 src/
   routes/           TanStack Router routes
   lib/

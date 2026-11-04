@@ -122,12 +122,16 @@ disagree, the code is right and the docs are the bug.
   Successful document reads with text can be inspected by file identifier,
   starting line and partial-read status; searches and unsuccessful reads are
   not shown as reads, and these records are not citations for individual claims.
-- The optional daily overdue invoice report runs only while a window is open.
-  It counts local invoices, may include sample data, and writes one activity
-  entry per local day; it makes no external changes and does not backfill days.
-  Its deterministic ID deduplicates requests to the same server. The data lock
-  prevents current-version servers sharing a directory; older versions do not
-  honour it. Other autonomous processes remain pending.
+- The optional daily overdue invoice report and the encrypted daily backup run
+  while a window is open, and also with **no window**: `src/jobs/main.ts` is a
+  second, headless bundle (`vite.jobs.config.ts` → `.output/jobs/index.mjs`)
+  driven by `openexpert jobs run`, which a systemd user timer can call every 15
+  minutes. The runner takes the data lock, so it never overlaps an open window;
+  it writes the report only when enabled in Settings and the backup only when a
+  passphrase is stored (`BACKUP_PASSPHRASE` in `secrets.json`, written by
+  `openexpert jobs passphrase`; `OPENEXPERT_BACKUP_PASSPHRASE` also works). It
+  makes no external changes and does not backfill missed days. Other autonomous
+  processes remain pending.
 
 ## 5. Model provider: configuration, not code
 

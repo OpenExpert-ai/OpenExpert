@@ -3,6 +3,7 @@
 
 import { cmdDoctor, cmdFix, cmdModels, cmdServe, cmdUpdate, cmdVersion } from "./cli/commands.js";
 import { cmdDesktop } from "./cli/desktop.js";
+import { cmdJobs } from "./cli/jobs.js";
 import { runWizard } from "./cli/wizard.js";
 
 function help(): void {
@@ -17,6 +18,7 @@ Uso:
   openexpert fix        auto-configura lo que falte
   openexpert models     lista los modelos del proveedor actual
   openexpert update     limpia la caché del servidor descargado
+  openexpert jobs       tareas programadas: ejecutar, instalar o ver el estado
   openexpert version    muestra la versión
 
 Ejemplos:
@@ -56,6 +58,8 @@ export async function run(argv: string[]): Promise<void> {
     }
     case "update":
       return process.exit(cmdUpdate());
+    case "jobs":
+      return process.exit(await cmdJobs(argv.slice(1)));
     case "version":
     case "--version":
     case "-v":

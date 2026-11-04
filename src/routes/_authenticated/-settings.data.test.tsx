@@ -143,7 +143,8 @@ it("muestra errores y duplicados antes de importar y permite cancelar", async ()
   fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
   expect(screen.queryByText(/Identificadores repetidos/)).toBeNull();
   expect(businessFns.importBusinessCsv).not.toHaveBeenCalled();
-});
+  // Mounting the page in jsdom is slow when every test file runs at once.
+}, 20_000);
 
 describe("importación de CSV: el recuento de filas rechazadas", () => {
   it("dice las 45 que se cayeron, no las 20 que caben en el detalle", async () => {

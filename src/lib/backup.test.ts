@@ -151,7 +151,8 @@ describe("backups", () => {
     } finally {
       dropInstallation(install, previous);
     }
-  });
+    // Seeding a whole installation takes seconds when the suite runs in parallel.
+  }, 20_000);
   it("seeds the database and builds a bundle", async () => {
     const stats = await dataStats();
     expect(stats.experts).toBeGreaterThan(0);

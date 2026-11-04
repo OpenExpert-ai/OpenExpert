@@ -55,7 +55,7 @@ recommendations.
 | Pipedrive (deals) and Holded (invoices), pull-only             | Optional |
 | Audit log and revert                                           | Active   |
 | Salesforce, Meta Ads, Gmail, Slack, Google Analytics           | Pending  |
-| Automatic trigger scheduler                                    | Pending  |
+| Automatic trigger scheduler                                    | Optional |
 
 ## 6. Edition
 

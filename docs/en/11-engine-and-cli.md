@@ -38,6 +38,7 @@ npx @openexpert/openexpert doctor   # check configuration
 npx @openexpert/openexpert fix      # auto-configure what is missing
 npx @openexpert/openexpert models   # list models for the current provider
 npx @openexpert/openexpert update   # refresh the downloaded server
+npx @openexpert/openexpert jobs     # scheduled work: run, install a timer, status
 npx @openexpert/openexpert desktop  # start the server and open the native window
 npx @openexpert/openexpert version  # print the version
 npx @openexpert/openexpert help     # usage

@@ -56,7 +56,7 @@ una tabla y recomendaciones.
 | Pipedrive (ventas) y Holded (facturas), solo lectura                        | Opcional  |
 | Registro de actividad y reversión                                           | Activo    |
 | Salesforce, Meta Ads, Gmail, Slack, Google Analytics                        | Pendiente |
-| Planificador automático de disparadores                                     | Pendiente |
+| Planificador automático de disparadores                                     | Opcional  |
 
 ## 6. Edición
 
