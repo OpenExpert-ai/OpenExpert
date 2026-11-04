@@ -12,6 +12,15 @@ export type AiConfig = {
   maxOutputTokens: number;
 };
 
+/**
+ * Name of the secret that lets an unattended run encrypt its backup. It lives
+ * here because both sides need it and neither may import the other: the app
+ * reads it from the secrets file, and `openexpert jobs passphrase` writes it.
+ */
+export const BACKUP_PASSPHRASE_SECRET = "BACKUP_PASSPHRASE";
+/** Same passphrase as an environment variable, for systemd or a one-off run. */
+export const BACKUP_PASSPHRASE_ENV = "OPENEXPERT_BACKUP_PASSPHRASE";
+
 export type ChatConfig = {
   maxSteps: number;
   injectionGuard: boolean;

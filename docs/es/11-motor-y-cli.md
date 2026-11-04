@@ -38,6 +38,7 @@ npx @openexpert/openexpert doctor   # revisar la configuración
 npx @openexpert/openexpert fix      # auto-configurar lo que falte
 npx @openexpert/openexpert models   # listar modelos del proveedor actual
 npx @openexpert/openexpert update   # actualizar el servidor descargado
+npx @openexpert/openexpert jobs     # tareas programadas: ejecutar, temporizador, estado
 npx @openexpert/openexpert desktop  # arranca el servidor y abre la ventana nativa
 npx @openexpert/openexpert version  # muestra la versión
 npx @openexpert/openexpert help     # ayuda

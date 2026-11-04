@@ -470,6 +470,7 @@ cat <<EOF
     openexpert doctor     revisa la configuración
     openexpert fix        auto-configura lo que falte
     openexpert init       asistente de configuración
+    openexpert jobs       tareas programadas: informe y copia sin abrir la ventana
     openexpert version    versión instalada
   Otro puerto: PORT=3100 openexpert   (la ventana carga el puerto que sirve el comando)
 EOF

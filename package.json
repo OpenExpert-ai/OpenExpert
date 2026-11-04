@@ -14,7 +14,8 @@
   "packageManager": "npm@11.21.0",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && npm run build:jobs",
+    "build:jobs": "vite build --config vite.jobs.config.ts",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",

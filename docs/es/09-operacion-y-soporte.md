@@ -129,6 +129,38 @@ Ajustes → Datos ofrece un informe diario opcional, desactivado por defecto.
 Mientras hay una ventana de OpenExpert abierta, cuenta las facturas locales
 vencidas y registra el resultado en Actividad una vez por día del calendario
 local. No modifica facturas ni envía mensajes, y el recuento puede incluir datos
-de ejemplo. Si la aplicación está cerrada, la siguiente ventana abierta hace la
-comprobación; no se ejecuta en segundo plano ni recupera los días perdidos.
-Varias ventanas del mismo servidor comparten una sola entrada diaria. Los servidores de la versión actual rechazan compartir directorio de datos; las versiones anteriores no aplican ese bloqueo.
+de ejemplo. Si la aplicación está cerrada a la hora habitual, la siguiente
+ventana abierta hace la comprobación. Varias ventanas del mismo servidor
+comparten una sola entrada diaria.
+
+## Tareas programadas sin ventana
+
+`openexpert jobs` ejecuta ese mismo trabajo cuando no hay ninguna ventana abierta
+y puede instalar el temporizador que lo hace solo:
+
+```sh
+openexpert jobs run           # ejecuta ahora lo que esté pendiente
+openexpert jobs install       # temporizador de systemd, cada 15 minutos
+openexpert jobs status        # temporizador, contraseña guardada y directorio
+openexpert jobs uninstall
+openexpert jobs passphrase    # lee la contraseña de la copia por stdin
+```
+
+El ejecutor toma el bloqueo exclusivo del directorio de datos, así que una
+ejecución programada nunca se solapa con una ventana abierta: si OpenExpert está
+en marcha, termina sin hacer nada y el siguiente intento vuelve a probar. Escribe
+el informe diario solo si está activado en Ajustes, y la copia diaria cifrada
+solo si hay una contraseña guardada; si no, dice qué ha omitido. No recupera los
+días perdidos.
+
+El temporizador pertenece a la sesión del usuario. Para que siga funcionando sin
+nadie con la sesión iniciada, activa una vez: `loginctl enable-linger $USER`. Las
+instalaciones cuyo sistema de archivos no soporte los bloqueos de SQLite no
+pueden usar el ejecutor.
+
+La contraseña vive en el fichero de secretos (`secrets.json`, permisos 0600)
+porque un proceso en segundo plano no puede pedirla. Eso protege las copias
+llevadas a otro sitio, no a quien lea la cuenta: el mismo usuario puede leer la
+base y el fichero. Usa `openexpert jobs passphrase --clear` para dejar de crear
+copias programadas; las copias con la ventana abierta siguen funcionando con la
+contraseña que escribas en Ajustes.
