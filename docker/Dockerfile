@@ -31,7 +31,7 @@ COPY packages/create-openexpert ./packages/create-openexpert
 RUN npm ci --ignore-scripts
 
 # Copy the rest of the source.
-COPY tsconfig.json vite.config.ts ./
+COPY tsconfig.json vite.config.ts vite.jobs.config.ts ./
 COPY src ./src
 COPY public ./public
 COPY drizzle ./drizzle
