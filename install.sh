@@ -248,9 +248,14 @@ fi
 # ── 2. dependencias de Node ──────────────────────────────────────────────────
 # Un node_modules a medias (install interrumpido, --omit=dev, sync parcial) hace
 # que "npx tauri" muera con "could not determine executable to run", así que no
-# basta con que el directorio exista: comprobamos los binarios que se usan.
+# basta con que el directorio exista: comprobamos los binarios que se usan y el
+# enlace del paquete compartido. npm solo crea ese enlace al instalar, así que un
+# node_modules anterior a un renombrado de packages/ deja la build de vite sin
+# "@openexpert/openexpert/config" aunque los binarios estén todos.
 MISSING_DEPS=""
-for f in node_modules/.package-lock.json node_modules/.bin/tauri node_modules/.bin/vite node_modules/.bin/tsup; do
+for f in node_modules/.package-lock.json node_modules/.bin/tauri \
+         node_modules/.bin/vite node_modules/.bin/tsup \
+         node_modules/@openexpert/openexpert/package.json; do
   [ -e "$REPO/$f" ] || MISSING_DEPS="$MISSING_DEPS $f"
 done
 
@@ -275,7 +280,9 @@ if [ "$SKIP_BUILD" = 0 ] && [ "$DOCTOR" = 0 ]; then
   info "la primera compilación de Rust puede tardar 5-15 min…"
   ( cd "$REPO" && npm run build --workspace @openexpert/openexpert ) || die "falló la build del CLI (@openexpert/openexpert)"
   ok "CLI OpenExpert"
-  ( cd "$REPO" && npm run build ) || die "falló la build de la interfaz web (vite)"
+  ( cd "$REPO" && npm run build ) || die "falló la build de la interfaz web (vite).
+       Si el error es un import que no resuelve (@openexpert/openexpert/…), node_modules
+       es de antes del último cambio de paquetes: reintenta con ./install.sh --reinstall"
   ok "interfaz web (.output)"
 
   # Usamos el binario local, no "npx tauri": si node_modules está a medias, npx
