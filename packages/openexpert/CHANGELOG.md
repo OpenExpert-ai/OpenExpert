@@ -1,5 +1,11 @@
 # @openexpert/openexpert
 
+## 0.6.4
+
+### Patch Changes
+
+- 6a53947: Prevent multiple current-version servers from using the same data directory and overwriting one another.
+
 ## 0.6.3
 
 ### Patch Changes
