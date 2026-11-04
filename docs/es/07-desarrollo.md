@@ -255,6 +255,7 @@ Las rutas que importan al tocar el código:
 
 ```
 vite.config.ts                Configuración de build (Nitro node-server)
+vite.jobs.config.ts           Paquete sin ventana de `openexpert jobs`
 src/
   routes/           Rutas de TanStack Router
   lib/
