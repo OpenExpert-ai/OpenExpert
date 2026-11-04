@@ -22,6 +22,7 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 - Conversation retention: 30 days for every Expert, opportunistic cleanup (0 disables it).
 - Drive token refresh: automatic.
 - Revert: each change keeps its snapshot in the activity log.
+- Scheduled report and daily backup: `openexpert jobs install` (§7).
 
 ## 4. Diagnosis
 
@@ -46,10 +47,11 @@ model (Gemini free tier or BYOK), you pay the provider; Ollama is free.
 
 ### 4.3 Database
 
-| Symptom        | Cause              | Action                                            |
-| -------------- | ------------------ | ------------------------------------------------- |
-| Data lost      | File deleted/moved | Restore from your backup of `OPENEXPERT_DATA_DIR` |
-| Port 3000 busy | Another process    | Free port 3000, or `PORT=3100 openexpert`         |
+| Symptom                         | Cause                                  | Action                                                         |
+| ------------------------------- | -------------------------------------- | -------------------------------------------------------------- |
+| Data lost                       | File deleted/moved                     | Restore from your backup of `OPENEXPERT_DATA_DIR`              |
+| Port 3000 busy                  | Another process                        | Free port 3000, or `PORT=3100 openexpert`                      |
+| "Otra instancia de OpenExpert…" | another server owns the data directory | close it; `openexpert jobs status` says whether one is running |
 
 The commands in this table run in a terminal: `openexpert doctor`, `fix`, `init`
 and `version` do not open the window. Only `openexpert` with no arguments (or
@@ -89,14 +91,15 @@ database opens, and reports included and missing files. It does not test service
 connections or prove that every database record is usable. Enter the passphrase
 first for an encrypted bundle.
 
-Settings → Data can also enable one encrypted local backup per day while a
-window is open. Enter a passphrase of at least eight characters; it is held only
-in server memory, so the schedule must be enabled again after a server restart.
-Copies live in `OPENEXPERT_DATA_DIR/automatic-backups/`, are not deleted
-automatically and need disk space. A copy already made today is never replaced:
-if the passphrase changes, keep the old one for that copy. No copy runs while all
-windows are closed and missed days are not backfilled. Copy these files to a
-separate device for protection from disk failure.
+Settings → Data can also enable one encrypted local backup per day. Enter a
+passphrase of at least eight characters; by default it is held only in server
+memory, so the schedule must be enabled again after a server restart. The
+scheduled runner (§7) stores it in `secrets.json` instead and makes the copy with
+no window open. Copies live in `OPENEXPERT_DATA_DIR/automatic-backups/`, are not
+deleted automatically and need disk space. A copy already made today is never
+replaced: if the passphrase changes, keep the old one for that copy. Missed days
+are not backfilled. Copy these files to a separate device for protection from
+disk failure.
 
 A bundle is a file that arrives from outside, so the configuration it carries
 is checked before anything is written: the same limits the panel and the raw
@@ -116,12 +119,7 @@ target database nor its `.bak`. Update OpenExpert and import the bundle again.
 The same holds at startup: an `openexpert.db` with a newer schema is not opened,
 and the message says why.
 
-## References
-
-- [Deployment](./08-deployment.md) — how to start it.
-- [Security & access](./04-security.md) — audit and revert.
-
-## Daily overdue invoice report
+## 6. Daily overdue invoice report
 
 Settings → Data offers an optional daily report, disabled by default. While an
 OpenExpert window is open it counts overdue local invoices and records the count
@@ -130,7 +128,7 @@ messages, and the count may include sample data. If the app is closed at the
 usual time, the next open window runs the check. Multiple windows using the same
 server share one daily activity entry.
 
-## Scheduled work without a window
+## 7. Scheduled work without a window
 
 `openexpert jobs` runs the same work when no window is open, and can install the
 timer that does it on its own:
@@ -159,3 +157,8 @@ background process cannot ask for it. That protects backups copied elsewhere,
 not a reader of the account: the same user can read the database and the file.
 Use `openexpert jobs passphrase --clear` to stop scheduled backups; the
 in-window backups keep working with the passphrase typed in Settings.
+
+## References
+
+- [Deployment](./08-deployment.md) — how to start it.
+- [Security & access](./04-security.md) — audit and revert.

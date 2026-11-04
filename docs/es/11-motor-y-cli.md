@@ -47,6 +47,13 @@ npx @openexpert/openexpert help     # ayuda
 `serve` arranca desde el código (`npm run dev`) o desde un servidor descargado y
 verificado por checksum, que se trae de la release etiquetada `v<versión>`.
 
+`jobs` ejecuta el trabajo programado sin ventana: el informe diario de facturas
+vencidas y la copia diaria cifrada. El ejecutable sin interfaz viaja con la build
+del servidor (`.output/jobs/index.mjs`); `openexpert jobs install` añade un
+temporizador de systemd de usuario que lo llama cada quince minutos. Toma el
+bloqueo del directorio de datos, así que sale con código 2 mientras otro
+OpenExpert tiene ese directorio. Ver [Operación](./09-operacion-y-soporte.md).
+
 ## 4. Configuración
 
 | Variable                                                                                | Finalidad                                                                   |

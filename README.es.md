@@ -180,7 +180,7 @@ El árbol completo está en [Desarrollo](./docs/es/07-desarrollo.md).
 
 ## Estado
 
-OpenExpert está en **pre-1.0 (0.5.x)**. Las interfaces y el modelo de datos
+OpenExpert está en **pre-1.0**. Las interfaces y el modelo de datos
 pueden cambiar entre versiones menores. La
 [hoja de ruta](./docs/es/14-hoja-de-ruta.md) cuenta lo que viene.
 

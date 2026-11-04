@@ -100,6 +100,11 @@ fuentes y el token de Notion (`drive-grants.json`, `local-roots.json`,
 - Código: `git pull` / reinstala el paquete y reconstruye.
 - Servidor descargado: `npx @openexpert/openexpert update`.
 
+Las builds descargadas viven en `~/.openexpert/app/<versión>/`, un directorio por
+versión que hayas ejecutado. `openexpert update` borra la que corresponde a la
+versión instalada; las anteriores se quedan hasta que las quites, y borrarlas
+solo cuesta la siguiente descarga.
+
 ### La ventana de escritorio no tiene actualizador (decisión, no descuido)
 
 `tauri.conf.json` no declara `plugins.updater`, no hay
