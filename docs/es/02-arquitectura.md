@@ -85,6 +85,16 @@ drizzle/
 packages/openexpert/              Motor MIT + CLI
 ```
 
+El servidor mantiene un bloqueo exclusivo de SQLite del sistema operativo en
+`.openexpert.lock.sqlite` dentro de su directorio de datos antes de atender las
+peticiones o abrir la base. Lo conserva hasta terminar el proceso, también al
+recargar o restaurar la base. Otro servidor de esta versión que use el mismo
+directorio se rechaza; varias ventanas pueden usar el primero. SQLite libera el
+bloqueo tras un fallo. No borres el fichero de bloqueo mientras el servidor esté
+en marcha. Las versiones anteriores no lo respetan: ciérralas antes de arrancar
+esta versión con el mismo directorio. El bloqueo requiere un sistema de archivos
+compatible con los bloqueos de SQLite.
+
 ## 4. Flujo de una mutación
 
 1. Un componente React llama a una server function de `data.functions.ts`.

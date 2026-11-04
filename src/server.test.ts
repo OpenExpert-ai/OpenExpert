@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 // The SSR entrypoint is TanStack's; the mock stands in for h3 so the tests can
 // send back exactly the bodies h3 produces when it swallows a throw.
 const entry = vi.hoisted(() => ({ fetch: vi.fn() }));
+const dataLock = vi.hoisted(() => ({ acquire: vi.fn() }));
 const logged = vi.hoisted(() => ({
   debug: vi.fn(),
   info: vi.fn(),
@@ -15,9 +16,11 @@ vi.mock("@tanstack/react-start/server-entry", () => ({
   default: { fetch: entry.fetch },
 }));
 vi.mock("./lib/logger.server", () => ({ logger: logged }));
+vi.mock("./lib/db.server", () => ({ acquireDataDirectory: dataLock.acquire }));
 
 import server from "./server";
 import { APP_VERSION } from "./lib/version";
+import { DataDirectoryBusyError } from "./lib/data-lock.server";
 
 const request = (path = "/") => new Request(`http://localhost:3000${path}`);
 
@@ -168,4 +171,15 @@ describe("server entry", () => {
     const res = await callWithHost("http://localhost:3000/", "localhost:3000");
     expect(res.status).not.toBe(403);
   });
+});
+
+it("explica que otra instancia usa los datos antes de ejecutar una ruta", async () => {
+  dataLock.acquire.mockImplementationOnce(() => {
+    throw new DataDirectoryBusyError(
+      "Otra instancia de OpenExpert está usando este directorio de datos.",
+    );
+  });
+  const { res, body } = await call();
+  expect(res.status).toBe(503);
+  expect(body).toContain("Otra instancia");
 });

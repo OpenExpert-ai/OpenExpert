@@ -84,6 +84,15 @@ drizzle/
 packages/openexpert/              MIT engine + CLI
 ```
 
+The server holds an exclusive OS-level SQLite lock in `.openexpert.lock.sqlite`
+inside its data directory before handling app requests or opening the database.
+The lock stays held until the process exits, including across database reloads and
+restores. A second current-version server for the same directory is refused;
+several windows may use the first server. SQLite releases the lock after a crash.
+Do not delete the lock file while the server is running. Older versions do not
+observe it, so close them before starting this version with the same directory.
+The lock relies on the filesystem supporting SQLite file locking.
+
 ## 4. Mutation flow
 
 1. A React component calls a server function in `data.functions.ts`.

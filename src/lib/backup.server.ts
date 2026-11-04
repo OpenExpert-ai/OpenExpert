@@ -35,6 +35,7 @@ import {
   schemaVersionOf,
 } from "./db.server";
 import { configPath, credentialsPath, dataDir, dbPath, secretsPath } from "./paths.server";
+import { acquireDataLock } from "./data-lock.server";
 import * as schema from "../../drizzle/schema";
 
 export const BACKUP_FORMAT = "openexpert-backup";
@@ -326,6 +327,8 @@ export async function restoreBackup(content: string): Promise<RestoreResult> {
   await inspectBackup(content);
   const parsed = restoreSchema.parse(JSON.parse(content) as unknown);
 
+  // Restore may be needed even if the existing database cannot be opened.
+  acquireDataLock(dataDir());
   mkdirSync(dataDir(), { recursive: true });
 
   // 1. Stage every file beside its target; nothing real is touched yet.
@@ -471,6 +474,7 @@ export async function vacuumDb(): Promise<void> {
 
 /** Delete the database file and let the next read recreate and re-seed it. */
 export async function resetData(): Promise<void> {
+  acquireDataLock(dataDir());
   resetDbHandle();
   const path = dbPath();
   if (existsSync(path)) rmSync(path);

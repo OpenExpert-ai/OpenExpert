@@ -12,6 +12,7 @@ import schemaSql from "../../drizzle/init.sql?raw";
 import * as schema from "../../drizzle/schema";
 import { applyFileConfigToEnv } from "./config.server";
 import { dataDir, dbPath, expandHome } from "./paths.server";
+import { acquireDataLock } from "./data-lock.server";
 
 // Incremental migrations applied after the baseline DDL. Add a numbered
 // `drizzle/migrations/NNNN_description.sql` for every schema change so
@@ -72,6 +73,10 @@ export function assertKnownSchema(version: number): void {
 }
 
 export { expandHome, dataDir, dbPath };
+
+export function acquireDataDirectory(): void {
+  acquireDataLock(dataDir());
+}
 
 const require = createRequire(import.meta.url);
 // Load sql.js at runtime (CommonJS) instead of letting the bundler inline it:
@@ -149,6 +154,7 @@ function applyMigrations(raw: Database): void {
 }
 
 async function init(): Promise<Handle> {
+  acquireDataLock(dataDir());
   const SQL = await loadSqlJs();
   const file = dbPath();
   const dir = dirname(file);

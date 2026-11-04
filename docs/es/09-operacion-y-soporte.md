@@ -131,5 +131,4 @@ vencidas y registra el resultado en Actividad una vez por día del calendario
 local. No modifica facturas ni envía mensajes, y el recuento puede incluir datos
 de ejemplo. Si la aplicación está cerrada, la siguiente ventana abierta hace la
 comprobación; no se ejecuta en segundo plano ni recupera los días perdidos.
-Varias ventanas del mismo servidor comparten una sola entrada diaria. Esto no
-coordina procesos de servidor separados.
+Varias ventanas del mismo servidor comparten una sola entrada diaria. Los servidores de la versión actual rechazan compartir directorio de datos; las versiones anteriores no aplican ese bloqueo.

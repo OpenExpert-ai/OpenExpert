@@ -6,6 +6,7 @@ import { renderErrorPage } from "./lib/error-page";
 import { isAllowedHost, securityHeaders } from "./lib/http.server";
 import { logger } from "./lib/logger.server";
 import { APP_VERSION } from "./lib/version";
+import { DataDirectoryBusyError } from "./lib/data-lock.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -66,6 +67,10 @@ export default {
         });
         return applySecurityHeaders(new Response("Forbidden", { status: 403 }), requestId);
       }
+      // Acquire ownership before any route can modify settings, credentials or
+      // the database. Loading db.server also applies the file configuration.
+      const { acquireDataDirectory } = await import("./lib/db.server");
+      acquireDataDirectory();
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return applySecurityHeaders(
@@ -73,6 +78,15 @@ export default {
         requestId,
       );
     } catch (error) {
+      if (error instanceof DataDirectoryBusyError) {
+        return applySecurityHeaders(
+          new Response(error.message, {
+            status: 503,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+          }),
+          requestId,
+        );
+      }
       logger.error("ssr.unhandled", error, { requestId, path: new URL(request.url).pathname });
       return applySecurityHeaders(
         new Response(renderErrorPage(requestId), {
