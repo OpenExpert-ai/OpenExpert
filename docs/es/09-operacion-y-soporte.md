@@ -23,6 +23,7 @@ gratis.
 - Retención de conversaciones: 30 días, limpieza oportunista (0 la desactiva).
 - Refresco de tokens de Drive: automático.
 - Reversión: cada cambio conserva su snapshot en el registro de actividad.
+- Informe y copia diaria programados: `openexpert jobs install` (§7).
 
 ## 4. Diagnóstico
 
@@ -47,10 +48,11 @@ gratis.
 
 ### 4.3 Base de datos
 
-| Síntoma             | Causa                  | Actuación                                        |
-| ------------------- | ---------------------- | ------------------------------------------------ |
-| Datos perdidos      | Fichero borrado/movido | Restaurar tu copia de `OPENEXPERT_DATA_DIR`      |
-| Puerto 3000 ocupado | Otro proceso           | Liberar el puerto 3000, o `PORT=3100 openexpert` |
+| Síntoma                         | Causa                                      | Actuación                                                    |
+| ------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| Datos perdidos                  | Fichero borrado/movido                     | Restaurar tu copia de `OPENEXPERT_DATA_DIR`                  |
+| Puerto 3000 ocupado             | Otro proceso                               | Liberar el puerto 3000, o `PORT=3100 openexpert`             |
+| «Otra instancia de OpenExpert…» | Otro servidor tiene el directorio de datos | Ciérralo; `openexpert jobs status` dice si hay uno en marcha |
 
 Los comandos de esta tabla se ejecutan en el terminal: `openexpert doctor`,
 `fix`, `init` y `version` no abren la ventana. Solo `openexpert` sin argumentos
@@ -91,14 +93,15 @@ apertura de la base de datos, y se enumeran los archivos incluidos y ausentes.
 No se prueban conexiones a servicios ni se verifica cada registro. Para una
 copia cifrada, introduce primero la contraseña.
 
-En Ajustes → Datos también puedes activar una copia local cifrada diaria mientras
-haya una ventana abierta. Introduce una contraseña de al menos ocho caracteres;
-solo se guarda en la memoria del servidor y hay que reactivarlo tras reiniciarlo.
-Las copias viven en `OPENEXPERT_DATA_DIR/automatic-backups/`, no se borran
-automáticamente y ocupan espacio. La copia del día nunca se reemplaza: si cambias
-la contraseña, conserva la anterior para esa copia. Con todas las ventanas
-cerradas no se ejecuta y no recupera días perdidos. Guarda una copia en otro
-dispositivo para protegerte de un fallo del disco.
+En Ajustes → Datos también puedes activar una copia local cifrada diaria.
+Introduce una contraseña de al menos ocho caracteres; por defecto solo se guarda
+en la memoria del servidor y hay que reactivarla tras reiniciarlo. El ejecutor
+programado (§7) la guarda en `secrets.json` y hace la copia sin ninguna ventana
+abierta. Las copias viven en `OPENEXPERT_DATA_DIR/automatic-backups/`, no se
+borran automáticamente y ocupan espacio. La copia del día nunca se reemplaza: si
+cambias la contraseña, conserva la anterior para esa copia. No recupera los días
+perdidos. Guarda una copia en otro dispositivo para protegerte de un fallo del
+disco.
 
 Una copia es un fichero que llega de fuera, así que la configuración que trae
 se comprueba antes de escribir nada: los mismos límites que aplican el panel y
@@ -118,12 +121,7 @@ destino ni su `.bak`—. Actualiza OpenExpert y vuelve a importar la copia. Lo m
 vale al arrancar: un `openexpert.db` con un esquema más nuevo no se abre y el
 mensaje dice por qué.
 
-## Referencias
-
-- [Despliegue](./08-despliegue.md) — cómo arrancarlo.
-- [Seguridad y acceso](./04-seguridad-y-acceso.md) — auditoría y reversión.
-
-## Informe diario de facturas vencidas
+## 6. Informe diario de facturas vencidas
 
 Ajustes → Datos ofrece un informe diario opcional, desactivado por defecto.
 Mientras hay una ventana de OpenExpert abierta, cuenta las facturas locales
@@ -133,7 +131,7 @@ de ejemplo. Si la aplicación está cerrada a la hora habitual, la siguiente
 ventana abierta hace la comprobación. Varias ventanas del mismo servidor
 comparten una sola entrada diaria.
 
-## Tareas programadas sin ventana
+## 7. Tareas programadas sin ventana
 
 `openexpert jobs` ejecuta ese mismo trabajo cuando no hay ninguna ventana abierta
 y puede instalar el temporizador que lo hace solo:
@@ -164,3 +162,8 @@ llevadas a otro sitio, no a quien lea la cuenta: el mismo usuario puede leer la
 base y el fichero. Usa `openexpert jobs passphrase --clear` para dejar de crear
 copias programadas; las copias con la ventana abierta siguen funcionando con la
 contraseña que escribas en Ajustes.
+
+## Referencias
+
+- [Despliegue](./08-despliegue.md) — cómo arrancarlo.
+- [Seguridad y acceso](./04-seguridad-y-acceso.md) — auditoría y reversión.

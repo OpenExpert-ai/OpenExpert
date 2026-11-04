@@ -84,8 +84,10 @@ Rules:
   local settings panel can **reveal** a stored key on demand (the "Copiar"
   button), so treat the browser as trusted and do not expose the port.
 - Backups downloaded from **Settings → Data** are AES-256-GCM encrypted with a
-  passphrase you choose. The passphrase is not stored: losing it loses the
-  backup. The legacy plain bundle (`GET /api/backup`) embeds `secrets.json`, the
+  passphrase you choose. Nothing stores it by default: losing it loses the
+  backup. Enabling scheduled backups (`openexpert jobs passphrase`) keeps it in
+  `secrets.json` (mode 0600), so that mode trusts the file permissions instead.
+  The legacy plain bundle (`GET /api/backup`) embeds `secrets.json`, the
   encrypted credential files and `secret.key`; it is still available for old
   copies, but download it only on a trusted machine.
 - A restored `openexpert.json` is **validated before it is written**: a bundle

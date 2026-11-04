@@ -101,6 +101,11 @@ grants and the Notion token (`drive-grants.json`, `local-roots.json`,
 - Code: `git pull` / reinstall the package and rebuild.
 - Downloaded server: `npx @openexpert/openexpert update`.
 
+Downloaded builds live in `~/.openexpert/app/<version>/`, one directory per
+version you have run. `openexpert update` deletes the one that matches the
+installed version; older ones stay until you remove them, and deleting them only
+costs the next download.
+
 ### The desktop window has no updater (a decision, not an oversight)
 
 `tauri.conf.json` declares no `plugins.updater`, there is no

@@ -48,6 +48,13 @@ npx @openexpert/openexpert help     # usage
 checksum-verified server build, which it fetches from the release tagged
 `v<version>`.
 
+`jobs` runs the scheduled work with no window open: the daily overdue report
+and the encrypted daily backup. The headless entry ships with the server
+bundle (`.output/jobs/index.mjs`); `openexpert jobs install` adds a systemd user
+timer that calls it every fifteen minutes. It takes the data-directory lock, so
+it exits with code 2 while another OpenExpert owns the directory. See
+[Operation](./09-operation.md).
+
 ## 4. Configuration
 
 | Variable                                                                                | Purpose                                                                     |

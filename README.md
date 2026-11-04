@@ -177,8 +177,8 @@ The full tree is in [Development](./docs/en/07-development.md).
 
 ## Status
 
-OpenExpert is **pre-1.0 (0.5.x)**. Interfaces and the data model may change
-between minor versions. The [roadmap](./docs/en/14-roadmap.md) tracks what is
+OpenExpert is **pre-1.0**. Interfaces and the data model may change between
+minor versions. The [roadmap](./docs/en/14-roadmap.md) tracks what is
 next.
 
 ## Contributing

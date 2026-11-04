@@ -86,8 +86,10 @@ Reglas:
   petición (botón "Copiar"), así que considera el navegador como entorno de
   confianza y no expongas el puerto.
 - Las copias descargadas desde **Ajustes → Datos** están cifradas con
-  AES-256-GCM y una contraseña que eliges. La contraseña no se guarda: si la
-  pierdes, pierdes la copia. El sobre plano antiguo (`GET /api/backup`) incluye
+  AES-256-GCM y una contraseña que eliges. Por defecto no se guarda en ningún
+  sitio: si la pierdes, pierdes la copia. Si activas las copias programadas
+  (`openexpert jobs passphrase`), queda en `secrets.json` (permisos 0600), así
+  que ese modo se fía de los permisos del fichero. El sobre plano antiguo (`GET /api/backup`) incluye
   `secrets.json`, los ficheros cifrados de credenciales y `secret.key`; sigue
   disponible para copias viejas, pero descárgalo solo en un equipo de confianza.
 - Un `openexpert.json` restaurado se **valida antes de escribirse**: una copia
