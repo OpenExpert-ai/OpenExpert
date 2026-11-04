@@ -240,6 +240,13 @@ npm run desktop:sync-version -- --check   # non-zero if they drifted
 request already carries the three files, and `install.sh` refuses to build when
 they diverge. A bump done by hand has to touch all three.
 
+The lockfile holds a fourth copy that no build reads: the `packages/openexpert`
+entry of `package-lock.json`. `npm ci` never compares it with the manifest, so a
+release that bumped only the manifest left the lock naming the previous version.
+`version-packages` now refreshes it by running `npm install` with
+`--package-lock-only --ignore-scripts`, and `src/version-en-el-lock.test.ts`
+fails on any pull request where the two disagree.
+
 ### Distributable packages (deb, rpm, AppImage)
 
 The per-user launcher above is the recommended path on Linux. To build packages

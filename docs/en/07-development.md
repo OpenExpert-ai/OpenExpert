@@ -120,7 +120,7 @@ cannot see it, and it stays in Spanish with nothing to warn about it.
 | `npm run desktop:dev`             | Tauri window in development mode              |
 | `npm run desktop:build`           | Raw Tauri build (does not inject the version) |
 | `npm run changeset`               | Draft the changeset for the next release      |
-| `npm run version-packages`        | Apply pending changesets locally              |
+| `npm run version-packages`        | Apply changesets and refresh the lockfile     |
 | `npm run release`                 | Build, then publish with Changesets           |
 
 ### Coverage thresholds

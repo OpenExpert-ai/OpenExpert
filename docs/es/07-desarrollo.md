@@ -121,7 +121,7 @@ llega a ser una clave— y se queda en español sin que nada avise.
 | `npm run desktop:dev`             | Ventana Tauri en desarrollo                         |
 | `npm run desktop:build`           | Build de Tauri sin inyectar la versión              |
 | `npm run changeset`               | Redacta el changeset de la próxima release          |
-| `npm run version-packages`        | Aplica los changesets pendientes en local           |
+| `npm run version-packages`        | Aplica changesets y refresca el lockfile            |
 | `npm run release`                 | Compila y publica con Changesets                    |
 
 ### Umbrales de cobertura

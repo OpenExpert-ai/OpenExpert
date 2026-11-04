@@ -306,7 +306,11 @@ Drive and local folders in `src/lib/office.server.ts`.
   entry in `src-tauri/Cargo.lock` are written by
   `npm run desktop:sync-version` (`-- --check` verifies them). `version-packages`
   runs it, `install.sh` refuses to build when they diverge and
-  `.github/workflows/desktop-gate.yml` reports it. A bump touches all three.
+  `.github/workflows/desktop-gate.yml` reports it. A bump touches all three. The
+  `packages/openexpert` entry in `package-lock.json` is a fourth copy that `npm ci`
+  never compares: `version-packages` refreshes it with `npm install` and
+  `--package-lock-only`, and `src/version-en-el-lock.test.ts` fails when it
+  disagrees with the manifest.
 - **No updater.** There is no `tauri-plugin-updater`, no `createUpdaterArtifacts`
   and no key: updating the window means rebuilding and reinstalling it. What is
   missing is listed in `docs/en/08-deployment.md` §5.

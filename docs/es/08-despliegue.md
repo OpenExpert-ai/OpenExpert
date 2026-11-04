@@ -244,6 +244,13 @@ npm run desktop:sync-version -- --check   # distinto de cero si han divergido
 pull request de release ya lleva los tres ficheros, e `install.sh` se niega a
 compilar cuando divergen. Un cambio de versión a mano tiene que tocar los tres.
 
+El lockfile guarda una cuarta copia que ninguna build lee: la entrada
+`packages/openexpert` de `package-lock.json`. `npm ci` nunca la compara con el
+manifiesto, así que un release que solo subía el manifiesto dejaba el lock con la
+versión anterior. Ahora `version-packages` lo refresca ejecutando `npm install`
+con `--package-lock-only --ignore-scripts`, y `src/version-en-el-lock.test.ts`
+falla en cualquier pull request en el que no coincidan.
+
 ### Paquetes distribuibles (deb, rpm, AppImage)
 
 El lanzador por usuario de arriba es la vía recomendada en Linux. Para generar
