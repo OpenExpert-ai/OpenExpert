@@ -129,4 +129,4 @@ in Activity once per local calendar day. It never edits invoices or sends
 messages, and the count may include sample data. If the app is closed at the
 usual time, the next open window runs the check; it does not run in the
 background or backfill missed days. Multiple windows using the same server share
-one daily activity entry. This does not coordinate separate server processes.
+one daily activity entry. Current-version servers refuse to share a data directory; older versions do not enforce that lock.

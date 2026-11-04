@@ -26,6 +26,12 @@ disagree, the code is right and the docs are the bug.
   `PRAGMA user_version` and applied at startup by `src/lib/db.server.ts`.
 - Always `await persist()` after a write: it writes the file atomically
   (`.tmp` + `rename`).
+- `data-lock.server.ts` holds an OS-level SQLite lock in a separate file for the
+  life of the server, before any app request, database open or restore. Do not
+  unlink that lock file or release it on `resetDbHandle`: sql.js keeps its own
+  in-memory copy and simultaneous processes would overwrite each other. SQLite
+  releases the lock on process death. Older OpenExpert versions do not honour
+  the lock and must not use the directory concurrently.
 - Tables: `experts`, `integrations`, `activity`, `chat_messages`, `deals`,
   `invoices`, `campaigns`, `accounts`, `settings`.
 - **Business data is not seeded.** `deals`/`invoices`/`campaigns`/`accounts`
@@ -119,8 +125,9 @@ disagree, the code is right and the docs are the bug.
 - The optional daily overdue invoice report runs only while a window is open.
   It counts local invoices, may include sample data, and writes one activity
   entry per local day; it makes no external changes and does not backfill days.
-  Its deterministic ID deduplicates requests to the same server, not multiple
-  independent server processes. Other autonomous processes remain pending.
+  Its deterministic ID deduplicates requests to the same server. The data lock
+  prevents current-version servers sharing a directory; older versions do not
+  honour it. Other autonomous processes remain pending.
 
 ## 5. Model provider: configuration, not code
 
